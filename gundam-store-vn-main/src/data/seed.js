@@ -1,0 +1,595 @@
+export const seedProducts = [
+  {
+    id: "prod-rg-hi-nu",
+    sku: "RG-HINU-144-BD",
+    slug: "rg-1-144-hi-nu-gundam",
+    name: { vi: "RG 1/144 Hi-ν Gundam", en: "RG 1/144 Hi-ν Gundam" },
+    short: { vi: "Real Grade chi tiết cao, pose đẹp, hàng chính hãng Bandai.", en: "Highly detailed Real Grade, authentic Bandai kit." },
+    price: 1150000,
+    oldPrice: 1290000,
+    status: "inStock",
+    stock: 9,
+    grade: "RG",
+    scale: "1/144",
+    brand: "Bandai",
+    tone: "cyan",
+    sold: 96,
+    rating: 4.9,
+    active: true,
+    collections: ["new_arrivals", "best_sellers"],
+    preorder: { enabled: false, deposit: 0, eta: "" },
+    specs: [
+      { label: "Scale", value: "1/144" },
+      { label: "Height", value: "~16 cm" },
+      { label: "Maker", value: "Bandai Spirits" },
+      { label: "Material", value: "PS / ABS" }
+    ],
+    boxItems: ["Runner nhựa đầy đủ", "Decal sheet", "Beam Rifle", "Shield", "Beam Saber x2", "Sách hướng dẫn Nhật"],
+    description: "RG Hi-ν Gundam là một trong những mẫu Real Grade được cộng đồng Gunpla đánh giá cao nhờ chi tiết sắc nét, tỉ lệ đẹp và khả năng tạo dáng mạnh mẽ.",
+  
+    imageUrl: "/images/products/hi-nu.jpg",
+    media: {
+      card: "/images/products/hi-nu.jpg",
+      home: "/images/products/hi-nu.jpg",
+      detailMain: "/images/products/hi-nu.jpg",
+      gallery: ["/images/products/hi-nu.jpg"],
+      hover: "/images/products/hi-nu.jpg",
+      box: "/images/products/hi-nu.jpg",
+    },
+    images: ["/images/products/hi-nu.jpg"],
+},
+  {
+    id: "prod-mg-freedom",
+    sku: "MG-FREEDOM-100-BD",
+    slug: "mg-1-100-freedom-gundam-ver-2",
+    name: { vi: "MG 1/100 Freedom Gundam Ver.2.0", en: "MG 1/100 Freedom Gundam Ver.2.0" },
+    short: { vi: "Master Grade nổi bật, form đẹp, thích hợp trưng bày.", en: "Iconic Master Grade, beautiful form for display." },
+    price: 1250000,
+    oldPrice: 1390000,
+    status: "inStock",
+    stock: 12,
+    grade: "MG",
+    scale: "1/100",
+    brand: "Bandai",
+    tone: "blue",
+    sold: 82,
+    rating: 5,
+    active: true,
+    collections: ["new_arrivals", "best_sellers"],
+    preorder: { enabled: false, deposit: 0, eta: "" },
+    specs: [
+      { label: "Scale", value: "1/100" },
+      { label: "Height", value: "~18 cm" },
+      { label: "Maker", value: "Bandai Spirits" },
+      { label: "Material", value: "PS / ABS" }
+    ],
+    boxItems: ["Runner nhựa", "Sticker", "Beam Rifle", "Shield", "Beam Saber"],
+    description: "MG Freedom Ver.2.0 có khung inner frame tốt, màu sắc nổi bật và form cánh đẹp.",
+  
+    imageUrl: "/images/products/freedom.jpg",
+    media: {
+      card: "/images/products/freedom.jpg",
+      home: "/images/products/freedom.jpg",
+      detailMain: "/images/products/freedom.jpg",
+      gallery: ["/images/products/freedom.jpg"],
+      hover: "/images/products/freedom.jpg",
+      box: "/images/products/freedom.jpg",
+    },
+    images: ["/images/products/freedom.jpg"],
+},
+  {
+    id: "prod-mgex-strike-freedom",
+    sku: "MGEX-STRIKE-FREEDOM",
+    slug: "mgex-1-100-strike-freedom",
+    name: { vi: "MGEX 1/100 Strike Freedom", en: "MGEX 1/100 Strike Freedom" },
+    short: { vi: "Dòng MGEX cao cấp, độ chi tiết vượt trội, pre-order.", en: "Premium MGEX line, highly detailed, pre-order." },
+    price: 2950000,
+    oldPrice: 0,
+    status: "preorder",
+    stock: 0,
+    grade: "MGEX",
+    scale: "1/100",
+    brand: "Bandai",
+    tone: "gold",
+    sold: 44,
+    rating: 4.9,
+    active: true,
+    collections: ["preorder", "best_sellers"],
+    preorder: { enabled: true, deposit: 500000, eta: "T08/2026" },
+    specs: [
+      { label: "Scale", value: "1/100" },
+      { label: "Height", value: "~19 cm" },
+      { label: "Maker", value: "Bandai Spirits" },
+      { label: "Material", value: "PS / ABS / Metal color parts" }
+    ],
+    boxItems: ["Runner nhựa", "Decal", "Beam Rifle", "Wing parts", "Stand connector"],
+    description: "MGEX Strike Freedom là lựa chọn nổi bật cho collector thích độ chi tiết cao và hiệu ứng vàng.",
+  
+    imageUrl: "/images/products/strike-freedom.jpg",
+    media: {
+      card: "/images/products/strike-freedom.jpg",
+      home: "/images/products/strike-freedom.jpg",
+      detailMain: "/images/products/strike-freedom.jpg",
+      gallery: ["/images/products/strike-freedom.jpg"],
+      hover: "/images/products/strike-freedom.jpg",
+      box: "/images/products/strike-freedom.jpg",
+    },
+    images: ["/images/products/strike-freedom.jpg"],
+},
+  {
+    id: "prod-rg-sazabi",
+    sku: "RG-SAZABI-144-BD",
+    slug: "rg-1-144-sazabi",
+    name: { vi: "RG 1/144 Sazabi", en: "RG 1/144 Sazabi" },
+    short: { vi: "Mẫu RG kích thước lớn, form hầm hố, đang sale.", en: "Large RG kit, powerful form, on sale." },
+    price: 1200000,
+    oldPrice: 1350000,
+    status: "sale",
+    stock: 8,
+    grade: "RG",
+    scale: "1/144",
+    brand: "Bandai",
+    tone: "red",
+    sold: 75,
+    rating: 4.8,
+    active: true,
+    collections: ["sale_products", "best_sellers"],
+    preorder: { enabled: false, deposit: 0, eta: "" },
+    specs: [
+      { label: "Scale", value: "1/144" },
+      { label: "Maker", value: "Bandai Spirits" }
+    ],
+    boxItems: ["Runner nhựa", "Decal", "Beam Rifle", "Shield"],
+    description: "RG Sazabi có kích thước lớn hơn nhiều mẫu RG thông thường, rất hợp trưng bày.",
+  
+    imageUrl: "/images/products/sazabi.jpg",
+    media: {
+      card: "/images/products/sazabi.jpg",
+      home: "/images/products/sazabi.jpg",
+      detailMain: "/images/products/sazabi.jpg",
+      gallery: ["/images/products/sazabi.jpg"],
+      hover: "/images/products/sazabi.jpg",
+      box: "/images/products/sazabi.jpg",
+    },
+    images: ["/images/products/sazabi.jpg"],
+},
+  {
+    id: "prod-hg-aerial",
+    sku: "HG-AERIAL-144-BD",
+    slug: "hg-1-144-gundam-aerial",
+    name: { vi: "HG 1/144 Gundam Aerial", en: "HG 1/144 Gundam Aerial" },
+    short: { vi: "Dễ lắp, giá tốt, phù hợp người mới.", en: "Easy build, good price, beginner-friendly." },
+    price: 520000,
+    oldPrice: 0,
+    status: "inStock",
+    stock: 18,
+    grade: "HG",
+    scale: "1/144",
+    brand: "Bandai",
+    tone: "sky",
+    sold: 120,
+    rating: 4.9,
+    active: true,
+    collections: ["new_arrivals", "best_sellers"],
+    preorder: { enabled: false, deposit: 0, eta: "" },
+    specs: [{ label: "Scale", value: "1/144" }],
+    boxItems: ["Runner nhựa", "Sticker", "Beam parts"],
+    description: "HG Aerial dễ lắp, tách màu tốt, phù hợp cho builder mới bắt đầu.",
+  
+    imageUrl: "/images/products/aerial.jpg",
+    media: {
+      card: "/images/products/aerial.jpg",
+      home: "/images/products/aerial.jpg",
+      detailMain: "/images/products/aerial.jpg",
+      gallery: ["/images/products/aerial.jpg"],
+      hover: "/images/products/aerial.jpg",
+      box: "/images/products/aerial.jpg",
+    },
+    images: ["/images/products/aerial.jpg"],
+},
+  {
+    id: "prod-action-base-5",
+    sku: "ACTION-BASE-5-CLEAR",
+    slug: "action-base-5-clear",
+    name: { vi: "Action Base 5 Clear", en: "Action Base 5 Clear" },
+    short: { vi: "Đế trưng bày trong suốt cho HG/RG.", en: "Clear display base for HG/RG kits." },
+    price: 180000,
+    oldPrice: 0,
+    status: "inStock",
+    stock: 40,
+    grade: "Tools",
+    scale: "Accessory",
+    brand: "Bandai",
+    tone: "slate",
+    sold: 200,
+    rating: 4.8,
+    active: true,
+    collections: ["tools", "best_sellers"],
+    preorder: { enabled: false, deposit: 0, eta: "" },
+    specs: [{ label: "Type", value: "Display base" }],
+    boxItems: ["Base parts", "Connector parts"],
+    description: "Action Base 5 giúp tạo dáng bay và trưng bày mô hình gọn gàng."
+  }
+];
+
+export const seedBanners = [
+  {
+    id: "banner-hero-1",
+    title: { vi: "RG Hi-ν Gundam đã về hàng", en: "RG Hi-ν Gundam Back in Stock" },
+    subtitle: { vi: "Hàng chính hãng Bandai, bọc chống sốc 3 lớp.", en: "Authentic Bandai, carefully packed." },
+    imageUrl: "/images/banners/banner-1.jpg",
+    placement: "Homepage Hero",
+    status: "Live",
+    active: true,
+    ctaText: { vi: "Mua ngay", en: "Shop now" },
+    ctaUrl: "/shop",
+  },
+  {
+    id: "banner-hero-2",
+    title: { vi: "Pre-order MGEX Strike Freedom", en: "Pre-order MGEX Strike Freedom" },
+    subtitle: { vi: "Cọc trước, theo dõi ETA rõ ràng.", en: "Track ETA clearly after preorder." },
+    imageUrl: "/images/banners/banner-2.jpg",
+    placement: "Homepage Hero",
+    status: "Live",
+    active: true,
+    ctaText: { vi: "Đặt trước", en: "Pre-order" },
+    ctaUrl: "/shop",
+  },
+  {
+    id: "banner-hero-3",
+    title: { vi: "Builder Tools & Decal", en: "Builder Tools & Decal" },
+    subtitle: { vi: "Đầy đủ phụ kiện cho builder chuyên nghiệp.", en: "Professional builder accessories." },
+    imageUrl: "/images/banners/banner-3.jpg",
+    placement: "Homepage Hero",
+    status: "Live",
+    active: true,
+    ctaText: { vi: "Xem thêm", en: "Explore" },
+    ctaUrl: "/shop",
+  },
+];
+
+export const seedHomeSections = [
+  {
+    id: "section-hero",
+    type: "heroSlider",
+    title: { vi: "Banner chính", en: "Hero banner" },
+    dataSource: "home_hero",
+    enabled: true,
+    sort: 1,
+    layout: { rows: 1, columns: 1, compact: false }
+  },
+  {
+    id: "section-categories",
+    type: "categoryGrid",
+    title: { vi: "Danh mục nổi bật", en: "Featured categories" },
+    dataSource: "categories",
+    enabled: true,
+    sort: 2,
+    layout: { rows: 1, columns: 6, compact: true }
+  },
+  {
+    id: "section-new",
+    type: "productCarousel",
+    title: { vi: "Hàng mới về", en: "New arrivals" },
+    dataSource: "new_arrivals",
+    enabled: true,
+    sort: 3,
+    layout: { rows: 2, columns: 4, compact: true }
+  },
+  {
+    id: "section-order",
+    type: "productCarousel",
+    title: { vi: "Hàng order / Pre-order", en: "Order / Pre-order" },
+    dataSource: "preorder",
+    enabled: true,
+    sort: 4,
+    layout: { rows: 2, columns: 4, compact: true }
+  },
+  {
+    id: "section-best",
+    type: "productCarousel",
+    title: { vi: "Hàng bán chạy", en: "Best sellers" },
+    dataSource: "best_sellers",
+    enabled: true,
+    sort: 5,
+    layout: { rows: 2, columns: 4, compact: true }
+  },
+  {
+    id: "section-sale",
+    type: "productCarousel",
+    title: { vi: "Hàng Sales", en: "Sale products" },
+    dataSource: "sale_products",
+    enabled: true,
+    sort: 6,
+    layout: { rows: 2, columns: 4, compact: true }
+  },
+  {
+    id: "section-ad",
+    type: "promoBanner",
+    title: { vi: "Banner quảng cáo", en: "Promo banner" },
+    dataSource: "home_ad",
+    enabled: true,
+    sort: 7,
+    layout: { rows: 1, columns: 2, compact: false }
+  }
+];
+
+export const seedCategories = [
+  { id: "cat-hg", slug: "hg-high-grade", name: { vi: "HG / High Grade", en: "HG / High Grade" }, label: "HG", desc: "High Grade", type: "grade", parentId: "", tone: "cyan", active: true, sort: 1 },
+  { id: "cat-rg", slug: "rg-real-grade", name: { vi: "RG / Real Grade", en: "RG / Real Grade" }, label: "RG", desc: "Real Grade", type: "grade", parentId: "", tone: "blue", active: true, sort: 2 },
+  { id: "cat-mg", slug: "mg-master-grade", name: { vi: "MG / Master Grade", en: "MG / Master Grade" }, label: "MG", desc: "Master Grade", type: "grade", parentId: "", tone: "slate", active: true, sort: 3 },
+  { id: "cat-pg", slug: "pg-perfect-grade", name: { vi: "PG / Perfect Grade", en: "PG / Perfect Grade" }, label: "PG", desc: "Perfect Grade", type: "grade", parentId: "", tone: "gold", active: true, sort: 4 },
+  { id: "cat-tools", slug: "tools-accessories", name: { vi: "Phụ kiện & Tools", en: "Accessories & Tools" }, label: "Tools", desc: "Builder tools", type: "accessory", parentId: "", tone: "red", active: true, sort: 5 },
+  { id: "cat-decal", slug: "water-decal", name: { vi: "Decal nước", en: "Water decal" }, label: "Decal", desc: "Water decal", type: "accessory", parentId: "", tone: "sky", active: true, sort: 6 },
+  { id: "cat-bandai", slug: "bandai", name: { vi: "Bandai", en: "Bandai" }, label: "Bandai", desc: "Official Bandai", type: "brand", parentId: "", tone: "blue", active: true, sort: 7 },
+  { id: "cat-collector", slug: "collector-pick", name: { vi: "Collector Pick", en: "Collector Pick" }, label: "Collector", desc: "For collectors", type: "marketing", parentId: "", tone: "gold", active: true, sort: 8 }
+];
+
+export const seedProductCategoryMappings = [
+  { productId: "prod-rg-hi-nu", categoryIds: ["cat-rg", "cat-bandai", "cat-collector"] },
+  { productId: "prod-mg-freedom", categoryIds: ["cat-mg", "cat-bandai"] },
+  { productId: "prod-mgex-strike-freedom", categoryIds: ["cat-mg", "cat-bandai", "cat-collector"] },
+  { productId: "prod-rg-sazabi", categoryIds: ["cat-rg", "cat-bandai", "cat-collector"] },
+  { productId: "prod-hg-aerial", categoryIds: ["cat-hg", "cat-bandai"] },
+  { productId: "prod-action-base-5", categoryIds: ["cat-tools", "cat-bandai"] }
+];
+
+export const seedProductDisplayMappings = [
+  { productId: "prod-rg-hi-nu", collectionKeys: ["new_arrivals", "best_sellers"] },
+  { productId: "prod-mg-freedom", collectionKeys: ["new_arrivals", "best_sellers"] },
+  { productId: "prod-mgex-strike-freedom", collectionKeys: ["preorder", "best_sellers"] },
+  { productId: "prod-rg-sazabi", collectionKeys: ["sale_products", "best_sellers"] },
+  { productId: "prod-hg-aerial", collectionKeys: ["new_arrivals", "best_sellers"] },
+  { productId: "prod-action-base-5", collectionKeys: ["tools", "best_sellers"] }
+];
+
+export const seedReviews = [
+  { id: "rev-1", productId: "prod-rg-hi-nu", customer: "Khoa Builder", rating: 5, comment: "Hộp đẹp, đóng gói kỹ, runner đủ.", approved: true, createdAt: "2026-05-01" },
+  { id: "rev-2", productId: "prod-mg-freedom", customer: "Nam Collector", rating: 4, comment: "Giao nhanh, hộp hơi cấn nhẹ nhưng shop hỗ trợ tốt.", approved: false, createdAt: "2026-05-02" },
+  { id: "rev-3", productId: "prod-action-base-5", customer: "Guest #381", rating: 5, comment: "Phụ kiện tốt, giá ổn.", approved: true, createdAt: "2026-05-03" }
+];
+
+export const seedOrders = [
+  {
+    id: "GSVN-2408-1024",
+    customer: "Nguyễn Minh Khang",
+    phone: "0909 123 456",
+    address: "12 Nguyễn Huệ, Quận 1, TP.HCM",
+    status: "confirmed",
+    payment: "cod",
+    total: 2875000,
+    createdAt: "2026-05-18 14:22",
+    items: [
+      { productId: "prod-rg-hi-nu", name: "RG 1/144 Hi-ν Gundam", qty: 1, price: 1150000 },
+      { productId: "prod-mg-freedom", name: "MG Freedom Ver.2.0", qty: 1, price: 1250000 },
+      { productId: "prod-mgex-strike-freedom", name: "MGEX Strike Freedom", qty: 1, price: 500000, preorder: true }
+    ]
+  }
+];
+
+export const seedTickets = [
+  { id: "TK-1024", customer: "Lê Quân", issue: "Hộp móp khi nhận hàng", status: "Đang xác minh", priority: "Cao", createdAt: "2026-05-18" },
+  { id: "TK-1025", customer: "Quang Huy", issue: "Thiếu decal sheet", status: "Chờ ảnh/video", priority: "Cao", createdAt: "2026-05-18" }
+];
+
+export const seedChats = [
+  {
+    id: "chat-demo-1",
+    customer: "Hoàng Nam",
+    status: "open",
+    assignedTo: "AI",
+    updatedAt: "2026-05-18 16:30",
+    messages: [
+      { from: "customer", text: "Pre-order MGEX cọc bao nhiêu?", time: "16:28" },
+      { from: "ai", text: "Mẫu MGEX hiện cọc 500.000₫, còn lại thanh toán khi hàng về.", time: "16:29" }
+    ]
+  }
+];
+
+export const seedAnalytics = [
+  { id: "evt-1", event: "page_view", page: "/", productId: "", source: "direct", createdAt: Date.now() - 100000 },
+  { id: "evt-2", event: "product_view", page: "/product/rg-1-144-hi-nu-gundam", productId: "prod-rg-hi-nu", source: "website", createdAt: Date.now() - 80000 },
+  { id: "evt-3", event: "add_to_cart", page: "/cart", productId: "prod-rg-hi-nu", source: "website", createdAt: Date.now() - 60000 }
+];
+
+export const seedProductCategoriesV3 = [
+  {
+    id: "cat-hg",
+    code: "HG",
+    slug: "hg-high-grade",
+    name: { vi: "HG / High Grade", en: "HG / High Grade" },
+    description: { vi: "Dễ lắp, giá tốt, phù hợp người mới.", en: "Easy build, good price, beginner-friendly." },
+    iconUrl: "",
+    tone: "cyan",
+    sort: 1,
+    active: true
+  },
+  {
+    id: "cat-rg",
+    code: "RG",
+    slug: "rg-real-grade",
+    name: { vi: "RG / Real Grade", en: "RG / Real Grade" },
+    description: { vi: "Chi tiết cao, tỉ lệ đẹp, phù hợp builder thích pose.", en: "High detail, great proportions, excellent posing." },
+    iconUrl: "",
+    tone: "blue",
+    sort: 2,
+    active: true
+  },
+  {
+    id: "cat-mg",
+    code: "MG",
+    slug: "mg-master-grade",
+    name: { vi: "MG / Master Grade", en: "MG / Master Grade" },
+    description: { vi: "Khung xương tốt, kích thước trưng bày đẹp.", en: "Great inner frame and display size." },
+    iconUrl: "",
+    tone: "slate",
+    sort: 3,
+    active: true
+  },
+  {
+    id: "cat-pg",
+    code: "PG",
+    slug: "pg-perfect-grade",
+    name: { vi: "PG / Perfect Grade", en: "PG / Perfect Grade" },
+    description: { vi: "Dòng cao cấp, kích thước lớn, nhiều chi tiết.", en: "Premium large-scale kits with deep detail." },
+    iconUrl: "",
+    tone: "gold",
+    sort: 4,
+    active: true
+  },
+  {
+    id: "cat-tools",
+    code: "TOOLS",
+    slug: "tools-accessories",
+    name: { vi: "Phụ kiện & Tools", en: "Accessories & Tools" },
+    description: { vi: "Kềm, panel line, action base, decal.", en: "Nippers, panel liners, action bases, decals." },
+    iconUrl: "",
+    tone: "red",
+    sort: 5,
+    active: true
+  }
+];
+
+export const seedSuppliersV3 = [
+  {
+    id: "sup-bandai",
+    name: "Bandai Spirits",
+    country: "Japan",
+    contactName: "",
+    phone: "",
+    email: "",
+    address: "",
+    note: "Nhà sản xuất/chủ thương hiệu chính hãng.",
+    active: true
+  },
+  {
+    id: "sup-kotobukiya",
+    name: "Kotobukiya",
+    country: "Japan",
+    contactName: "",
+    phone: "",
+    email: "",
+    address: "",
+    note: "",
+    active: true
+  },
+  {
+    id: "sup-local",
+    name: "Local Distributor",
+    country: "Vietnam",
+    contactName: "",
+    phone: "",
+    email: "",
+    address: "",
+    note: "",
+    active: true
+  }
+];
+
+export const seedProductGroupsV3 = [
+  {
+    id: "grp-new",
+    key: "new_arrivals",
+    name: { vi: "Hàng mới về", en: "New arrivals" },
+    badgeText: "NEW",
+    tone: "blue",
+    displayArea: "homepage",
+    active: true,
+    sort: 1
+  },
+  {
+    id: "grp-preorder",
+    key: "preorder",
+    name: { vi: "Hàng order / Pre-order", en: "Order / Pre-order" },
+    badgeText: "ORDER",
+    tone: "violet",
+    displayArea: "homepage",
+    active: true,
+    sort: 2
+  },
+  {
+    id: "grp-best",
+    key: "best_sellers",
+    name: { vi: "Hàng bán chạy", en: "Best sellers" },
+    badgeText: "HOT",
+    tone: "red",
+    displayArea: "homepage",
+    active: true,
+    sort: 3
+  },
+  {
+    id: "grp-sale",
+    key: "sale_products",
+    name: { vi: "Hàng Sales", en: "Sales" },
+    badgeText: "SALE",
+    tone: "gold",
+    displayArea: "homepage",
+    active: true,
+    sort: 4
+  },
+  {
+    id: "grp-featured",
+    key: "featured",
+    name: { vi: "Sản phẩm nổi bật", en: "Featured" },
+    badgeText: "FEATURED",
+    tone: "cyan",
+    displayArea: "homepage",
+    active: true,
+    sort: 5
+  }
+];
+
+export const seedProductGroupMappingsV3 = [
+  { productId: "prod-rg-hi-nu", groupIds: ["grp-new", "grp-best", "grp-featured"] },
+  { productId: "prod-mg-freedom", groupIds: ["grp-new", "grp-best"] },
+  { productId: "prod-mgex-strike-freedom", groupIds: ["grp-preorder", "grp-best"] },
+  { productId: "prod-rg-sazabi", groupIds: ["grp-sale", "grp-best"] },
+  { productId: "prod-hg-aerial", groupIds: ["grp-new", "grp-best"] },
+  { productId: "prod-action-base-5", groupIds: ["grp-best"] }
+];
+
+export const seedProductPricesV3 = [
+  { id: "price-rg-hi-nu", productId: "prod-rg-hi-nu", price: 1150000, compareAtPrice: 1290000, costPrice: 0, currency: "VND", channel: "website", customerGroup: "retail", active: true },
+  { id: "price-mg-freedom", productId: "prod-mg-freedom", price: 1250000, compareAtPrice: 1390000, costPrice: 0, currency: "VND", channel: "website", customerGroup: "retail", active: true },
+  { id: "price-mgex-strike-freedom", productId: "prod-mgex-strike-freedom", price: 2950000, compareAtPrice: 0, costPrice: 0, currency: "VND", channel: "website", customerGroup: "retail", active: true },
+  { id: "price-rg-sazabi", productId: "prod-rg-sazabi", price: 1200000, compareAtPrice: 1350000, costPrice: 0, currency: "VND", channel: "website", customerGroup: "retail", active: true },
+  { id: "price-hg-aerial", productId: "prod-hg-aerial", price: 520000, compareAtPrice: 0, costPrice: 0, currency: "VND", channel: "website", customerGroup: "retail", active: true },
+  { id: "price-action-base-5", productId: "prod-action-base-5", price: 180000, compareAtPrice: 0, costPrice: 0, currency: "VND", channel: "website", customerGroup: "retail", active: true }
+];
+
+export const seedInventoryV3 = [
+  { id: "inv-rg-hi-nu", productId: "prod-rg-hi-nu", warehouseId: "main", onHand: 9, reserved: 0, incoming: 0, lowStockThreshold: 3, updatedAt: new Date().toISOString() },
+  { id: "inv-mg-freedom", productId: "prod-mg-freedom", warehouseId: "main", onHand: 12, reserved: 0, incoming: 0, lowStockThreshold: 3, updatedAt: new Date().toISOString() },
+  { id: "inv-mgex-strike-freedom", productId: "prod-mgex-strike-freedom", warehouseId: "main", onHand: 0, reserved: 0, incoming: 20, lowStockThreshold: 3, updatedAt: new Date().toISOString() },
+  { id: "inv-rg-sazabi", productId: "prod-rg-sazabi", warehouseId: "main", onHand: 8, reserved: 0, incoming: 0, lowStockThreshold: 3, updatedAt: new Date().toISOString() },
+  { id: "inv-hg-aerial", productId: "prod-hg-aerial", warehouseId: "main", onHand: 18, reserved: 0, incoming: 0, lowStockThreshold: 5, updatedAt: new Date().toISOString() },
+  { id: "inv-action-base-5", productId: "prod-action-base-5", warehouseId: "main", onHand: 40, reserved: 0, incoming: 0, lowStockThreshold: 10, updatedAt: new Date().toISOString() }
+];
+
+export const seedPromotionsV3 = [
+  {
+    id: "promo-builder-combo",
+    name: { vi: "Combo Builder", en: "Builder Combo" },
+    type: "percent",
+    value: 10,
+    startAt: "",
+    endAt: "",
+    active: true,
+    note: "Giảm 10% khi mua kèm phụ kiện builder."
+  },
+  {
+    id: "promo-sale-rg",
+    name: { vi: "Sale RG Selected", en: "Selected RG Sale" },
+    type: "fixed",
+    value: 50000,
+    startAt: "",
+    endAt: "",
+    active: true,
+    note: "Giảm trực tiếp cho một số sản phẩm RG."
+  }
+];
+
+export const seedPromotionProductMappingsV3 = [
+  { promotionId: "promo-sale-rg", productIds: ["prod-rg-sazabi"] },
+  { promotionId: "promo-builder-combo", productIds: ["prod-action-base-5"] }
+];
