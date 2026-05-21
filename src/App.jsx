@@ -42,10 +42,12 @@ import AdminProductGroups from "./pages/admin/AdminProductGroups";
 import AdminProductGroupMapping from "./pages/admin/AdminProductGroupMapping";
 import AdminPricingInventory from "./pages/admin/AdminPricingInventory";
 import AdminPromotions from "./pages/admin/AdminPromotions";
+import GlobalCart from "./components/GlobalCart";
 
 export default function App() {
   return (
-    <Routes>
+    <>
+      <Routes>
       <Route path="/" element={<HomePage />} />
       <Route path="/shop" element={<ShopPage />} />
           <Route path="/accessories" element={<AccessoriesPage />} />
@@ -98,6 +100,8 @@ export default function App() {
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+          </Routes>
+      <GlobalCart />
+    </>
   );
 }
