@@ -90,8 +90,16 @@ export default function GlobalCart() {
       const button = e.target.closest("button");
       if (!button) return;
 
-      const label = button.innerText?.trim()?.toLowerCase();
-      if (label !== "thêm" && label !== "add") return;
+      const label = button.innerText?.trim()?.toLowerCase() || "";
+      const isAddToCart =
+        label.includes("thêm") ||
+        label.includes("add");
+
+      const isBuyNow =
+        label.includes("mua") ||
+        label.includes("buy");
+
+      if (!isAddToCart && !isBuyNow) return;
 
       e.preventDefault();
       e.stopPropagation();
@@ -99,10 +107,20 @@ export default function GlobalCart() {
       addToCart(extractProductFromButton(button));
 
       const oldText = button.innerText;
-      button.innerText = "Đã thêm";
-      setTimeout(() => {
-        button.innerText = oldText;
-      }, 800);
+
+      if (isBuyNow) {
+        button.innerText = "Đang mua...";
+        setTimeout(() => {
+          setOpen(true);
+          setCheckoutOpen(true);
+          button.innerText = oldText;
+        }, 300);
+      } else {
+        button.innerText = "Đã thêm";
+        setTimeout(() => {
+          button.innerText = oldText;
+        }, 800);
+      }
     }
 
     document.addEventListener("click", handleClick, true);
