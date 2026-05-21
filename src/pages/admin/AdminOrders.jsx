@@ -1,41 +1,60 @@
-import { PackageCheck, Truck } from "lucide-react";
-import { useCms, useLang } from "../../store/CmsStore";
+import { useCms } from "../../store/CmsStore";
 import { formatCurrency } from "../../utils/format";
 
-const text = {
-  vi: { title: "Quản lý đơn hàng", desc: "Đơn được tạo từ Checkout sẽ xuất hiện tại đây.", customer: "Khách hàng", status: "Trạng thái", value: "Giá trị", update: "Cập nhật" },
-  en: { title: "Order Manager", desc: "Orders created from Checkout appear here.", customer: "Customer", status: "Status", value: "Value", update: "Update" }
-};
-
 export default function AdminOrders() {
-  const { state, actions } = useCms();
-  const [lang] = useLang();
-  const t = text[lang];
-  const statuses = ["new", "confirmed", "packing", "shipping", "completed", "cancelled"];
+  const { state } = useCms();
+  const orders = state.orders || [];
 
   return (
-    <>
-      <section className="rounded-[2rem] border border-blue-100 bg-white p-6 shadow-xl shadow-blue-100/50">
-        <h1 className="text-3xl font-black text-slate-950">{t.title}</h1>
-        <p className="mt-2 text-sm leading-6 text-slate-600">{t.desc}</p>
-      </section>
-      <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-        <div className="space-y-3">
-          {state.orders.map((order) => (
-            <div key={order.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <div className="grid gap-4 lg:grid-cols-[160px_1fr_150px_170px] lg:items-center">
-                <div><div className="font-black text-blue-700">#{order.id}</div><div className="mt-1 text-xs font-semibold text-slate-500">{order.createdAt}</div></div>
-                <div><div className="font-black text-slate-950">{order.customer}</div><div className="mt-1 text-xs font-semibold text-slate-500">{order.phone} • {order.address}</div></div>
-                <div className="font-black text-blue-700">{formatCurrency(order.total)}</div>
-                <select value={order.status} onChange={(e) => actions.updateOrder(order.id, { status: e.target.value })} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold">{statuses.map((s) => <option key={s} value={s}>{s}</option>)}</select>
-              </div>
-              <div className="mt-3 grid gap-2 md:grid-cols-3">
-                {(order.items || []).map((item, index) => <div key={index} className="rounded-xl bg-white p-3 text-xs font-bold text-slate-600"><PackageCheck className="mr-1 inline text-blue-600" size={14}/>{item.name} x{item.qty}</div>)}
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-    </>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-black text-slate-900">Quản lý đơn hàng</h1>
+        <p className="mt-2 text-sm font-medium text-slate-500">
+          Theo dõi đơn checkout từ storefront.
+        </p>
+      </div>
+
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+        <table className="w-full min-w-[900px]">
+          <thead className="bg-slate-50">
+            <tr className="text-left text-sm font-black text-slate-600">
+              <th className="px-4 py-4">Mã đơn</th>
+              <th className="px-4 py-4">Ngày</th>
+              <th className="px-4 py-4">Sản phẩm</th>
+              <th className="px-4 py-4">Thanh toán</th>
+              <th className="px-4 py-4">Tổng tiền</th>
+              <th className="px-4 py-4">Trạng thái</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {orders.length === 0 ? (
+              <tr>
+                <td colSpan="6" className="px-4 py-10 text-center text-sm font-bold text-slate-400">
+                  Chưa có đơn hàng nào. Hãy thử checkout để tạo đơn.
+                </td>
+              </tr>
+            ) : (
+              orders.map((order) => (
+                <tr key={order.id} className="border-t border-slate-100 hover:bg-slate-50">
+                  <td className="px-4 py-4 font-black text-blue-600">{order.id}</td>
+                  <td className="px-4 py-4 text-sm">
+                    {order.createdAt ? new Date(order.createdAt).toLocaleString("vi-VN") : "-"}
+                  </td>
+                  <td className="px-4 py-4 text-sm">{order.items?.length || 0} sản phẩm</td>
+                  <td className="px-4 py-4 text-sm">{order.payment || "-"}</td>
+                  <td className="px-4 py-4 font-black text-red-500">{formatCurrency(order.total || 0)}</td>
+                  <td className="px-4 py-4">
+                    <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-black text-blue-700">
+                      {order.status || "Placed"}
+                    </span>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 }
