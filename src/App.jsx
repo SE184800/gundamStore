@@ -48,6 +48,8 @@ export default function App() {
   return (
     <>
       <Routes>
+        <Route path="cart" element={<CartPage />} />
+        <Route path="checkout" element={<CheckoutPage />} />
       <Route path="/" element={<HomePage />} />
       <Route path="/shop" element={<ShopPage />} />
           <Route path="/accessories" element={<AccessoriesPage />} />
