@@ -45,16 +45,38 @@ export default function CartPage() {
     saveCart(next);
   }
 
+  function getAvailable(item) {
+    return Number(getStock(item.id).available) || 0;
+  }
+
+  function increaseQty(item) {
+    const available = getAvailable(item);
+
+    if ((item.quantity || 1) >= available) {
+      alert(`Sản phẩm "${item.name}" chỉ còn ${available} sản phẩm trong kho.`);
+      return;
+    }
+
+    updateCart(
+      cart.map((x) =>
+        x.id === item.id ? { ...x, quantity: (x.quantity || 1) + 1 } : x
+      )
+    );
+  }
+
+  function decreaseQty(item) {
+    updateCart(
+      cart.map((x) =>
+        x.id === item.id
+          ? { ...x, quantity: Math.max(1, (x.quantity || 1) - 1) }
+          : x
+      )
+    );
+  }
+
   function toggleAll() {
     const allSelected = cart.every((item) => item.selected !== false);
     updateCart(cart.map((item) => ({ ...item, selected: !allSelected })));
-  }
-
-  function hasStockIssue() {
-    return selectedItems.some((item) => {
-      const stock = getStock(item.id);
-      return (item.quantity || 1) > stock.available;
-    });
   }
 
   function goCheckout() {
@@ -63,8 +85,16 @@ export default function CartPage() {
       return;
     }
 
-    if (hasStockIssue()) {
-      alert("Một số sản phẩm đã vượt quá tồn kho. Vui lòng giảm số lượng.");
+    const invalidItem = selectedItems.find(
+      (item) => (item.quantity || 1) > getAvailable(item)
+    );
+
+    if (invalidItem) {
+      alert(
+        `Sản phẩm "${invalidItem.name}" chỉ còn ${getAvailable(
+          invalidItem
+        )} sản phẩm trong kho.`
+      );
       return;
     }
 
@@ -127,12 +157,17 @@ export default function CartPage() {
               </div>
             ) : (
               cart.map((item) => {
-                const lineTotal = (Number(item.price) || 0) * (item.quantity || 1);
+                const available = getAvailable(item);
+                const qty = item.quantity || 1;
+                const lineTotal = (Number(item.price) || 0) * qty;
+                const overStock = qty > available;
 
                 return (
                   <div
                     key={item.id}
-                    className="grid items-center gap-4 rounded-3xl bg-white p-5 shadow-sm md:grid-cols-[40px_1fr_130px_140px_150px_70px]"
+                    className={`grid items-center gap-4 rounded-3xl bg-white p-5 shadow-sm md:grid-cols-[40px_1fr_130px_140px_150px_70px] ${
+                      overStock ? "ring-2 ring-red-200" : ""
+                    }`}
                   >
                     <input
                       type="checkbox"
@@ -159,15 +194,16 @@ export default function CartPage() {
                         <p className="mt-1 text-sm font-semibold text-slate-500">
                           Chính hãng Bandai • Bọc chống sốc
                         </p>
+
                         <div className="mt-3 inline-flex items-center gap-1 rounded-full bg-blue-50 px-3 py-1 text-xs font-black text-blue-700">
                           <ShieldCheck size={13} /> Hàng đảm bảo
                         </div>
 
-                        <div className="mt-2 text-xs font-bold text-slate-500">
-                          Còn {getStock(item.id).available} sản phẩm
+                        <div className={`mt-2 text-xs font-black ${available <= 0 ? "text-red-500" : "text-slate-500"}`}>
+                          Còn {available} sản phẩm
                         </div>
 
-                        {(item.quantity || 1) > getStock(item.id).available && (
+                        {overStock && (
                           <div className="mt-1 text-xs font-black text-red-500">
                             Số lượng vượt tồn kho
                           </div>
@@ -179,35 +215,24 @@ export default function CartPage() {
 
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={() =>
-                          updateCart(
-                            cart.map((x) =>
-                              x.id === item.id
-                                ? { ...x, quantity: Math.max(1, (x.quantity || 1) - 1) }
-                                : x
-                            )
-                          )
-                        }
+                        onClick={() => decreaseQty(item)}
                         className="rounded-xl border p-2 hover:bg-slate-50"
                       >
                         <Minus size={15} />
                       </button>
 
                       <span className="w-10 text-center font-black">
-                        {item.quantity || 1}
+                        {qty}
                       </span>
 
                       <button
-                        onClick={() =>
-                          updateCart(
-                            cart.map((x) =>
-                              x.id === item.id
-                                ? { ...x, quantity: (x.quantity || 1) + 1 }
-                                : x
-                            )
-                          )
-                        }
-                        className="rounded-xl border p-2 hover:bg-slate-50"
+                        onClick={() => increaseQty(item)}
+                        disabled={qty >= available}
+                        className={`rounded-xl border p-2 ${
+                          qty >= available
+                            ? "cursor-not-allowed bg-slate-100 text-slate-300"
+                            : "hover:bg-slate-50"
+                        }`}
                       >
                         <Plus size={15} />
                       </button>
