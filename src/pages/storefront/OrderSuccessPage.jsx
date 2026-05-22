@@ -1,6 +1,7 @@
 import { Link, useParams } from "react-router-dom";
 import { CheckCircle2, PackageSearch } from "lucide-react";
 import { getOrderById } from "../../services/OrderService";
+import StorefrontShell from "../../components/storefront/StorefrontShell";
 
 const money = (n) => (Number(n) || 0).toLocaleString("vi-VN") + "đ";
 
@@ -9,7 +10,8 @@ export default function OrderSuccessPage() {
   const order = getOrderById(id);
 
   return (
-    <main className="min-h-screen bg-slate-50 px-6 py-10">
+    <StorefrontShell>
+      <main className="min-h-screen bg-slate-50 px-6 py-10">
       <div className="mx-auto max-w-3xl rounded-3xl bg-white p-8 text-center shadow-sm">
         <CheckCircle2 className="mx-auto text-green-500" size={72} />
 
@@ -57,6 +59,7 @@ export default function OrderSuccessPage() {
           </Link>
         </div>
       </div>
-    </main>
+      </main>
+    </StorefrontShell>
   );
 }

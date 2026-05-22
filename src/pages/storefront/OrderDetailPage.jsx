@@ -6,6 +6,7 @@ import {
   ORDER_STATUS,
 } from "../../services/OrderService";
 import { getCart, saveCart } from "../../services/CartService";
+import StorefrontShell from "../../components/storefront/StorefrontShell";
 
 const money = (n) => (Number(n) || 0).toLocaleString("vi-VN") + "đ";
 
@@ -62,7 +63,8 @@ export default function OrderDetailPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#F5F7FB] px-6 py-8">
+    <StorefrontShell>
+      <main className="min-h-screen bg-[#F5F7FB] px-6 py-8">
       <div className="mx-auto max-w-7xl">
         <Link to="/orders" className="font-black text-blue-600">
           ← Quay lại đơn hàng
@@ -205,6 +207,7 @@ export default function OrderDetailPage() {
           </aside>
         </div>
       </div>
-    </main>
+      </main>
+    </StorefrontShell>
   );
 }

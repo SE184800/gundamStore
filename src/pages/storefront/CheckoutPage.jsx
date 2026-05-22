@@ -7,6 +7,7 @@ import {
   clearCartItems,
 } from "../../services/CartService";
 import { createOrder } from "../../services/OrderService";
+import StorefrontShell from "../../components/storefront/StorefrontShell";
 
 const money = (n) => (Number(n) || 0).toLocaleString("vi-VN") + "đ";
 
@@ -69,7 +70,8 @@ export default function CheckoutPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#F5F7FB] px-6 py-8">
+    <StorefrontShell>
+      <main className="min-h-screen bg-[#F5F7FB] px-6 py-8">
       <div className="mx-auto max-w-7xl">
         <p className="text-sm font-black uppercase tracking-[0.2em] text-blue-600">
           Checkout
@@ -265,6 +267,7 @@ export default function CheckoutPage() {
           </aside>
         </div>
       </div>
-    </main>
+      </main>
+    </StorefrontShell>
   );
 }

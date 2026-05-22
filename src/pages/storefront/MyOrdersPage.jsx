@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { getOrders } from "../../services/OrderService";
+import StorefrontShell from "../../components/storefront/StorefrontShell";
 
 const money = (n) => (Number(n) || 0).toLocaleString("vi-VN") + "đ";
 
@@ -7,7 +8,8 @@ export default function MyOrdersPage() {
   const orders = getOrders();
 
   return (
-    <main className="min-h-screen bg-slate-50 px-6 py-8">
+    <StorefrontShell>
+      <main className="min-h-screen bg-slate-50 px-6 py-8">
       <div className="mx-auto max-w-6xl">
         <p className="text-sm font-black uppercase tracking-[0.2em] text-blue-600">
           My Orders
@@ -55,6 +57,7 @@ export default function MyOrdersPage() {
           )}
         </div>
       </div>
-    </main>
+      </main>
+    </StorefrontShell>
   );
 }

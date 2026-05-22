@@ -4,6 +4,7 @@ import { Minus, Plus, Trash2, TicketPercent, ShieldCheck, Truck } from "lucide-r
 import { getCart, saveCart, saveCheckoutDraft } from "../../services/CartService";
 import { applyVoucher } from "../../services/VoucherService";
 import { getStock } from "../../services/InventoryService";
+import StorefrontShell from "../../components/storefront/StorefrontShell";
 
 const money = (n) => (Number(n) || 0).toLocaleString("vi-VN") + "đ";
 
@@ -113,7 +114,8 @@ export default function CartPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#F5F7FB] px-6 py-8">
+    <StorefrontShell>
+      <main className="min-h-screen bg-[#F5F7FB] px-6 py-8">
       <div className="mx-auto max-w-7xl">
         <div className="mb-6 flex items-end justify-between">
           <div>
@@ -332,6 +334,7 @@ export default function CartPage() {
           </aside>
         </div>
       </div>
-    </main>
+      </main>
+    </StorefrontShell>
   );
 }
