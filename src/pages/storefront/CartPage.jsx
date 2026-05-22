@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Minus, Plus, Trash2, TicketPercent, ShieldCheck, Truck } from "lucide-react";
 import { getCart, saveCart, saveCheckoutDraft } from "../../services/CartService";
 import { applyVoucher } from "../../services/VoucherService";
+import { getStock } from "../../services/InventoryService";
 
 const money = (n) => (Number(n) || 0).toLocaleString("vi-VN") + "đ";
 
@@ -49,9 +50,21 @@ export default function CartPage() {
     updateCart(cart.map((item) => ({ ...item, selected: !allSelected })));
   }
 
+  function hasStockIssue() {
+    return selectedItems.some((item) => {
+      const stock = getStock(item.id);
+      return (item.quantity || 1) > stock.available;
+    });
+  }
+
   function goCheckout() {
     if (!selectedItems.length) {
       alert("Vui lòng chọn ít nhất 1 sản phẩm.");
+      return;
+    }
+
+    if (hasStockIssue()) {
+      alert("Một số sản phẩm đã vượt quá tồn kho. Vui lòng giảm số lượng.");
       return;
     }
 
@@ -149,6 +162,16 @@ export default function CartPage() {
                         <div className="mt-3 inline-flex items-center gap-1 rounded-full bg-blue-50 px-3 py-1 text-xs font-black text-blue-700">
                           <ShieldCheck size={13} /> Hàng đảm bảo
                         </div>
+
+                        <div className="mt-2 text-xs font-bold text-slate-500">
+                          Còn {getStock(item.id).available} sản phẩm
+                        </div>
+
+                        {(item.quantity || 1) > getStock(item.id).available && (
+                          <div className="mt-1 text-xs font-black text-red-500">
+                            Số lượng vượt tồn kho
+                          </div>
+                        )}
                       </div>
                     </div>
 
