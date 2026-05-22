@@ -1,3 +1,4 @@
+import { reduceStock, restoreStock } from "./InventoryService";
 const CMS_KEY = "gundam-cms-state";
 
 export const ORDER_STATUS = {
@@ -68,6 +69,8 @@ export function createOrder(payload) {
     adminNote: "",
   };
 
+  reduceStock(order.items);
+
   const orders = getOrders();
   saveOrders([order, ...orders]);
 
@@ -80,6 +83,11 @@ export function getOrderById(orderId) {
 
 export function updateOrderStatus(orderId, status, note = "") {
   const now = new Date().toISOString();
+  const currentOrder = getOrderById(orderId);
+
+  if (status === ORDER_STATUS.CANCELLED && currentOrder?.status !== ORDER_STATUS.CANCELLED) {
+    restoreStock(currentOrder.items || []);
+  }
 
   const orders = getOrders().map((order) =>
     order.id === orderId
