@@ -43,11 +43,16 @@ import AdminProductGroupMapping from "./pages/admin/AdminProductGroupMapping";
 import AdminPricingInventory from "./pages/admin/AdminPricingInventory";
 import AdminPromotions from "./pages/admin/AdminPromotions";
 import HeaderCart from "./components/layout/HeaderCart";
+import MyOrdersPage from "./pages/storefront/MyOrdersPage";
+import OrderDetailPage from "./pages/storefront/OrderDetailPage";
 
 export default function App() {
   return (
     <>
       <Routes>
+        <Route path="orders/:id" element={<OrderDetailPage />} />
+        <Route path="orders" element={<MyOrdersPage />} />
+        <Route path="order-success/:id" element={<OrderSuccessPage />} />
         <Route path="cart" element={<CartPage />} />
         <Route path="checkout" element={<CheckoutPage />} />
       <Route path="/" element={<HomePage />} />
