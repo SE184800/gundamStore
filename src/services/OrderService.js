@@ -158,3 +158,48 @@ export function deleteOrder(orderId) {
   saveOrders(orders);
   return orders;
 }
+
+
+export function updateOrderShipping(orderId, shippingInfo = {}) {
+  const now = new Date().toISOString();
+
+  const orders = getOrders().map((order) =>
+    order.id === orderId
+      ? {
+          ...order,
+          shippingInfo: {
+            ...(order.shippingInfo || {}),
+            ...shippingInfo,
+          },
+          updatedAt: now,
+          timeline: [
+            ...(order.timeline || []),
+            {
+              status: order.status,
+              time: now,
+              title: "Cập nhật vận chuyển",
+              note: `Carrier: ${shippingInfo.carrier || "-"}, Tracking: ${shippingInfo.trackingCode || "-"}`,
+            },
+          ],
+        }
+      : order
+  );
+
+  saveOrders(orders);
+  return orders;
+}
+
+export function updateOrderAdminNote(orderId, adminNote = "") {
+  const orders = getOrders().map((order) =>
+    order.id === orderId
+      ? {
+          ...order,
+          adminNote,
+          updatedAt: new Date().toISOString(),
+        }
+      : order
+  );
+
+  saveOrders(orders);
+  return orders;
+}
