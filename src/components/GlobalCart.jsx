@@ -1,7 +1,16 @@
 import { useEffect, useState } from "react";
 import { ShoppingCart, Plus, Minus, Trash2, X } from "lucide-react";
 
-const CART_KEY = "gundam-cart";
+const CART_KEY = "gundam-cart-final";
+
+const PRODUCT_PRICE_MAP = [
+  { key: "action base 5 clear", price: 180000 },
+  { key: "hg 1/144 gundam aerial", price: 520000 },
+  { key: "rg 1/144 hi-v gundam", price: 1150000 },
+  { key: "mg 1/100 freedom gundam ver.2.0", price: 1250000 },
+  { key: "rg 1/144 sazabi", price: 1200000 },
+  { key: "mgex 1/100 strike freedom", price: 2950000 },
+];
 
 function readCart() {
   try {
@@ -16,23 +25,49 @@ function saveCart(cart) {
   window.dispatchEvent(new Event("gundam-cart-updated"));
 }
 
-function addToCart(product) {
-  const cart = readCart();
-  const found = cart.find((x) => x.id === product.id);
+function normalize(text) {
+  return String(text || "").toLowerCase().replace(/\s+/g, " ").trim();
+}
 
-  if (found) found.quantity += 1;
-  else cart.push({ ...product, quantity: 1 });
+function findProductCard(button) {
+  let el = button;
 
-  saveCart(cart);
+  for (let i = 0; i < 12; i++) {
+    if (!el?.parentElement) break;
+    el = el.parentElement;
+
+    const text = normalize(el.innerText);
+    const hasImage = !!el.querySelector("img");
+    const hasProductName =
+      text.includes("gundam") ||
+      text.includes("action base") ||
+      text.includes("strike freedom");
+
+    if (hasImage && hasProductName) {
+      return el;
+    }
+  }
+
+  return button.closest("div");
+}
+
+function getPriceByText(text) {
+  const clean = normalize(text);
+
+  const mapped = PRODUCT_PRICE_MAP.find((p) => clean.includes(p.key));
+  if (mapped) return mapped.price;
+
+  const matches = [...String(text).matchAll(/(\d{1,3}(?:[.,]\d{3})+|\d+)\s*[đ₫]/gi)];
+
+  const prices = matches
+    .map((m) => Number(String(m[1]).replace(/[^\d]/g, "")))
+    .filter((n) => n > 1000);
+
+  return prices.length ? Math.max(...prices) : 0;
 }
 
 function extractProductFromButton(button) {
-  const card =
-    button.closest("article") ||
-    button.closest("[class*='card']") ||
-    button.closest(".group") ||
-    button.closest("div");
-
+  const card = findProductCard(button);
   const text = card?.innerText || "";
   const img = card?.querySelector("img")?.src || "";
 
@@ -42,20 +77,38 @@ function extractProductFromButton(button) {
     .filter(Boolean);
 
   const name =
-    lines.find((x) => x.includes("Gundam")) ||
-    lines.find((x) => x.includes("Action Base")) ||
-    lines[0] ||
+    lines.find((x) => /action base 5 clear/i.test(x)) ||
+    lines.find((x) => /hg 1\/144 gundam aerial/i.test(x)) ||
+    lines.find((x) => /rg 1\/144 hi-v gundam/i.test(x)) ||
+    lines.find((x) => /mg 1\/100 freedom gundam ver.2.0/i.test(x)) ||
+    lines.find((x) => /rg 1\/144 sazabi/i.test(x)) ||
+    lines.find((x) => /mgex 1\/100 strike freedom/i.test(x)) ||
+    lines.find((x) => /gundam/i.test(x)) ||
+    lines.find((x) => /action base/i.test(x)) ||
     "Gundam Product";
 
-  const priceText = lines.find((x) => x.includes("đ")) || "0";
-  const price = Number(priceText.replace(/[^\d]/g, "")) || 0;
+  const price = getPriceByText(`${name}\n${text}`);
 
   return {
-    id: name.toLowerCase().replace(/\s+/g, "-"),
+    id: normalize(name).replace(/\s+/g, "-"),
     name,
     image: img,
     price,
   };
+}
+
+function addToCart(product) {
+  const cart = readCart();
+  const found = cart.find((x) => x.id === product.id);
+
+  if (found) {
+    found.quantity += 1;
+    found.price = product.price || found.price || 0;
+  } else {
+    cart.push({ ...product, quantity: 1 });
+  }
+
+  saveCart(cart);
 }
 
 export default function GlobalCart() {
@@ -76,6 +129,12 @@ export default function GlobalCart() {
 
   useEffect(() => {
     refresh();
+
+    // clear old broken cart keys
+    localStorage.removeItem("gundam-cart");
+    localStorage.removeItem("gundam-cart-v2");
+    localStorage.removeItem("gundam-cart-v3");
+
     window.addEventListener("gundam-cart-updated", refresh);
     window.addEventListener("storage", refresh);
 
@@ -90,21 +149,18 @@ export default function GlobalCart() {
       const button = e.target.closest("button");
       if (!button) return;
 
-      const label = button.innerText?.trim()?.toLowerCase() || "";
-      const isAddToCart =
-        label.includes("thêm") ||
-        label.includes("add");
+      const label = normalize(button.innerText);
 
-      const isBuyNow =
-        label.includes("mua") ||
-        label.includes("buy");
+      const isAddToCart = label.includes("thêm") || label.includes("add");
+      const isBuyNow = label.includes("mua") || label.includes("buy");
 
       if (!isAddToCart && !isBuyNow) return;
 
       e.preventDefault();
       e.stopPropagation();
 
-      addToCart(extractProductFromButton(button));
+      const product = extractProductFromButton(button);
+      addToCart(product);
 
       const oldText = button.innerText;
 
@@ -128,7 +184,10 @@ export default function GlobalCart() {
   }, []);
 
   const count = cart.reduce((sum, item) => sum + (item.quantity || 1), 0);
-  const total = cart.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0);
+  const total = cart.reduce(
+    (sum, item) => sum + (Number(item.price) || 0) * (item.quantity || 1),
+    0
+  );
 
   function updateQty(id, delta) {
     const next = cart.map((item) =>
@@ -171,9 +230,7 @@ export default function GlobalCart() {
       })
     );
 
-    localStorage.setItem(CART_KEY, JSON.stringify([]));
-    window.dispatchEvent(new Event("gundam-cart-updated"));
-
+    saveCart([]);
     setCheckoutOpen(false);
     setOpen(false);
 
@@ -185,7 +242,6 @@ export default function GlobalCart() {
       <button
         onClick={() => setOpen(true)}
         className="fixed right-6 top-24 z-[9999] flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-xl hover:bg-blue-700"
-        title="Giỏ hàng"
       >
         <ShoppingCart size={24} />
         {count > 0 && (
@@ -220,7 +276,7 @@ export default function GlobalCart() {
                     <div className="flex-1">
                       <div className="font-black text-slate-900">{item.name}</div>
                       <div className="mt-1 text-sm font-bold text-red-500">
-                        {(item.price || 0).toLocaleString("vi-VN")}đ
+                        {(Number(item.price) || 0).toLocaleString("vi-VN")}đ
                       </div>
 
                       <div className="mt-3 flex items-center gap-2">
@@ -278,44 +334,17 @@ export default function GlobalCart() {
             </div>
 
             <div className="mt-5 space-y-3">
-              <input
-                value={customer.name}
-                onChange={(e) => setCustomer({ ...customer, name: e.target.value })}
-                placeholder="Họ tên"
-                className="w-full rounded-xl border px-4 py-3 outline-none focus:border-blue-500"
-              />
+              <input value={customer.name} onChange={(e) => setCustomer({ ...customer, name: e.target.value })} placeholder="Họ tên" className="w-full rounded-xl border px-4 py-3 outline-none focus:border-blue-500" />
+              <input value={customer.phone} onChange={(e) => setCustomer({ ...customer, phone: e.target.value })} placeholder="Số điện thoại" className="w-full rounded-xl border px-4 py-3 outline-none focus:border-blue-500" />
+              <input value={customer.address} onChange={(e) => setCustomer({ ...customer, address: e.target.value })} placeholder="Địa chỉ giao hàng" className="w-full rounded-xl border px-4 py-3 outline-none focus:border-blue-500" />
 
-              <input
-                value={customer.phone}
-                onChange={(e) => setCustomer({ ...customer, phone: e.target.value })}
-                placeholder="Số điện thoại"
-                className="w-full rounded-xl border px-4 py-3 outline-none focus:border-blue-500"
-              />
-
-              <input
-                value={customer.address}
-                onChange={(e) => setCustomer({ ...customer, address: e.target.value })}
-                placeholder="Địa chỉ giao hàng"
-                className="w-full rounded-xl border px-4 py-3 outline-none focus:border-blue-500"
-              />
-
-              <select
-                value={customer.payment}
-                onChange={(e) => setCustomer({ ...customer, payment: e.target.value })}
-                className="w-full rounded-xl border px-4 py-3 outline-none focus:border-blue-500"
-              >
+              <select value={customer.payment} onChange={(e) => setCustomer({ ...customer, payment: e.target.value })} className="w-full rounded-xl border px-4 py-3 outline-none focus:border-blue-500">
                 <option value="COD">COD - Thanh toán khi nhận hàng</option>
                 <option value="BANK">Chuyển khoản ngân hàng</option>
                 <option value="MOMO">Ví Momo</option>
               </select>
 
-              <textarea
-                value={customer.note}
-                onChange={(e) => setCustomer({ ...customer, note: e.target.value })}
-                placeholder="Ghi chú đơn hàng"
-                rows={3}
-                className="w-full rounded-xl border px-4 py-3 outline-none focus:border-blue-500"
-              />
+              <textarea value={customer.note} onChange={(e) => setCustomer({ ...customer, note: e.target.value })} placeholder="Ghi chú đơn hàng" rows={3} className="w-full rounded-xl border px-4 py-3 outline-none focus:border-blue-500" />
 
               <div className="rounded-2xl bg-slate-50 p-4">
                 <div className="flex justify-between font-black">
@@ -324,10 +353,7 @@ export default function GlobalCart() {
                 </div>
               </div>
 
-              <button
-                onClick={saveOrder}
-                className="w-full rounded-2xl bg-blue-600 py-4 font-black text-white hover:bg-blue-700"
-              >
+              <button onClick={saveOrder} className="w-full rounded-2xl bg-blue-600 py-4 font-black text-white hover:bg-blue-700">
                 Xác nhận đặt hàng
               </button>
             </div>
