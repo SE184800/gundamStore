@@ -9,7 +9,8 @@ export function getSalesReport() {
   );
 
   const statusCount = orders.reduce((acc, order) => {
-    acc[order.status || "Placed"] = (acc[order.status || "Placed"] || 0) + 1;
+    const status = order.status || "Placed";
+    acc[status] = (acc[status] || 0) + 1;
     return acc;
   }, {});
 

@@ -42,7 +42,7 @@ import AdminProductGroups from "./pages/admin/AdminProductGroups";
 import AdminProductGroupMapping from "./pages/admin/AdminProductGroupMapping";
 import AdminPricingInventory from "./pages/admin/AdminPricingInventory";
 import AdminPromotions from "./pages/admin/AdminPromotions";
-import GlobalCart from "./components/GlobalCart";
+import HeaderCart from "./components/layout/HeaderCart";
 
 export default function App() {
   return (
@@ -103,7 +103,8 @@ export default function App() {
 
       <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
-      <GlobalCart />
+      <HeaderCart />
+      
     </>
   );
 }

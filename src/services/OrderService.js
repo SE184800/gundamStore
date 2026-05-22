@@ -11,9 +11,19 @@ export const ORDER_STATUS = {
   REFUNDED: "Refunded",
 };
 
+export const PAYMENT_STATUS = {
+  UNPAID: "Unpaid",
+  PAID: "Paid",
+  REFUNDED: "Refunded",
+};
+
 export function getOrders() {
-  const cms = JSON.parse(localStorage.getItem(CMS_KEY) || "{}");
-  return cms.orders || [];
+  try {
+    const cms = JSON.parse(localStorage.getItem(CMS_KEY) || "{}");
+    return Array.isArray(cms.orders) ? cms.orders : [];
+  } catch {
+    return [];
+  }
 }
 
 export function saveOrders(orders) {
@@ -22,21 +32,40 @@ export function saveOrders(orders) {
 }
 
 export function createOrder(payload) {
+  const now = new Date().toISOString();
+
   const order = {
     id: "ORD-" + Date.now(),
     orderCode: "GS-" + Date.now(),
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    createdAt: now,
+    updatedAt: now,
+
+    customer: payload.customer,
+    items: payload.items || [],
+
+    subtotal: Number(payload.subtotal) || 0,
+    shippingFee: Number(payload.shippingFee) || 0,
+    discount: Number(payload.discount) || 0,
+    shippingDiscount: Number(payload.shippingDiscount) || 0,
+    total: Number(payload.total) || 0,
+
+    voucherCode: payload.voucherCode || "",
+    paymentMethod: payload.paymentMethod || "COD",
+    paymentStatus: PAYMENT_STATUS.UNPAID,
+    shippingMethod: payload.shippingMethod || "FAST",
+
     status: ORDER_STATUS.PLACED,
-    paymentStatus: "Unpaid",
+
     timeline: [
       {
         status: ORDER_STATUS.PLACED,
-        time: new Date().toISOString(),
-        note: "Khách hàng đã đặt hàng.",
+        time: now,
+        title: "Đặt hàng thành công",
+        note: "Khách hàng đã tạo đơn hàng.",
       },
     ],
-    ...payload,
+
+    adminNote: "",
   };
 
   const orders = getOrders();
@@ -45,37 +74,53 @@ export function createOrder(payload) {
   return order;
 }
 
-export function updateOrderStatus(orderId, status, note = "") {
-  const orders = getOrders();
+export function getOrderById(orderId) {
+  return getOrders().find((order) => order.id === orderId);
+}
 
-  const updated = orders.map((order) =>
+export function updateOrderStatus(orderId, status, note = "") {
+  const now = new Date().toISOString();
+
+  const orders = getOrders().map((order) =>
     order.id === orderId
       ? {
           ...order,
           status,
-          updatedAt: new Date().toISOString(),
+          updatedAt: now,
           timeline: [
             ...(order.timeline || []),
             {
               status,
-              time: new Date().toISOString(),
-              note: note || `Cập nhật trạng thái: ${status}`,
+              time: now,
+              title: `Cập nhật: ${status}`,
+              note: note || `Đơn hàng chuyển sang trạng thái ${status}.`,
             },
           ],
         }
       : order
   );
 
-  saveOrders(updated);
-  return updated;
+  saveOrders(orders);
+  return orders;
+}
+
+export function updatePaymentStatus(orderId, paymentStatus) {
+  const orders = getOrders().map((order) =>
+    order.id === orderId
+      ? {
+          ...order,
+          paymentStatus,
+          updatedAt: new Date().toISOString(),
+        }
+      : order
+  );
+
+  saveOrders(orders);
+  return orders;
 }
 
 export function deleteOrder(orderId) {
-  const updated = getOrders().filter((order) => order.id !== orderId);
-  saveOrders(updated);
-  return updated;
-}
-
-export function getOrderById(orderId) {
-  return getOrders().find((order) => order.id === orderId);
+  const orders = getOrders().filter((order) => order.id !== orderId);
+  saveOrders(orders);
+  return orders;
 }
