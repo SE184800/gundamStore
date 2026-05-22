@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { MapPin, Truck } from "lucide-react";
+import { MapPin, Truck, CreditCard, ShieldCheck } from "lucide-react";
 import {
   getCheckoutDraft,
   clearCheckoutDraft,
@@ -17,9 +17,10 @@ export default function CheckoutPage() {
     name: "",
     phone: "",
     address: "",
+    province: "Hồ Chí Minh",
     note: "",
-    payment: "COD",
-    shipping: "FAST",
+    paymentMethod: "COD",
+    shippingMethod: "FAST",
   });
 
   useEffect(() => {
@@ -30,7 +31,13 @@ export default function CheckoutPage() {
     return (
       <main className="min-h-screen bg-slate-50 p-10">
         <div className="mx-auto max-w-3xl rounded-3xl bg-white p-10 text-center">
-          Không có dữ liệu checkout. Vui lòng quay lại giỏ hàng.
+          <h1 className="text-2xl font-black">Không có dữ liệu checkout</h1>
+          <button
+            onClick={() => navigate("/cart")}
+            className="mt-5 rounded-2xl bg-blue-600 px-6 py-3 font-black text-white"
+          >
+            Quay lại giỏ hàng
+          </button>
         </div>
       </main>
     );
@@ -38,7 +45,7 @@ export default function CheckoutPage() {
 
   function submitOrder() {
     if (!customer.name || !customer.phone || !customer.address) {
-      alert("Vui lòng nhập đầy đủ thông tin giao hàng.");
+      alert("Vui lòng nhập đầy đủ họ tên, số điện thoại và địa chỉ.");
       return;
     }
 
@@ -48,114 +55,151 @@ export default function CheckoutPage() {
       subtotal: draft.subtotal,
       shippingFee: draft.shippingFee,
       discount: draft.discount,
-      voucher: draft.voucher,
+      shippingDiscount: draft.shippingDiscount,
+      voucherCode: draft.voucherCode,
       total: draft.total,
-      payment: customer.payment,
-      shipping: customer.shipping,
+      paymentMethod: customer.paymentMethod,
+      shippingMethod: customer.shippingMethod,
     });
 
     clearCartItems(draft.items.map((item) => item.id));
     clearCheckoutDraft();
 
-    alert("Đặt hàng thành công! Mã đơn: " + order.id);
     navigate(`/order-success/${order.id}`);
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 px-6 py-8">
+    <main className="min-h-screen bg-[#F5F7FB] px-6 py-8">
       <div className="mx-auto max-w-7xl">
-        <h1 className="text-4xl font-black">Thanh toán</h1>
+        <p className="text-sm font-black uppercase tracking-[0.2em] text-blue-600">
+          Checkout
+        </p>
+        <h1 className="mt-2 text-4xl font-black text-slate-950">
+          Thanh toán đơn hàng
+        </h1>
 
-        <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_420px]">
+        <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_430px]">
           <section className="space-y-6">
             <div className="rounded-3xl bg-white p-6 shadow-sm">
               <h2 className="flex items-center gap-2 text-xl font-black">
-                <MapPin size={20} /> Địa chỉ nhận hàng
+                <MapPin size={22} /> Địa chỉ nhận hàng
               </h2>
 
               <div className="mt-5 grid gap-4 md:grid-cols-2">
                 <input
-                  placeholder="Họ tên"
                   value={customer.name}
-                  onChange={(e) =>
-                    setCustomer({ ...customer, name: e.target.value })
-                  }
-                  className="rounded-2xl border px-4 py-3"
+                  onChange={(e) => setCustomer({ ...customer, name: e.target.value })}
+                  placeholder="Họ tên người nhận"
+                  className="rounded-2xl border px-4 py-3 outline-none focus:border-blue-500"
                 />
+
                 <input
-                  placeholder="Số điện thoại"
                   value={customer.phone}
-                  onChange={(e) =>
-                    setCustomer({ ...customer, phone: e.target.value })
-                  }
-                  className="rounded-2xl border px-4 py-3"
+                  onChange={(e) => setCustomer({ ...customer, phone: e.target.value })}
+                  placeholder="Số điện thoại"
+                  className="rounded-2xl border px-4 py-3 outline-none focus:border-blue-500"
                 />
+
                 <input
-                  placeholder="Địa chỉ giao hàng"
+                  value={customer.province}
+                  onChange={(e) => setCustomer({ ...customer, province: e.target.value })}
+                  placeholder="Tỉnh / Thành phố"
+                  className="rounded-2xl border px-4 py-3 outline-none focus:border-blue-500"
+                />
+
+                <input
                   value={customer.address}
-                  onChange={(e) =>
-                    setCustomer({ ...customer, address: e.target.value })
-                  }
-                  className="rounded-2xl border px-4 py-3 md:col-span-2"
+                  onChange={(e) => setCustomer({ ...customer, address: e.target.value })}
+                  placeholder="Địa chỉ chi tiết"
+                  className="rounded-2xl border px-4 py-3 outline-none focus:border-blue-500"
                 />
               </div>
             </div>
 
             <div className="rounded-3xl bg-white p-6 shadow-sm">
               <h2 className="flex items-center gap-2 text-xl font-black">
-                <Truck size={20} /> Vận chuyển & thanh toán
+                <Truck size={22} /> Phương thức vận chuyển
               </h2>
 
               <div className="mt-5 grid gap-4 md:grid-cols-2">
-                <select
-                  value={customer.shipping}
-                  onChange={(e) =>
-                    setCustomer({ ...customer, shipping: e.target.value })
-                  }
-                  className="rounded-2xl border px-4 py-3"
-                >
-                  <option value="FAST">Giao nhanh</option>
-                  <option value="EXPRESS">Hỏa tốc</option>
-                </select>
+                <label className="cursor-pointer rounded-2xl border p-4 hover:border-blue-500">
+                  <input
+                    type="radio"
+                    name="shipping"
+                    checked={customer.shippingMethod === "FAST"}
+                    onChange={() => setCustomer({ ...customer, shippingMethod: "FAST" })}
+                    className="mr-2"
+                  />
+                  <b>Giao nhanh</b>
+                  <p className="mt-1 text-sm text-slate-500">
+                    Dự kiến 1-3 ngày, phí đã tính trong đơn.
+                  </p>
+                </label>
 
-                <select
-                  value={customer.payment}
-                  onChange={(e) =>
-                    setCustomer({ ...customer, payment: e.target.value })
-                  }
-                  className="rounded-2xl border px-4 py-3"
-                >
-                  <option value="COD">COD</option>
-                  <option value="BANK">Chuyển khoản</option>
-                  <option value="MOMO">Momo</option>
-                </select>
-
-                <textarea
-                  placeholder="Ghi chú đơn hàng"
-                  value={customer.note}
-                  onChange={(e) =>
-                    setCustomer({ ...customer, note: e.target.value })
-                  }
-                  className="rounded-2xl border px-4 py-3 md:col-span-2"
-                  rows={4}
-                />
+                <label className="cursor-pointer rounded-2xl border p-4 hover:border-blue-500">
+                  <input
+                    type="radio"
+                    name="shipping"
+                    checked={customer.shippingMethod === "EXPRESS"}
+                    onChange={() => setCustomer({ ...customer, shippingMethod: "EXPRESS" })}
+                    className="mr-2"
+                  />
+                  <b>Hỏa tốc</b>
+                  <p className="mt-1 text-sm text-slate-500">
+                    Ưu tiên xử lý, giao nhanh nội thành.
+                  </p>
+                </label>
               </div>
+            </div>
+
+            <div className="rounded-3xl bg-white p-6 shadow-sm">
+              <h2 className="flex items-center gap-2 text-xl font-black">
+                <CreditCard size={22} /> Phương thức thanh toán
+              </h2>
+
+              <div className="mt-5 grid gap-4 md:grid-cols-3">
+                {["COD", "BANK", "MOMO"].map((method) => (
+                  <label
+                    key={method}
+                    className="cursor-pointer rounded-2xl border p-4 hover:border-blue-500"
+                  >
+                    <input
+                      type="radio"
+                      name="payment"
+                      checked={customer.paymentMethod === method}
+                      onChange={() =>
+                        setCustomer({ ...customer, paymentMethod: method })
+                      }
+                      className="mr-2"
+                    />
+                    <b>{method}</b>
+                  </label>
+                ))}
+              </div>
+
+              <textarea
+                value={customer.note}
+                onChange={(e) => setCustomer({ ...customer, note: e.target.value })}
+                placeholder="Lời nhắn cho shop"
+                rows={4}
+                className="mt-5 w-full rounded-2xl border px-4 py-3 outline-none focus:border-blue-500"
+              />
             </div>
           </section>
 
           <aside className="h-fit rounded-3xl bg-white p-6 shadow-sm">
             <h2 className="text-xl font-black">Tóm tắt đơn hàng</h2>
 
-            <div className="mt-5 space-y-4">
+            <div className="mt-5 max-h-80 space-y-4 overflow-y-auto pr-2">
               {draft.items.map((item) => (
                 <div key={item.id} className="flex gap-3">
                   <img
                     src={item.image}
-                    className="h-16 w-16 rounded-2xl object-cover"
+                    className="h-16 w-16 rounded-2xl bg-slate-100 object-cover"
                   />
                   <div className="flex-1">
                     <div className="font-bold">{item.name}</div>
-                    <div className="text-sm text-slate-500">
+                    <div className="mt-1 text-sm text-slate-500">
                       x{item.quantity || 1}
                     </div>
                   </div>
@@ -166,30 +210,57 @@ export default function CheckoutPage() {
               ))}
             </div>
 
-            <div className="mt-6 space-y-3 border-t pt-5">
+            <div className="mt-5 rounded-2xl bg-blue-50 p-4 text-sm font-bold text-blue-700">
+              <ShieldCheck size={16} className="mr-1 inline" />
+              Đơn hàng được lưu vào hệ thống quản lý đơn hàng.
+            </div>
+
+            <div className="mt-5 space-y-3 text-sm">
               <div className="flex justify-between">
                 <span>Tạm tính</span>
                 <b>{money(draft.subtotal)}</b>
               </div>
+
               <div className="flex justify-between">
-                <span>Phí ship</span>
+                <span>Phí vận chuyển</span>
                 <b>{money(draft.shippingFee)}</b>
               </div>
+
               <div className="flex justify-between text-green-600">
-                <span>Voucher</span>
+                <span>Giảm giá</span>
                 <b>-{money(draft.discount)}</b>
               </div>
+
+              <div className="flex justify-between text-green-600">
+                <span>Giảm phí ship</span>
+                <b>-{money(draft.shippingDiscount)}</b>
+              </div>
+
+              {draft.voucherCode && (
+                <div className="flex justify-between text-blue-600">
+                  <span>Voucher</span>
+                  <b>{draft.voucherCode}</b>
+                </div>
+              )}
+
               <div className="flex justify-between border-t pt-4 text-xl font-black">
-                <span>Tổng</span>
+                <span>Tổng thanh toán</span>
                 <span className="text-red-500">{money(draft.total)}</span>
               </div>
             </div>
 
             <button
               onClick={submitOrder}
-              className="mt-6 w-full rounded-2xl bg-blue-600 py-4 font-black text-white"
+              className="mt-6 w-full rounded-2xl bg-blue-600 py-4 font-black text-white shadow-lg hover:bg-blue-700"
             >
               Đặt hàng
+            </button>
+
+            <button
+              onClick={() => navigate("/cart")}
+              className="mt-3 w-full rounded-2xl border py-4 font-black text-slate-700 hover:bg-slate-50"
+            >
+              Quay lại giỏ hàng
             </button>
           </aside>
         </div>
