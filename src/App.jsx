@@ -45,6 +45,7 @@ import AdminPromotions from "./pages/admin/AdminPromotions";
 import HeaderCart from "./components/layout/HeaderCart";
 import MyOrdersPage from "./pages/storefront/MyOrdersPage";
 import OrderDetailPage from "./pages/storefront/OrderDetailPage";
+import AddToCartBridge from "./components/cart/AddToCartBridge";
 
 export default function App() {
   return (
@@ -108,6 +109,7 @@ export default function App() {
 
       <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
+      <AddToCartBridge />
       <HeaderCart />
       
     </>

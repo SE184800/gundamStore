@@ -1,5 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
-import { Eye, RefreshCcw, Search, Trash2 } from "lucide-react";
+import {
+  Eye,
+  RefreshCcw,
+  Search,
+  Trash2,
+  PackageCheck,
+  Truck,
+  CheckCircle2,
+  XCircle,
+} from "lucide-react";
 import {
   deleteOrder,
   getOrders,
@@ -11,6 +20,16 @@ import { formatCurrency } from "../../utils/format";
 
 const STATUSES = Object.values(ORDER_STATUS);
 const PAYMENT_STATUSES = ["Unpaid", "Paid", "Refunded"];
+
+function statusClass(status) {
+  if (status === "Completed") return "bg-green-100 text-green-700";
+  if (status === "Delivered") return "bg-emerald-100 text-emerald-700";
+  if (status === "Shipping") return "bg-blue-100 text-blue-700";
+  if (status === "Packing") return "bg-purple-100 text-purple-700";
+  if (status === "Confirmed") return "bg-amber-100 text-amber-700";
+  if (status === "Cancelled") return "bg-red-100 text-red-700";
+  return "bg-slate-100 text-slate-700";
+}
 
 export default function AdminOrders() {
   const [orders, setOrders] = useState([]);
@@ -28,9 +47,7 @@ export default function AdminOrders() {
 
   const filteredOrders = useMemo(() => {
     return orders.filter((order) => {
-      const q = query.toLowerCase();
-
-      const haystack = [
+      const text = [
         order.id,
         order.orderCode,
         order.customer?.name,
@@ -42,18 +59,18 @@ export default function AdminOrders() {
         .join(" ")
         .toLowerCase();
 
-      if (q && !haystack.includes(q)) return false;
+      if (query && !text.includes(query.toLowerCase())) return false;
       if (statusFilter !== "all" && order.status !== statusFilter) return false;
-
       return true;
     });
   }, [orders, query, statusFilter]);
 
   const summary = useMemo(() => {
     return {
-      totalOrders: orders.length,
-      revenue: orders.reduce((sum, o) => sum + (Number(o.total) || 0), 0),
+      total: orders.length,
+      revenue: orders.reduce((s, o) => s + (Number(o.total) || 0), 0),
       placed: orders.filter((o) => o.status === "Placed").length,
+      confirmed: orders.filter((o) => o.status === "Confirmed").length,
       shipping: orders.filter((o) => o.status === "Shipping").length,
       completed: orders.filter((o) => o.status === "Completed").length,
       cancelled: orders.filter((o) => o.status === "Cancelled").length,
@@ -63,6 +80,9 @@ export default function AdminOrders() {
   function changeStatus(id, status) {
     updateOrderStatus(id, status);
     reload();
+    if (selectedOrder?.id === id) {
+      setSelectedOrder(getOrders().find((o) => o.id === id));
+    }
   }
 
   function changePayment(id, paymentStatus) {
@@ -74,15 +94,14 @@ export default function AdminOrders() {
     if (!confirm("Bạn có chắc muốn xóa đơn này không?")) return;
     deleteOrder(id);
     reload();
+    setSelectedOrder(null);
   }
 
-  function badgeClass(status) {
-    if (status === "Completed") return "bg-green-100 text-green-700";
-    if (status === "Shipping") return "bg-blue-100 text-blue-700";
-    if (status === "Packing") return "bg-purple-100 text-purple-700";
-    if (status === "Confirmed") return "bg-amber-100 text-amber-700";
-    if (status === "Cancelled") return "bg-red-100 text-red-700";
-    return "bg-slate-100 text-slate-700";
+  function quickNext(order) {
+    const flow = ["Placed", "Confirmed", "Packing", "Shipping", "Delivered", "Completed"];
+    const index = flow.indexOf(order.status || "Placed");
+    const next = flow[index + 1] || "Completed";
+    changeStatus(order.id, next);
   }
 
   return (
@@ -90,13 +109,13 @@ export default function AdminOrders() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-sm font-black uppercase tracking-[0.25em] text-blue-600">
-            Sales & Orders
+            Order Operations
           </p>
           <h1 className="mt-2 text-3xl font-black text-slate-900">
             Quản lý đơn hàng
           </h1>
           <p className="mt-2 text-sm font-medium text-slate-500">
-            Theo dõi đơn hàng, xử lý trạng thái, thanh toán và xem chi tiết đơn.
+            Xử lý đơn, thanh toán, vận chuyển, timeline và chi tiết khách hàng.
           </p>
         </div>
 
@@ -109,10 +128,10 @@ export default function AdminOrders() {
         </button>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-6">
+      <div className="grid gap-4 md:grid-cols-4 xl:grid-cols-7">
         <div className="rounded-3xl bg-white p-5 shadow-sm">
           <p className="text-xs font-black uppercase text-slate-400">Orders</p>
-          <p className="mt-2 text-2xl font-black">{summary.totalOrders}</p>
+          <p className="mt-2 text-2xl font-black">{summary.total}</p>
         </div>
 
         <div className="rounded-3xl bg-white p-5 shadow-sm xl:col-span-2">
@@ -125,6 +144,11 @@ export default function AdminOrders() {
         <div className="rounded-3xl bg-white p-5 shadow-sm">
           <p className="text-xs font-black uppercase text-slate-400">Placed</p>
           <p className="mt-2 text-2xl font-black">{summary.placed}</p>
+        </div>
+
+        <div className="rounded-3xl bg-white p-5 shadow-sm">
+          <p className="text-xs font-black uppercase text-slate-400">Confirmed</p>
+          <p className="mt-2 text-2xl font-black text-amber-600">{summary.confirmed}</p>
         </div>
 
         <div className="rounded-3xl bg-white p-5 shadow-sm">
@@ -157,9 +181,7 @@ export default function AdminOrders() {
           >
             <option value="all">Tất cả trạng thái</option>
             {STATUSES.map((status) => (
-              <option key={status} value={status}>
-                {status}
-              </option>
+              <option key={status} value={status}>{status}</option>
             ))}
           </select>
         </div>
@@ -167,7 +189,7 @@ export default function AdminOrders() {
 
       <div className="overflow-hidden rounded-3xl bg-white shadow-sm">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1450px]">
+          <table className="w-full min-w-[1500px]">
             <thead className="bg-slate-50">
               <tr className="text-left text-xs font-black uppercase text-slate-500">
                 <th className="px-4 py-4">Action</th>
@@ -178,15 +200,16 @@ export default function AdminOrders() {
                 <th className="px-4 py-4">Sản phẩm</th>
                 <th className="px-4 py-4">Voucher</th>
                 <th className="px-4 py-4">Payment</th>
-                <th className="px-4 py-4">Tổng tiền</th>
+                <th className="px-4 py-4">Tổng</th>
                 <th className="px-4 py-4">Trạng thái</th>
+                <th className="px-4 py-4">Quick</th>
               </tr>
             </thead>
 
             <tbody>
               {filteredOrders.length === 0 ? (
                 <tr>
-                  <td colSpan="10" className="px-4 py-12 text-center font-bold text-slate-400">
+                  <td colSpan="11" className="px-4 py-12 text-center font-bold text-slate-400">
                     Chưa có đơn hàng phù hợp.
                   </td>
                 </tr>
@@ -220,13 +243,8 @@ export default function AdminOrders() {
                       {order.createdAt ? new Date(order.createdAt).toLocaleString("vi-VN") : "-"}
                     </td>
 
-                    <td className="px-4 py-4 font-bold">
-                      {order.customer?.name || "-"}
-                    </td>
-
-                    <td className="px-4 py-4 text-sm">
-                      {order.customer?.phone || "-"}
-                    </td>
+                    <td className="px-4 py-4 font-bold">{order.customer?.name || "-"}</td>
+                    <td className="px-4 py-4 text-sm">{order.customer?.phone || "-"}</td>
 
                     <td className="px-4 py-4 text-sm">
                       {(order.items || []).slice(0, 2).map((item, index) => (
@@ -263,14 +281,21 @@ export default function AdminOrders() {
                       <select
                         value={order.status || "Placed"}
                         onChange={(e) => changeStatus(order.id, e.target.value)}
-                        className={`rounded-xl px-3 py-2 text-xs font-black ${badgeClass(order.status)}`}
+                        className={`rounded-xl px-3 py-2 text-xs font-black ${statusClass(order.status)}`}
                       >
                         {STATUSES.map((status) => (
-                          <option key={status} value={status}>
-                            {status}
-                          </option>
+                          <option key={status} value={status}>{status}</option>
                         ))}
                       </select>
+                    </td>
+
+                    <td className="px-4 py-4">
+                      <button
+                        onClick={() => quickNext(order)}
+                        className="rounded-xl bg-slate-900 px-3 py-2 text-xs font-black text-white hover:bg-blue-600"
+                      >
+                        Next step
+                      </button>
                     </td>
                   </tr>
                 ))
@@ -282,7 +307,7 @@ export default function AdminOrders() {
 
       {selectedOrder && (
         <div className="fixed inset-0 z-[9999] bg-black/40 p-6">
-          <div className="ml-auto h-full w-full max-w-4xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl">
+          <div className="ml-auto h-full w-full max-w-5xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl">
             <div className="flex items-start justify-between border-b pb-5">
               <div>
                 <p className="text-sm font-black uppercase tracking-[0.2em] text-blue-600">
@@ -304,6 +329,23 @@ export default function AdminOrders() {
               </button>
             </div>
 
+            <div className="mt-6 grid gap-3 md:grid-cols-6">
+              {["Placed", "Confirmed", "Packing", "Shipping", "Delivered", "Completed"].map((step) => {
+                const active = selectedOrder.status === step;
+                return (
+                  <button
+                    key={step}
+                    onClick={() => changeStatus(selectedOrder.id, step)}
+                    className={`rounded-2xl p-3 text-xs font-black ${
+                      active ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-500"
+                    }`}
+                  >
+                    {step}
+                  </button>
+                );
+              })}
+            </div>
+
             <div className="mt-6 grid gap-5 md:grid-cols-2">
               <div className="rounded-3xl border p-5">
                 <h3 className="font-black">Khách hàng</h3>
@@ -317,7 +359,7 @@ export default function AdminOrders() {
               </div>
 
               <div className="rounded-3xl border p-5">
-                <h3 className="font-black">Thanh toán</h3>
+                <h3 className="font-black">Thanh toán & vận chuyển</h3>
                 <div className="mt-3 space-y-2 text-sm">
                   <p><b>Payment method:</b> {selectedOrder.paymentMethod || "-"}</p>
                   <p><b>Payment status:</b> {selectedOrder.paymentStatus || "-"}</p>
@@ -330,7 +372,7 @@ export default function AdminOrders() {
 
             <div className="mt-6 rounded-3xl border">
               <div className="border-b bg-slate-50 px-5 py-4 font-black">
-                Sản phẩm
+                Sản phẩm trong đơn
               </div>
 
               {(selectedOrder.items || []).map((item, index) => (
@@ -363,11 +405,38 @@ export default function AdminOrders() {
               </div>
             </div>
 
-            <div className="mt-6 flex justify-between rounded-3xl bg-blue-50 p-5 text-xl font-black">
-              <span>Tổng đơn</span>
-              <span className="text-red-500">
-                {formatCurrency(Number(selectedOrder.total) || 0)}
-              </span>
+            <div className="mt-6 grid gap-4 md:grid-cols-4">
+              <button
+                onClick={() => changeStatus(selectedOrder.id, "Confirmed")}
+                className="rounded-2xl bg-amber-500 px-4 py-3 font-black text-white"
+              >
+                <PackageCheck size={18} className="mr-2 inline" />
+                Xác nhận
+              </button>
+
+              <button
+                onClick={() => changeStatus(selectedOrder.id, "Shipping")}
+                className="rounded-2xl bg-blue-600 px-4 py-3 font-black text-white"
+              >
+                <Truck size={18} className="mr-2 inline" />
+                Giao hàng
+              </button>
+
+              <button
+                onClick={() => changeStatus(selectedOrder.id, "Completed")}
+                className="rounded-2xl bg-green-600 px-4 py-3 font-black text-white"
+              >
+                <CheckCircle2 size={18} className="mr-2 inline" />
+                Hoàn tất
+              </button>
+
+              <button
+                onClick={() => changeStatus(selectedOrder.id, "Cancelled")}
+                className="rounded-2xl bg-red-600 px-4 py-3 font-black text-white"
+              >
+                <XCircle size={18} className="mr-2 inline" />
+                Hủy đơn
+              </button>
             </div>
           </div>
         </div>
