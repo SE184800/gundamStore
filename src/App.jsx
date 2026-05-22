@@ -46,6 +46,7 @@ import HeaderCart from "./components/layout/HeaderCart";
 import MyOrdersPage from "./pages/storefront/MyOrdersPage";
 import OrderDetailPage from "./pages/storefront/OrderDetailPage";
 import AddToCartBridge from "./components/cart/AddToCartBridge";
+import AdminReports from "./pages/admin/AdminReports";
 
 export default function App() {
   return (
@@ -77,6 +78,7 @@ export default function App() {
       <Route path="/order-success/:orderId" element={<OrderSuccessPage />} />
 
       <Route path="/admin" element={<AdminLayout />}>
+          <Route path="reports" element={<AdminReports />} />
         <Route index element={<AdminDashboard />} />
         <Route path="cms" element={<AdminStorefrontCMS />} />
         <Route path="cms/pages" element={<AdminStorefrontCMS />} />
