@@ -1,3 +1,4 @@
+import { normalizeItems, calcSubtotal } from "./PricingService";
 import { reduceStock, restoreStock } from "./InventoryService";
 const CMS_KEY = "gundam-cms-state";
 
@@ -21,7 +22,26 @@ export const PAYMENT_STATUS = {
 export function getOrders() {
   try {
     const cms = JSON.parse(localStorage.getItem(CMS_KEY) || "{}");
-    return Array.isArray(cms.orders) ? cms.orders : [];
+    const orders = Array.isArray(cms.orders) ? cms.orders : [];
+
+    const fixedOrders = orders.map((order) => {
+      const items = normalizeItems(order.items || []);
+      const subtotal = calcSubtotal(items);
+      const shippingFee = Number(order.shippingFee) || 0;
+      const discount = Number(order.discount) || 0;
+      const shippingDiscount = Number(order.shippingDiscount) || 0;
+      const total = Math.max(0, subtotal + shippingFee - discount - shippingDiscount);
+
+      return {
+        ...order,
+        items,
+        subtotal,
+        total,
+      };
+    });
+
+    localStorage.setItem(CMS_KEY, JSON.stringify({ ...cms, orders: fixedOrders }));
+    return fixedOrders;
   } catch {
     return [];
   }
@@ -42,13 +62,19 @@ export function createOrder(payload) {
     updatedAt: now,
 
     customer: payload.customer,
-    items: payload.items || [],
+    items: normalizeItems(payload.items || []),
 
-    subtotal: Number(payload.subtotal) || 0,
+    subtotal: calcSubtotal(payload.items || []),
     shippingFee: Number(payload.shippingFee) || 0,
     discount: Number(payload.discount) || 0,
     shippingDiscount: Number(payload.shippingDiscount) || 0,
-    total: Number(payload.total) || 0,
+    total: Math.max(
+      0,
+      calcSubtotal(payload.items || []) +
+        (Number(payload.shippingFee) || 0) -
+        (Number(payload.discount) || 0) -
+        (Number(payload.shippingDiscount) || 0)
+    ),
 
     voucherCode: payload.voucherCode || "",
     paymentMethod: payload.paymentMethod || "COD",

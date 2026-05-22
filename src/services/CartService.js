@@ -1,9 +1,13 @@
+import { normalizeItems } from "./PricingService";
 const CART_KEY = "gundam-cart-final";
 const CHECKOUT_KEY = "gundam-checkout-draft";
 
 export function getCart() {
   try {
-    return JSON.parse(localStorage.getItem(CART_KEY) || "[]");
+    const cart = JSON.parse(localStorage.getItem(CART_KEY) || "[]");
+    const fixed = normalizeItems(cart);
+    localStorage.setItem(CART_KEY, JSON.stringify(fixed));
+    return fixed;
   } catch {
     return [];
   }
