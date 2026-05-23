@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import PageShell from "../../components/common/PageShell";
 import { useCms } from "../../store/CmsStore";
+import { translateStaticText } from "../../i18n";
 
 const copy = {
   vi: {
@@ -173,9 +174,9 @@ function money(value) {
 }
 
 function text(value, lang, fallback = "") {
-  if (!value) return fallback;
-  if (typeof value === "string") return value;
-  return value[lang] || value.vi || value.en || fallback;
+  if (!value) return translateStaticText(fallback, lang);
+  if (typeof value === "string") return translateStaticText(value, lang);
+  return value[lang] || value.vi || value.en || translateStaticText(fallback, lang);
 }
 
 function slugFromPath() {
@@ -642,11 +643,14 @@ export default function ProductDetailPage() {
             <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
               <h2 className="mb-4 text-xl font-black text-slate-950">{t.boxTitle}</h2>
               <div className="grid gap-3 sm:grid-cols-2">
-                {(product.boxItems || ["Runner nhựa đầy đủ", "Decal sheet", "Beam Rifle", "Shield", "Beam Saber", "Sách hướng dẫn"]).map((item) => (
-                  <div key={item} className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3 text-sm font-bold text-slate-700">
-                    <CheckCircle2 className="text-emerald-600" size={18} />{item}
-                  </div>
-                ))}
+                {(product.boxItems || ["Runner nhựa đầy đủ", "Decal sheet", "Beam Rifle", "Shield", "Beam Saber", "Sách hướng dẫn"]).map((item) => {
+                  const itemText = text(item, lang, "");
+                  return (
+                    <div key={itemText} className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3 text-sm font-bold text-slate-700">
+                      <CheckCircle2 className="text-emerald-600" size={18} />{itemText}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>

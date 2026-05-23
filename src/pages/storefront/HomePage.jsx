@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import PageShell from "../../components/common/PageShell";
 import { useCms } from "../../store/CmsStore";
+import { translateStaticText } from "../../i18n";
 import ProductCard from "../../components/storefront/ProductCard";
 
 
@@ -172,9 +173,9 @@ function money(value) {
 }
 
 function text(value, lang, fallback = "") {
-  if (!value) return fallback;
-  if (typeof value === "string") return value;
-  return value[lang] || value.vi || value.en || fallback;
+  if (!value) return translateStaticText(fallback, lang);
+  if (typeof value === "string") return translateStaticText(value, lang);
+  return value[lang] || value.vi || value.en || translateStaticText(fallback, lang);
 }
 
 function productName(product, lang) {
@@ -531,7 +532,7 @@ function HeroV3Bento({ banners, lang, actions, settings }) {
                   New Arrival
                 </span>
                 <span className="rounded-full bg-blue-700 px-4 py-2 text-xs font-black uppercase tracking-wide text-white shadow-lg">
-                  Chính hãng Bandai
+                  {lang === "vi" ? "Chính hãng Bandai" : "Authentic Bandai"}
                 </span>
               </div>
             )}
