@@ -8,3 +8,4 @@ backups/
 *.bak
 *.bak-*
 patch-language-ui.py
+*.backup*
