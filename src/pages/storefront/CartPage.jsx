@@ -5,11 +5,59 @@ import { getCart, saveCart, saveCheckoutDraft } from "../../services/CartService
 import { applyVoucher } from "../../services/VoucherService";
 import { getStock } from "../../services/InventoryService";
 import StorefrontShell from "../../components/storefront/StorefrontShell";
+import { SHIPPING_METHODS, getLocalized, getShippingMethod } from "../../constants/orderConfig";
+import { useLang } from "../../store/CmsStore";
 
 const money = (n) => (Number(n) || 0).toLocaleString("vi-VN") + "đ";
 
+function getCopy(lang) {
+  return {
+    eyebrow: lang === "en" ? "Shopping Cart" : "Giỏ hàng",
+    title: lang === "en" ? "Your cart" : "Giỏ hàng của bạn",
+    continueShopping: lang === "en" ? "Continue shopping" : "Tiếp tục mua hàng",
+    product: lang === "en" ? "Product" : "Sản phẩm",
+    price: lang === "en" ? "Unit price" : "Đơn giá",
+    quantity: lang === "en" ? "Quantity" : "Số lượng",
+    lineTotal: lang === "en" ? "Subtotal" : "Thành tiền",
+    empty: lang === "en" ? "Your cart is empty" : "Giỏ hàng đang trống",
+    shopNow: lang === "en" ? "Shop now" : "Mua sắm ngay",
+    authenticPack: lang === "en" ? "Authentic Bandai • Shock-proof packing" : "Chính hãng Bandai • Bọc chống sốc",
+    guaranteed: lang === "en" ? "Guaranteed item" : "Hàng đảm bảo",
+    availablePrefix: lang === "en" ? "Available" : "Còn",
+    availableSuffix: lang === "en" ? "items" : "sản phẩm",
+    overStock: lang === "en" ? "Quantity exceeds available stock" : "Số lượng vượt tồn kho",
+    stockAlert: lang === "en" ? "Only" : "Sản phẩm này chỉ còn",
+    stockAlertSuffix: lang === "en" ? "items in stock." : "sản phẩm trong kho.",
+    selectAtLeastOne: lang === "en" ? "Please select at least 1 product." : "Vui lòng chọn ít nhất 1 sản phẩm.",
+    paymentSummary: lang === "en" ? "Payment summary" : "Tóm tắt thanh toán",
+    voucher: lang === "en" ? "Voucher" : "Mã khuyến mãi",
+    shipping: lang === "en" ? "Shipping" : "Vận chuyển",
+    selectedItems: lang === "en" ? "Selected items" : "Sản phẩm đã chọn",
+    subtotal: lang === "en" ? "Subtotal" : "Tạm tính",
+    shippingFee: lang === "en" ? "Shipping fee" : "Phí vận chuyển",
+    productDiscount: lang === "en" ? "Product discount" : "Giảm giá sản phẩm",
+    shippingDiscount: lang === "en" ? "Shipping discount" : "Giảm phí ship",
+    total: lang === "en" ? "Total payment" : "Tổng thanh toán",
+    checkout: lang === "en" ? "Checkout" : "Mua hàng",
+    trustTitle: lang === "en" ? "Safe checkout" : "Thanh toán an toàn",
+    trustDesc:
+      lang === "en"
+        ? "Stock, voucher and shipping are rechecked before order placement."
+        : "Tồn kho, voucher và vận chuyển sẽ được kiểm tra lại trước khi đặt hàng.",
+  };
+}
+
+function getItemName(item, lang) {
+  if (!item?.name) return "";
+  if (typeof item.name === "string") return item.name;
+  return getLocalized(item.name, lang, item.name?.vi || item.name?.en || "");
+}
+
 export default function CartPage() {
   const navigate = useNavigate();
+  const [lang] = useLang();
+  const t = getCopy(lang);
+
   const [cart, setCart] = useState([]);
   const [voucherCode, setVoucherCode] = useState("");
   const [shippingMethod, setShippingMethod] = useState("FAST");
@@ -18,7 +66,10 @@ export default function CartPage() {
     setCart(getCart());
   }, []);
 
-  const selectedItems = cart.filter((item) => item.selected !== false);
+  const selectedItems = useMemo(
+    () => cart.filter((item) => item.selected !== false),
+    [cart]
+  );
 
   const subtotal = useMemo(
     () =>
@@ -29,11 +80,8 @@ export default function CartPage() {
     [selectedItems]
   );
 
-  const baseShippingFee = selectedItems.length
-    ? shippingMethod === "EXPRESS"
-      ? 60000
-      : 30000
-    : 0;
+  const selectedShipping = getShippingMethod(shippingMethod);
+  const baseShippingFee = selectedItems.length ? Number(selectedShipping.fee || 0) : 0;
 
   const voucher = applyVoucher(voucherCode, subtotal, baseShippingFee);
   const total = Math.max(
@@ -54,7 +102,7 @@ export default function CartPage() {
     const available = getAvailable(item);
 
     if ((item.quantity || 1) >= available) {
-      alert(`Sản phẩm "${item.name}" chỉ còn ${available} sản phẩm trong kho.`);
+      alert(`${t.stockAlert} ${available} ${t.stockAlertSuffix}`);
       return;
     }
 
@@ -82,7 +130,7 @@ export default function CartPage() {
 
   function goCheckout() {
     if (!selectedItems.length) {
-      alert("Vui lòng chọn ít nhất 1 sản phẩm.");
+      alert(t.selectAtLeastOne);
       return;
     }
 
@@ -91,16 +139,16 @@ export default function CartPage() {
     );
 
     if (invalidItem) {
-      alert(
-        `Sản phẩm "${invalidItem.name}" chỉ còn ${getAvailable(
-          invalidItem
-        )} sản phẩm trong kho.`
-      );
+      alert(`${getItemName(invalidItem, lang)}: ${t.stockAlert} ${getAvailable(invalidItem)} ${t.stockAlertSuffix}`);
       return;
     }
 
     saveCheckoutDraft({
-      items: selectedItems,
+      orderType: "normal",
+      items: selectedItems.map((item) => ({
+        ...item,
+        name: getItemName(item, lang),
+      })),
       subtotal,
       shippingFee: baseShippingFee,
       discount: voucher.discount,
@@ -115,225 +163,244 @@ export default function CartPage() {
 
   return (
     <StorefrontShell>
-      <main className="min-h-screen bg-[#F5F7FB] px-6 py-8">
-      <div className="mx-auto max-w-7xl">
-        <div className="mb-6 flex items-end justify-between">
-          <div>
-            <p className="text-sm font-black uppercase tracking-[0.2em] text-blue-600">
-              Shopping Cart
-            </p>
-            <h1 className="mt-2 text-4xl font-black text-slate-950">
-              Giỏ hàng của bạn
-            </h1>
+      <main className="min-h-screen bg-[#F5F7FB] px-4 py-6 md:px-6 md:py-8">
+        <div className="mx-auto max-w-7xl">
+          <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+            <div>
+              <p className="text-sm font-black uppercase tracking-[0.2em] text-blue-600">
+                {t.eyebrow}
+              </p>
+              <h1 className="mt-2 text-3xl font-black text-slate-950 md:text-4xl">
+                {t.title}
+              </h1>
+            </div>
+
+            <Link to="/shop" className="w-fit rounded-2xl bg-white px-5 py-3 text-sm font-black text-blue-600 shadow-sm">
+              {t.continueShopping}
+            </Link>
           </div>
 
-          <Link to="/shop" className="rounded-2xl bg-white px-5 py-3 text-sm font-black text-blue-600 shadow-sm">
-            Tiếp tục mua hàng
-          </Link>
-        </div>
-
-        <div className="grid gap-6 lg:grid-cols-[1fr_390px]">
-          <section className="space-y-4">
-            <div className="hidden rounded-2xl bg-white px-5 py-4 text-sm font-black text-slate-500 shadow-sm md:grid md:grid-cols-[40px_1fr_130px_140px_150px_70px]">
-              <div>
-                <input
-                  type="checkbox"
-                  checked={cart.length > 0 && cart.every((item) => item.selected !== false)}
-                  onChange={toggleAll}
-                  className="h-5 w-5"
-                />
+          <div className="grid gap-6 lg:grid-cols-[1fr_390px]">
+            <section className="space-y-4">
+              <div className="hidden rounded-2xl bg-white px-5 py-4 text-sm font-black text-slate-500 shadow-sm md:grid md:grid-cols-[40px_1fr_130px_140px_150px_70px]">
+                <div>
+                  <input
+                    type="checkbox"
+                    checked={cart.length > 0 && cart.every((item) => item.selected !== false)}
+                    onChange={toggleAll}
+                    className="h-5 w-5"
+                  />
+                </div>
+                <div>{t.product}</div>
+                <div>{t.price}</div>
+                <div>{t.quantity}</div>
+                <div>{t.lineTotal}</div>
+                <div></div>
               </div>
-              <div>Sản phẩm</div>
-              <div>Đơn giá</div>
-              <div>Số lượng</div>
-              <div>Thành tiền</div>
-              <div></div>
-            </div>
 
-            {cart.length === 0 ? (
-              <div className="rounded-3xl bg-white p-16 text-center shadow-sm">
-                <div className="text-2xl font-black text-slate-800">Giỏ hàng đang trống</div>
-                <Link to="/shop" className="mt-5 inline-block rounded-2xl bg-blue-600 px-6 py-3 font-black text-white">
-                  Mua sắm ngay
-                </Link>
-              </div>
-            ) : (
-              cart.map((item) => {
-                const available = getAvailable(item);
-                const qty = item.quantity || 1;
-                const lineTotal = (Number(item.price) || 0) * qty;
-                const overStock = qty > available;
+              {cart.length === 0 ? (
+                <div className="rounded-3xl bg-white p-16 text-center shadow-sm">
+                  <div className="text-2xl font-black text-slate-800">{t.empty}</div>
+                  <Link to="/shop" className="mt-5 inline-block rounded-2xl bg-blue-600 px-6 py-3 font-black text-white">
+                    {t.shopNow}
+                  </Link>
+                </div>
+              ) : (
+                cart.map((item) => {
+                  const available = getAvailable(item);
+                  const qty = item.quantity || 1;
+                  const lineTotal = (Number(item.price) || 0) * qty;
+                  const overStock = qty > available;
+                  const itemName = getItemName(item, lang);
 
-                return (
-                  <div
-                    key={item.id}
-                    className={`grid items-center gap-4 rounded-3xl bg-white p-5 shadow-sm md:grid-cols-[40px_1fr_130px_140px_150px_70px] ${
-                      overStock ? "ring-2 ring-red-200" : ""
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={item.selected !== false}
-                      onChange={() =>
-                        updateCart(
-                          cart.map((x) =>
-                            x.id === item.id
-                              ? { ...x, selected: x.selected === false }
-                              : x
-                          )
-                        )
-                      }
-                      className="h-5 w-5"
-                    />
-
-                    <div className="flex gap-4">
-                      <img
-                        src={item.image}
-                        className="h-24 w-24 rounded-2xl bg-slate-100 object-cover"
-                      />
-                      <div>
-                        <h3 className="font-black text-slate-950">{item.name}</h3>
-                        <p className="mt-1 text-sm font-semibold text-slate-500">
-                          Chính hãng Bandai • Bọc chống sốc
-                        </p>
-
-                        <div className="mt-3 inline-flex items-center gap-1 rounded-full bg-blue-50 px-3 py-1 text-xs font-black text-blue-700">
-                          <ShieldCheck size={13} /> Hàng đảm bảo
-                        </div>
-
-                        <div className={`mt-2 text-xs font-black ${available <= 0 ? "text-red-500" : "text-slate-500"}`}>
-                          Còn {available} sản phẩm
-                        </div>
-
-                        {overStock && (
-                          <div className="mt-1 text-xs font-black text-red-500">
-                            Số lượng vượt tồn kho
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="font-black text-red-500">{money(item.price)}</div>
-
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => decreaseQty(item)}
-                        className="rounded-xl border p-2 hover:bg-slate-50"
-                      >
-                        <Minus size={15} />
-                      </button>
-
-                      <span className="w-10 text-center font-black">
-                        {qty}
-                      </span>
-
-                      <button
-                        onClick={() => increaseQty(item)}
-                        disabled={qty >= available}
-                        className={`rounded-xl border p-2 ${
-                          qty >= available
-                            ? "cursor-not-allowed bg-slate-100 text-slate-300"
-                            : "hover:bg-slate-50"
-                        }`}
-                      >
-                        <Plus size={15} />
-                      </button>
-                    </div>
-
-                    <div className="font-black text-slate-950">{money(lineTotal)}</div>
-
-                    <button
-                      onClick={() => updateCart(cart.filter((x) => x.id !== item.id))}
-                      className="rounded-xl bg-red-50 p-3 text-red-500 hover:bg-red-100"
+                  return (
+                    <div
+                      key={item.id}
+                      className={`grid items-center gap-4 rounded-3xl bg-white p-5 shadow-sm md:grid-cols-[40px_1fr_130px_140px_150px_70px] ${
+                        overStock ? "ring-2 ring-red-200" : ""
+                      }`}
                     >
-                      <Trash2 size={18} />
-                    </button>
-                  </div>
-                );
-              })
-            )}
-          </section>
+                      <input
+                        type="checkbox"
+                        checked={item.selected !== false}
+                        onChange={() =>
+                          updateCart(
+                            cart.map((x) =>
+                              x.id === item.id
+                                ? { ...x, selected: x.selected === false }
+                                : x
+                            )
+                          )
+                        }
+                        className="h-5 w-5"
+                      />
 
-          <aside className="h-fit rounded-3xl bg-white p-6 shadow-sm">
-            <h2 className="text-xl font-black text-slate-950">Tóm tắt thanh toán</h2>
+                      <div className="flex gap-4">
+                        <img
+                          src={item.image}
+                          alt={itemName}
+                          loading="lazy"
+                          className="h-24 w-24 rounded-2xl bg-slate-100 object-cover"
+                        />
+                        <div>
+                          <h3 className="font-black text-slate-950">{itemName}</h3>
+                          <p className="mt-1 text-sm font-semibold text-slate-500">
+                            {t.authenticPack}
+                          </p>
 
-            <div className="mt-5 rounded-2xl bg-blue-50 p-4">
-              <div className="flex items-center gap-2 font-black text-blue-700">
-                <TicketPercent size={18} />
-                Mã khuyến mãi
-              </div>
+                          <div className="mt-3 inline-flex items-center gap-1 rounded-full bg-blue-50 px-3 py-1 text-xs font-black text-blue-700">
+                            <ShieldCheck size={13} /> {t.guaranteed}
+                          </div>
 
-              <input
-                value={voucherCode}
-                onChange={(e) => setVoucherCode(e.target.value)}
-                placeholder="GUNDAM10 / FREESHIP / VIP50"
-                className="mt-3 w-full rounded-2xl border border-blue-100 bg-white px-4 py-3 text-sm outline-none"
-              />
+                          <div className={`mt-2 text-xs font-black ${available <= 0 ? "text-red-500" : "text-slate-500"}`}>
+                            {t.availablePrefix} {available} {t.availableSuffix}
+                          </div>
 
-              {voucherCode && (
-                <p className={`mt-2 text-xs font-bold ${voucher.valid ? "text-green-600" : "text-red-500"}`}>
-                  {voucher.message}
-                </p>
+                          {overStock && (
+                            <div className="mt-1 text-xs font-black text-red-500">
+                              {t.overStock}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="font-black text-red-500">{money(item.price)}</div>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => decreaseQty(item)}
+                          className="rounded-xl border p-2 hover:bg-slate-50"
+                        >
+                          <Minus size={15} />
+                        </button>
+
+                        <span className="w-10 text-center font-black">{qty}</span>
+
+                        <button
+                          onClick={() => increaseQty(item)}
+                          disabled={qty >= available}
+                          className={`rounded-xl border p-2 ${
+                            qty >= available
+                              ? "cursor-not-allowed bg-slate-100 text-slate-300"
+                              : "hover:bg-slate-50"
+                          }`}
+                        >
+                          <Plus size={15} />
+                        </button>
+                      </div>
+
+                      <div className="font-black text-slate-950">{money(lineTotal)}</div>
+
+                      <button
+                        onClick={() => updateCart(cart.filter((x) => x.id !== item.id))}
+                        className="rounded-xl bg-red-50 p-3 text-red-500 hover:bg-red-100"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
+                  );
+                })
               )}
-            </div>
+            </section>
 
-            <div className="mt-4 rounded-2xl bg-slate-50 p-4">
-              <div className="mb-3 flex items-center gap-2 font-black text-slate-800">
-                <Truck size={18} />
-                Vận chuyển
+            <aside className="h-fit rounded-3xl bg-white p-6 shadow-sm lg:sticky lg:top-24">
+              <h2 className="text-xl font-black text-slate-950">{t.paymentSummary}</h2>
+
+              <div className="mt-4 rounded-2xl border border-blue-100 bg-blue-50 p-4">
+                <div className="text-sm font-black text-blue-800">{t.trustTitle}</div>
+                <p className="mt-1 text-xs font-semibold leading-5 text-blue-700/80">{t.trustDesc}</p>
               </div>
 
-              <select
-                value={shippingMethod}
-                onChange={(e) => setShippingMethod(e.target.value)}
-                className="w-full rounded-2xl border bg-white px-4 py-3 outline-none"
+              <div className="mt-5 rounded-2xl bg-blue-50 p-4">
+                <div className="flex items-center gap-2 font-black text-blue-700">
+                  <TicketPercent size={18} />
+                  {t.voucher}
+                </div>
+
+                <input
+                  value={voucherCode}
+                  onChange={(e) => setVoucherCode(e.target.value)}
+                  placeholder="GUNDAM10 / FREESHIP / VIP50"
+                  className="mt-3 w-full rounded-2xl border border-blue-100 bg-white px-4 py-3 text-sm outline-none"
+                />
+
+                {voucherCode && (
+                  <p className={`mt-2 text-xs font-bold ${voucher.valid ? "text-green-600" : "text-red-500"}`}>
+                    {voucher.message}
+                  </p>
+                )}
+              </div>
+
+              <div className="mt-4 rounded-2xl bg-slate-50 p-4">
+                <div className="mb-3 flex items-center gap-2 font-black text-slate-800">
+                  <Truck size={18} />
+                  {t.shipping}
+                </div>
+
+                <div className="grid gap-2">
+                  {SHIPPING_METHODS.map((method) => (
+                    <label
+                      key={method.value}
+                      className={`cursor-pointer rounded-2xl border bg-white p-3 text-sm ${
+                        shippingMethod === method.value ? "border-blue-500 ring-2 ring-blue-100" : "border-slate-200"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="cartShipping"
+                        checked={shippingMethod === method.value}
+                        onChange={() => setShippingMethod(method.value)}
+                        className="mr-2"
+                      />
+                      <b>{getLocalized(method.label, lang)}</b>
+                      <span className="ml-2 font-black text-red-500">{money(method.fee)}</span>
+                      <p className="mt-1 text-xs font-semibold text-slate-500">{getLocalized(method.desc, lang)}</p>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mt-5 space-y-3 text-sm">
+                <div className="flex justify-between">
+                  <span>{t.selectedItems}</span>
+                  <b>{selectedItems.length}</b>
+                </div>
+
+                <div className="flex justify-between">
+                  <span>{t.subtotal}</span>
+                  <b>{money(subtotal)}</b>
+                </div>
+
+                <div className="flex justify-between">
+                  <span>{t.shippingFee}</span>
+                  <b>{money(baseShippingFee)}</b>
+                </div>
+
+                <div className="flex justify-between text-green-600">
+                  <span>{t.productDiscount}</span>
+                  <b>-{money(voucher.discount)}</b>
+                </div>
+
+                <div className="flex justify-between text-green-600">
+                  <span>{t.shippingDiscount}</span>
+                  <b>-{money(voucher.shippingDiscount)}</b>
+                </div>
+
+                <div className="flex justify-between border-t pt-4 text-xl font-black">
+                  <span>{t.total}</span>
+                  <span className="text-red-500">{money(total)}</span>
+                </div>
+              </div>
+
+              <button
+                onClick={goCheckout}
+                className="mt-6 w-full rounded-2xl bg-blue-600 py-4 font-black text-white shadow-lg hover:bg-blue-700"
               >
-                <option value="FAST">Giao nhanh - 30.000đ</option>
-                <option value="EXPRESS">Hỏa tốc - 60.000đ</option>
-              </select>
-            </div>
-
-            <div className="mt-5 space-y-3 text-sm">
-              <div className="flex justify-between">
-                <span>Sản phẩm đã chọn</span>
-                <b>{selectedItems.length}</b>
-              </div>
-
-              <div className="flex justify-between">
-                <span>Tạm tính</span>
-                <b>{money(subtotal)}</b>
-              </div>
-
-              <div className="flex justify-between">
-                <span>Phí vận chuyển</span>
-                <b>{money(baseShippingFee)}</b>
-              </div>
-
-              <div className="flex justify-between text-green-600">
-                <span>Giảm giá sản phẩm</span>
-                <b>-{money(voucher.discount)}</b>
-              </div>
-
-              <div className="flex justify-between text-green-600">
-                <span>Giảm phí ship</span>
-                <b>-{money(voucher.shippingDiscount)}</b>
-              </div>
-
-              <div className="flex justify-between border-t pt-4 text-xl font-black">
-                <span>Tổng thanh toán</span>
-                <span className="text-red-500">{money(total)}</span>
-              </div>
-            </div>
-
-            <button
-              onClick={goCheckout}
-              className="mt-6 w-full rounded-2xl bg-blue-600 py-4 font-black text-white shadow-lg hover:bg-blue-700"
-            >
-              Mua hàng ({selectedItems.length})
-            </button>
-          </aside>
+                {t.checkout} ({selectedItems.length})
+              </button>
+            </aside>
+          </div>
         </div>
-      </div>
       </main>
     </StorefrontShell>
   );
