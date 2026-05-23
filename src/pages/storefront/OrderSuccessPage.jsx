@@ -6,7 +6,8 @@ import StorefrontShell from "../../components/storefront/StorefrontShell";
 const money = (n) => (Number(n) || 0).toLocaleString("vi-VN") + "đ";
 
 export default function OrderSuccessPage() {
-  const { id } = useParams();
+  const params = useParams();
+  const id = params.id || params.orderId;
   const order = getOrderById(id);
 
   return (

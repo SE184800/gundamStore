@@ -112,6 +112,7 @@ export default function CheckoutPage() {
   }, []);
 
   const selectedShipping = getShippingMethod(customer.shippingMethod);
+  const isPreorder = draft?.orderType === ORDER_TYPE.PREORDER;
 
   const pricing = useMemo(() => {
     if (!draft) {
@@ -126,6 +127,18 @@ export default function CheckoutPage() {
     }
 
     const subtotal = Number(draft.subtotal) || 0;
+
+    if (draft.orderType === ORDER_TYPE.PREORDER) {
+      return {
+        subtotal,
+        shippingFee: 0,
+        discount: 0,
+        shippingDiscount: 0,
+        total: Number(draft.preorder?.depositAmount || draft.total || 0),
+        voucherCode: "",
+      };
+    }
+
     const shippingFee = Number(selectedShipping?.fee || 0);
     const voucher = applyVoucher(draft.voucherCode || "", subtotal, shippingFee);
 
@@ -193,7 +206,8 @@ export default function CheckoutPage() {
     };
 
     const order = createOrder({
-      orderType: ORDER_TYPE.NORMAL,
+      orderType: isPreorder ? ORDER_TYPE.PREORDER : ORDER_TYPE.NORMAL,
+      preorder: draft.preorder || null,
       customer: cleanCustomer,
       items: draft.items.map((item) => ({
         ...item,
@@ -226,6 +240,32 @@ export default function CheckoutPage() {
             {t.title}
           </h1>
           <p className="mt-2 text-sm font-semibold text-slate-500">{t.reviewHint}</p>
+
+
+          {isPreorder && (
+            <div className="mt-5 rounded-3xl border border-amber-100 bg-amber-50 p-5">
+              <div className="text-sm font-black uppercase tracking-[0.2em] text-amber-700">
+                Pre-order deposit
+              </div>
+              <div className="mt-2 grid gap-3 text-sm font-semibold text-amber-900 md:grid-cols-3">
+                <div>
+                  <span className="block text-amber-700">Full amount</span>
+                  <b>{money(draft.preorder?.fullAmount || draft.subtotal)}</b>
+                </div>
+                <div>
+                  <span className="block text-amber-700">Deposit now</span>
+                  <b className="text-red-600">{money(draft.preorder?.depositAmount || pricing.total)}</b>
+                </div>
+                <div>
+                  <span className="block text-amber-700">Remaining</span>
+                  <b>{money(draft.preorder?.remainingAmount || 0)}</b>
+                </div>
+              </div>
+              <p className="mt-3 text-xs font-bold leading-5 text-amber-700">
+                ETA: {draft.preorder?.eta || "-"} · Shipping fee will be confirmed when the item arrives.
+              </p>
+            </div>
+          )}
 
           {errors.length > 0 && (
             <div className="mt-5 rounded-3xl border border-red-100 bg-red-50 p-4 text-red-700">

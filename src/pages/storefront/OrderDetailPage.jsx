@@ -369,6 +369,38 @@ export default function OrderDetailPage() {
                 </div>
               </div>
 
+
+              {order.orderType === "preorder" && order.preorder && (
+                <div className="rounded-3xl border border-amber-100 bg-amber-50 p-6 shadow-sm">
+                  <h2 className="text-xl font-black text-amber-900">
+                    {lang === "en" ? "Pre-order deposit" : "Thông tin đặt cọc"}
+                  </h2>
+
+                  <div className="mt-4 space-y-3 text-sm">
+                    <div className="flex justify-between">
+                      <span>{lang === "en" ? "ETA" : "Dự kiến về hàng"}</span>
+                      <b>{order.preorder.eta || "-"}</b>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>{lang === "en" ? "Full amount" : "Giá sản phẩm"}</span>
+                      <b>{money(order.preorder.fullAmount || order.subtotal)}</b>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>{lang === "en" ? "Deposit paid/required" : "Tiền cọc"}</span>
+                      <b className="text-red-600">{money(order.preorder.depositAmount || order.total)}</b>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>{lang === "en" ? "Remaining balance" : "Còn lại"}</span>
+                      <b>{money(order.preorder.remainingAmount || 0)}</b>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>{lang === "en" ? "Deposit status" : "Trạng thái cọc"}</span>
+                      <b>{order.preorder.depositStatus || "-"}</b>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="rounded-3xl bg-white p-6 shadow-sm">
                 <h2 className="text-xl font-black">{t.payment}</h2>
 

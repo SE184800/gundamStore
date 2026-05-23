@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   ArrowRight,
   Box,
@@ -27,6 +28,14 @@ import {
 import PageShell from "../../components/common/PageShell";
 import { useCms } from "../../store/CmsStore";
 import { translateStaticText } from "../../i18n";
+import { saveCheckoutDraft } from "../../services/CartService";
+import {
+  ORDER_TYPE,
+  PAYMENT_STATUS,
+  PREORDER_STATUS,
+  calculatePreorderDeposit,
+  getPreorderEtaText,
+} from "../../constants/orderConfig";
 
 const copy = {
   vi: {
@@ -255,7 +264,7 @@ function QuantitySelector({ qty, setQty }) {
   );
 }
 
-function ProductInfo({ product, lang, actions }) {
+function ProductInfo({ product, lang, actions, onPreorder }) {
   const t = copy[lang];
   const [qty, setQty] = useState(1);
   const preorder = isPreorder(product);
@@ -319,7 +328,7 @@ function ProductInfo({ product, lang, actions }) {
       <div className="mt-5 grid gap-3 sm:grid-cols-2">
         {preorder ? (
           <button
-            onClick={() => actions.addToCart(product.id, qty)}
+            onClick={() => onPreorder ? onPreorder(product, qty) : actions.addToCart(product.id, qty)}
             className="rounded-2xl bg-violet-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-violet-200 hover:bg-violet-700 sm:col-span-2"
           >
             {t.preorderNow}
@@ -539,6 +548,7 @@ function RelatedCard({ product, lang }) {
 
 export default function ProductDetailPage() {
   const { state, actions } = useCms();
+  const navigate = useNavigate();
   const lang = state.settings?.lang || "vi";
   const t = copy[lang];
   const slug = slugFromPath();
@@ -548,6 +558,56 @@ export default function ProductDetailPage() {
   }, [state.products, slug]);
 
   const [activeImage, setActiveImage] = useState(0);
+
+  function startPreorderCheckout(product, qty = 1) {
+    const quantity = Math.max(1, Number(qty) || 1);
+    const unitPrice = Number(product.price) || 0;
+    const subtotal = unitPrice * quantity;
+    const deposit = calculatePreorderDeposit(subtotal);
+    const etaText = product.preorder?.eta || product.eta || getPreorderEtaText(lang);
+    const image =
+      product.media?.card ||
+      product.media?.home ||
+      product.media?.detailMain ||
+      product.imageUrl ||
+      product.images?.[0] ||
+      "/images/products/hi-nu.jpg";
+
+    saveCheckoutDraft({
+      orderType: ORDER_TYPE.PREORDER,
+      items: [
+        {
+          id: product.id,
+          name: productName(product, lang),
+          image,
+          price: unitPrice,
+          quantity,
+          selected: true,
+          status: "preorder",
+        },
+      ],
+      subtotal,
+      shippingFee: 0,
+      discount: 0,
+      shippingDiscount: 0,
+      voucherCode: "",
+      total: deposit.depositAmount,
+      shippingMethod: "FAST",
+      preorder: {
+        status: PREORDER_STATUS.DEPOSIT_PENDING,
+        eta: etaText,
+        fullAmount: deposit.fullAmount,
+        depositRate: deposit.depositRate,
+        depositAmount: deposit.depositAmount,
+        remainingAmount: deposit.remainingAmount,
+        depositStatus: PAYMENT_STATUS.UNPAID,
+        balanceStatus: PAYMENT_STATUS.UNPAID,
+      },
+    });
+
+    navigate("/checkout");
+  }
+
 
   const productReviews = useMemo(() => {
     if (!product) return [];
@@ -626,7 +686,7 @@ export default function ProductDetailPage() {
               </div>
             </div>
 
-            <ProductInfo product={product} lang={lang} actions={actions} />
+            <ProductInfo product={product} lang={lang} actions={actions} onPreorder={startPreorderCheckout} />
           </div>
         </section>
 

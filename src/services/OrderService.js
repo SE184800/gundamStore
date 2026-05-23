@@ -4,6 +4,7 @@ import {
   ORDER_TYPE,
   ORDER_STATUS,
   PAYMENT_STATUS,
+  PREORDER_STATUS,
   ORDER_STATUS_OPTIONS,
   PAYMENT_STATUS_OPTIONS,
   getOrderStatusLabel,
@@ -24,6 +25,7 @@ export {
   ORDER_TYPE,
   ORDER_STATUS,
   PAYMENT_STATUS,
+  PREORDER_STATUS,
   ORDER_STATUS_OPTIONS,
   PAYMENT_STATUS_OPTIONS,
   getOrderStatusLabel,
@@ -93,12 +95,30 @@ export function saveOrders(orders) {
 export function createOrder(payload) {
   const now = new Date().toISOString();
   const items = normalizeItems(payload.items || []);
-  const subtotal = calcSubtotal(items);
-  const shippingFee = Number(payload.shippingFee) || 0;
-  const discount = Number(payload.discount) || 0;
-  const shippingDiscount = Number(payload.shippingDiscount) || 0;
-  const total = Math.max(0, subtotal + shippingFee - discount - shippingDiscount);
   const orderType = payload.orderType || ORDER_TYPE.NORMAL;
+  const isPreorder = orderType === ORDER_TYPE.PREORDER;
+
+  const subtotal = calcSubtotal(items);
+  const shippingFee = isPreorder ? 0 : Number(payload.shippingFee) || 0;
+  const discount = isPreorder ? 0 : Number(payload.discount) || 0;
+  const shippingDiscount = isPreorder ? 0 : Number(payload.shippingDiscount) || 0;
+
+  const preorder = isPreorder
+    ? {
+        status: payload.preorder?.status || PREORDER_STATUS.DEPOSIT_PENDING,
+        eta: payload.preorder?.eta || "",
+        fullAmount: Number(payload.preorder?.fullAmount || subtotal || 0),
+        depositRate: Number(payload.preorder?.depositRate || 0.3),
+        depositAmount: Number(payload.preorder?.depositAmount || payload.total || 0),
+        remainingAmount: Number(payload.preorder?.remainingAmount || 0),
+        depositStatus: payload.preorder?.depositStatus || PAYMENT_STATUS.UNPAID,
+        balanceStatus: payload.preorder?.balanceStatus || PAYMENT_STATUS.UNPAID,
+      }
+    : null;
+
+  const total = isPreorder
+    ? Number(preorder?.depositAmount || payload.total || 0)
+    : Math.max(0, subtotal + shippingFee - discount - shippingDiscount);
 
   const order = {
     id: "ORD-" + Date.now(),
@@ -116,12 +136,12 @@ export function createOrder(payload) {
     shippingDiscount,
     total,
 
-    voucherCode: payload.voucherCode || "",
+    voucherCode: isPreorder ? "" : payload.voucherCode || "",
     paymentMethod: payload.paymentMethod || "COD",
     paymentStatus: payload.paymentStatus || PAYMENT_STATUS.UNPAID,
     shippingMethod: payload.shippingMethod || "FAST",
 
-    preorder: payload.preorder || null,
+    preorder,
 
     status: payload.status || ORDER_STATUS.PLACED,
 
@@ -129,11 +149,10 @@ export function createOrder(payload) {
       {
         status: payload.status || ORDER_STATUS.PLACED,
         time: now,
-        title: orderType === ORDER_TYPE.PREORDER ? "Tạo đơn pre-order" : "Đặt hàng thành công",
-        note:
-          orderType === ORDER_TYPE.PREORDER
-            ? "Khách hàng đã tạo đơn pre-order."
-            : "Khách hàng đã tạo đơn hàng.",
+        title: isPreorder ? "Tạo đơn pre-order" : "Đặt hàng thành công",
+        note: isPreorder
+          ? `Khách hàng đã tạo đơn pre-order. Tiền cọc: ${preorder.depositAmount.toLocaleString("vi-VN")}đ.`
+          : "Khách hàng đã tạo đơn hàng.",
       },
     ],
 
