@@ -79,7 +79,7 @@ export default function App() {
       <Route path="/product/:slug" element={<ProductDetailPage />} />
       <Route path="/cart" element={<CartPage />} />
       <Route path="/checkout" element={<CheckoutPage />} />
-      <Route path="/order-success/:orderId" element={<OrderSuccessPage />} />
+      <Route path="/order-success/:id" element={<OrderSuccessPage />} />
 
       <Route path="/admin" element={<AdminLayout />}>
           <Route path="reports" element={<AdminReports />} />

@@ -218,3 +218,25 @@ export function canCustomerRequestCancel(status) {
 export function canCustomerRequestReturn(status) {
   return [ORDER_STATUS.DELIVERED, ORDER_STATUS.COMPLETED].includes(status);
 }
+
+
+export const PREORDER_DEPOSIT_RATE = 0.3;
+
+export function calculatePreorderDeposit(price = 0, rate = PREORDER_DEPOSIT_RATE) {
+  const fullAmount = Math.max(0, Number(price) || 0);
+  const depositRate = Number(rate) || PREORDER_DEPOSIT_RATE;
+  const rawDeposit = fullAmount * depositRate;
+  const depositAmount = Math.ceil(rawDeposit / 1000) * 1000;
+  const remainingAmount = Math.max(0, fullAmount - depositAmount);
+
+  return {
+    fullAmount,
+    depositRate,
+    depositAmount,
+    remainingAmount,
+  };
+}
+
+export function getPreorderEtaText(lang = "vi") {
+  return lang === "en" ? "Estimated 30-60 days" : "Dự kiến 30-60 ngày";
+}
