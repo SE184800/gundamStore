@@ -52,6 +52,7 @@ export default function App() {
   return (
     <>
       <Routes>
+        <Route path="order-lookup" element={<OrderLookupPage />} />
         <Route path="orders/:id" element={<OrderDetailPage />} />
         <Route path="orders" element={<MyOrdersPage />} />
         <Route path="order-success/:id" element={<OrderSuccessPage />} />

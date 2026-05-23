@@ -14,6 +14,7 @@ export default function StorefrontShell({ children }) {
             <Link to="/">Trang chủ</Link>
             <Link to="/shop">Sản phẩm</Link>
             <Link to="/orders">Đơn hàng</Link>
+            <Link to="/order-lookup">Tra cứu đơn</Link>
             <Link to="/admin">Admin</Link>
           </nav>
 
