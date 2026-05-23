@@ -326,6 +326,81 @@ export const STATIC_TEXT_EN = {
   "Action Base 5 giúp tạo dáng bay và trưng bày mô hình gọn gàng.": "Action Base 5 helps create flying poses and display kits neatly."
 };
 
+
+export const ADMIN_STATIC_TEXT_EN = {
+  "Bảng điều khiển": "Dashboard",
+  "CMS giao diện bán hàng": "Storefront CMS",
+  "Tổng quan CMS": "CMS Overview",
+  "Trang nội dung": "Pages",
+  "Thiết kế trang chủ": "Home Builder",
+  "Banner": "Banners",
+  "Tin tức": "News",
+  "Sự kiện": "Events",
+  "Điều hướng": "Navigation",
+  "Thư viện media": "Media Library",
+  "Giao diện / SEO": "Theme / SEO",
+  "Quản lý sản phẩm": "Product Management",
+  "Sản phẩm": "Products",
+  "Danh mục sản phẩm": "Product Categories",
+  "Nhà cung cấp": "Suppliers",
+  "Nhóm sản phẩm": "Product Groups",
+  "Gán nhóm": "Group Mapping",
+  "Giá & tồn kho": "Pricing & Inventory",
+  "Khuyến mãi": "Promotions",
+  "Bán hàng & đơn hàng": "Sales & Orders",
+  "Đơn hàng": "Orders",
+  "Chăm sóc khách hàng": "Customer Service",
+  "Tin nhắn": "Chats",
+  "Đánh giá": "Reviews",
+  "Khiếu nại": "Complaints",
+  "Hệ thống": "System",
+  "Phân tích": "Analytics",
+  "Cài đặt": "Settings",
+  "Xem cửa hàng": "View Store",
+  "Tìm trong admin...": "Search admin...",
+
+  "Dashboard vận hành ecommerce": "Ecommerce operations dashboard",
+  "Theo dõi doanh thu, đơn hàng, tồn kho, ticket CSKH, pre-order và hành vi khách hàng trong một màn hình vận hành.": "Track revenue, orders, inventory, support tickets, pre-orders and customer behavior in one operations screen.",
+  "Xuất báo cáo": "Export report",
+  "Tạo task": "Create task",
+  "Doanh thu hôm nay": "Revenue today",
+  "Đơn mới": "New orders",
+  "Ticket chờ xử lý": "Pending tickets",
+  "Sắp hết hàng": "Low stock",
+  "cần xử lý": "Need action",
+  "Khẩn cấp": "urgent",
+  "Xu hướng doanh thu & chuyển đổi": "Revenue & conversion trend",
+  "Xem xu hướng doanh thu và tỉ lệ chuyển đổi theo thời gian.": "View revenue and conversion trends over time.",
+  "12 tháng gần nhất": "Last 12 months",
+  "30 ngày gần nhất": "Last 30 days",
+  "Hàng đợi xử lý": "Action queue",
+  "Xem tất cả": "View all",
+  "5 đơn Pre-order cần xác nhận cọc": "5 pre-orders need deposit confirmation",
+  "Banner Hero T06 cần publish lúc 20:00": "T06 hero banner needs publishing at 20:00",
+  "RG Hi-ν còn 2 sản phẩm khả dụng": "RG Hi-ν has 2 available items left",
+  "12 đánh giá mới cần duyệt": "12 new reviews need approval",
+  "Người phụ trách": "Owner",
+  "Sản phẩm có hành vi tốt nhất": "Top behavior products",
+  "Sản phẩm được xem nhiều, thêm giỏ nhiều và có doanh số tốt.": "Products with high views, add-to-cart activity and strong sales.",
+  "Mở analytics": "Open analytics",
+  "Sức khỏe hệ thống": "System health",
+  "Trạng thái publish CMS": "CMS publish status",
+  "Lưu trữ media": "Media storage",
+  "Đồng bộ tồn kho": "Inventory sync",
+  "Sự kiện analytics": "Analytics events",
+  "Khỏe": "Healthy",
+  "Demo base64 local": "Local base64 demo",
+  "Chế độ demo": "Demo mode",
+  "Đang tracking": "Tracking",
+  "Cao": "High",
+  "Trung bình": "Medium",
+  "Thấp": "Low",
+  "Lượt xem": "Views",
+  "Thêm giỏ": "Add cart",
+  "Đã bán": "Sold",
+  "Xếp hạng": "Rating"
+};
+
 function getByPath(obj, key) {
   return String(key || "")
     .split(".")
@@ -345,10 +420,11 @@ export function translateStaticText(value, lang = "vi") {
   if (currentLang === "vi") return raw;
 
   const trimmed = raw.trim();
-  if (STATIC_TEXT_EN[trimmed]) return keepOuterSpace(raw, STATIC_TEXT_EN[trimmed]);
+  const dictionaries = { ...STATIC_TEXT_EN, ...ADMIN_STATIC_TEXT_EN };
+  if (dictionaries[trimmed]) return keepOuterSpace(raw, dictionaries[trimmed]);
 
   let output = raw;
-  Object.entries(STATIC_TEXT_EN)
+  Object.entries(dictionaries)
     .sort((a, b) => b[0].length - a[0].length)
     .forEach(([vi, en]) => {
       if (output.includes(vi)) output = output.split(vi).join(en);

@@ -1,4 +1,5 @@
 import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { useEffect } from "react";
 import {
   Activity,
   BarChart3,
@@ -27,42 +28,42 @@ import {
   WalletCards,
   Wand2,
 } from "lucide-react";
-import { useLang } from "../../store/CmsStore";
+import { translateDomTree, useI18n } from "../../i18n";
 
 const copy = {
   vi: {
     app: "Gundam Admin",
-    desc: "CMS / Ecommerce Ops",
-    dashboard: "Dashboard",
-    storefrontCms: "Storefront CMS",
-    cmsOverview: "CMS Overview",
-    pages: "Pages",
-    homeBuilder: "Home Builder",
-    banners: "Banners",
+    desc: "CMS / Vận hành Ecommerce",
+    dashboard: "Bảng điều khiển",
+    storefrontCms: "CMS giao diện bán hàng",
+    cmsOverview: "Tổng quan CMS",
+    pages: "Trang nội dung",
+    homeBuilder: "Thiết kế trang chủ",
+    banners: "Banner",
     news: "Tin tức",
     events: "Sự kiện",
-    navigation: "Navigation",
-    media: "Media Library",
-    themeSeo: "Theme / SEO",
-    productManagement: "Product Management",
-    products: "Products",
-    categories: "Product Categories",
-    suppliers: "Suppliers",
-    groups: "Product Groups",
-    groupMapping: "Group Mapping",
-    pricingInventory: "Pricing & Inventory",
-    promotions: "Promotions",
-    sales: "Sales & Orders",
-    orders: "Orders",
-    customerService: "Customer Service",
-    chats: "Chats",
-    reviews: "Reviews",
-    complaints: "Complaints",
-    system: "System",
-    analytics: "Analytics",
-    settings: "Settings",
-    viewStore: "View Store",
-    search: "Search admin...",
+    navigation: "Điều hướng",
+    media: "Thư viện media",
+    themeSeo: "Giao diện / SEO",
+    productManagement: "Quản lý sản phẩm",
+    products: "Sản phẩm",
+    categories: "Danh mục sản phẩm",
+    suppliers: "Nhà cung cấp",
+    groups: "Nhóm sản phẩm",
+    groupMapping: "Gán nhóm",
+    pricingInventory: "Giá & tồn kho",
+    promotions: "Khuyến mãi",
+    sales: "Bán hàng & đơn hàng",
+    orders: "Đơn hàng",
+    customerService: "Chăm sóc khách hàng",
+    chats: "Tin nhắn",
+    reviews: "Đánh giá",
+    complaints: "Khiếu nại",
+    system: "Hệ thống",
+    analytics: "Phân tích",
+    settings: "Cài đặt",
+    viewStore: "Xem cửa hàng",
+    search: "Tìm trong admin...",
   },
   en: {
     app: "Gundam Admin",
@@ -99,6 +100,29 @@ const copy = {
     search: "Search admin...",
   },
 };
+
+
+function AdminDomTranslator({ lang }) {
+  useEffect(() => {
+    translateDomTree(document.body, lang);
+
+    const observer = new MutationObserver(() => {
+      translateDomTree(document.body, lang);
+    });
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      characterData: true,
+      attributes: true,
+      attributeFilter: ["placeholder", "title", "aria-label"],
+    });
+
+    return () => observer.disconnect();
+  }, [lang]);
+
+  return null;
+}
 
 function AdminLogo({ t }) {
   return (
@@ -166,13 +190,14 @@ function getPageTitle(pathname, t) {
 }
 
 export default function AdminLayout() {
-  const [lang] = useLang();
+  const { lang, setLang } = useI18n();
   const t = copy[lang] || copy.vi;
   const location = useLocation();
   const pageTitle = getPageTitle(location.pathname, t);
 
   return (
     <div className="min-h-screen bg-slate-100 text-slate-900">
+      <AdminDomTranslator lang={lang} />
       <div className="grid min-h-screen lg:grid-cols-[268px_1fr]">
         <aside className="hidden border-r border-slate-200 bg-white lg:block">
           <AdminLogo t={t} />
@@ -233,6 +258,24 @@ export default function AdminLayout() {
                 <div className="hidden items-center rounded-md border border-slate-300 bg-white px-3 py-2 md:flex">
                   <Search size={16} className="text-slate-400" />
                   <input className="w-56 bg-transparent px-2 text-sm outline-none" placeholder={t.search} />
+                </div>
+
+
+                <div className="flex rounded-md border border-slate-300 bg-slate-50 p-1">
+                  {["vi", "en"].map((item) => (
+                    <button
+                      key={item}
+                      type="button"
+                      onClick={() => setLang(item)}
+                      className={`rounded px-3 py-1.5 text-xs font-black uppercase transition ${
+                        lang === item
+                          ? "bg-blue-700 text-white shadow-sm"
+                          : "text-slate-500 hover:bg-white hover:text-slate-900"
+                      }`}
+                    >
+                      {item.toUpperCase()}
+                    </button>
+                  ))}
                 </div>
 
                 <button className="rounded-md border border-slate-300 bg-white p-2 text-slate-600 hover:bg-slate-50">
