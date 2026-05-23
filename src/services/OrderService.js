@@ -12,6 +12,10 @@ import {
   getAllowedNextOrderStatuses,
   canTransitionOrderStatus,
   isTerminalOrderStatus,
+  normalizePhone,
+  canCustomerCancelDirect,
+  canCustomerRequestCancel,
+  canCustomerRequestReturn,
 } from "../constants/orderConfig";
 
 const CMS_KEY = "gundam-cms-state";
@@ -28,6 +32,9 @@ export {
   getAllowedNextOrderStatuses,
   canTransitionOrderStatus,
   isTerminalOrderStatus,
+  canCustomerCancelDirect,
+  canCustomerRequestCancel,
+  canCustomerRequestReturn,
 };
 
 function readCms() {
@@ -290,6 +297,84 @@ export function updateOrderAdminNote(orderId, adminNote = "") {
           updatedAt: new Date().toISOString(),
         }
       : order
+  );
+
+  saveOrders(orders);
+  return orders;
+}
+
+
+export function findOrderForSecureLookup(orderCode = "", phone = "") {
+  const code = String(orderCode || "").trim().toLowerCase();
+  const normalizedPhone = normalizePhone(phone);
+
+  if (!code || !normalizedPhone) return null;
+
+  return (
+    getOrders().find((order) => {
+      const orderId = String(order.id || "").toLowerCase();
+      const publicCode = String(order.orderCode || "").toLowerCase();
+      const customerPhone = normalizePhone(order.customer?.phone || "");
+
+      return (orderId === code || publicCode === code) && customerPhone === normalizedPhone;
+    }) || null
+  );
+}
+
+export function cancelOrderDirectly(orderId, reason = "", note = "") {
+  const order = getOrderById(orderId);
+
+  if (!order) {
+    throw new Error("Order not found.");
+  }
+
+  if (!canCustomerCancelDirect(order.status)) {
+    throw new Error("This order cannot be cancelled directly.");
+  }
+
+  return updateOrderStatus(
+    order.id,
+    ORDER_STATUS.CANCELLED,
+    note || reason || "Khách hàng đã hủy đơn.",
+    { force: false }
+  );
+}
+
+export function requestReturnOrder(orderId, reason = "", note = "") {
+  const now = new Date().toISOString();
+  const order = getOrderById(orderId);
+
+  if (!order) {
+    throw new Error("Order not found.");
+  }
+
+  if (!canCustomerRequestReturn(order.status)) {
+    throw new Error("This order is not eligible for return/refund request.");
+  }
+
+  const orders = getOrders().map((item) =>
+    item.id === order.id || item.orderCode === order.id
+      ? {
+          ...item,
+          returnRequest: {
+            requested: true,
+            reason,
+            note,
+            status: "Pending",
+            requestedAt: now,
+          },
+          updatedAt: now,
+          timeline: [
+            ...(item.timeline || []),
+            {
+              status: item.status,
+              time: now,
+              title: "Yêu cầu trả hàng/hoàn tiền",
+              note: note || reason || "Khách hàng đã gửi yêu cầu trả hàng/hoàn tiền.",
+            },
+          ],
+        }
+      : item
   );
 
   saveOrders(orders);

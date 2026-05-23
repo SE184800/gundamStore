@@ -101,6 +101,24 @@ export const CANCEL_REASONS = [
   { value: "other", label: { vi: "Lý do khác", en: "Other reason" } },
 ];
 
+export const RETURN_REQUEST_STATUS = {
+  NONE: "None",
+  PENDING: "Pending",
+  APPROVED: "Approved",
+  REJECTED: "Rejected",
+  RECEIVED: "Received",
+  REFUNDED: "Refunded",
+};
+
+export const RETURN_REASONS = [
+  { value: "wrong_item", label: { vi: "Nhận sai sản phẩm", en: "Wrong item received" } },
+  { value: "damaged_box", label: { vi: "Hộp/sản phẩm bị hư hỏng", en: "Damaged box/product" } },
+  { value: "missing_parts", label: { vi: "Thiếu runner/phụ kiện", en: "Missing runners/accessories" } },
+  { value: "not_as_described", label: { vi: "Không đúng mô tả", en: "Not as described" } },
+  { value: "other", label: { vi: "Lý do khác", en: "Other reason" } },
+];
+
+
 export const PREORDER_STATUS = {
   DEPOSIT_PENDING: "DepositPending",
   DEPOSIT_PAID: "DepositPaid",
@@ -182,4 +200,21 @@ export function escapeHtml(value = "") {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
+}
+
+
+export function normalizePhone(phone = "") {
+  return String(phone || "").replace(/[^\d+]/g, "").trim();
+}
+
+export function canCustomerCancelDirect(status) {
+  return status === ORDER_STATUS.PLACED;
+}
+
+export function canCustomerRequestCancel(status) {
+  return [ORDER_STATUS.CONFIRMED, ORDER_STATUS.PACKING].includes(status);
+}
+
+export function canCustomerRequestReturn(status) {
+  return [ORDER_STATUS.DELIVERED, ORDER_STATUS.COMPLETED].includes(status);
 }
