@@ -322,7 +322,13 @@ export function CmsProvider({ children }) {
       });
       actions.track("chat_message_sent");
       setTimeout(() => {
-        actions.replyChat(chatId, "Cảm ơn bạn. Shop đã nhận tin nhắn, AI/CSKH sẽ hỗ trợ ngay nhé.", "ai");
+        actions.replyChat(
+          chatId,
+          state.settings?.lang === "en"
+            ? "Thank you. The shop has received your message. AI/customer support will assist you shortly."
+            : "Cảm ơn bạn. Shop đã nhận tin nhắn, AI/CSKH sẽ hỗ trợ ngay nhé.",
+          "ai"
+        );
       }, 300);
       return chatId;
     },

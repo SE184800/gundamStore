@@ -2,12 +2,7 @@ import { useState } from "react";
 import { createPortal } from "react-dom";
 import { Eye, Heart, Minus, Plus, ShoppingCart, Star, X, Zap } from "lucide-react";
 import { formatCurrency } from "../../utils/format";
-
-function getText(value, lang = "vi", fallback = "") {
-  if (!value) return fallback;
-  if (typeof value === "string") return value;
-  return value[lang] || value.vi || value.en || fallback;
-}
+import { resolveText, useI18n } from "../../i18n";
 
 function getImage(product) {
   return (
@@ -24,13 +19,17 @@ function getProductUrl(product) {
   return `/product/${product?.slug || product?.id || ""}`;
 }
 
-export default function ProductCard({ product, lang = "vi", actions, badge, onAddToCart }) {
+export default function ProductCard({ product, lang: langProp, actions, badge, onAddToCart }) {
+  const i18n = useI18n();
+  const lang = langProp || i18n.lang;
+  const t = i18n.t;
+
   const [quickOpen, setQuickOpen] = useState(false);
   const [qty, setQty] = useState(1);
 
-  const name = getText(product?.name, lang, "Gundam Product");
-  const short = getText(product?.short, lang, "Hàng chính hãng Bandai.");
-  const desc = getText(product?.description, lang, short);
+  const name = resolveText(product?.name, lang, t("product.defaultName"));
+  const short = resolveText(product?.short, lang, t("product.defaultShort"));
+  const desc = resolveText(product?.description, lang, short);
   const image = getImage(product);
   const price = product?.price || 0;
   const oldPrice = product?.oldPrice || product?.originalPrice;
@@ -43,7 +42,7 @@ export default function ProductCard({ product, lang = "vi", actions, badge, onAd
     e?.stopPropagation?.();
 
     if (onAddToCart) onAddToCart(product, qty);
-    else actions?.addToCart?.(product, qty);
+    else actions?.addToCart?.(product?.id, qty);
 
     actions?.track?.("add_to_cart", { productId: product?.id, qty });
   }
@@ -91,7 +90,7 @@ export default function ProductCard({ product, lang = "vi", actions, badge, onAd
                 setQuickOpen(true);
               }}
               className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white/80 text-slate-500 shadow-sm transition hover:scale-110 hover:border-blue-200 hover:bg-blue-700 hover:text-white"
-              title="Xem nhanh"
+              title={t("product.quickView")}
             >
               <Eye size={18} />
             </button>
@@ -99,7 +98,7 @@ export default function ProductCard({ product, lang = "vi", actions, badge, onAd
 
           <div className="mb-3 flex items-center justify-between text-sm">
             <span className="font-semibold text-slate-500">{product?.scale || "1/144"}</span>
-            <span className="font-black text-blue-700">{isPreorder ? "Pre-order" : product?.status || "In stock"}</span>
+            <span className="font-black text-blue-700">{isPreorder ? t("product.preorder") : resolveText(product?.status || t("product.inStock"), lang)}</span>
           </div>
 
           <div className="mb-4 flex items-end justify-between">
@@ -131,7 +130,7 @@ export default function ProductCard({ product, lang = "vi", actions, badge, onAd
               className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-red-600 to-rose-500 px-4 py-3 text-sm font-black uppercase tracking-wide text-white shadow-lg shadow-red-200 transition hover:-translate-y-0.5 hover:brightness-110"
             >
               <Zap size={16} />
-              PRE-ORDER
+              {t("product.preorder")}
             </button>
           ) : (
             <div className="grid grid-cols-2 gap-2">
@@ -141,7 +140,7 @@ export default function ProductCard({ product, lang = "vi", actions, badge, onAd
                 className="flex items-center justify-center gap-1 rounded-2xl border border-blue-200 bg-blue-50 px-3 py-2.5 text-xs font-black text-blue-700 transition hover:bg-blue-700 hover:text-white"
               >
                 <ShoppingCart size={15} />
-                Thêm giỏ
+                {t("product.addCart")}
               </button>
 
               <button
@@ -150,7 +149,7 @@ export default function ProductCard({ product, lang = "vi", actions, badge, onAd
                 className="flex items-center justify-center gap-1 rounded-2xl bg-blue-700 px-3 py-2.5 text-xs font-black text-white shadow-lg shadow-blue-100 transition hover:bg-blue-800"
               >
                 <Zap size={15} />
-                Mua ngay
+                {t("product.buyNow")}
               </button>
             </div>
           )}
@@ -210,7 +209,7 @@ export default function ProductCard({ product, lang = "vi", actions, badge, onAd
                 </div>
 
                 <div className="mt-4 inline-flex rounded-lg bg-emerald-50 px-3 py-2 text-sm font-black text-emerald-700">
-                  {stock > 0 ? `✓ Sẵn trong kho: ${stock}` : "Pre-order / Liên hệ"}
+                  {stock > 0 ? `✓ ${t("product.stockReady")}: ${stock}` : t("product.preorderContact")}
                 </div>
 
                 <div className="mt-6 flex items-center gap-3">
@@ -229,14 +228,14 @@ export default function ProductCard({ product, lang = "vi", actions, badge, onAd
                     className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-blue-700 px-6 py-4 text-sm font-black text-white shadow-lg shadow-blue-100 transition hover:bg-blue-800"
                   >
                     <ShoppingCart size={18} />
-                    Thêm vào giỏ
+                    {t("product.addToCart")}
                   </button>
 
                   <a
                     href={detailUrl}
                     className="rounded-2xl border border-slate-200 px-5 py-4 text-sm font-black text-slate-700 hover:bg-slate-50"
                   >
-                    Chi tiết
+                    {t("product.details")}
                   </a>
 
                   <button className="rounded-2xl border border-slate-200 p-4 text-slate-600 hover:bg-slate-50">

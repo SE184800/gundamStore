@@ -1,3 +1,4 @@
+import AutoTranslate from "./components/common/AutoTranslate.jsx";
 import { Navigate, Route, Routes } from "react-router-dom";
 import HomePage from "./pages/storefront/HomePage";
 import ShopPage from "./pages/storefront/ShopPage";
@@ -50,6 +51,8 @@ import AdminReports from "./pages/admin/AdminReports";
 
 export default function App() {
   return (
+    <>
+      <AutoTranslate />
     <>
       <Routes>
         <Route path="order-lookup" element={<OrderLookupPage />} />
@@ -115,6 +118,7 @@ export default function App() {
       <AddToCartBridge />
       <HeaderCart />
       
+    </>
     </>
   );
 }
