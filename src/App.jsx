@@ -42,10 +42,22 @@ import AdminProductGroups from "./pages/admin/AdminProductGroups";
 import AdminProductGroupMapping from "./pages/admin/AdminProductGroupMapping";
 import AdminPricingInventory from "./pages/admin/AdminPricingInventory";
 import AdminPromotions from "./pages/admin/AdminPromotions";
+import HeaderCart from "./components/layout/HeaderCart";
+import MyOrdersPage from "./pages/storefront/MyOrdersPage";
+import OrderDetailPage from "./pages/storefront/OrderDetailPage";
+import AddToCartBridge from "./components/cart/AddToCartBridge";
+import AdminReports from "./pages/admin/AdminReports";
 
 export default function App() {
   return (
-    <Routes>
+    <>
+      <Routes>
+        <Route path="order-lookup" element={<OrderLookupPage />} />
+        <Route path="orders/:id" element={<OrderDetailPage />} />
+        <Route path="orders" element={<MyOrdersPage />} />
+        <Route path="order-success/:id" element={<OrderSuccessPage />} />
+        <Route path="cart" element={<CartPage />} />
+        <Route path="checkout" element={<CheckoutPage />} />
       <Route path="/" element={<HomePage />} />
       <Route path="/shop" element={<ShopPage />} />
           <Route path="/accessories" element={<AccessoriesPage />} />
@@ -67,6 +79,7 @@ export default function App() {
       <Route path="/order-success/:orderId" element={<OrderSuccessPage />} />
 
       <Route path="/admin" element={<AdminLayout />}>
+          <Route path="reports" element={<AdminReports />} />
         <Route index element={<AdminDashboard />} />
         <Route path="cms" element={<AdminStorefrontCMS />} />
         <Route path="cms/pages" element={<AdminStorefrontCMS />} />
@@ -98,6 +111,10 @@ export default function App() {
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+          </Routes>
+      <AddToCartBridge />
+      <HeaderCart />
+      
+    </>
   );
 }
