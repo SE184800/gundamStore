@@ -2,12 +2,14 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowRight,
+  BellRing,
   Box,
   CheckCircle2,
   ChevronRight,
   Clock,
   CreditCard,
   Factory,
+  GitCompareArrows,
   Heart,
   Layers3,
   MapPin,
@@ -30,6 +32,8 @@ import { useCms } from "../../store/CmsStore";
 import { translateStaticText } from "../../i18n";
 import { saveCheckoutDraft } from "../../services/CartService";
 import { isWishlistSaved, toggleWishlist } from "../../services/WishlistService";
+import { isCompareSaved, toggleCompare } from "../../services/CompareService";
+import { registerRestockAlert } from "../../services/RestockAlertService";
 import {
   ORDER_TYPE,
   PAYMENT_STATUS,
@@ -58,6 +62,14 @@ const copy = {
     preorderNow: "Đặt trước ngay",
     favorite: "Yêu thích",
     share: "Chia sẻ",
+    compare: "So sánh",
+    compared: "Đã thêm so sánh",
+    notifyTitle: "Báo khi hàng về",
+    notifyName: "Họ tên",
+    notifyPhone: "Số điện thoại",
+    notifyNote: "Ghi chú nhu cầu",
+    notifySubmit: "Đăng ký báo hàng",
+    notifySuccess: "Đã ghi nhận. Shop sẽ báo khi hàng về.",
     deposit: "Cọc trước",
     eta: "Dự kiến về",
     preorderNote: "Đơn pre-order sẽ được ghi nhận cọc, shop nhắc thanh toán phần còn lại khi hàng về.",
@@ -127,6 +139,14 @@ const copy = {
     preorderNow: "Pre-order now",
     favorite: "Wishlist",
     share: "Share",
+    compare: "Compare",
+    compared: "Compared",
+    notifyTitle: "Notify when available",
+    notifyName: "Full name",
+    notifyPhone: "Phone number",
+    notifyNote: "Demand note",
+    notifySubmit: "Register alert",
+    notifySuccess: "Saved. The shop will notify you when available.",
     deposit: "Deposit",
     eta: "ETA",
     preorderNote: "Pre-order deposit will be recorded. The shop will remind you to pay the remaining balance when the item arrives.",
@@ -273,14 +293,42 @@ function ProductInfo({ product, lang, actions, onPreorder }) {
   const oldPrice = Number(product.oldPrice || 0);
   const save = oldPrice > price ? oldPrice - price : 0;
   const [wishlistSaved, setWishlistSaved] = useState(false);
+  const [compareSaved, setCompareSaved] = useState(false);
+  const [alertForm, setAlertForm] = useState({ name: "", phone: "", note: "" });
+  const [alertMessage, setAlertMessage] = useState("");
+  const [alertError, setAlertError] = useState("");
 
   useEffect(() => {
     setWishlistSaved(isWishlistSaved(product.id));
+    setCompareSaved(isCompareSaved(product.id));
   }, [product.id]);
 
   function handleWishlist() {
     const next = toggleWishlist(product.id);
     setWishlistSaved(next.includes(product.id));
+  }
+
+  function handleCompare() {
+    const next = toggleCompare(product.id);
+    setCompareSaved(next.includes(product.id));
+  }
+
+  function patchAlert(field, value) {
+    setAlertForm((prev) => ({ ...prev, [field]: value }));
+  }
+
+  function submitRestockAlert(event) {
+    event.preventDefault();
+    setAlertMessage("");
+    setAlertError("");
+
+    try {
+      registerRestockAlert(product, alertForm);
+      setAlertMessage(t.notifySuccess);
+      setAlertForm({ name: "", phone: "", note: "" });
+    } catch (error) {
+      setAlertError(error?.message || "Request failed.");
+    }
   }
 
   return (
@@ -364,6 +412,56 @@ function ProductInfo({ product, lang, actions, onPreorder }) {
         )}
       </div>
 
+
+      {/* RestockAlertFormStart */}
+      {(preorder || Number(product.stock || 0) <= 0 || String(product.status || "").toLowerCase().includes("coming")) && (
+        <form onSubmit={submitRestockAlert} className="mt-5 rounded-3xl border border-cyan-100 bg-cyan-50 p-5">
+          <div className="mb-3 flex items-center gap-2 text-sm font-black text-cyan-800">
+            <BellRing size={18} />
+            {t.notifyTitle}
+          </div>
+
+          {alertMessage && (
+            <div className="mb-3 rounded-2xl bg-green-50 p-3 text-xs font-black text-green-700">
+              {alertMessage}
+            </div>
+          )}
+
+          {alertError && (
+            <div className="mb-3 rounded-2xl bg-red-50 p-3 text-xs font-black text-red-600">
+              {alertError}
+            </div>
+          )}
+
+          <div className="grid gap-2 sm:grid-cols-2">
+            <input
+              value={alertForm.name}
+              onChange={(event) => patchAlert("name", event.target.value)}
+              placeholder={t.notifyName}
+              className="rounded-2xl border border-cyan-100 bg-white px-4 py-3 text-sm font-bold outline-none"
+            />
+            <input
+              value={alertForm.phone}
+              onChange={(event) => patchAlert("phone", event.target.value)}
+              placeholder={t.notifyPhone}
+              inputMode="tel"
+              className="rounded-2xl border border-cyan-100 bg-white px-4 py-3 text-sm font-bold outline-none"
+            />
+            <input
+              value={alertForm.note}
+              onChange={(event) => patchAlert("note", event.target.value)}
+              placeholder={t.notifyNote}
+              className="rounded-2xl border border-cyan-100 bg-white px-4 py-3 text-sm font-bold outline-none sm:col-span-2"
+            />
+          </div>
+
+          <button type="submit" className="mt-3 rounded-2xl bg-cyan-700 px-5 py-3 text-sm font-black text-white">
+            {t.notifySubmit}
+          </button>
+        </form>
+      )}
+      {/* RestockAlertFormEnd */}
+
       <div className="mt-4 grid grid-cols-2 gap-3">
         <button
           onClick={handleWishlist}
@@ -376,7 +474,17 @@ function ProductInfo({ product, lang, actions, onPreorder }) {
           <Heart className="mr-2 inline" size={16} fill={wishlistSaved ? "currentColor" : "none"} />
           {wishlistSaved ? (lang === "en" ? "Saved" : "Đã lưu") : t.favorite}
         </button>
-        <button className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700 shadow-sm hover:bg-slate-50"><Share2 className="mr-2 inline" size={16} />{t.share}</button>
+        <button
+          onClick={handleCompare}
+          className={`rounded-2xl border px-4 py-3 text-sm font-black shadow-sm ${
+            compareSaved
+              ? "border-cyan-200 bg-cyan-50 text-cyan-700"
+              : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+          }`}
+        >
+          <GitCompareArrows className="mr-2 inline" size={16} />
+          {compareSaved ? t.compared : t.compare}
+        </button>
       </div>
     </div>
   );
