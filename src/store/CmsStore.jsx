@@ -1,4 +1,8 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import {
+  enrichProductsWithBackendIds,
+  getStorefrontProductsFromApi,
+} from "../services/StorefrontProductApiService";
 import { seedNews } from "../data/news";
 import { seedEvents } from "../data/events";
 import {
@@ -71,6 +75,27 @@ const CmsContext = createContext(null);
 
 export function CmsProvider({ children }) {
   const [state, setState] = useState(() => safeRead());
+
+  useEffect(() => {
+    let alive = true;
+
+    getStorefrontProductsFromApi()
+      .then((backendProducts) => {
+        if (!alive) return;
+
+        setState((prev) => ({
+          ...prev,
+          products: enrichProductsWithBackendIds(prev.products || [], backendProducts || []),
+        }));
+      })
+      .catch((error) => {
+        console.warn("CMS product PostgreSQL sync skipped", error);
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));

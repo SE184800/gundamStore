@@ -115,10 +115,16 @@ export function enrichProductsWithBackendIds(localProducts = [], backendProducts
       ...localProduct,
       backendProductId: matched.id,
       productId: matched.id,
-      sku: localProduct.sku || matched.sku,
+      sku: matched.sku || localProduct.sku,
       slug: localProduct.slug || matched.slug,
+      name: {
+        vi: matched.nameVi || localProduct.name?.vi || localProduct.title || "",
+        en: matched.nameEn || matched.nameVi || localProduct.name?.en || localProduct.title || "",
+      },
+      title: matched.nameVi || localProduct.title,
+      description: matched.description || localProduct.description,
       price: Number(matched.price) || Number(localProduct.price) || 0,
-      stock: Number(matched.stock) || Number(localProduct.stock) || 0,
+      stock: Number(matched.stock) || 0,
       source: "local+backend",
       backendRaw: matched,
     };
@@ -135,4 +141,41 @@ export async function getStorefrontProductsFromApi() {
   }
 
   return data.products;
+}
+
+
+export async function getStorefrontProductByKeyFromApi(key = "") {
+  const data = await apiRequest(`/api/products/${encodeURIComponent(key)}`, {
+    token: "",
+  });
+
+  if (!data?.success || !data.product) {
+    throw new Error("Backend did not return product detail.");
+  }
+
+  return data.product;
+}
+
+export function mergeLocalProductWithBackendProduct(localProduct = {}, backendProduct = {}) {
+  if (!backendProduct?.id) return localProduct;
+
+  return {
+    ...localProduct,
+    backendProductId: backendProduct.id,
+    productId: backendProduct.id,
+    sku: backendProduct.sku || localProduct.sku,
+    // giữ slug local để URL hiện tại không bị đổi
+    slug: localProduct.slug || backendProduct.slug,
+    name: {
+      vi: backendProduct.nameVi || localProduct.name?.vi || localProduct.title || "",
+      en: backendProduct.nameEn || backendProduct.nameVi || localProduct.name?.en || localProduct.title || "",
+    },
+    title: backendProduct.nameVi || localProduct.title,
+    description: backendProduct.description || localProduct.description,
+    price: Number(backendProduct.price) || Number(localProduct.price) || 0,
+    stock: Number(backendProduct.stock) || 0,
+    active: backendProduct.active !== false,
+    source: "local+backend-detail",
+    backendRaw: backendProduct,
+  };
 }
