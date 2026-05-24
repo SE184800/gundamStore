@@ -1,3 +1,4 @@
+import "./styles/mobile-polish.css";
 import { I18nProvider } from "./i18n";
 import React from "react";
 import ReactDOM from "react-dom/client";

@@ -1,5 +1,5 @@
 import { normalizeItems, calcSubtotal } from "./PricingService";
-import { reduceStock, restoreStock } from "./InventoryService";
+import { reduceStock, restoreStock, logOrderStockReservation, logOrderStockRestore } from "./InventoryService";
 import {
   ORDER_TYPE,
   ORDER_STATUS,
@@ -162,6 +162,7 @@ export function createOrder(payload) {
   };
 
   reduceStock(order.items);
+  logOrderStockReservation(order);
 
   const orders = getOrders();
   saveOrders([order, ...orders]);
@@ -191,6 +192,7 @@ export function updateOrderStatus(orderId, status, note = "", options = {}) {
 
   if (status === ORDER_STATUS.CANCELLED && currentStatus !== ORDER_STATUS.CANCELLED) {
     restoreStock(currentOrder.items || []);
+    logOrderStockRestore(currentOrder, "Stock restored because order was cancelled.");
   }
 
   const nextOrders = orders.map((order) =>

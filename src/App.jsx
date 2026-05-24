@@ -32,6 +32,7 @@ import AdminCategories from "./pages/admin/AdminCategories";
 import AdminProductCategoryMapping from "./pages/admin/AdminProductCategoryMapping";
 import AdminProductDisplayMapping from "./pages/admin/AdminProductDisplayMapping";
 import AdminOrders from "./pages/admin/AdminOrders";
+import AdminQaHelper from "./pages/admin/AdminQaHelper";
 import AdminChats from "./pages/admin/AdminChats";
 import AdminReviews from "./pages/admin/AdminReviews";
 import AdminComplaints from "./pages/admin/AdminComplaints";
