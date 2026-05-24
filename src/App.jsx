@@ -23,6 +23,7 @@ import OrderSuccessPage from "./pages/storefront/OrderSuccessPage";
 import MyOrdersPage from "./pages/storefront/MyOrdersPage";
 import OrderDetailPage from "./pages/storefront/OrderDetailPage";
 import WishlistPage from "./pages/storefront/WishlistPage";
+import ComparePage from "./pages/storefront/ComparePage";
 import CommunityGalleryPage from "./pages/storefront/CommunityGalleryPage";
 
 import AdminLayout from "./pages/admin/AdminLayout";
@@ -40,6 +41,7 @@ import AdminProductDisplayMapping from "./pages/admin/AdminProductDisplayMapping
 import AdminOrders from "./pages/admin/AdminOrders";
 import AdminQaHelper from "./pages/admin/AdminQaHelper";
 import AdminCommunityGallery from "./pages/admin/AdminCommunityGallery";
+import AdminRestockAlerts from "./pages/admin/AdminRestockAlerts";
 import AdminChats from "./pages/admin/AdminChats";
 import AdminReviews from "./pages/admin/AdminReviews";
 import AdminComplaints from "./pages/admin/AdminComplaints";
@@ -79,6 +81,7 @@ export default function App() {
         <Route path="/orders" element={<MyOrdersPage />} />
         <Route path="/orders/:id" element={<OrderDetailPage />} />
         <Route path="/wishlist" element={<WishlistPage />} />
+        <Route path="/compare" element={<ComparePage />} />
         <Route path="/faq" element={<FAQPage />} />
         <Route path="/return-policy" element={<ReturnPolicyPage />} />
         <Route path="/contact" element={<ContactPage />} />
@@ -128,6 +131,7 @@ export default function App() {
           <Route path="chats" element={<AdminChats />} />
           <Route path="reviews" element={<AdminReviews />} />
           <Route path="community-gallery" element={<AdminCommunityGallery />} />
+          <Route path="restock-alerts" element={<AdminRestockAlerts />} />
           <Route path="complaints" element={<AdminComplaints />} />
           <Route path="analytics" element={<AdminAnalytics />} />
           <Route path="settings" element={<AdminSettings />} />
