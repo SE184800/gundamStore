@@ -6,7 +6,11 @@ export function getApiBaseUrl() {
 
 export function getStoredAdminToken() {
   try {
-    return localStorage.getItem(ADMIN_TOKEN_KEY) || "";
+    const directToken = localStorage.getItem(ADMIN_TOKEN_KEY) || "";
+    if (directToken) return directToken;
+
+    const adminSession = JSON.parse(localStorage.getItem("gundam-admin-auth") || "null");
+    return adminSession?.token || "";
   } catch {
     return "";
   }
