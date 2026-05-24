@@ -16,11 +16,13 @@ import {
   cancelOrderDirectly,
   requestCancelOrder,
   requestReturnOrder,
+  requestPreorderBalancePayment,
   ORDER_STATUS,
 } from "../../services/OrderService";
 import {
   CANCEL_REASONS,
   RETURN_REASONS,
+  PREORDER_STATUS,
   canCustomerCancelDirect,
   canCustomerRequestCancel,
   canCustomerRequestReturn,
@@ -72,6 +74,15 @@ function getCopy(lang) {
     cancelOrder: lang === "en" ? "Cancel order" : "Hủy đơn",
     requestCancel: lang === "en" ? "Request cancellation" : "Yêu cầu hủy đơn",
     requestReturn: lang === "en" ? "Request return/refund" : "Yêu cầu trả hàng/hoàn tiền",
+    requestBalancePayment: lang === "en" ? "I paid the remaining balance" : "Tôi đã thanh toán phần còn lại",
+    balancePending:
+      lang === "en"
+        ? "Your remaining balance payment confirmation is waiting for shop review."
+        : "Xác nhận thanh toán phần còn lại đang chờ shop xử lý.",
+    balancePaymentNote:
+      lang === "en"
+        ? "Enter transfer reference or note for the shop:"
+        : "Nhập mã giao dịch/chứng từ hoặc ghi chú cho shop:",
     cannotCancel:
       lang === "en"
         ? "This order cannot be cancelled at the current status. You can request return/refund after delivery."
@@ -198,6 +209,11 @@ export default function OrderDetailPage() {
   const directCancel = canCustomerCancelDirect(order.status);
   const cancelRequest = canCustomerRequestCancel(order.status);
   const returnRequest = canCustomerRequestReturn(order.status);
+  const balanceRequestEligible =
+    order.orderType === "preorder" &&
+    order.preorder?.status === PREORDER_STATUS.READY_FOR_BALANCE &&
+    order.preorder?.balanceStatus !== "Paid" &&
+    order.preorder?.balancePaymentRequest?.status !== "Pending";
 
   function buyAgain() {
     const cart = getCart();
@@ -218,6 +234,20 @@ export default function OrderDetailPage() {
 
   function handleDirectCancel() {
     setModalType("cancelDirect");
+  }
+
+  function handlePreorderBalancePayment() {
+    const note = window.prompt(t.balancePaymentNote);
+
+    if (note === null) return;
+
+    try {
+      requestPreorderBalancePayment(order.id, String(note || "").trim());
+      alert(t.requestSent);
+      setRefreshKey((value) => value + 1);
+    } catch (error) {
+      alert(error?.message || "Request failed.");
+    }
   }
 
   function submitRequest(type, reason, note) {
@@ -292,14 +322,18 @@ export default function OrderDetailPage() {
             </div>
           </div>
 
-          {(order.cancelRequest?.status === "Pending" || order.returnRequest?.status === "Pending") && (
+          {(order.cancelRequest?.status === "Pending" || order.returnRequest?.status === "Pending" || order.preorder?.balancePaymentRequest?.status === "Pending") && (
             <div className="mt-6 rounded-3xl border border-amber-100 bg-amber-50 p-5 text-amber-800">
               <div className="flex gap-3">
                 <Clock className="mt-0.5" size={22} />
                 <div>
                   <div className="font-black">{t.requestPending}</div>
                   <p className="mt-1 text-sm font-semibold">
-                    {order.cancelRequest?.status === "Pending" ? t.cancelPending : t.returnPending}
+                    {order.cancelRequest?.status === "Pending"
+                      ? t.cancelPending
+                      : order.returnRequest?.status === "Pending"
+                        ? t.returnPending
+                        : t.balancePending}
                   </p>
                 </div>
               </div>
@@ -427,6 +461,16 @@ export default function OrderDetailPage() {
                   <RotateCcw size={18} className="mr-2 inline" />
                   {t.buyAgain}
                 </button>
+
+                {balanceRequestEligible && (
+                  <button
+                    onClick={handlePreorderBalancePayment}
+                    className="mt-3 w-full rounded-2xl bg-violet-50 py-4 font-black text-violet-700"
+                  >
+                    <CreditCard size={18} className="mr-2 inline" />
+                    {t.requestBalancePayment}
+                  </button>
+                )}
 
                 {directCancel && (
                   <button
