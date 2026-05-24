@@ -4,6 +4,7 @@ import { lazy, Suspense } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import HeaderCart from "./components/layout/HeaderCart";
 import AddToCartBridge from "./components/cart/AddToCartBridge";
+import AdminProtectedRoute from "./components/admin/AdminProtectedRoute";
 
 const HomePage = lazy(() => import("./pages/storefront/HomePage"));
 const ShopPage = lazy(() => import("./pages/storefront/ShopPage"));
@@ -30,6 +31,7 @@ const CartPage = lazy(() => import("./pages/storefront/CartPage"));
 const CheckoutPage = lazy(() => import("./pages/storefront/CheckoutPage"));
 const OrderSuccessPage = lazy(() => import("./pages/storefront/OrderSuccessPage"));
 
+const AdminLoginPage = lazy(() => import("./pages/admin/AdminLoginPage"));
 const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const AdminReports = lazy(() => import("./pages/admin/AdminReports"));
@@ -120,7 +122,8 @@ export default function App() {
           <Route path="/order-success/:id" element={<OrderSuccessPage />} />
 
           {/* Admin */}
-          <Route path="/admin" element={<AdminLayout />}>
+          <Route path="/admin/login" element={<AdminLoginPage />} />
+          <Route path="/admin" element={<AdminProtectedRoute><AdminLayout /></AdminProtectedRoute>}>
             <Route index element={<AdminDashboard />} />
             <Route path="reports" element={<AdminReports />} />
 
