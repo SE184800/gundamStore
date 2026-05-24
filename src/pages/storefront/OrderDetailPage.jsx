@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   AlertCircle,
@@ -33,6 +33,7 @@ import {
 } from "../../constants/orderConfig";
 import { getCart, saveCart } from "../../services/CartService";
 import StorefrontShell from "../../components/storefront/StorefrontShell";
+import { getStorefrontOrderByIdFromApi } from "../../services/StorefrontOrderLookupApiService";
 import { useLang } from "../../store/CmsStore";
 
 const money = (n) => (Number(n) || 0).toLocaleString("vi-VN") + "đ";
@@ -296,8 +297,53 @@ export default function OrderDetailPage() {
 
   const [refreshKey, setRefreshKey] = useState(0);
   const [modalType, setModalType] = useState(null);
+  const [backendOrder, setBackendOrder] = useState(null);
+  const [backendLoading, setBackendLoading] = useState(true);
+  const [backendError, setBackendError] = useState("");
 
-  const order = useMemo(() => getOrderById(id), [id, refreshKey]);
+  const localOrder = useMemo(() => getOrderById(id), [id, refreshKey]);
+
+  useEffect(() => {
+    let alive = true;
+
+    setBackendLoading(true);
+    setBackendError("");
+
+    getStorefrontOrderByIdFromApi(id)
+      .then((item) => {
+        if (!alive) return;
+        setBackendOrder(item);
+        setBackendError("");
+      })
+      .catch((error) => {
+        if (!alive) return;
+        setBackendOrder(null);
+        setBackendError(error?.message || "Backend order lookup failed.");
+      })
+      .finally(() => {
+        if (!alive) return;
+        setBackendLoading(false);
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, [id, refreshKey]);
+
+  const order = backendOrder || localOrder;
+  const isBackendOrder = order?.source === "backend";
+
+  if (backendLoading && !order) {
+    return (
+      <StorefrontShell>
+        <main className="min-h-screen bg-slate-50 p-10">
+          <div className="mx-auto max-w-3xl rounded-3xl bg-white p-10 text-center">
+            <h1 className="text-2xl font-black">Đang tải đơn hàng...</h1>
+          </div>
+        </main>
+      </StorefrontShell>
+    );
+  }
 
   if (!order) {
     return (
@@ -315,10 +361,11 @@ export default function OrderDetailPage() {
   }
 
   const currentIndex = PUBLIC_STEPS.indexOf(order.status);
-  const directCancel = canCustomerCancelDirect(order.status);
-  const cancelRequest = canCustomerRequestCancel(order.status);
-  const returnRequest = canCustomerRequestReturn(order.status);
+  const directCancel = !isBackendOrder && canCustomerCancelDirect(order.status);
+  const cancelRequest = !isBackendOrder && canCustomerRequestCancel(order.status);
+  const returnRequest = !isBackendOrder && canCustomerRequestReturn(order.status);
   const balanceRequestEligible =
+    !isBackendOrder &&
     order.orderType === "preorder" &&
     order.preorder?.status === PREORDER_STATUS.READY_FOR_BALANCE &&
     order.preorder?.balanceStatus !== "Paid" &&
@@ -402,6 +449,18 @@ export default function OrderDetailPage() {
                 <p className="mt-2 text-sm font-semibold text-slate-500">
                   {t.createdAt}: {order.createdAt ? new Date(order.createdAt).toLocaleString("vi-VN") : "-"}
                 </p>
+
+                <div className="mt-3">
+                  <span
+                    className={`rounded-full px-3 py-2 text-xs font-black ${
+                      isBackendOrder
+                        ? "bg-emerald-50 text-emerald-700"
+                        : "bg-amber-50 text-amber-700"
+                    }`}
+                  >
+                    {isBackendOrder ? "PostgreSQL Order" : backendError ? "Local Demo Order" : "Local Demo Order"}
+                  </span>
+                </div>
                 <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-slate-500">
                   {t.trackingHint}
                 </p>

@@ -1,6 +1,7 @@
 import express from "express";
 import {
   createOrder,
+  getPublicOrderById,
   listAdminOrders,
   updateOrderStatus,
   updateOrderPayment,
@@ -11,6 +12,7 @@ import { requireAuth, requirePermission } from "../middleware/auth.js";
 const router = express.Router();
 
 router.post("/", createOrder);
+router.get("/public/:id", getPublicOrderById);
 
 router.get(
   "/admin",
