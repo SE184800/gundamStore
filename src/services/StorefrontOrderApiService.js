@@ -119,7 +119,7 @@ function looksLikeBackendId(value = "") {
 }
 
 function normalizeProductId(item = {}) {
-  const id = item.productId || item.backendProductId || "";
+  const id = item.backendProductId || item.productId || "";
   return looksLikeBackendId(id) ? id : "";
 }
 

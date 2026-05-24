@@ -7,10 +7,24 @@ function totalQty(cart = []) {
   return cart.reduce((sum, item) => sum + (Number(item.quantity) || 1), 0);
 }
 
+function looksLikeBackendId(value = "") {
+  return /^c[a-z0-9]{10,}$/i.test(String(value || ""));
+}
+
+function resolveBackendProductId(product = {}) {
+  return (
+    product.backendProductId ||
+    (looksLikeBackendId(product.productId) ? product.productId : "") ||
+    (looksLikeBackendId(product.id) ? product.id : "") ||
+    ""
+  );
+}
+
 function identity(item = {}) {
   return [
-    item.id,
+    item.backendProductId,
     item.productId,
+    item.id,
     item.slug,
     item.sku,
     normalizeText(resolveName(item.name)),
@@ -35,7 +49,8 @@ function dedupeCart(cart = []) {
         ...current,
         ...item,
         id: current.id || item.id,
-        productId: current.productId || item.productId,
+        backendProductId: current.backendProductId || item.backendProductId,
+        productId: current.productId || item.productId || current.backendProductId || item.backendProductId,
         quantity: (Number(current.quantity) || 1) + (Number(item.quantity) || 1),
         selected: true,
         price: Number(item.price) > 0 ? item.price : current.price,
@@ -97,11 +112,16 @@ export function saveCart(cart, products = []) {
 
 export function addProductToCart(product, quantity = 1, products = []) {
   const cart = getCart(products);
+  const backendProductId = resolveBackendProductId(product);
+
   const item = normalizeCartItem(
     {
       ...product,
-      id: product?.id || product?.slug,
-      productId: product?.id,
+      id: product?.id || product?.slug || backendProductId,
+      backendProductId,
+      productId: backendProductId || product?.productId || product?.id || product?.slug,
+      sku: product?.sku || "",
+      slug: product?.slug || "",
       quantity: Number(quantity) || 1,
       selected: true,
     },
@@ -117,7 +137,8 @@ export function addProductToCart(product, quantity = 1, products = []) {
               ...row,
               ...item,
               id: row.id || item.id,
-              productId: row.productId || item.productId,
+              backendProductId: row.backendProductId || item.backendProductId,
+              productId: row.productId || item.productId || row.backendProductId || item.backendProductId,
               quantity: (Number(row.quantity) || 1) + item.quantity,
               selected: true,
             }
@@ -135,7 +156,12 @@ export function getCartCount(products = []) {
 export function clearCartItems(itemIds = []) {
   const cart = getCart();
   return saveCart(
-    cart.filter((item) => !itemIds.includes(item.id) && !itemIds.includes(item.productId))
+    cart.filter(
+      (item) =>
+        !itemIds.includes(item.id) &&
+        !itemIds.includes(item.productId) &&
+        !itemIds.includes(item.backendProductId)
+    )
   );
 }
 

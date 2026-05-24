@@ -53,6 +53,21 @@ function getItemName(item, lang) {
   return getLocalized(item.name, lang, item.name?.vi || item.name?.en || "");
 }
 
+function getCartIdentity(item = {}) {
+  return (
+    item.backendProductId ||
+    item.productId ||
+    item.id ||
+    item.slug ||
+    item.sku ||
+    getItemName(item, "vi")
+  );
+}
+
+function isSameCartItem(a = {}, b = {}) {
+  return getCartIdentity(a) === getCartIdentity(b);
+}
+
 export default function CartPage() {
   const navigate = useNavigate();
   const [lang] = useLang();
@@ -95,7 +110,9 @@ export default function CartPage() {
   }
 
   function getAvailable(item) {
-    return Number(getStock(item.id).available) || 0;
+    return Number(
+      getStock(item.backendProductId || item.productId || item.id || item.slug || item.sku).available
+    ) || Number(item.stock || 0) || 0;
   }
 
   function increaseQty(item) {
@@ -108,7 +125,7 @@ export default function CartPage() {
 
     updateCart(
       cart.map((x) =>
-        x.id === item.id ? { ...x, quantity: (x.quantity || 1) + 1 } : x
+        isSameCartItem(x, item) ? { ...x, quantity: (x.quantity || 1) + 1 } : x
       )
     );
   }
@@ -116,7 +133,7 @@ export default function CartPage() {
   function decreaseQty(item) {
     updateCart(
       cart.map((x) =>
-        x.id === item.id
+        isSameCartItem(x, item)
           ? { ...x, quantity: Math.max(1, (x.quantity || 1) - 1) }
           : x
       )
@@ -147,6 +164,11 @@ export default function CartPage() {
       orderType: "normal",
       items: selectedItems.map((item) => ({
         ...item,
+        id: item.id,
+        backendProductId: item.backendProductId || "",
+        productId: item.backendProductId || item.productId || item.id,
+        sku: item.sku || "",
+        slug: item.slug || "",
         name: getItemName(item, lang),
       })),
       subtotal,
@@ -215,7 +237,7 @@ export default function CartPage() {
 
                   return (
                     <div
-                      key={item.id}
+                      key={getCartIdentity(item)}
                       className={`grid items-center gap-4 rounded-3xl bg-white p-5 shadow-sm md:grid-cols-[40px_1fr_130px_140px_150px_70px] ${
                         overStock ? "ring-2 ring-red-200" : ""
                       }`}
@@ -226,7 +248,7 @@ export default function CartPage() {
                         onChange={() =>
                           updateCart(
                             cart.map((x) =>
-                              x.id === item.id
+                              isSameCartItem(x, item)
                                 ? { ...x, selected: x.selected === false }
                                 : x
                             )
@@ -250,6 +272,14 @@ export default function CartPage() {
 
                           <div className="mt-3 inline-flex items-center gap-1 rounded-full bg-blue-50 px-3 py-1 text-xs font-black text-blue-700">
                             <ShieldCheck size={13} /> {t.guaranteed}
+                          </div>
+
+                          <div className={`mt-2 inline-flex rounded-full px-3 py-1 text-[11px] font-black ${
+                            item.backendProductId
+                              ? "bg-emerald-50 text-emerald-700"
+                              : "bg-amber-50 text-amber-700"
+                          }`}>
+                            {item.backendProductId ? `DB Product • ${item.sku || item.backendProductId}` : "Local product"}
                           </div>
 
                           <div className={`mt-2 text-xs font-black ${available <= 0 ? "text-red-500" : "text-slate-500"}`}>
@@ -292,7 +322,7 @@ export default function CartPage() {
                       <div className="font-black text-slate-950">{money(lineTotal)}</div>
 
                       <button
-                        onClick={() => updateCart(cart.filter((x) => x.id !== item.id))}
+                        onClick={() => updateCart(cart.filter((x) => !isSameCartItem(x, item)))}
                         className="rounded-xl bg-red-50 p-3 text-red-500 hover:bg-red-100"
                       >
                         <Trash2 size={18} />
