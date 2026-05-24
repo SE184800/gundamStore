@@ -3,6 +3,8 @@ import {
   createOrder,
   listAdminOrders,
   updateOrderStatus,
+  updateOrderPayment,
+  updateOrderShipping,
 } from "../controllers/orderController.js";
 import { requireAuth, requirePermission } from "../middleware/auth.js";
 
@@ -22,6 +24,20 @@ router.patch(
   requireAuth,
   requirePermission("orders:update"),
   updateOrderStatus
+);
+
+router.patch(
+  "/admin/:id/payment",
+  requireAuth,
+  requirePermission("orders:update"),
+  updateOrderPayment
+);
+
+router.patch(
+  "/admin/:id/shipping",
+  requireAuth,
+  requirePermission("orders:update"),
+  updateOrderShipping
 );
 
 export default router;
