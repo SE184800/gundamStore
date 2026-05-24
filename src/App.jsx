@@ -5,6 +5,7 @@ import HomePage from "./pages/storefront/HomePage";
 import ShopPage from "./pages/storefront/ShopPage";
 import AccessoriesPage from "./pages/storefront/AccessoriesPage";
 import PromotionsPage from "./pages/storefront/PromotionsPage";
+import CampaignCollectionPage from "./pages/storefront/CampaignCollectionPage";
 import PreOrderPage from "./pages/storefront/PreOrderPage";
 import BuildGuidePage from "./pages/storefront/BuildGuidePage";
 import OrderLookupPage from "./pages/storefront/OrderLookupPage";
@@ -66,6 +67,11 @@ export default function App() {
         <Route path="/shop" element={<ShopPage />} />
         <Route path="/accessories" element={<AccessoriesPage />} />
         <Route path="/promotions" element={<PromotionsPage />} />
+
+        <Route path="/flash-sale" element={<CampaignCollectionPage type="flash-sale" />} />
+        <Route path="/restock" element={<CampaignCollectionPage type="restock" />} />
+        <Route path="/limited" element={<CampaignCollectionPage type="limited" />} />
+        <Route path="/coming-soon" element={<CampaignCollectionPage type="coming-soon" />} />
         <Route path="/pre-order" element={<PreOrderPage />} />
         <Route path="/build-guide" element={<BuildGuidePage />} />
         <Route path="/community-gallery" element={<CommunityGalleryPage />} />
