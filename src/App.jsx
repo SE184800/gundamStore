@@ -21,6 +21,8 @@ import CheckoutPage from "./pages/storefront/CheckoutPage";
 import OrderSuccessPage from "./pages/storefront/OrderSuccessPage";
 import MyOrdersPage from "./pages/storefront/MyOrdersPage";
 import OrderDetailPage from "./pages/storefront/OrderDetailPage";
+import WishlistPage from "./pages/storefront/WishlistPage";
+import CommunityGalleryPage from "./pages/storefront/CommunityGalleryPage";
 
 import AdminLayout from "./pages/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -36,6 +38,7 @@ import AdminProductCategoryMapping from "./pages/admin/AdminProductCategoryMappi
 import AdminProductDisplayMapping from "./pages/admin/AdminProductDisplayMapping";
 import AdminOrders from "./pages/admin/AdminOrders";
 import AdminQaHelper from "./pages/admin/AdminQaHelper";
+import AdminCommunityGallery from "./pages/admin/AdminCommunityGallery";
 import AdminChats from "./pages/admin/AdminChats";
 import AdminReviews from "./pages/admin/AdminReviews";
 import AdminComplaints from "./pages/admin/AdminComplaints";
@@ -65,9 +68,11 @@ export default function App() {
         <Route path="/promotions" element={<PromotionsPage />} />
         <Route path="/pre-order" element={<PreOrderPage />} />
         <Route path="/build-guide" element={<BuildGuidePage />} />
+        <Route path="/community-gallery" element={<CommunityGalleryPage />} />
         <Route path="/order-lookup" element={<OrderLookupPage />} />
         <Route path="/orders" element={<MyOrdersPage />} />
         <Route path="/orders/:id" element={<OrderDetailPage />} />
+        <Route path="/wishlist" element={<WishlistPage />} />
         <Route path="/faq" element={<FAQPage />} />
         <Route path="/return-policy" element={<ReturnPolicyPage />} />
         <Route path="/contact" element={<ContactPage />} />
@@ -116,6 +121,7 @@ export default function App() {
           <Route path="orders" element={<AdminOrders />} />
           <Route path="chats" element={<AdminChats />} />
           <Route path="reviews" element={<AdminReviews />} />
+          <Route path="community-gallery" element={<AdminCommunityGallery />} />
           <Route path="complaints" element={<AdminComplaints />} />
           <Route path="analytics" element={<AdminAnalytics />} />
           <Route path="settings" element={<AdminSettings />} />
