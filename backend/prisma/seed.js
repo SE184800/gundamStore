@@ -45,16 +45,32 @@ async function main() {
     });
   }
 
-  await prisma.user.upsert({
-    where: { email: "admin@gundam.local" },
-    update: {},
-    create: {
-      name: "Admin Demo",
-      email: "admin@gundam.local",
-      passwordHash: await hashPassword("admin123"),
-      roleId: adminRole.id,
-    },
-  });
+  const allowDemoSeed =
+    process.env.NODE_ENV !== "production" || process.env.ALLOW_DEMO_SEED === "true";
+
+  const seedAdminEmail = process.env.SEED_ADMIN_EMAIL || "admin@gundam.local";
+  const seedAdminPassword = process.env.SEED_ADMIN_PASSWORD || "";
+
+  if (allowDemoSeed) {
+    if (!seedAdminPassword && process.env.NODE_ENV === "production") {
+      throw new Error("SEED_ADMIN_PASSWORD is required when ALLOW_DEMO_SEED=true in production.");
+    }
+
+    await prisma.user.upsert({
+      where: { email: seedAdminEmail },
+      update: {},
+      create: {
+        name: process.env.SEED_ADMIN_NAME || "Admin Demo",
+        email: seedAdminEmail,
+        passwordHash: await hashPassword(seedAdminPassword || "admin123"),
+        roleId: adminRole.id,
+      },
+    });
+
+    console.log(`Seed admin ensured: ${seedAdminEmail}`);
+  } else {
+    console.log("Demo admin seed skipped. Set ALLOW_DEMO_SEED=true to enable explicitly.");
+  }
 
   const products = [
     {
