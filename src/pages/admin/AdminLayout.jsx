@@ -13,6 +13,7 @@ import {
   MessageCircle,
   Package,
   Percent,
+  MegaphoneIcon,
   Search,
   Settings,
   ShieldAlert,
@@ -55,6 +56,7 @@ const copy = {
     sales: "Sales & Orders",
     orders: "Orders",
     customerService: "Customer Service",
+    communication: "Communication",
     chats: "Chats",
     reviews: "Reviews",
     complaints: "Complaints",
@@ -78,6 +80,7 @@ const copy = {
     navigation: "Navigation",
     media: "Media Library",
     themeSeo: "Theme / SEO",
+    communication: "Communication",
     productManagement: "Product Management",
     products: "Products",
     categories: "Product Categories",
@@ -159,6 +162,7 @@ function getPageTitle(pathname, t) {
   if (pathname.includes("/admin/orders")) return t.orders;
   if (pathname.includes("/admin/chats")) return t.chats;
   if (pathname.includes("/admin/reviews")) return t.reviews;
+  if (pathname.includes("/admin/communication")) return t.communication;
   if (pathname.includes("/admin/complaints")) return t.complaints;
   if (pathname.includes("/admin/analytics")) return t.analytics;
   if (pathname.includes("/admin/settings")) return t.settings;
@@ -212,6 +216,7 @@ export default function AdminLayout() {
               <NavItem to="/admin/chats" icon={MessageCircle} label={t.chats} />
               <NavItem to="/admin/reviews" icon={Star} label={t.reviews} />
               <NavItem to="/admin/complaints" icon={ShieldAlert} label={t.complaints} />
+              <NavItem to="/admin/communication" icon={Megaphone} label={t.communication} />
             </NavGroup>
 
             <NavGroup title={t.system}>

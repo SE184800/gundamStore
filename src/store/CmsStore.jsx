@@ -336,7 +336,29 @@ export function CmsProvider({ children }) {
       }));
       actions.track("staff_reply_sent");
     },
+    
+    saveCommunication(comm) {
+      setState((prev) => {
+        const communicationsList = prev.communications || [];
+        const exists = communicationsList.some((c) => String(c.id) === String(comm.id));
+        
+        const next = exists
+          ? communicationsList.map((c) => (String(c.id) === String(comm.id) ? { ...c, ...comm } : c))
+          : [{ ...comm, id: comm.id || makeId("comm") }, ...communicationsList];
+          
+        return { 
+          ...prev, 
+          communications: next
+        };
+      });
+    },
 
+    deleteCommunication(id) {
+      setState((prev) => ({
+        ...prev,
+        communications: (prev.communications || []).filter((c) => String(c.id) !== String(id)),
+      }));
+    },
     exportData() {
       return JSON.stringify(state, null, 2);
     },

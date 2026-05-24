@@ -13,7 +13,7 @@ import NewsPage from "./pages/storefront/NewsPage";
 import NewsDetailPage from "./pages/storefront/NewsDetailPage";
 import EventsPage from "./pages/storefront/EventsPage";
 import EventDetailPage from "./pages/storefront/EventDetailPage";
-
+import AdminCommunication from "./pages/admin/AdminCommunication";
 import ProductDetailPage from "./pages/storefront/ProductDetailPage";
 import CartPage from "./pages/storefront/CartPage";
 import CheckoutPage from "./pages/storefront/CheckoutPage";
@@ -81,6 +81,7 @@ export default function App() {
       <Route path="/admin" element={<AdminLayout />}>
           <Route path="reports" element={<AdminReports />} />
         <Route index element={<AdminDashboard />} />
+        <Route path="communication" element={<AdminCommunication/>}/>
         <Route path="cms" element={<AdminStorefrontCMS />} />
         <Route path="cms/pages" element={<AdminStorefrontCMS />} />
         <Route path="cms/home-builder" element={<AdminStorefrontCMS />} />
