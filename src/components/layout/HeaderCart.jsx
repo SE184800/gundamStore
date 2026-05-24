@@ -1,26 +1,39 @@
 import { ShoppingCart } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
-
-const CART_KEY = "gundam-cart-final";
+import { forceCartBadgeSync, getCartCount } from "../../services/CartService";
 
 export default function HeaderCart() {
-  const [count, setCount] = useState(0);
+  const [count, setCount] = useState(() => getCartCount());
 
-  function loadCart() {
-    const cart = JSON.parse(localStorage.getItem(CART_KEY) || "[]");
-    const total = cart.reduce((sum, item) => sum + (item.quantity || 1), 0);
-    setCount(total);
+  function sync(event) {
+    const next =
+      typeof event?.detail?.totalQty === "number"
+        ? event.detail.totalQty
+        : getCartCount();
+
+    setCount(next);
+    forceCartBadgeSync();
   }
 
   useEffect(() => {
-    loadCart();
-    window.addEventListener("gundam-cart-updated", loadCart);
-    window.addEventListener("storage", loadCart);
+    sync();
+
+    window.addEventListener("gundam-cart-updated", sync);
+    window.addEventListener("cart:updated", sync);
+    window.addEventListener("storage", sync);
+    window.addEventListener("focus", sync);
+    document.addEventListener("visibilitychange", sync);
+
+    const timer = window.setInterval(sync, 200);
 
     return () => {
-      window.removeEventListener("gundam-cart-updated", loadCart);
-      window.removeEventListener("storage", loadCart);
+      window.removeEventListener("gundam-cart-updated", sync);
+      window.removeEventListener("cart:updated", sync);
+      window.removeEventListener("storage", sync);
+      window.removeEventListener("focus", sync);
+      document.removeEventListener("visibilitychange", sync);
+      window.clearInterval(timer);
     };
   }, []);
 
@@ -32,11 +45,13 @@ export default function HeaderCart() {
     >
       <ShoppingCart size={22} />
 
-      {count > 0 && (
-        <span className="absolute -right-2 -top-2 flex h-6 min-w-[24px] items-center justify-center rounded-full bg-red-500 px-1 text-xs font-black text-white">
-          {count}
-        </span>
-      )}
+      <span
+        id="gundam-floating-cart-badge"
+        className="absolute -right-2 -top-2 flex h-6 min-w-[24px] items-center justify-center rounded-full bg-red-500 px-1 text-xs font-black text-white"
+        style={{ display: count > 0 ? "flex" : "none" }}
+      >
+        {count}
+      </span>
     </Link>
   );
 }

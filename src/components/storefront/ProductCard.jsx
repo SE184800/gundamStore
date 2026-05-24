@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { Eye, Heart, Minus, Plus, ShoppingCart, Star, X, Zap } from "lucide-react";
 import { formatCurrency } from "../../utils/format";
 import { resolveText, useI18n } from "../../i18n";
+import { addProductToCart, forceCartBadgeSync } from "../../services/CartService";
 
 function getImage(product) {
   return (
@@ -41,8 +42,13 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
     e?.preventDefault?.();
     e?.stopPropagation?.();
 
-    if (onAddToCart) onAddToCart(product, qty);
-    else actions?.addToCart?.(product?.id, qty);
+    if (onAddToCart) {
+      onAddToCart(product, qty);
+    } else {
+      addProductToCart(product, qty);
+    }
+
+    forceCartBadgeSync();
 
     actions?.track?.("add_to_cart", { productId: product?.id, qty });
   }
@@ -136,6 +142,7 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
+                data-cart-managed="true"
                 onClick={addCart}
                 className="flex items-center justify-center gap-1 rounded-2xl border border-blue-200 bg-blue-50 px-3 py-2.5 text-xs font-black text-blue-700 transition hover:bg-blue-700 hover:text-white"
               >
@@ -145,6 +152,7 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
 
               <button
                 type="button"
+                data-cart-managed="true"
                 onClick={buyNow}
                 className="flex items-center justify-center gap-1 rounded-2xl bg-blue-700 px-3 py-2.5 text-xs font-black text-white shadow-lg shadow-blue-100 transition hover:bg-blue-800"
               >
@@ -224,6 +232,7 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
                   </div>
 
                   <button
+                    data-cart-managed="true"
                     onClick={addCart}
                     className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-blue-700 px-6 py-4 text-sm font-black text-white shadow-lg shadow-blue-100 transition hover:bg-blue-800"
                   >
