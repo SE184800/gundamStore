@@ -129,3 +129,121 @@ export async function getStorefrontProductByKey(req, res, next) {
     next(err);
   }
 }
+
+
+function sanitizeAdminProductInput(body = {}) {
+  const sku = String(body.sku || "").trim().toUpperCase();
+  const slug = String(body.slug || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+  const nameVi = String(body.nameVi || body.name?.vi || body.title || "").trim();
+  const nameEn = String(body.nameEn || body.name?.en || body.nameVi || body.name?.vi || "").trim();
+  const description = String(body.description || body.descriptionVi || body.short?.vi || "").trim();
+
+  const price = Math.max(0, Number(body.price || 0));
+  const stock = Math.max(0, Number(body.stock || 0));
+  const active = body.active !== false;
+
+  if (!sku) {
+    const error = new Error("SKU is required.");
+    error.status = 400;
+    throw error;
+  }
+
+  if (!slug) {
+    const error = new Error("Slug is required.");
+    error.status = 400;
+    throw error;
+  }
+
+  if (!nameVi) {
+    const error = new Error("Vietnamese product name is required.");
+    error.status = 400;
+    throw error;
+  }
+
+  return {
+    sku,
+    slug,
+    nameVi,
+    nameEn: nameEn || nameVi,
+    description,
+    price,
+    stock,
+    active,
+  };
+}
+
+export async function listAdminProducts(req, res, next) {
+  try {
+    const products = await prisma.product.findMany({
+      orderBy: { updatedAt: "desc" },
+      take: 500,
+    });
+
+    res.json({
+      success: true,
+      products,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function createAdminProduct(req, res, next) {
+  try {
+    const payload = sanitizeAdminProductInput(req.body);
+
+    const product = await prisma.product.create({
+      data: payload,
+    });
+
+    res.status(201).json({
+      success: true,
+      product,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function updateAdminProduct(req, res, next) {
+  try {
+    const id = String(req.params.id || "").trim();
+    const payload = sanitizeAdminProductInput(req.body);
+
+    const product = await prisma.product.update({
+      where: { id },
+      data: payload,
+    });
+
+    res.json({
+      success: true,
+      product,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function deleteAdminProduct(req, res, next) {
+  try {
+    const id = String(req.params.id || "").trim();
+
+    const product = await prisma.product.update({
+      where: { id },
+      data: { active: false },
+    });
+
+    res.json({
+      success: true,
+      product,
+      message: "Product deactivated.",
+    });
+  } catch (err) {
+    next(err);
+  }
+}

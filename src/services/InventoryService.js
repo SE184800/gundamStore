@@ -14,15 +14,50 @@ export function saveInventory(inventory) {
   localStorage.setItem(CMS_KEY, JSON.stringify({ ...cms, inventory }));
 }
 
+function getBackendProductStock(productId = "") {
+  try {
+    const key = String(productId || "");
+    const rows = JSON.parse(localStorage.getItem(BACKEND_PRODUCTS_CACHE_KEY) || "[]");
+
+    const product = Array.isArray(rows)
+      ? rows.find((item) =>
+          item.id === key ||
+          item.sku === key ||
+          item.slug === key ||
+          item.backendProductId === key ||
+          item.productId === key
+        )
+      : null;
+
+    if (!product) return null;
+
+    return {
+      productId: product.id,
+      available: Number(product.stock || 0),
+      onHand: Number(product.stock || 0),
+      reserved: 0,
+      incoming: 0,
+      source: "backend",
+    };
+  } catch {
+    return null;
+  }
+}
+
 export function getStock(productId) {
+  const backendStock = getBackendProductStock(productId);
+  if (backendStock) return backendStock;
+
   const inventory = getInventory();
   const item = inventory.find((x) => x.productId === productId || x.id === productId);
 
   return {
     productId,
-    available: Number(item?.available ?? item?.stock ?? 99),
+    available: Number(item?.available ?? item?.stock ?? item?.onHand ?? 0),
+    onHand: Number(item?.onHand ?? item?.available ?? item?.stock ?? 0),
     reserved: Number(item?.reserved ?? 0),
-    sold: Number(item?.sold ?? 0),
+    incoming: Number(item?.incoming ?? 0),
+    source: item ? "local" : "missing",
   };
 }
 
