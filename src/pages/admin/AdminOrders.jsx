@@ -181,6 +181,9 @@ function getSafeCancelReason(status, lang) {
 
 export default function AdminOrders() {
   const [orders, setOrders] = useState([]);
+  const [loadingOrders, setLoadingOrders] = useState(false);
+  const [apiMode, setApiMode] = useState(false);
+  const [apiError, setApiError] = useState("");
   const [query, setQuery] = useState("");
   const [tab, setTab] = useState("all");
   const [selectedIds, setSelectedIds] = useState([]);
@@ -256,6 +259,9 @@ export default function AdminOrders() {
   }, [orders]);
 
   const statusTabs = useMemo(() => buildStatusTabs(lang, t), [lang]);
+
+  const backendMode = Boolean(apiMode || orders.some((order) => order?.source === "backend"));
+
 
   function toggleSelect(id) {
     setSelectedIds((prev) =>
@@ -473,7 +479,7 @@ export default function AdminOrders() {
     }
   }
 
-  function saveShipping(orderId) {
+  async function saveShipping(orderId) {
     try {
       assertAdminAction(ADMIN_ACTIONS.UPDATE_SHIPPING);
     } catch (error) {
@@ -486,11 +492,31 @@ export default function AdminOrders() {
     const eta = document.getElementById("eta")?.value || "";
     const adminNote = document.getElementById("adminNote")?.value || "";
 
-    updateOrderShipping(orderId, { carrier, trackingCode, eta });
-    updateOrderAdminNote(orderId, adminNote);
-    reload();
-    setSelectedOrder(getOrders().find((o) => o.id === orderId));
-    alert(t.savedShipping);
+    try {
+      if (backendMode) {
+        await updateAdminOrderShippingApi(orderId, {
+          carrier,
+          trackingCode,
+          shippingMethod: selectedOrder?.shippingMethod || "FAST",
+          status: selectedOrder?.status === ORDER_STATUS.DELIVERED ? "DELIVERED" : "SHIPPING",
+          fee: selectedOrder?.shippingFee || 0,
+          note: adminNote || eta || "Updated shipping from admin orders UI",
+        });
+
+        const nextOrders = await reload();
+        setSelectedOrder(nextOrders.find((o) => o.id === orderId || o.orderCode === orderId) || null);
+        alert(t.savedShipping);
+        return;
+      }
+
+      updateOrderShipping(orderId, { carrier, trackingCode, eta });
+      updateOrderAdminNote(orderId, adminNote);
+      setOrders(getOrders());
+      setSelectedOrder(getOrders().find((o) => o.id === orderId));
+      alert(t.savedShipping);
+    } catch (error) {
+      alert(error?.message || "Save shipping failed.");
+    }
   }
 
   return (

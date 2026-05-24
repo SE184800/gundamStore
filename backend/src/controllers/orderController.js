@@ -21,6 +21,14 @@ function generateOrderNo() {
   return `ORD-${Date.now()}`;
 }
 
+function includeOrderRelations() {
+  return {
+    items: true,
+    payments: true,
+    shipments: true,
+  };
+}
+
 export async function createOrder(req, res, next) {
   try {
     const body = createOrderSchema.parse(req.body);
@@ -88,7 +96,7 @@ export async function createOrder(req, res, next) {
             }),
           },
         },
-        include: { items: true },
+        include: includeOrderRelations(),
       });
 
       for (const item of body.items) {
@@ -168,7 +176,7 @@ export async function updateOrderStatus(req, res, next) {
     const order = await prisma.order.update({
       where: { id: req.params.id },
       data: { status: body.status },
-      include: { items: true },
+      include: includeOrderRelations(),
     });
 
     await prisma.auditLog.create({
@@ -182,6 +190,169 @@ export async function updateOrderStatus(req, res, next) {
           status: body.status,
         },
       },
+    });
+
+    res.json({
+      success: true,
+      order,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+
+export async function updateOrderPayment(req, res, next) {
+  try {
+    const schema = z.object({
+      paymentStatus: z.enum(["UNPAID", "PARTIAL", "PAID", "REFUNDED"]),
+      method: z.enum(["COD", "BANK_TRANSFER", "CARD", "WALLET"]).optional(),
+      amount: z.number().int().min(0).optional(),
+      reference: z.string().max(120).optional().or(z.literal("")),
+      note: z.string().max(500).optional().or(z.literal("")),
+    });
+
+    const body = schema.parse(req.body);
+
+    const currentOrder = await prisma.order.findUnique({
+      where: { id: req.params.id },
+      include: includeOrderRelations(),
+    });
+
+    if (!currentOrder) {
+      return res.status(404).json({
+        success: false,
+        message: "Order not found",
+      });
+    }
+
+    const order = await prisma.$transaction(async (tx) => {
+      await tx.order.update({
+        where: { id: currentOrder.id },
+        data: { paymentStatus: body.paymentStatus },
+      });
+
+      await tx.payment.create({
+        data: {
+          orderId: currentOrder.id,
+          method: body.method || "COD",
+          status: body.paymentStatus,
+          amount: body.amount ?? currentOrder.total,
+          reference: body.reference || null,
+          note: body.note || null,
+        },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          actorId: req.user.id,
+          orderId: currentOrder.id,
+          action: "UPDATE_ORDER_PAYMENT",
+          entity: "Order",
+          entityId: currentOrder.id,
+          metadata: {
+            paymentStatus: body.paymentStatus,
+            method: body.method || "COD",
+            amount: body.amount ?? currentOrder.total,
+            reference: body.reference || "",
+            note: body.note || "",
+          },
+        },
+      });
+
+      return tx.order.findUnique({
+        where: { id: currentOrder.id },
+        include: includeOrderRelations(),
+      });
+    });
+
+    res.json({
+      success: true,
+      order,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function updateOrderShipping(req, res, next) {
+  try {
+    const schema = z.object({
+      carrier: z.string().max(120).optional().or(z.literal("")),
+      trackingCode: z.string().max(120).optional().or(z.literal("")),
+      shippingMethod: z.string().max(80).optional().or(z.literal("")),
+      status: z.enum([
+        "PENDING",
+        "READY_TO_SHIP",
+        "SHIPPING",
+        "DELIVERED",
+        "FAILED",
+        "RETURNED",
+      ]).optional(),
+      fee: z.number().int().min(0).optional(),
+      note: z.string().max(500).optional().or(z.literal("")),
+    });
+
+    const body = schema.parse(req.body);
+
+    const currentOrder = await prisma.order.findUnique({
+      where: { id: req.params.id },
+      include: includeOrderRelations(),
+    });
+
+    if (!currentOrder) {
+      return res.status(404).json({
+        success: false,
+        message: "Order not found",
+      });
+    }
+
+    const order = await prisma.$transaction(async (tx) => {
+      const existingShipment = await tx.shipment.findFirst({
+        where: { orderId: currentOrder.id },
+        orderBy: { createdAt: "desc" },
+      });
+
+      const shipmentData = {
+        carrier: body.carrier || null,
+        trackingCode: body.trackingCode || null,
+        shippingMethod: body.shippingMethod || existingShipment?.shippingMethod || "FAST",
+        status: body.status || existingShipment?.status || "PENDING",
+        fee: body.fee ?? existingShipment?.fee ?? currentOrder.shippingFee ?? 0,
+      };
+
+      if (existingShipment) {
+        await tx.shipment.update({
+          where: { id: existingShipment.id },
+          data: shipmentData,
+        });
+      } else {
+        await tx.shipment.create({
+          data: {
+            orderId: currentOrder.id,
+            ...shipmentData,
+          },
+        });
+      }
+
+      await tx.auditLog.create({
+        data: {
+          actorId: req.user.id,
+          orderId: currentOrder.id,
+          action: "UPDATE_ORDER_SHIPPING",
+          entity: "Order",
+          entityId: currentOrder.id,
+          metadata: {
+            ...shipmentData,
+            note: body.note || "",
+          },
+        },
+      });
+
+      return tx.order.findUnique({
+        where: { id: currentOrder.id },
+        include: includeOrderRelations(),
+      });
     });
 
     res.json({
