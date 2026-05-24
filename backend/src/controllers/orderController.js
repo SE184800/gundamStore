@@ -11,11 +11,31 @@ const createOrderSchema = z.object({
   note: z.string().max(500).optional(),
   items: z.array(
     z.object({
-      productId: z.string().min(1),
+      productId: z.string().optional().or(z.literal("")),
+      sku: z.string().optional().or(z.literal("")),
+      slug: z.string().optional().or(z.literal("")),
       quantity: z.number().int().min(1).max(99),
     })
   ).min(1),
 });
+
+function normalizeLookup(value = "") {
+  return String(value || "").trim().toLowerCase();
+}
+
+function resolveProductForItem(products = [], item = {}) {
+  const productId = normalizeLookup(item.productId);
+  const sku = normalizeLookup(item.sku);
+  const slug = normalizeLookup(item.slug);
+
+  return products.find((product) => {
+    return (
+      (productId && normalizeLookup(product.id) === productId) ||
+      (sku && normalizeLookup(product.sku) === sku) ||
+      (slug && normalizeLookup(product.slug) === slug)
+    );
+  });
+}
 
 function generateOrderNo() {
   return `ORD-${Date.now()}`;
@@ -33,38 +53,46 @@ export async function createOrder(req, res, next) {
   try {
     const body = createOrderSchema.parse(req.body);
 
-    const productIds = body.items.map((item) => item.productId);
-
     const products = await prisma.product.findMany({
       where: {
-        id: { in: productIds },
         active: true,
       },
     });
 
-    if (products.length !== productIds.length) {
+    const resolvedItems = body.items.map((item) => {
+      const product = resolveProductForItem(products, item);
+
+      return {
+        ...item,
+        product,
+      };
+    });
+
+    const invalidItem = resolvedItems.find((item) => !item.product);
+
+    if (invalidItem) {
       return res.status(400).json({
         success: false,
         message: "Some products are invalid or inactive",
+        detail: {
+          productId: invalidItem.productId || "",
+          sku: invalidItem.sku || "",
+          slug: invalidItem.slug || "",
+        },
       });
     }
 
-    const productMap = new Map(products.map((product) => [product.id, product]));
-
-    for (const item of body.items) {
-      const product = productMap.get(item.productId);
-
-      if (!product || product.stock < item.quantity) {
+    for (const item of resolvedItems) {
+      if (item.product.stock < item.quantity) {
         return res.status(400).json({
           success: false,
-          message: `Insufficient stock for product ${product?.sku || item.productId}`,
+          message: `Insufficient stock for product ${item.product.sku}`,
         });
       }
     }
 
-    const subtotal = body.items.reduce((sum, item) => {
-      const product = productMap.get(item.productId);
-      return sum + product.price * item.quantity;
+    const subtotal = resolvedItems.reduce((sum, item) => {
+      return sum + item.product.price * item.quantity;
     }, 0);
 
     const total = Math.max(0, subtotal + body.shippingFee - body.discount);
@@ -83,8 +111,8 @@ export async function createOrder(req, res, next) {
           total,
           note: body.note || null,
           items: {
-            create: body.items.map((item) => {
-              const product = productMap.get(item.productId);
+            create: resolvedItems.map((item) => {
+              const product = item.product;
 
               return {
                 productId: product.id,
@@ -99,8 +127,8 @@ export async function createOrder(req, res, next) {
         include: includeOrderRelations(),
       });
 
-      for (const item of body.items) {
-        const product = productMap.get(item.productId);
+      for (const item of resolvedItems) {
+        const product = item.product;
         const beforeStock = product.stock;
         const afterStock = beforeStock - item.quantity;
 
