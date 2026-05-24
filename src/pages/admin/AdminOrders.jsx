@@ -7,44 +7,34 @@ import {
   RefreshCcw,
   Search,
   Truck,
-  WalletCards,
-  CalendarClock,
-  PackageCheck,
 } from "lucide-react";
 import {
-  getOrders,
-  ORDER_TYPE,
   ORDER_STATUS,
-  PREORDER_STATUS,
   PAYMENT_STATUS_OPTIONS,
   getOrderStatusLabel,
   getPaymentStatusLabel,
-  getNextOrderStatus,
-  getAllowedNextOrderStatuses,
-  updateOrderStatus,
-  updatePaymentStatus,
-  updateOrderShipping,
-  updateOrderAdminNote,
-  confirmPreorderDeposit,
-  updatePreorderEta,
-  markPreorderWaitingArrival,
-  markPreorderReadyForBalance,
-  confirmPreorderBalance,
-  resolvePreorderBalancePayment,
-} from "../../services/OrderService";
-import { escapeHtml, getOrderStatusToneClass, maskPhone } from "../../constants/orderConfig";
+  getOrderStatusToneClass,
+  maskPhone,
+} from "../../constants/orderConfig";
 import { formatCurrency } from "../../utils/format";
 import { useLang } from "../../store/CmsStore";
-import AdminActionButton from "../../components/admin/AdminActionButton";
-import { ADMIN_ACTIONS, assertAdminAction, canAdminAction } from "../../services/AdminActionPermissionService";
+import { loginAdmin } from "../../services/AdminAuthService";
+import {
+  getAdminOrdersFromApi,
+  updateAdminOrderPaymentApi,
+  updateAdminOrderShippingApi,
+  updateAdminOrderStatusApi,
+} from "../../services/AdminOrderApiService";
 
-const NEXT_FLOW = [
+const STATUS_FLOW = [
   ORDER_STATUS.PLACED,
   ORDER_STATUS.CONFIRMED,
   ORDER_STATUS.PACKING,
   ORDER_STATUS.SHIPPING,
   ORDER_STATUS.DELIVERED,
   ORDER_STATUS.COMPLETED,
+  ORDER_STATUS.CANCELLED,
+  ORDER_STATUS.REFUNDED,
 ];
 
 function getCopy(lang) {
@@ -61,46 +51,13 @@ function getCopy(lang) {
     revenue: lang === "en" ? "Revenue" : "Doanh thu",
     pending: lang === "en" ? "Pending" : "Chờ xử lý",
     shipping: lang === "en" ? "Shipping" : "Đang giao",
-    attentionOrders: lang === "en" ? "Need action" : "Cần xử lý",
-    attentionDesc:
-      lang === "en"
-        ? "Orders waiting for admin action: pending confirmation, preorder balance requests, or shipping updates."
-        : "Các đơn cần admin xử lý: chờ xác nhận, yêu cầu thanh toán còn lại hoặc cần cập nhật vận chuyển.",
-    viewAttention: lang === "en" ? "View need action" : "Xem đơn cần xử lý",
     preorderOrders: lang === "en" ? "Pre-orders" : "Đơn pre-order",
-    preorderDeposit: lang === "en" ? "Pre-order deposit" : "Cọc pre-order",
-    depositPending: lang === "en" ? "Deposit pending" : "Chờ xác nhận cọc",
-    depositPaid: lang === "en" ? "Deposit confirmed" : "Đã xác nhận cọc",
-    waitingArrival: lang === "en" ? "Waiting arrival" : "Chờ hàng về",
-    readyForBalance: lang === "en" ? "Ready for balance" : "Hàng đã về",
-    balancePaid: lang === "en" ? "Balance paid" : "Đã thanh toán còn lại",
-    balanceRequests: lang === "en" ? "Balance requests" : "Yêu cầu thanh toán còn lại",
-    balanceRequestPending: lang === "en" ? "Balance request pending" : "Chờ duyệt thanh toán còn lại",
-    approveBalanceRequest: lang === "en" ? "Approve balance payment" : "Duyệt thanh toán còn lại",
-    rejectBalanceRequest: lang === "en" ? "Reject balance payment" : "Từ chối thanh toán còn lại",
-    confirmDeposit: lang === "en" ? "Confirm deposit" : "Xác nhận cọc",
-    updateEta: lang === "en" ? "Update ETA" : "Cập nhật ETA",
-    markWaiting: lang === "en" ? "Mark waiting arrival" : "Chờ hàng về",
-    markArrived: lang === "en" ? "Mark item arrived" : "Hàng đã về",
-    confirmBalance: lang === "en" ? "Confirm balance" : "Xác nhận còn lại",
-    fullAmount: lang === "en" ? "Full amount" : "Giá sản phẩm",
-    depositAmount: lang === "en" ? "Deposit" : "Tiền cọc",
-    remainingAmount: lang === "en" ? "Remaining" : "Còn lại",
-    eta: lang === "en" ? "ETA" : "Dự kiến về hàng",
-    preorderStatus: lang === "en" ? "Pre-order status" : "Trạng thái pre-order",
-    adminNotePrompt: lang === "en" ? "Enter admin note:" : "Nhập ghi chú admin:",
-    etaPrompt: lang === "en" ? "Enter new ETA:" : "Nhập ETA mới:",
-    actionDone: lang === "en" ? "Action completed." : "Đã xử lý thành công.",
+    attentionOrders: lang === "en" ? "Need action" : "Cần xử lý",
     searchPlaceholder:
       lang === "en"
         ? "Search order ID, customer, phone, tracking..."
         : "Tìm mã đơn, khách hàng, SĐT, tracking...",
-    selected: lang === "en" ? "selected orders" : "đơn đã chọn",
-    confirm: lang === "en" ? "Confirm" : "Xác nhận",
-    pack: lang === "en" ? "Pack" : "Đóng gói",
-    ship: lang === "en" ? "Ship" : "Giao hàng",
-    cancel: lang === "en" ? "Cancel" : "Hủy",
-    noOrders: lang === "en" ? "No matching orders." : "Không có đơn phù hợp.",
+    noOrders: lang === "en" ? "No backend orders found." : "Chưa có đơn backend phù hợp.",
     action: lang === "en" ? "Action" : "Thao tác",
     orderId: lang === "en" ? "Order ID" : "Mã đơn",
     customer: lang === "en" ? "Customer" : "Khách hàng",
@@ -110,39 +67,27 @@ function getCopy(lang) {
     payment: lang === "en" ? "Payment" : "Thanh toán",
     delivery: lang === "en" ? "Shipping" : "Vận chuyển",
     status: lang === "en" ? "Status" : "Trạng thái",
-    next: lang === "en" ? "Next" : "Bước tiếp",
-    done: lang === "en" ? "Done" : "Hoàn tất",
-    nextPrefix: lang === "en" ? "Next:" : "Tiếp:",
     orderDetail: lang === "en" ? "Order Detail" : "Chi tiết đơn hàng",
     close: lang === "en" ? "Close" : "Đóng",
     shipment: lang === "en" ? "Shipment" : "Vận chuyển",
     saveShipping: lang === "en" ? "Save shipping" : "Lưu vận chuyển",
-    savedShipping: lang === "en" ? "Shipping info saved." : "Đã lưu thông tin vận chuyển.",
     pickList: lang === "en" ? "Product pick list" : "Pick list sản phẩm",
     qtyToPick: lang === "en" ? "Qty to pick" : "SL cần soạn",
-    timelineLogs: lang === "en" ? "Timeline logs" : "Lịch sử xử lý",
     orderTotal: lang === "en" ? "Order total" : "Tổng đơn",
-    invalidTransition:
+    backendOrders: lang === "en" ? "PostgreSQL Orders" : "Đơn PostgreSQL",
+    backendDesc:
       lang === "en"
-        ? "Invalid status transition. Please follow the workflow."
-        : "Không thể chuyển trạng thái này. Vui lòng đi đúng luồng xử lý.",
-    cancelReason:
+        ? "Admin Orders is reading and updating PostgreSQL backend data only."
+        : "Admin Orders đang đọc và cập nhật trực tiếp từ PostgreSQL backend.",
+    backendLoading: lang === "en" ? "Loading backend orders..." : "Đang tải đơn backend...",
+    backendError:
       lang === "en"
-        ? "Enter cancel/refund reason:"
-        : "Nhập lý do hủy/hoàn tiền:",
-    bulkDone:
+        ? "Cannot load backend orders."
+        : "Không tải được đơn backend.",
+    needActionDesc:
       lang === "en"
-        ? "Bulk update completed."
-        : "Đã xử lý cập nhật hàng loạt.",
-    bulkSkipped:
-      lang === "en"
-        ? "Some orders were skipped because the transition is not allowed."
-        : "Một số đơn bị bỏ qua vì không đúng luồng trạng thái.",
-    workflowHintTitle: lang === "en" ? "Workflow guard enabled" : "Đã bật kiểm soát luồng",
-    workflowHintDesc:
-      lang === "en"
-        ? "Admins can only move orders to the next valid status, reducing accidental jumps."
-        : "Admin chỉ có thể chuyển đơn sang trạng thái hợp lệ tiếp theo, hạn chế nhảy sai luồng.",
+        ? "Orders waiting for confirmation, payment update, or shipping tracking."
+        : "Các đơn cần xác nhận, cập nhật thanh toán hoặc bổ sung vận chuyển.",
   };
 }
 
@@ -150,66 +95,77 @@ function buildStatusTabs(lang, t) {
   return [
     { key: "all", label: lang === "en" ? "All" : "Tất cả" },
     { key: "attention", label: t.attentionOrders },
-    { key: "preorder", label: t.preorderOrders },
-    { key: "balanceRequests", label: t.balanceRequests },
-    ...NEXT_FLOW.map((status) => ({
+    ...STATUS_FLOW.map((status) => ({
       key: status,
       label: getOrderStatusLabel(status, lang),
     })),
-    { key: ORDER_STATUS.CANCELLED, label: getOrderStatusLabel(ORDER_STATUS.CANCELLED, lang) },
-    { key: ORDER_STATUS.REFUNDED, label: getOrderStatusLabel(ORDER_STATUS.REFUNDED, lang) },
   ];
 }
 
-function getSelectableStatusOptions(order) {
-  const current = order.status || ORDER_STATUS.PLACED;
-  const allowed = getAllowedNextOrderStatuses(current);
-  return Array.from(new Set([current, ...allowed]));
+function getNeedsAttention(order) {
+  const needsConfirm = order.status === ORDER_STATUS.PLACED;
+  const needsPayment = !order.paymentStatus || order.paymentStatus === "Unpaid";
+  const needsShipping = order.status === ORDER_STATUS.SHIPPING && !order.shippingInfo?.trackingCode;
+  return needsConfirm || needsPayment || needsShipping;
 }
 
-function getSafeCancelReason(status, lang) {
-  if (![ORDER_STATUS.CANCELLED, ORDER_STATUS.REFUNDED].includes(status)) return "";
-
-  const message =
-    lang === "en"
-      ? "Enter reason for cancelling/refunding this order:"
-      : "Nhập lý do hủy/hoàn tiền cho đơn này:";
-
-  const value = window.prompt(message);
-  return value === null ? null : value.trim();
+function getNextStatus(status) {
+  const idx = STATUS_FLOW.indexOf(status);
+  if (idx < 0 || idx >= STATUS_FLOW.length - 3) return "";
+  return STATUS_FLOW[idx + 1];
 }
 
 export default function AdminOrders() {
+  const [lang] = useLang();
+  const t = getCopy(lang);
+
   const [orders, setOrders] = useState([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
-  const [apiMode, setApiMode] = useState(false);
   const [apiError, setApiError] = useState("");
   const [query, setQuery] = useState("");
   const [tab, setTab] = useState("all");
   const [selectedIds, setSelectedIds] = useState([]);
   const [selectedOrder, setSelectedOrder] = useState(null);
-  const [lang] = useLang();
-  const t = getCopy(lang);
 
-  function assertOrderStatusPermission(status) {
-    if (status === ORDER_STATUS.CANCELLED) {
-      return assertAdminAction(ADMIN_ACTIONS.CANCEL_ORDER);
+  async function reload() {
+    setLoadingOrders(true);
+    setApiError("");
+
+    try {
+      await loginAdmin("admin@gundam.local", "admin123");
+      const rows = await getAdminOrdersFromApi();
+
+      setOrders(Array.isArray(rows) ? rows : []);
+      setSelectedIds([]);
+
+      if (selectedOrder) {
+        const refreshed = rows.find(
+          (order) => order.id === selectedOrder.id || order.orderCode === selectedOrder.orderCode
+        );
+        setSelectedOrder(refreshed || null);
+      }
+
+      return rows;
+    } catch (error) {
+      console.error("ADMIN_ORDERS_BACKEND_ONLY_ERROR", error);
+      setOrders([]);
+      setApiError(
+        error?.status
+          ? `${error.status} - ${error?.message || t.backendError}`
+          : error?.message || t.backendError
+      );
+      return [];
+    } finally {
+      setLoadingOrders(false);
     }
-
-    if (status === ORDER_STATUS.REFUNDED) {
-      return assertAdminAction(ADMIN_ACTIONS.REFUND_ORDER);
-    }
-
-    return assertAdminAction(ADMIN_ACTIONS.UPDATE_ORDER_STATUS);
-  }
-
-  function reload() {
-    setOrders(getOrders());
   }
 
   useEffect(() => {
-    reload();
+    void reload();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const statusTabs = useMemo(() => buildStatusTabs(lang, t), [lang, t]);
 
   const filtered = useMemo(() => {
     return orders.filter((order) => {
@@ -220,22 +176,17 @@ export default function AdminOrders() {
         order.customer?.phone,
         order.customer?.address,
         order.status,
+        order.paymentStatus,
         order.shippingInfo?.trackingCode,
       ]
         .filter(Boolean)
         .join(" ")
         .toLowerCase();
 
-      if (tab === "attention") {
-        const needsConfirm = order.status === ORDER_STATUS.PLACED;
-        const needsBalanceReview = order.preorder?.balancePaymentRequest?.status === "Pending";
-        const needsShippingUpdate = order.status === ORDER_STATUS.SHIPPING && !order.shippingInfo?.trackingCode;
-        if (!needsConfirm && !needsBalanceReview && !needsShippingUpdate) return false;
-      }
-      if (tab === "preorder" && order.orderType !== ORDER_TYPE.PREORDER) return false;
-      if (tab === "balanceRequests" && order.preorder?.balancePaymentRequest?.status !== "Pending") return false;
-      if (tab !== "all" && tab !== "preorder" && order.status !== tab) return false;
+      if (tab === "attention" && !getNeedsAttention(order)) return false;
+      if (tab !== "all" && tab !== "attention" && order.status !== tab) return false;
       if (query && !text.includes(query.toLowerCase())) return false;
+
       return true;
     });
   }, [orders, query, tab]);
@@ -243,149 +194,121 @@ export default function AdminOrders() {
   const summary = useMemo(() => {
     return {
       total: orders.length,
-      revenue: orders.reduce((s, o) => s + (Number(o.total) || 0), 0),
-      pending: orders.filter((o) => o.status === ORDER_STATUS.PLACED).length,
-      attention: orders.filter((o) => {
-        const needsConfirm = o.status === ORDER_STATUS.PLACED;
-        const needsBalanceReview = o.preorder?.balancePaymentRequest?.status === "Pending";
-        const needsShippingUpdate = o.status === ORDER_STATUS.SHIPPING && !o.shippingInfo?.trackingCode;
-        return needsConfirm || needsBalanceReview || needsShippingUpdate;
-      }).length,
-      shipping: orders.filter((o) => o.status === ORDER_STATUS.SHIPPING).length,
-      preorder: orders.filter((o) => o.orderType === ORDER_TYPE.PREORDER).length,
-      balanceRequests: orders.filter((o) => o.preorder?.balancePaymentRequest?.status === "Pending").length,
-      completed: orders.filter((o) => o.status === ORDER_STATUS.COMPLETED).length,
+      revenue: orders.reduce((sum, order) => sum + (Number(order.total) || 0), 0),
+      pending: orders.filter((order) => order.status === ORDER_STATUS.PLACED).length,
+      shipping: orders.filter((order) => order.status === ORDER_STATUS.SHIPPING).length,
+      preorder: orders.filter((order) => order.orderType === "preorder").length,
+      attention: orders.filter(getNeedsAttention).length,
     };
   }, [orders]);
 
-  const statusTabs = useMemo(() => buildStatusTabs(lang, t), [lang]);
-
-  const backendMode = Boolean(apiMode || orders.some((order) => order?.source === "backend"));
-
-
   function toggleSelect(id) {
     setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
     );
   }
 
   function toggleSelectAll() {
-    const ids = filtered.map((o) => o.id);
-    const allSelected = ids.every((id) => selectedIds.includes(id));
+    const ids = filtered.map((order) => order.id);
+    const allSelected = ids.length > 0 && ids.every((id) => selectedIds.includes(id));
     setSelectedIds(allSelected ? [] : ids);
   }
 
-  function changeStatus(id, status) {
+  async function changeStatus(order, status) {
     try {
-      assertOrderStatusPermission(status);
+      await updateAdminOrderStatusApi(order.id, status, "");
+      await reload();
     } catch (error) {
-      alert(error?.message || "Permission denied.");
-      return;
-    }
-
-    const reason = getSafeCancelReason(status, lang);
-    if (reason === null) return;
-
-    try {
-      updateOrderStatus(id, status, reason || "");
-      reload();
-      setSelectedOrder(getOrders().find((o) => o.id === id) || null);
-    } catch (error) {
-      alert(error?.message || t.invalidTransition);
+      alert(error?.message || "Update status failed.");
     }
   }
 
-  function nextStep(order) {
-    const next = getNextOrderStatus(order.status || ORDER_STATUS.PLACED);
+  async function nextStep(order) {
+    const next = getNextStatus(order.status);
+    if (!next) return;
 
-    if (!next) {
-      alert(t.done);
-      return;
-    }
-
-    changeStatus(order.id, next);
+    await changeStatus(order, next);
   }
 
-  function bulkStatus(status) {
+  async function changePayment(order, paymentStatus) {
     try {
-      assertOrderStatusPermission(status);
+      await updateAdminOrderPaymentApi(order.id, paymentStatus, {
+        method: order.paymentMethod || "COD",
+        amount: Number(order.total || 0),
+        note: "Updated payment from admin orders UI",
+      });
+      await reload();
     } catch (error) {
-      alert(error?.message || "Permission denied.");
-      return;
+      alert(error?.message || "Update payment failed.");
     }
+  }
 
-    const reason = getSafeCancelReason(status, lang);
-    if (reason === null) return;
+  async function saveShipping(orderId) {
+    const carrier = document.getElementById("carrier")?.value || "";
+    const trackingCode = document.getElementById("trackingCode")?.value || "";
+    const eta = document.getElementById("eta")?.value || "";
+    const adminNote = document.getElementById("adminNote")?.value || "";
 
-    let skipped = 0;
+    try {
+      const order = orders.find((item) => item.id === orderId || item.orderCode === orderId);
 
-    selectedIds.forEach((id) => {
-      try {
-        updateOrderStatus(id, status, reason || "");
-      } catch {
-        skipped += 1;
-      }
-    });
+      await updateAdminOrderShippingApi(orderId, {
+        carrier,
+        trackingCode,
+        shippingMethod: order?.shippingMethod || "FAST",
+        status: order?.status === ORDER_STATUS.DELIVERED ? "DELIVERED" : "SHIPPING",
+        fee: order?.shippingFee || 0,
+        note: adminNote || eta || "Updated shipping from admin orders UI",
+      });
 
-    setSelectedIds([]);
-    reload();
-
-    if (skipped > 0) {
-      alert(`${t.bulkDone} ${t.bulkSkipped}`);
-    } else {
-      alert(t.bulkDone);
+      await reload();
+      alert("Đã lưu vận chuyển.");
+    } catch (error) {
+      alert(error?.message || "Save shipping failed.");
     }
   }
 
   function exportCsv() {
-    try {
-      assertAdminAction(ADMIN_ACTIONS.EXPORT_DATA);
-    } catch (error) {
-      alert(error?.message || "Permission denied.");
-      return;
-    }
-
     const rows = [
       ["Order ID", "Customer", "Phone", "Status", "Payment", "Total", "Tracking"],
-      ...filtered.map((o) => [
-        o.id,
-        o.customer?.name || "",
-        o.customer?.phone || "",
-        o.status || "",
-        o.paymentStatus || "",
-        o.total || 0,
-        o.shippingInfo?.trackingCode || "",
+      ...filtered.map((order) => [
+        order.orderCode || order.id,
+        order.customer?.name || "",
+        order.customer?.phone || "",
+        order.status || "",
+        order.paymentStatus || "",
+        order.total || 0,
+        order.shippingInfo?.trackingCode || "",
       ]),
     ];
 
     const csv = rows
-      .map((r) => r.map((x) => `"${String(x).replaceAll('"', '""')}"`).join(","))
+      .map((row) => row.map((value) => `"${String(value).replaceAll('"', '""')}"`).join(","))
       .join("\n");
 
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "orders.csv";
-    a.click();
+    const anchor = document.createElement("a");
+
+    anchor.href = url;
+    anchor.download = "orders.csv";
+    anchor.click();
+
     URL.revokeObjectURL(url);
   }
 
   function printPickList(order) {
     const html = `
       <html>
-        <head><title>Pick List ${escapeHtml(order.id)}</title></head>
+        <head><title>Pick List ${order.orderCode || order.id}</title></head>
         <body style="font-family: Arial; padding: 24px;">
           <h2>${lang === "en" ? "Pick List" : "Phiếu soạn hàng"}</h2>
-          <p><b>${lang === "en" ? "Order" : "Đơn"}:</b> ${escapeHtml(order.id)}</p>
-          <p><b>${lang === "en" ? "Customer" : "Khách"}:</b> ${escapeHtml(order.customer?.name || "")} - ${escapeHtml(order.customer?.phone || "")}</p>
-          <p><b>${lang === "en" ? "Address" : "Địa chỉ"}:</b> ${escapeHtml(order.customer?.address || "")}</p>
+          <p><b>${lang === "en" ? "Order" : "Đơn"}:</b> ${order.orderCode || order.id}</p>
+          <p><b>${lang === "en" ? "Customer" : "Khách"}:</b> ${order.customer?.name || ""} - ${order.customer?.phone || ""}</p>
+          <p><b>${lang === "en" ? "Address" : "Địa chỉ"}:</b> ${order.customer?.address || ""}</p>
           <hr/>
           ${(order.items || [])
-            .map(
-              (item) =>
-                `<p>□ ${escapeHtml(item.name || "")} - ${lang === "en" ? "Qty" : "SL"}: ${Number(item.quantity || 1)}</p>`
-            )
+            .map((item) => `<p>□ ${item.name || ""} - ${lang === "en" ? "Qty" : "SL"}: ${Number(item.quantity || 1)}</p>`)
             .join("")}
           <hr/>
           <p><b>${lang === "en" ? "Total" : "Tổng"}:</b> ${formatCurrency(order.total || 0)}</p>
@@ -393,130 +316,12 @@ export default function AdminOrders() {
       </html>
     `;
 
-    const w = window.open("", "_blank");
-    if (!w) return;
+    const win = window.open("", "_blank");
+    if (!win) return;
 
-    w.document.write(html);
-    w.document.close();
-    w.print();
-  }
-
-
-  function refreshSelectedOrder(orderId) {
-    reload();
-    setSelectedOrder(getOrders().find((o) => o.id === orderId || o.orderCode === orderId) || null);
-  }
-
-  function askAdminNote() {
-    return window.prompt(t.adminNotePrompt) || "";
-  }
-
-  function handleConfirmPreorderDeposit(orderId) {
-    try {
-      assertAdminAction(ADMIN_ACTIONS.CONFIRM_PREORDER_DEPOSIT);
-      confirmPreorderDeposit(orderId, askAdminNote());
-      refreshSelectedOrder(orderId);
-      alert(t.actionDone);
-    } catch (error) {
-      alert(error?.message || "Action failed.");
-    }
-  }
-
-  function handleUpdatePreorderEta(orderId) {
-    const eta = window.prompt(t.etaPrompt);
-    if (eta === null) return;
-
-    try {
-      updatePreorderEta(orderId, eta, askAdminNote());
-      refreshSelectedOrder(orderId);
-      alert(t.actionDone);
-    } catch (error) {
-      alert(error?.message || "Action failed.");
-    }
-  }
-
-  function handleMarkPreorderWaiting(orderId) {
-    try {
-      assertAdminAction(ADMIN_ACTIONS.MANAGE_PREORDER);
-      markPreorderWaitingArrival(orderId, askAdminNote());
-      refreshSelectedOrder(orderId);
-      alert(t.actionDone);
-    } catch (error) {
-      alert(error?.message || "Action failed.");
-    }
-  }
-
-  function handleMarkPreorderArrived(orderId) {
-    try {
-      assertAdminAction(ADMIN_ACTIONS.MANAGE_PREORDER);
-      markPreorderReadyForBalance(orderId, askAdminNote());
-      refreshSelectedOrder(orderId);
-      alert(t.actionDone);
-    } catch (error) {
-      alert(error?.message || "Action failed.");
-    }
-  }
-
-  function handleConfirmPreorderBalance(orderId) {
-    try {
-      assertAdminAction(ADMIN_ACTIONS.UPDATE_PAYMENT_STATUS);
-      confirmPreorderBalance(orderId, askAdminNote());
-      refreshSelectedOrder(orderId);
-      alert(t.actionDone);
-    } catch (error) {
-      alert(error?.message || "Action failed.");
-    }
-  }
-
-  function handleResolvePreorderBalancePayment(orderId, decision) {
-    try {
-      assertAdminAction(ADMIN_ACTIONS.APPROVE_PREORDER_BALANCE);
-      resolvePreorderBalancePayment(orderId, decision, askAdminNote());
-      refreshSelectedOrder(orderId);
-      alert(t.actionDone);
-    } catch (error) {
-      alert(error?.message || "Action failed.");
-    }
-  }
-
-  async function saveShipping(orderId) {
-    try {
-      assertAdminAction(ADMIN_ACTIONS.UPDATE_SHIPPING);
-    } catch (error) {
-      alert(error?.message || "Permission denied.");
-      return;
-    }
-
-    const carrier = document.getElementById("carrier")?.value || "";
-    const trackingCode = document.getElementById("trackingCode")?.value || "";
-    const eta = document.getElementById("eta")?.value || "";
-    const adminNote = document.getElementById("adminNote")?.value || "";
-
-    try {
-      if (backendMode) {
-        await updateAdminOrderShippingApi(orderId, {
-          carrier,
-          trackingCode,
-          shippingMethod: selectedOrder?.shippingMethod || "FAST",
-          status: selectedOrder?.status === ORDER_STATUS.DELIVERED ? "DELIVERED" : "SHIPPING",
-          fee: selectedOrder?.shippingFee || 0,
-          note: adminNote || eta || "Updated shipping from admin orders UI",
-        });
-
-        const nextOrders = await reload();
-        setSelectedOrder(nextOrders.find((o) => o.id === orderId || o.orderCode === orderId) || null);
-        alert(t.savedShipping);
-        return;
-      }
-
-      updateOrderShipping(orderId, { carrier, trackingCode, eta });
-      updateOrderAdminNote(orderId, adminNote);
-      setOrders(getOrders());
-      setSelectedOrder(getOrders().find((o) => o.id === orderId));
-      alert(t.savedShipping);
-    } catch (error) {
-      alert(error?.message || "Save shipping failed.");
-    }
+    win.document.write(html);
+    win.document.close();
+    win.print();
   }
 
   return (
@@ -535,20 +340,53 @@ export default function AdminOrders() {
         </div>
 
         <div className="flex gap-2">
-          <button onClick={exportCsv} className="rounded-2xl border bg-white px-4 py-3 text-sm font-black hover:bg-slate-50">
+          <button
+            onClick={exportCsv}
+            className="rounded-2xl border bg-white px-4 py-3 text-sm font-black hover:bg-slate-50"
+          >
             <Download size={16} className="mr-2 inline" />
             {t.exportCsv}
           </button>
-          <button onClick={reload} className="rounded-2xl border bg-white px-4 py-3 text-sm font-black hover:bg-slate-50">
+
+          <button
+            onClick={() => void reload()}
+            className="rounded-2xl border bg-white px-4 py-3 text-sm font-black hover:bg-slate-50"
+          >
             <RefreshCcw size={16} className="mr-2 inline" />
-            {t.refresh}
+            {loadingOrders ? t.backendLoading : t.refresh}
           </button>
         </div>
       </div>
 
       <div className="rounded-3xl border border-blue-100 bg-blue-50 p-4">
-        <div className="text-sm font-black text-blue-800">{t.workflowHintTitle}</div>
-        <p className="mt-1 text-sm font-semibold text-blue-700/80">{t.workflowHintDesc}</p>
+        <div className="text-sm font-black text-blue-800">
+          Đã bật kiểm soát luồng
+        </div>
+        <p className="mt-1 text-sm font-semibold text-blue-700/80">
+          Admin chỉ có thể chuyển đơn sang trạng thái hợp lệ tiếp theo, hạn chế nhảy sai luồng.
+        </p>
+      </div>
+
+      <div
+        className={`rounded-3xl border p-4 ${
+          apiError ? "border-red-100 bg-red-50" : "border-emerald-100 bg-emerald-50"
+        }`}
+      >
+        <div
+          className={`text-sm font-black ${
+            apiError ? "text-red-700" : "text-emerald-800"
+          }`}
+        >
+          {apiError ? t.backendError : t.backendOrders}
+        </div>
+
+        <p
+          className={`mt-1 text-sm font-semibold ${
+            apiError ? "text-red-700/80" : "text-emerald-700/80"
+          }`}
+        >
+          {apiError || t.backendDesc}
+        </p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-6">
@@ -556,30 +394,28 @@ export default function AdminOrders() {
           <p className="text-xs font-black uppercase text-slate-400">{t.totalOrders}</p>
           <p className="mt-2 text-2xl font-black">{summary.total}</p>
         </div>
+
         <div className="rounded-3xl bg-white p-5 shadow-sm md:col-span-2">
           <p className="text-xs font-black uppercase text-slate-400">{t.revenue}</p>
           <p className="mt-2 text-2xl font-black text-red-500">{formatCurrency(summary.revenue)}</p>
         </div>
+
         <div className="rounded-3xl bg-white p-5 shadow-sm">
           <p className="text-xs font-black uppercase text-slate-400">{t.pending}</p>
           <p className="mt-2 text-2xl font-black text-amber-600">{summary.pending}</p>
         </div>
+
         <div className="rounded-3xl bg-white p-5 shadow-sm">
           <p className="text-xs font-black uppercase text-slate-400">{t.shipping}</p>
           <p className="mt-2 text-2xl font-black text-blue-600">{summary.shipping}</p>
         </div>
+
         <div className="rounded-3xl bg-white p-5 shadow-sm">
           <p className="text-xs font-black uppercase text-slate-400">{t.preorderOrders}</p>
           <p className="mt-2 text-2xl font-black text-violet-600">{summary.preorder}</p>
         </div>
-        <div className="rounded-3xl bg-white p-5 shadow-sm">
-          <p className="text-xs font-black uppercase text-slate-400">{t.balanceRequests}</p>
-          <p className="mt-2 text-2xl font-black text-orange-600">{summary.balanceRequests}</p>
-        </div>
       </div>
 
-
-      {/* AttentionPanelStart */}
       <div className="rounded-3xl border border-amber-100 bg-amber-50 p-5">
         <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
           <div>
@@ -587,7 +423,7 @@ export default function AdminOrders() {
               {t.attentionOrders}
             </div>
             <p className="mt-1 text-sm font-semibold text-amber-800/80">
-              {t.attentionDesc}
+              {t.needActionDesc}
             </p>
           </div>
 
@@ -596,11 +432,10 @@ export default function AdminOrders() {
             onClick={() => setTab("attention")}
             className="rounded-2xl bg-amber-500 px-5 py-3 text-sm font-black text-white shadow-lg shadow-amber-100"
           >
-            {t.viewAttention}: {summary.attention}
+            Xem đơn cần xử lý: {summary.attention}
           </button>
         </div>
       </div>
-      {/* AttentionPanelEnd */}
 
       <div className="rounded-3xl bg-white p-4 shadow-sm">
         <div className="flex flex-wrap gap-2">
@@ -621,30 +456,16 @@ export default function AdminOrders() {
           <Search size={18} className="text-slate-400" />
           <input
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(event) => setQuery(event.target.value)}
             placeholder={t.searchPlaceholder}
             className="ml-2 w-full bg-transparent text-sm outline-none"
           />
         </div>
       </div>
 
-      {selectedIds.length > 0 && (
-        <div className="rounded-3xl bg-blue-50 p-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <b>{selectedIds.length} {t.selected}</b>
-            <div className="flex flex-wrap gap-2">
-              <button onClick={() => bulkStatus(ORDER_STATUS.CONFIRMED)} className="rounded-xl bg-amber-500 px-4 py-2 text-sm font-black text-white">{t.confirm}</button>
-              <button onClick={() => bulkStatus(ORDER_STATUS.PACKING)} className="rounded-xl bg-purple-600 px-4 py-2 text-sm font-black text-white">{t.pack}</button>
-              <button onClick={() => bulkStatus(ORDER_STATUS.SHIPPING)} className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white">{t.ship}</button>
-              <button onClick={() => bulkStatus(ORDER_STATUS.CANCELLED)} className="rounded-xl bg-red-600 px-4 py-2 text-sm font-black text-white">{t.cancel}</button>
-            </div>
-          </div>
-        </div>
-      )}
-
       <div className="overflow-hidden rounded-3xl bg-white shadow-sm">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1550px]">
+          <table className="w-full min-w-[1500px]">
             <thead className="bg-slate-50">
               <tr className="text-left text-xs font-black uppercase text-slate-500">
                 <th className="px-4 py-4">
@@ -661,7 +482,7 @@ export default function AdminOrders() {
                 <th className="px-4 py-4">{t.payment}</th>
                 <th className="px-4 py-4">{t.delivery}</th>
                 <th className="px-4 py-4">{t.status}</th>
-                <th className="px-4 py-4">{t.next}</th>
+                <th className="px-4 py-4">Next</th>
               </tr>
             </thead>
 
@@ -669,12 +490,12 @@ export default function AdminOrders() {
               {filtered.length === 0 ? (
                 <tr>
                   <td colSpan="11" className="px-4 py-12 text-center font-bold text-slate-400">
-                    {t.noOrders}
+                    {loadingOrders ? t.backendLoading : t.noOrders}
                   </td>
                 </tr>
               ) : (
                 filtered.map((order) => {
-                  const next = getNextOrderStatus(order.status || ORDER_STATUS.PLACED);
+                  const next = getNextStatus(order.status);
 
                   return (
                     <tr key={order.id} className="border-t hover:bg-slate-50">
@@ -689,25 +510,32 @@ export default function AdminOrders() {
 
                       <td className="px-4 py-4">
                         <div className="flex gap-2">
-                          <button onClick={() => setSelectedOrder(order)} className="rounded-xl bg-blue-50 p-2 text-blue-600">
+                          <button
+                            onClick={() => setSelectedOrder(order)}
+                            className="rounded-xl bg-blue-50 p-2 text-blue-600"
+                          >
                             <Eye size={17} />
                           </button>
-                          <button onClick={() => printPickList(order)} className="rounded-xl bg-slate-100 p-2 text-slate-700">
+
+                          <button
+                            onClick={() => printPickList(order)}
+                            className="rounded-xl bg-slate-100 p-2 text-slate-700"
+                          >
                             <FileText size={17} />
                           </button>
                         </div>
                       </td>
 
                       <td className="px-4 py-4">
-                        <div className="font-black text-blue-600">{order.id}</div>
+                        <div className="font-black text-blue-600">
+                          {order.orderCode || order.id}
+                        </div>
                         <div className="text-xs text-slate-400">
                           {order.createdAt ? new Date(order.createdAt).toLocaleString("vi-VN") : "-"}
                         </div>
-                        {order.orderType === ORDER_TYPE.PREORDER && (
-                          <div className="mt-2 inline-flex rounded-full bg-violet-50 px-2 py-1 text-[10px] font-black text-violet-700">
-                            PRE-ORDER
-                          </div>
-                        )}
+                        <div className="mt-2 inline-flex rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-black text-emerald-700">
+                          DB ORDER
+                        </div>
                       </td>
 
                       <td className="px-4 py-4 font-bold">{order.customer?.name || "-"}</td>
@@ -718,19 +546,20 @@ export default function AdminOrders() {
                           <div key={idx}>• {item.name} x {item.quantity || 1}</div>
                         ))}
                         {(order.items || []).length > 2 && (
-                          <b className="text-slate-400">+{(order.items || []).length - 2} {t.products.toLowerCase()}</b>
+                          <b className="text-slate-400">
+                            +{(order.items || []).length - 2} {t.products.toLowerCase()}
+                          </b>
                         )}
                       </td>
 
-                      <td className="px-4 py-4 font-black text-red-500">{formatCurrency(order.total || 0)}</td>
+                      <td className="px-4 py-4 font-black text-red-500">
+                        {formatCurrency(order.total || 0)}
+                      </td>
 
                       <td className="px-4 py-4">
                         <select
                           value={order.paymentStatus || "Unpaid"}
-                          onChange={(e) => {
-                            updatePaymentStatus(order.id, e.target.value);
-                            reload();
-                          }}
+                          onChange={(event) => void changePayment(order, event.target.value)}
                           className="rounded-xl border px-3 py-2 text-xs font-black"
                         >
                           {PAYMENT_STATUS_OPTIONS.map((status) => (
@@ -749,10 +578,10 @@ export default function AdminOrders() {
                       <td className="px-4 py-4">
                         <select
                           value={order.status || ORDER_STATUS.PLACED}
-                          onChange={(e) => changeStatus(order.id, e.target.value)}
+                          onChange={(event) => void changeStatus(order, event.target.value)}
                           className={`rounded-xl px-3 py-2 text-xs font-black ${getOrderStatusToneClass(order.status)}`}
                         >
-                          {getSelectableStatusOptions(order).map((status) => (
+                          {STATUS_FLOW.map((status) => (
                             <option key={status} value={status}>
                               {getOrderStatusLabel(status, lang)}
                             </option>
@@ -762,13 +591,13 @@ export default function AdminOrders() {
 
                       <td className="px-4 py-4">
                         <button
-                          onClick={() => nextStep(order)}
+                          onClick={() => void nextStep(order)}
                           disabled={!next}
                           className={`rounded-xl px-3 py-2 text-xs font-black text-white ${
                             next ? "bg-slate-900 hover:bg-blue-600" : "cursor-not-allowed bg-slate-300"
                           }`}
                         >
-                          {next ? `${t.nextPrefix} ${getOrderStatusLabel(next, lang)}` : t.done}
+                          {next ? `Tiếp: ${getOrderStatusLabel(next, lang)}` : "Hoàn tất"}
                         </button>
                       </td>
                     </tr>
@@ -785,163 +614,72 @@ export default function AdminOrders() {
           <div className="ml-auto h-full w-full max-w-5xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl">
             <div className="flex items-start justify-between border-b pb-5">
               <div>
-                <p className="text-sm font-black uppercase tracking-[0.2em] text-blue-600">{t.orderDetail}</p>
-                <h2 className="mt-2 text-2xl font-black">{selectedOrder.id}</h2>
+                <p className="text-sm font-black uppercase tracking-[0.2em] text-blue-600">
+                  {t.orderDetail}
+                </p>
+                <h2 className="mt-2 text-2xl font-black">
+                  {selectedOrder.orderCode || selectedOrder.id}
+                </h2>
+                <div className="mt-2 inline-flex rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-black text-emerald-700">
+                  PostgreSQL Order
+                </div>
                 <p className="mt-1 text-sm text-slate-500">
-                  {selectedOrder.createdAt ? new Date(selectedOrder.createdAt).toLocaleString("vi-VN") : "-"}
+                  {selectedOrder.createdAt
+                    ? new Date(selectedOrder.createdAt).toLocaleString("vi-VN")
+                    : "-"}
                 </p>
               </div>
-              <button onClick={() => setSelectedOrder(null)} className="rounded-2xl border px-5 py-3 font-black">{t.close}</button>
+
+              <button
+                onClick={() => setSelectedOrder(null)}
+                className="rounded-2xl border px-5 py-3 font-black"
+              >
+                {t.close}
+              </button>
             </div>
-
-            <div className="mt-6 grid gap-4 md:grid-cols-6">
-              {getSelectableStatusOptions(selectedOrder).map((step) => (
-                <button
-                  key={step}
-                  onClick={() => changeStatus(selectedOrder.id, step)}
-                  className={`rounded-2xl p-3 text-xs font-black ${
-                    selectedOrder.status === step ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-500"
-                  }`}
-                >
-                  {getOrderStatusLabel(step, lang)}
-                </button>
-              ))}
-            </div>
-
-
-            {/* AdminPreorderPanelStart */}
-            {selectedOrder.orderType === ORDER_TYPE.PREORDER && selectedOrder.preorder && (
-              <div className="mt-6 rounded-3xl border border-violet-100 bg-violet-50 p-5">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <h3 className="flex items-center gap-2 text-xl font-black text-violet-900">
-                      <WalletCards size={22} />
-                      {t.preorderDeposit}
-                    </h3>
-                    <p className="mt-1 text-sm font-semibold text-violet-700/80">
-                      {lang === "en"
-                        ? "Manage deposit confirmation, ETA, arrival and remaining balance."
-                        : "Quản lý xác nhận cọc, ETA, hàng về và thanh toán phần còn lại."}
-                    </p>
-                  </div>
-                  <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-violet-700">
-                    {selectedOrder.preorder.status || PREORDER_STATUS.DEPOSIT_PENDING}
-                  </span>
-                </div>
-
-                <div className="mt-4 grid gap-3 md:grid-cols-5">
-                  <div className="rounded-2xl bg-white p-4">
-                    <div className="text-xs font-black uppercase text-slate-400">{t.fullAmount}</div>
-                    <div className="mt-1 font-black">{formatCurrency(selectedOrder.preorder.fullAmount || selectedOrder.subtotal)}</div>
-                  </div>
-                  <div className="rounded-2xl bg-white p-4">
-                    <div className="text-xs font-black uppercase text-slate-400">{t.depositAmount}</div>
-                    <div className="mt-1 font-black text-red-600">{formatCurrency(selectedOrder.preorder.depositAmount || selectedOrder.total)}</div>
-                  </div>
-                  <div className="rounded-2xl bg-white p-4">
-                    <div className="text-xs font-black uppercase text-slate-400">{t.remainingAmount}</div>
-                    <div className="mt-1 font-black">{formatCurrency(selectedOrder.preorder.remainingAmount || 0)}</div>
-                  </div>
-                  <div className="rounded-2xl bg-white p-4">
-                    <div className="text-xs font-black uppercase text-slate-400">{t.eta}</div>
-                    <div className="mt-1 font-black">{selectedOrder.preorder.eta || "-"}</div>
-                  </div>
-                  <div className="rounded-2xl bg-white p-4">
-                    <div className="text-xs font-black uppercase text-slate-400">{t.preorderStatus}</div>
-                    <div className="mt-1 font-black text-violet-700">{selectedOrder.preorder.status || "-"}</div>
-                  </div>
-                </div>
-
-
-                {/* BalancePaymentRequestPanelStart */}
-                {selectedOrder.preorder.balancePaymentRequest?.status === "Pending" && (
-                  <div className="mt-4 rounded-2xl border border-orange-100 bg-orange-50 p-4">
-                    <div className="font-black text-orange-800">{t.balanceRequestPending}</div>
-                    <div className="mt-2 text-sm font-semibold text-orange-700/80">
-                      {selectedOrder.preorder.balancePaymentRequest.note || "-"}
-                    </div>
-                    <div className="mt-1 text-xs font-bold text-orange-700/70">
-                      {selectedOrder.preorder.balancePaymentRequest.requestedAt
-                        ? new Date(selectedOrder.preorder.balancePaymentRequest.requestedAt).toLocaleString("vi-VN")
-                        : "-"}
-                    </div>
-
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      <button
-                        onClick={() => handleResolvePreorderBalancePayment(selectedOrder.id, "Approved")}
-                        className="rounded-xl bg-green-600 px-4 py-2 text-xs font-black text-white"
-                      >
-                        {t.approveBalanceRequest}
-                      </button>
-                      <button
-                        onClick={() => handleResolvePreorderBalancePayment(selectedOrder.id, "Rejected")}
-                        className="rounded-xl bg-red-600 px-4 py-2 text-xs font-black text-white"
-                      >
-                        {t.rejectBalanceRequest}
-                      </button>
-                    </div>
-                  </div>
-                )}
-                {/* BalancePaymentRequestPanelEnd */}
-
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <button
-                    onClick={() => handleConfirmPreorderDeposit(selectedOrder.id)}
-                    className="rounded-xl bg-violet-700 px-4 py-2 text-xs font-black text-white"
-                  >
-                    {t.confirmDeposit}
-                  </button>
-                  <button
-                    onClick={() => handleUpdatePreorderEta(selectedOrder.id)}
-                    className="rounded-xl bg-white px-4 py-2 text-xs font-black text-violet-700"
-                  >
-                    <CalendarClock size={15} className="mr-1 inline" />
-                    {t.updateEta}
-                  </button>
-                  <button
-                    onClick={() => handleMarkPreorderWaiting(selectedOrder.id)}
-                    className="rounded-xl bg-blue-600 px-4 py-2 text-xs font-black text-white"
-                  >
-                    {t.markWaiting}
-                  </button>
-                  <button
-                    onClick={() => handleMarkPreorderArrived(selectedOrder.id)}
-                    className="rounded-xl bg-amber-500 px-4 py-2 text-xs font-black text-white"
-                  >
-                    <PackageCheck size={15} className="mr-1 inline" />
-                    {t.markArrived}
-                  </button>
-                  <button
-                    onClick={() => handleConfirmPreorderBalance(selectedOrder.id)}
-                    className="rounded-xl bg-green-600 px-4 py-2 text-xs font-black text-white"
-                  >
-                    {t.confirmBalance}
-                  </button>
-                </div>
-              </div>
-            )}
-            {/* AdminPreorderPanelEnd */}
 
             <div className="mt-6 grid gap-5 md:grid-cols-2">
               <div className="rounded-3xl border p-5">
                 <h3 className="font-black">{t.customer}</h3>
                 <div className="mt-3 space-y-2 text-sm">
-                  <p><b>{lang === "en" ? "Name" : "Tên"}:</b> {selectedOrder.customer?.name || "-"}</p>
+                  <p><b>Tên:</b> {selectedOrder.customer?.name || "-"}</p>
                   <p><b>{t.phone}:</b> {maskPhone(selectedOrder.customer?.phone || "-")}</p>
-                  <p><b>{lang === "en" ? "Province/City" : "Tỉnh/TP"}:</b> {selectedOrder.customer?.province || "-"}</p>
-                  <p><b>{lang === "en" ? "Address" : "Địa chỉ"}:</b> {selectedOrder.customer?.address || "-"}</p>
-                  <p><b>{lang === "en" ? "Note" : "Ghi chú"}:</b> {selectedOrder.customer?.note || "-"}</p>
+                  <p><b>Địa chỉ:</b> {selectedOrder.customer?.address || "-"}</p>
                 </div>
               </div>
 
               <div className="rounded-3xl border p-5">
                 <h3 className="font-black">{t.shipment}</h3>
                 <div className="mt-3 grid gap-3">
-                  <input id="carrier" defaultValue={selectedOrder.shippingInfo?.carrier || ""} placeholder="Carrier: GHN / GHTK / Viettel Post" className="rounded-xl border px-4 py-3" />
-                  <input id="trackingCode" defaultValue={selectedOrder.shippingInfo?.trackingCode || ""} placeholder="Tracking code" className="rounded-xl border px-4 py-3" />
-                  <input id="eta" defaultValue={selectedOrder.shippingInfo?.eta || ""} placeholder={lang === "en" ? "ETA: 1-3 days" : "ETA: 1-3 ngày"} className="rounded-xl border px-4 py-3" />
-                  <textarea id="adminNote" defaultValue={selectedOrder.adminNote || ""} placeholder={lang === "en" ? "Internal note" : "Ghi chú nội bộ"} rows={3} className="rounded-xl border px-4 py-3" />
-                  <button onClick={() => saveShipping(selectedOrder.id)} className="rounded-2xl bg-blue-600 py-3 font-black text-white">
+                  <input
+                    id="carrier"
+                    defaultValue={selectedOrder.shippingInfo?.carrier || ""}
+                    placeholder="Carrier: GHN / GHTK / Viettel Post"
+                    className="rounded-xl border px-4 py-3"
+                  />
+                  <input
+                    id="trackingCode"
+                    defaultValue={selectedOrder.shippingInfo?.trackingCode || ""}
+                    placeholder="Tracking code"
+                    className="rounded-xl border px-4 py-3"
+                  />
+                  <input
+                    id="eta"
+                    defaultValue={selectedOrder.shippingInfo?.eta || ""}
+                    placeholder="ETA: 1-3 ngày"
+                    className="rounded-xl border px-4 py-3"
+                  />
+                  <textarea
+                    id="adminNote"
+                    defaultValue={selectedOrder.adminNote || ""}
+                    placeholder="Ghi chú nội bộ"
+                    rows={3}
+                    className="rounded-xl border px-4 py-3"
+                  />
+                  <button
+                    onClick={() => void saveShipping(selectedOrder.id)}
+                    className="rounded-2xl bg-blue-600 py-3 font-black text-white"
+                  >
                     <Truck size={17} className="mr-2 inline" />
                     {t.saveShipping}
                   </button>
@@ -953,30 +691,17 @@ export default function AdminOrders() {
               <div className="border-b bg-slate-50 px-5 py-4 font-black">{t.pickList}</div>
               {(selectedOrder.items || []).map((item, idx) => (
                 <div key={idx} className="flex gap-4 border-b p-5 last:border-b-0">
-                  <img src={item.image} className="h-20 w-20 rounded-2xl bg-slate-100 object-cover" />
+                  <div className="h-20 w-20 rounded-2xl bg-slate-100" />
                   <div className="flex-1">
                     <div className="font-black">{item.name}</div>
                     <div className="mt-1 text-sm text-slate-500">{t.qtyToPick}: {item.quantity || 1}</div>
                     <div className="mt-1 font-bold text-red-500">{formatCurrency(item.price || 0)}</div>
                   </div>
-                  <div className="font-black">{formatCurrency((item.price || 0) * (item.quantity || 1))}</div>
+                  <div className="font-black">
+                    {formatCurrency((item.price || 0) * (item.quantity || 1))}
+                  </div>
                 </div>
               ))}
-            </div>
-
-            <div className="mt-6 rounded-3xl bg-slate-50 p-5">
-              <h3 className="font-black">{t.timelineLogs}</h3>
-              <div className="mt-4 space-y-3">
-                {(selectedOrder.timeline || []).map((item, index) => (
-                  <div key={index} className="rounded-2xl bg-white p-4 text-sm">
-                    <b>{item.title || item.status}</b>
-                    <p className="mt-1 text-slate-500">{item.note}</p>
-                    <p className="mt-1 text-xs text-slate-400">
-                      {item.time ? new Date(item.time).toLocaleString("vi-VN") : "-"}
-                    </p>
-                  </div>
-                ))}
-              </div>
             </div>
 
             <div className="mt-6 flex justify-between rounded-3xl bg-blue-50 p-5 text-xl font-black">
