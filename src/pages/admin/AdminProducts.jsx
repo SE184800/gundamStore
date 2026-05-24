@@ -9,7 +9,7 @@ import {
 import AdminPageHeader from "../../components/admin/AdminPageHeader";
 import { useLang } from "../../store/CmsStore";
 import { formatCurrency } from "../../utils/format";
-import { loginAdmin } from "../../services/AdminAuthService";
+import { logoutAdmin } from "../../services/AdminAuthService";
 import {
   createAdminProductApi,
   deactivateAdminProductApi,
@@ -186,12 +186,18 @@ export default function AdminProducts() {
     setApiError("");
 
     try {
-      await loginAdmin("admin@gundam.local", "admin123");
       const rows = await getAdminProductsFromApi();
       setProducts(Array.isArray(rows) ? rows : []);
       return rows;
     } catch (error) {
       console.error("ADMIN_PRODUCTS_BACKEND_ERROR", error);
+
+      if (error?.status === 401 || error?.message === "Unauthorized") {
+        logoutAdmin();
+        window.location.href = "/admin/login";
+        return [];
+      }
+
       setProducts([]);
       setApiError(
         error?.status

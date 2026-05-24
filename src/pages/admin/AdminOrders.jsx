@@ -18,7 +18,7 @@ import {
 } from "../../constants/orderConfig";
 import { formatCurrency } from "../../utils/format";
 import { useLang } from "../../store/CmsStore";
-import { loginAdmin } from "../../services/AdminAuthService";
+import { logoutAdmin } from "../../services/AdminAuthService";
 import {
   getAdminOrdersFromApi,
   updateAdminOrderPaymentApi,
@@ -132,7 +132,6 @@ export default function AdminOrders() {
     setApiError("");
 
     try {
-      await loginAdmin("admin@gundam.local", "admin123");
       const rows = await getAdminOrdersFromApi();
 
       setOrders(Array.isArray(rows) ? rows : []);
@@ -148,6 +147,13 @@ export default function AdminOrders() {
       return rows;
     } catch (error) {
       console.error("ADMIN_ORDERS_BACKEND_ONLY_ERROR", error);
+
+      if (error?.status === 401 || error?.message === "Unauthorized") {
+        logoutAdmin();
+        window.location.href = "/admin/login";
+        return [];
+      }
+
       setOrders([]);
       setApiError(
         error?.status
