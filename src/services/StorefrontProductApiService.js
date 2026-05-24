@@ -1,5 +1,13 @@
 import { apiRequest } from "./ApiClient";
 
+function cacheBackendProducts(products = []) {
+  try {
+    localStorage.setItem("gundam-backend-products-cache", JSON.stringify(products));
+  } catch {
+    // ignore storage issues
+  }
+}
+
 function normalize(value = "") {
   return String(value || "")
     .toLowerCase()
@@ -140,6 +148,7 @@ export async function getStorefrontProductsFromApi() {
     throw new Error("Backend did not return valid products.");
   }
 
+  cacheBackendProducts(data.products);
   return data.products;
 }
 
