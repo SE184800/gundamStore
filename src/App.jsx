@@ -1,4 +1,5 @@
 import AutoTranslate from "./components/common/AutoTranslate.jsx";
+import SeoManager from "./components/common/SeoManager";
 import { Navigate, Route, Routes } from "react-router-dom";
 
 import HomePage from "./pages/storefront/HomePage";
@@ -62,6 +63,7 @@ export default function App() {
   return (
     <>
       <AutoTranslate />
+      <SeoManager />
 
       <Routes>
         {/* Storefront */}
