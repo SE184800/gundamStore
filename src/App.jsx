@@ -32,6 +32,7 @@ const CheckoutPage = lazy(() => import("./pages/storefront/CheckoutPage"));
 const OrderSuccessPage = lazy(() => import("./pages/storefront/OrderSuccessPage"));
 
 const AdminLoginPage = lazy(() => import("./pages/admin/AdminLoginPage"));
+const AdminAccessDeniedPage = lazy(() => import("./pages/admin/AdminAccessDeniedPage"));
 const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const AdminReports = lazy(() => import("./pages/admin/AdminReports"));
@@ -123,6 +124,7 @@ export default function App() {
 
           {/* Admin */}
           <Route path="/admin/login" element={<AdminLoginPage />} />
+          <Route path="/admin/access-denied" element={<AdminAccessDeniedPage />} />
           <Route path="/admin" element={<AdminProtectedRoute><AdminLayout /></AdminProtectedRoute>}>
             <Route index element={<AdminDashboard />} />
             <Route path="reports" element={<AdminReports />} />
