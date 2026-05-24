@@ -8,6 +8,10 @@ import {
 } from "../../services/CartService";
 import { applyVoucher } from "../../services/VoucherService";
 import { createOrder } from "../../services/OrderService";
+import {
+  buildCreateOrderPayload,
+  createStorefrontOrderApi,
+} from "../../services/StorefrontOrderApiService";
 import StorefrontShell from "../../components/storefront/StorefrontShell";
 import {
   ORDER_TYPE,
@@ -55,6 +59,12 @@ function getCopy(lang) {
       lang === "en"
         ? "Review your address, shipping and payment before placing the order."
         : "Kiểm tra địa chỉ, vận chuyển và thanh toán trước khi đặt hàng.",
+    email: lang === "en" ? "Email optional" : "Email không bắt buộc",
+    placing: lang === "en" ? "Placing order..." : "Đang đặt hàng...",
+    apiFallback:
+      lang === "en"
+        ? "Backend order API failed, saved as local demo order."
+        : "Backend order API lỗi, đã lưu đơn local demo.",
   };
 }
 
@@ -88,10 +98,13 @@ export default function CheckoutPage() {
 
   const [draft, setDraft] = useState(null);
   const [errors, setErrors] = useState([]);
+  const [placingOrder, setPlacingOrder] = useState(false);
+  const [apiNotice, setApiNotice] = useState("");
 
   const [customer, setCustomer] = useState({
     name: "",
     phone: "",
+    email: "",
     address: "",
     province: "Hồ Chí Minh",
     note: "",
@@ -192,12 +205,17 @@ export default function CheckoutPage() {
     return nextErrors.length === 0;
   }
 
-  function submitOrder() {
+  async function submitOrder() {
+    if (placingOrder) return;
     if (!validateCustomer()) return;
+
+    setPlacingOrder(true);
+    setApiNotice("");
 
     const cleanCustomer = {
       name: sanitizeText(customer.name, 80),
       phone: normalizePhone(customer.phone),
+      email: sanitizeText(customer.email || "", 120),
       address: sanitizeText(customer.address, 180),
       province: sanitizeText(customer.province || "Hồ Chí Minh", 80),
       note: sanitizeText(customer.note, 280),
@@ -205,28 +223,86 @@ export default function CheckoutPage() {
       shippingMethod: customer.shippingMethod,
     };
 
-    const order = createOrder({
-      orderType: isPreorder ? ORDER_TYPE.PREORDER : ORDER_TYPE.NORMAL,
-      preorder: draft.preorder || null,
-      customer: cleanCustomer,
-      items: draft.items.map((item) => ({
-        ...item,
-        name: getItemName(item, lang),
-      })),
-      subtotal: pricing.subtotal,
-      shippingFee: pricing.shippingFee,
-      discount: pricing.discount,
-      shippingDiscount: pricing.shippingDiscount,
-      voucherCode: pricing.voucherCode,
-      total: pricing.total,
-      paymentMethod: customer.paymentMethod,
-      shippingMethod: customer.shippingMethod,
-    });
+    try {
+      if (!isPreorder) {
+        const apiPayload = buildCreateOrderPayload({
+          customer: cleanCustomer,
+          draft,
+          pricing,
+        });
 
-    clearCartItems(draft.items.map((item) => item.id));
-    clearCheckoutDraft();
+        const apiOrder = await createStorefrontOrderApi(apiPayload);
 
-    navigate(`/order-success/${order.id}`);
+        clearCartItems(draft.items.map((item) => item.id));
+        clearCheckoutDraft();
+
+        navigate(`/order-success/${apiOrder.id}`);
+        return;
+      }
+
+      const order = createOrder({
+        orderType: ORDER_TYPE.PREORDER,
+        preorder: draft.preorder || null,
+        customer: cleanCustomer,
+        items: draft.items.map((item) => ({
+          ...item,
+          name: getItemName(item, lang),
+        })),
+        subtotal: pricing.subtotal,
+        shippingFee: pricing.shippingFee,
+        discount: pricing.discount,
+        shippingDiscount: pricing.shippingDiscount,
+        voucherCode: pricing.voucherCode,
+        total: pricing.total,
+        paymentMethod: customer.paymentMethod,
+        shippingMethod: customer.shippingMethod,
+      });
+
+      clearCartItems(draft.items.map((item) => item.id));
+      clearCheckoutDraft();
+
+      navigate(`/order-success/${order.id}`);
+    } catch (error) {
+      console.error("Create order API failed", error);
+
+      if (!isPreorder) {
+        setErrors([
+          error?.message ||
+            (lang === "en"
+              ? "Cannot create backend order. Please check product mapping or stock."
+              : "Không thể tạo đơn backend. Vui lòng kiểm tra mapping sản phẩm hoặc tồn kho."),
+        ]);
+        setApiNotice("");
+        return;
+      }
+
+      setApiNotice(t.apiFallback);
+
+      const order = createOrder({
+        orderType: ORDER_TYPE.PREORDER,
+        preorder: draft.preorder || null,
+        customer: cleanCustomer,
+        items: draft.items.map((item) => ({
+          ...item,
+          name: getItemName(item, lang),
+        })),
+        subtotal: pricing.subtotal,
+        shippingFee: pricing.shippingFee,
+        discount: pricing.discount,
+        shippingDiscount: pricing.shippingDiscount,
+        voucherCode: pricing.voucherCode,
+        total: pricing.total,
+        paymentMethod: customer.paymentMethod,
+        shippingMethod: customer.shippingMethod,
+      });
+
+      clearCartItems(draft.items.map((item) => item.id));
+      clearCheckoutDraft();
+
+      navigate(`/order-success/${order.id}`);
+    } finally {
+      setPlacingOrder(false);
+    }
   }
 
   return (
@@ -281,6 +357,12 @@ export default function CheckoutPage() {
             </div>
           )}
 
+          {apiNotice && (
+            <div className="mt-5 rounded-3xl border border-amber-100 bg-amber-50 p-4 text-sm font-black text-amber-700">
+              {apiNotice}
+            </div>
+          )}
+
           <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_430px]">
             <section className="space-y-6">
               <div className="rounded-3xl bg-white p-6 shadow-sm">
@@ -301,6 +383,14 @@ export default function CheckoutPage() {
                     onChange={(e) => setCustomer({ ...customer, phone: e.target.value })}
                     placeholder={t.phone}
                     inputMode="tel"
+                    className="rounded-2xl border px-4 py-3 outline-none focus:border-blue-500"
+                  />
+
+                  <input
+                    value={customer.email}
+                    onChange={(e) => setCustomer({ ...customer, email: e.target.value })}
+                    placeholder={t.email}
+                    inputMode="email"
                     className="rounded-2xl border px-4 py-3 outline-none focus:border-blue-500"
                   />
 
@@ -457,9 +547,10 @@ export default function CheckoutPage() {
 
               <button
                 onClick={submitOrder}
-                className="mt-6 w-full rounded-2xl bg-blue-600 py-4 font-black text-white shadow-lg hover:bg-blue-700"
+                disabled={placingOrder}
+                className="mt-6 w-full rounded-2xl bg-blue-600 py-4 font-black text-white shadow-lg hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {t.placeOrder}
+                {placingOrder ? t.placing : t.placeOrder}
               </button>
 
               <button

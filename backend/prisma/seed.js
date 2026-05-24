@@ -74,6 +74,14 @@ async function main() {
       stock: 64,
     },
     {
+      sku: "MG-FREEDOM-100-VER20",
+      slug: "mg-1-100-freedom-gundam-ver-2-0",
+      nameVi: "MG 1/100 Freedom Gundam Ver.2.0",
+      nameEn: "MG 1/100 Freedom Gundam Ver.2.0",
+      price: 1250000,
+      stock: 30,
+    },
+    {
       sku: "ACTION-BASE-5-CLEAR",
       slug: "action-base-5-clear",
       nameVi: "Action Base 5 Clear",
