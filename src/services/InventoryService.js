@@ -75,3 +75,77 @@ export function restoreStock(items = []) {
 
   saveInventory(next);
 }
+
+
+const INVENTORY_LOG_KEY = "gundam-inventory-logs";
+
+function readInventoryLogs() {
+  try {
+    return JSON.parse(localStorage.getItem(INVENTORY_LOG_KEY) || "[]");
+  } catch {
+    return [];
+  }
+}
+
+function writeInventoryLogs(logs) {
+  localStorage.setItem(INVENTORY_LOG_KEY, JSON.stringify(Array.isArray(logs) ? logs : []));
+}
+
+export function addInventoryLog(event = {}) {
+  const logs = readInventoryLogs();
+
+  const nextLog = {
+    id: `INV-${Date.now()}`,
+    productId: event.productId || "",
+    productName: event.productName || "",
+    quantity: Number(event.quantity) || 0,
+    type: event.type || "adjustment",
+    orderId: event.orderId || "",
+    note: event.note || "",
+    createdAt: new Date().toISOString(),
+  };
+
+  writeInventoryLogs([nextLog, ...logs].slice(0, 500));
+  return nextLog;
+}
+
+export function getInventoryLogs() {
+  return readInventoryLogs();
+}
+
+export function logOrderStockReservation(order) {
+  (order.items || []).forEach((item) => {
+    addInventoryLog({
+      productId: item.id,
+      productName: item.name,
+      quantity: item.quantity || 1,
+      type: "reserved",
+      orderId: order.id,
+      note: "Reserved stock for order.",
+    });
+  });
+}
+
+export function logOrderStockRestore(order, note = "") {
+  (order.items || []).forEach((item) => {
+    addInventoryLog({
+      productId: item.id,
+      productName: item.name,
+      quantity: item.quantity || 1,
+      type: "restored",
+      orderId: order.id,
+      note: note || "Stock restored for cancelled/refunded order.",
+    });
+  });
+}
+
+export function getInventoryLogSummary() {
+  const logs = getInventoryLogs();
+
+  return {
+    total: logs.length,
+    reserved: logs.filter((log) => log.type === "reserved").length,
+    restored: logs.filter((log) => log.type === "restored").length,
+    adjusted: logs.filter((log) => log.type === "adjustment").length,
+  };
+}

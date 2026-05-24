@@ -243,7 +243,14 @@ export default function AdminLayout() {
               <NavItem to="/admin/analytics" icon={Activity} label={t.analytics} />
               <NavItem to="/admin/settings" icon={Settings} label={t.settings} />
             </NavGroup>
-          </nav>
+          
+          <a
+            href="/admin/qa-helper"
+            className="block rounded-2xl px-4 py-3 text-sm font-black text-slate-600 hover:bg-blue-50 hover:text-blue-700"
+          >
+            QA / SIT Helper
+          </a>
+</nav>
         </aside>
 
         <main className="min-w-0">
