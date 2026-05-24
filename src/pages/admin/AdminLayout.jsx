@@ -22,6 +22,7 @@ import {
   Star,
   Store,
   Tags,
+  TestTube2,
   Truck,
   UploadCloud,
   Users,
@@ -64,6 +65,7 @@ const copy = {
     settings: "Cài đặt",
     viewStore: "Xem cửa hàng",
     search: "Tìm trong admin...",
+    qaHelper: "QA / SIT Helper",
   },
   en: {
     app: "Gundam Admin",
@@ -98,6 +100,7 @@ const copy = {
     settings: "Settings",
     viewStore: "View Store",
     search: "Search admin...",
+    qaHelper: "QA / SIT Helper",
   },
 };
 
@@ -186,6 +189,7 @@ function getPageTitle(pathname, t) {
   if (pathname.includes("/admin/complaints")) return t.complaints;
   if (pathname.includes("/admin/analytics")) return t.analytics;
   if (pathname.includes("/admin/settings")) return t.settings;
+  if (pathname.includes("/admin/qa-helper")) return t.qaHelper;
   return t.dashboard;
 }
 
@@ -242,14 +246,8 @@ export default function AdminLayout() {
             <NavGroup title={t.system}>
               <NavItem to="/admin/analytics" icon={Activity} label={t.analytics} />
               <NavItem to="/admin/settings" icon={Settings} label={t.settings} />
+              <NavItem to="/admin/qa-helper" icon={TestTube2} label={t.qaHelper} />
             </NavGroup>
-          
-          <a
-            href="/admin/qa-helper"
-            className="block rounded-2xl px-4 py-3 text-sm font-black text-slate-600 hover:bg-blue-50 hover:text-blue-700"
-          >
-            QA / SIT Helper
-          </a>
 </nav>
         </aside>
 

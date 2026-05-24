@@ -1,5 +1,6 @@
 import AutoTranslate from "./components/common/AutoTranslate.jsx";
 import { Navigate, Route, Routes } from "react-router-dom";
+
 import HomePage from "./pages/storefront/HomePage";
 import ShopPage from "./pages/storefront/ShopPage";
 import AccessoriesPage from "./pages/storefront/AccessoriesPage";
@@ -14,11 +15,13 @@ import NewsPage from "./pages/storefront/NewsPage";
 import NewsDetailPage from "./pages/storefront/NewsDetailPage";
 import EventsPage from "./pages/storefront/EventsPage";
 import EventDetailPage from "./pages/storefront/EventDetailPage";
-
 import ProductDetailPage from "./pages/storefront/ProductDetailPage";
 import CartPage from "./pages/storefront/CartPage";
 import CheckoutPage from "./pages/storefront/CheckoutPage";
 import OrderSuccessPage from "./pages/storefront/OrderSuccessPage";
+import MyOrdersPage from "./pages/storefront/MyOrdersPage";
+import OrderDetailPage from "./pages/storefront/OrderDetailPage";
+
 import AdminLayout from "./pages/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminStorefrontCMS from "./pages/admin/AdminStorefrontCMS";
@@ -44,82 +47,86 @@ import AdminProductGroups from "./pages/admin/AdminProductGroups";
 import AdminProductGroupMapping from "./pages/admin/AdminProductGroupMapping";
 import AdminPricingInventory from "./pages/admin/AdminPricingInventory";
 import AdminPromotions from "./pages/admin/AdminPromotions";
-import HeaderCart from "./components/layout/HeaderCart";
-import MyOrdersPage from "./pages/storefront/MyOrdersPage";
-import OrderDetailPage from "./pages/storefront/OrderDetailPage";
-import AddToCartBridge from "./components/cart/AddToCartBridge";
 import AdminReports from "./pages/admin/AdminReports";
+
+import HeaderCart from "./components/layout/HeaderCart";
+import AddToCartBridge from "./components/cart/AddToCartBridge";
 
 export default function App() {
   return (
     <>
       <AutoTranslate />
-    <>
+
       <Routes>
-        <Route path="order-lookup" element={<OrderLookupPage />} />
-        <Route path="orders/:id" element={<OrderDetailPage />} />
-        <Route path="orders" element={<MyOrdersPage />} />
-        <Route path="order-success/:id" element={<OrderSuccessPage />} />
-        <Route path="cart" element={<CartPage />} />
-        <Route path="checkout" element={<CheckoutPage />} />
-      <Route path="/" element={<HomePage />} />
-      <Route path="/shop" element={<ShopPage />} />
-          <Route path="/accessories" element={<AccessoriesPage />} />
-          <Route path="/promotions" element={<PromotionsPage />} />
-          <Route path="/pre-order" element={<PreOrderPage />} />
-          <Route path="/build-guide" element={<BuildGuidePage />} />
-          <Route path="/order-lookup" element={<OrderLookupPage />} />
-          <Route path="/faq" element={<FAQPage />} />
-          <Route path="/return-policy" element={<ReturnPolicyPage />} />
-          <Route path="/contact" element={<ContactPage />} />
-          <Route path="/news" element={<NewsPage />} />
-          <Route path="/news/events" element={<EventsPage />} />
-          <Route path="/news/events/:id" element={<EventDetailPage />} />
-          <Route path="/news/:slug" element={<NewsDetailPage />} />
+        {/* Storefront */}
+        <Route path="/" element={<HomePage />} />
+        <Route path="/shop" element={<ShopPage />} />
+        <Route path="/accessories" element={<AccessoriesPage />} />
+        <Route path="/promotions" element={<PromotionsPage />} />
+        <Route path="/pre-order" element={<PreOrderPage />} />
+        <Route path="/build-guide" element={<BuildGuidePage />} />
+        <Route path="/order-lookup" element={<OrderLookupPage />} />
+        <Route path="/orders" element={<MyOrdersPage />} />
+        <Route path="/orders/:id" element={<OrderDetailPage />} />
+        <Route path="/faq" element={<FAQPage />} />
+        <Route path="/return-policy" element={<ReturnPolicyPage />} />
+        <Route path="/contact" element={<ContactPage />} />
 
-      <Route path="/product/:slug" element={<ProductDetailPage />} />
-      <Route path="/cart" element={<CartPage />} />
-      <Route path="/checkout" element={<CheckoutPage />} />
-      <Route path="/order-success/:id" element={<OrderSuccessPage />} />
+        {/* Content */}
+        <Route path="/news" element={<NewsPage />} />
+        <Route path="/news/events" element={<EventsPage />} />
+        <Route path="/news/events/:id" element={<EventDetailPage />} />
+        <Route path="/news/:slug" element={<NewsDetailPage />} />
 
-      <Route path="/admin" element={<AdminLayout />}>
+        {/* Commerce */}
+        <Route path="/product/:slug" element={<ProductDetailPage />} />
+        <Route path="/cart" element={<CartPage />} />
+        <Route path="/checkout" element={<CheckoutPage />} />
+        <Route path="/order-success/:id" element={<OrderSuccessPage />} />
+
+        {/* Admin */}
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<AdminDashboard />} />
           <Route path="reports" element={<AdminReports />} />
-        <Route index element={<AdminDashboard />} />
-        <Route path="cms" element={<AdminStorefrontCMS />} />
-        <Route path="cms/pages" element={<AdminStorefrontCMS />} />
-        <Route path="cms/home-builder" element={<AdminStorefrontCMS />} />
-        <Route path="cms/banners" element={<AdminCMSBanners />} />
+
+          <Route path="cms" element={<AdminStorefrontCMS />} />
+          <Route path="cms/pages" element={<AdminStorefrontCMS />} />
+          <Route path="cms/home-builder" element={<AdminStorefrontCMS />} />
+          <Route path="cms/banners" element={<AdminCMSBanners />} />
+          <Route path="cms/navigation" element={<AdminStorefrontCMS />} />
+          <Route path="cms/media" element={<AdminStorefrontCMS />} />
+          <Route path="cms/theme-seo" element={<AdminStorefrontCMS />} />
+
           <Route path="news" element={<AdminNews />} />
           <Route path="events" element={<AdminEvents />} />
-        <Route path="cms/navigation" element={<AdminStorefrontCMS />} />
-        <Route path="cms/media" element={<AdminStorefrontCMS />} />
-        <Route path="cms/theme-seo" element={<AdminStorefrontCMS />} />
-        <Route path="home-builder" element={<AdminHomeBuilder />} />
-        <Route path="banners" element={<AdminBanners />} />
-        <Route path="products" element={<AdminProducts />} />
-        <Route path="product-categories" element={<AdminProductCategories />} />
-        <Route path="suppliers" element={<AdminSuppliers />} />
-        <Route path="product-groups" element={<AdminProductGroups />} />
-        <Route path="product-group-mapping" element={<AdminProductGroupMapping />} />
-        <Route path="pricing-inventory" element={<AdminPricingInventory />} />
-        <Route path="promotions" element={<AdminPromotions />} />
-        <Route path="categories" element={<AdminCategories />} />
-        <Route path="product-category-mapping" element={<AdminProductCategoryMapping />} />
-        <Route path="product-display-mapping" element={<AdminProductDisplayMapping />} />
-        <Route path="orders" element={<AdminOrders />} />
-        <Route path="chats" element={<AdminChats />} />
-        <Route path="reviews" element={<AdminReviews />} />
-        <Route path="complaints" element={<AdminComplaints />} />
-        <Route path="analytics" element={<AdminAnalytics />} />
-        <Route path="settings" element={<AdminSettings />} />
-      </Route>
+          <Route path="home-builder" element={<AdminHomeBuilder />} />
+          <Route path="banners" element={<AdminBanners />} />
 
-      <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
+          <Route path="products" element={<AdminProducts />} />
+          <Route path="product-categories" element={<AdminProductCategories />} />
+          <Route path="suppliers" element={<AdminSuppliers />} />
+          <Route path="product-groups" element={<AdminProductGroups />} />
+          <Route path="product-group-mapping" element={<AdminProductGroupMapping />} />
+          <Route path="pricing-inventory" element={<AdminPricingInventory />} />
+          <Route path="promotions" element={<AdminPromotions />} />
+          <Route path="categories" element={<AdminCategories />} />
+          <Route path="product-category-mapping" element={<AdminProductCategoryMapping />} />
+          <Route path="product-display-mapping" element={<AdminProductDisplayMapping />} />
+
+          <Route path="orders" element={<AdminOrders />} />
+          <Route path="chats" element={<AdminChats />} />
+          <Route path="reviews" element={<AdminReviews />} />
+          <Route path="complaints" element={<AdminComplaints />} />
+          <Route path="analytics" element={<AdminAnalytics />} />
+          <Route path="settings" element={<AdminSettings />} />
+          <Route path="qa-helper" element={<AdminQaHelper />} />
+        </Route>
+
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+
       <AddToCartBridge />
       <HeaderCart />
-      
-    </>
     </>
   );
 }
