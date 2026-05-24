@@ -521,3 +521,113 @@ export function confirmPreorderBalance(orderId, adminNote = "") {
     adminNote || "Admin đã xác nhận khách thanh toán phần còn lại."
   );
 }
+
+
+export function requestPreorderBalancePayment(orderId, note = "") {
+  const now = new Date().toISOString();
+  const order = getOrderById(orderId);
+
+  if (!order) {
+    throw new Error("Order not found.");
+  }
+
+  if (order.orderType !== ORDER_TYPE.PREORDER || !order.preorder) {
+    throw new Error("This is not a preorder order.");
+  }
+
+  if (order.preorder.status !== PREORDER_STATUS.READY_FOR_BALANCE) {
+    throw new Error("This preorder is not ready for balance payment.");
+  }
+
+  if (order.preorder.balanceStatus === PAYMENT_STATUS.PAID) {
+    throw new Error("Balance payment was already confirmed.");
+  }
+
+  const orders = getOrders().map((item) =>
+    item.id === order.id || item.orderCode === order.id
+      ? {
+          ...item,
+          preorder: {
+            ...(item.preorder || {}),
+            balancePaymentRequest: {
+              requested: true,
+              status: "Pending",
+              note,
+              requestedAt: now,
+            },
+          },
+          updatedAt: now,
+          timeline: [
+            ...(item.timeline || []),
+            {
+              status: item.status,
+              time: now,
+              title: "Khách báo đã thanh toán phần còn lại",
+              note: note || "Khách hàng đã gửi xác nhận thanh toán phần còn lại cho đơn pre-order.",
+            },
+          ],
+        }
+      : item
+  );
+
+  saveOrders(orders);
+  return orders;
+}
+
+export function resolvePreorderBalancePayment(orderId, decision = "Rejected", adminNote = "") {
+  const now = new Date().toISOString();
+  const order = getOrderById(orderId);
+
+  if (!order) {
+    throw new Error("Order not found.");
+  }
+
+  if (order.orderType !== ORDER_TYPE.PREORDER || !order.preorder) {
+    throw new Error("This is not a preorder order.");
+  }
+
+  const approved = decision === "Approved";
+
+  const orders = getOrders().map((item) =>
+    item.id === order.id || item.orderCode === order.id
+      ? {
+          ...item,
+          status:
+            approved && item.status === ORDER_STATUS.PLACED
+              ? ORDER_STATUS.CONFIRMED
+              : item.status,
+          preorder: {
+            ...(item.preorder || {}),
+            status: approved ? PREORDER_STATUS.BALANCE_PAID : item.preorder?.status,
+            balanceStatus: approved ? PAYMENT_STATUS.PAID : item.preorder?.balanceStatus,
+            balanceConfirmedAt: approved ? now : item.preorder?.balanceConfirmedAt,
+            balancePaymentRequest: {
+              ...(item.preorder?.balancePaymentRequest || {}),
+              status: approved ? "Approved" : "Rejected",
+              resolvedAt: now,
+              adminNote,
+            },
+          },
+          updatedAt: now,
+          timeline: [
+            ...(item.timeline || []),
+            {
+              status: approved ? ORDER_STATUS.CONFIRMED : item.status,
+              time: now,
+              title: approved
+                ? "Admin xác nhận thanh toán phần còn lại"
+                : "Admin từ chối xác nhận thanh toán phần còn lại",
+              note:
+                adminNote ||
+                (approved
+                  ? "Admin đã xác nhận khách thanh toán phần còn lại cho đơn pre-order."
+                  : "Admin đã từ chối xác nhận thanh toán phần còn lại."),
+            },
+          ],
+        }
+      : item
+  );
+
+  saveOrders(orders);
+  return orders;
+}

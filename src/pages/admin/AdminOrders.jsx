@@ -30,6 +30,7 @@ import {
   markPreorderWaitingArrival,
   markPreorderReadyForBalance,
   confirmPreorderBalance,
+  resolvePreorderBalancePayment,
 } from "../../services/OrderService";
 import { escapeHtml, getOrderStatusToneClass, maskPhone } from "../../constants/orderConfig";
 import { formatCurrency } from "../../utils/format";
@@ -58,6 +59,12 @@ function getCopy(lang) {
     revenue: lang === "en" ? "Revenue" : "Doanh thu",
     pending: lang === "en" ? "Pending" : "Chờ xử lý",
     shipping: lang === "en" ? "Shipping" : "Đang giao",
+    attentionOrders: lang === "en" ? "Need action" : "Cần xử lý",
+    attentionDesc:
+      lang === "en"
+        ? "Orders waiting for admin action: pending confirmation, preorder balance requests, or shipping updates."
+        : "Các đơn cần admin xử lý: chờ xác nhận, yêu cầu thanh toán còn lại hoặc cần cập nhật vận chuyển.",
+    viewAttention: lang === "en" ? "View need action" : "Xem đơn cần xử lý",
     preorderOrders: lang === "en" ? "Pre-orders" : "Đơn pre-order",
     preorderDeposit: lang === "en" ? "Pre-order deposit" : "Cọc pre-order",
     depositPending: lang === "en" ? "Deposit pending" : "Chờ xác nhận cọc",
@@ -65,6 +72,10 @@ function getCopy(lang) {
     waitingArrival: lang === "en" ? "Waiting arrival" : "Chờ hàng về",
     readyForBalance: lang === "en" ? "Ready for balance" : "Hàng đã về",
     balancePaid: lang === "en" ? "Balance paid" : "Đã thanh toán còn lại",
+    balanceRequests: lang === "en" ? "Balance requests" : "Yêu cầu thanh toán còn lại",
+    balanceRequestPending: lang === "en" ? "Balance request pending" : "Chờ duyệt thanh toán còn lại",
+    approveBalanceRequest: lang === "en" ? "Approve balance payment" : "Duyệt thanh toán còn lại",
+    rejectBalanceRequest: lang === "en" ? "Reject balance payment" : "Từ chối thanh toán còn lại",
     confirmDeposit: lang === "en" ? "Confirm deposit" : "Xác nhận cọc",
     updateEta: lang === "en" ? "Update ETA" : "Cập nhật ETA",
     markWaiting: lang === "en" ? "Mark waiting arrival" : "Chờ hàng về",
@@ -136,7 +147,9 @@ function getCopy(lang) {
 function buildStatusTabs(lang, t) {
   return [
     { key: "all", label: lang === "en" ? "All" : "Tất cả" },
+    { key: "attention", label: t.attentionOrders },
     { key: "preorder", label: t.preorderOrders },
+    { key: "balanceRequests", label: t.balanceRequests },
     ...NEXT_FLOW.map((status) => ({
       key: status,
       label: getOrderStatusLabel(status, lang),
@@ -196,7 +209,14 @@ export default function AdminOrders() {
         .join(" ")
         .toLowerCase();
 
+      if (tab === "attention") {
+        const needsConfirm = order.status === ORDER_STATUS.PLACED;
+        const needsBalanceReview = order.preorder?.balancePaymentRequest?.status === "Pending";
+        const needsShippingUpdate = order.status === ORDER_STATUS.SHIPPING && !order.shippingInfo?.trackingCode;
+        if (!needsConfirm && !needsBalanceReview && !needsShippingUpdate) return false;
+      }
       if (tab === "preorder" && order.orderType !== ORDER_TYPE.PREORDER) return false;
+      if (tab === "balanceRequests" && order.preorder?.balancePaymentRequest?.status !== "Pending") return false;
       if (tab !== "all" && tab !== "preorder" && order.status !== tab) return false;
       if (query && !text.includes(query.toLowerCase())) return false;
       return true;
@@ -208,8 +228,15 @@ export default function AdminOrders() {
       total: orders.length,
       revenue: orders.reduce((s, o) => s + (Number(o.total) || 0), 0),
       pending: orders.filter((o) => o.status === ORDER_STATUS.PLACED).length,
+      attention: orders.filter((o) => {
+        const needsConfirm = o.status === ORDER_STATUS.PLACED;
+        const needsBalanceReview = o.preorder?.balancePaymentRequest?.status === "Pending";
+        const needsShippingUpdate = o.status === ORDER_STATUS.SHIPPING && !o.shippingInfo?.trackingCode;
+        return needsConfirm || needsBalanceReview || needsShippingUpdate;
+      }).length,
       shipping: orders.filter((o) => o.status === ORDER_STATUS.SHIPPING).length,
       preorder: orders.filter((o) => o.orderType === ORDER_TYPE.PREORDER).length,
+      balanceRequests: orders.filter((o) => o.preorder?.balancePaymentRequest?.status === "Pending").length,
       completed: orders.filter((o) => o.status === ORDER_STATUS.COMPLETED).length,
     };
   }, [orders]);
@@ -396,6 +423,16 @@ export default function AdminOrders() {
     }
   }
 
+  function handleResolvePreorderBalancePayment(orderId, decision) {
+    try {
+      resolvePreorderBalancePayment(orderId, decision, askAdminNote());
+      refreshSelectedOrder(orderId);
+      alert(t.actionDone);
+    } catch (error) {
+      alert(error?.message || "Action failed.");
+    }
+  }
+
   function saveShipping(orderId) {
     const carrier = document.getElementById("carrier")?.value || "";
     const trackingCode = document.getElementById("trackingCode")?.value || "";
@@ -462,7 +499,35 @@ export default function AdminOrders() {
           <p className="text-xs font-black uppercase text-slate-400">{t.preorderOrders}</p>
           <p className="mt-2 text-2xl font-black text-violet-600">{summary.preorder}</p>
         </div>
+        <div className="rounded-3xl bg-white p-5 shadow-sm">
+          <p className="text-xs font-black uppercase text-slate-400">{t.balanceRequests}</p>
+          <p className="mt-2 text-2xl font-black text-orange-600">{summary.balanceRequests}</p>
+        </div>
       </div>
+
+
+      {/* AttentionPanelStart */}
+      <div className="rounded-3xl border border-amber-100 bg-amber-50 p-5">
+        <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
+          <div>
+            <div className="text-sm font-black uppercase tracking-[0.18em] text-amber-700">
+              {t.attentionOrders}
+            </div>
+            <p className="mt-1 text-sm font-semibold text-amber-800/80">
+              {t.attentionDesc}
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setTab("attention")}
+            className="rounded-2xl bg-amber-500 px-5 py-3 text-sm font-black text-white shadow-lg shadow-amber-100"
+          >
+            {t.viewAttention}: {summary.attention}
+          </button>
+        </div>
+      </div>
+      {/* AttentionPanelEnd */}
 
       <div className="rounded-3xl bg-white p-4 shadow-sm">
         <div className="flex flex-wrap gap-2">
@@ -713,6 +778,38 @@ export default function AdminOrders() {
                     <div className="mt-1 font-black text-violet-700">{selectedOrder.preorder.status || "-"}</div>
                   </div>
                 </div>
+
+
+                {/* BalancePaymentRequestPanelStart */}
+                {selectedOrder.preorder.balancePaymentRequest?.status === "Pending" && (
+                  <div className="mt-4 rounded-2xl border border-orange-100 bg-orange-50 p-4">
+                    <div className="font-black text-orange-800">{t.balanceRequestPending}</div>
+                    <div className="mt-2 text-sm font-semibold text-orange-700/80">
+                      {selectedOrder.preorder.balancePaymentRequest.note || "-"}
+                    </div>
+                    <div className="mt-1 text-xs font-bold text-orange-700/70">
+                      {selectedOrder.preorder.balancePaymentRequest.requestedAt
+                        ? new Date(selectedOrder.preorder.balancePaymentRequest.requestedAt).toLocaleString("vi-VN")
+                        : "-"}
+                    </div>
+
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <button
+                        onClick={() => handleResolvePreorderBalancePayment(selectedOrder.id, "Approved")}
+                        className="rounded-xl bg-green-600 px-4 py-2 text-xs font-black text-white"
+                      >
+                        {t.approveBalanceRequest}
+                      </button>
+                      <button
+                        onClick={() => handleResolvePreorderBalancePayment(selectedOrder.id, "Rejected")}
+                        className="rounded-xl bg-red-600 px-4 py-2 text-xs font-black text-white"
+                      >
+                        {t.rejectBalanceRequest}
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {/* BalancePaymentRequestPanelEnd */}
 
                 <div className="mt-4 flex flex-wrap gap-2">
                   <button
