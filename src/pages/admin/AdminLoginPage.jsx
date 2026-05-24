@@ -13,6 +13,7 @@ export default function AdminLoginPage() {
     password: "admin123",
   });
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const demoUsers = getDemoAdminUsers();
 
@@ -20,15 +21,18 @@ export default function AdminLoginPage() {
     setForm((prev) => ({ ...prev, [field]: value }));
   }
 
-  function submit(event) {
+  async function submit(event) {
     event.preventDefault();
     setError("");
+    setLoading(true);
 
     try {
-      loginAdmin(form.email, form.password);
+      await loginAdmin(form.email, form.password);
       navigate(redirectTo, { replace: true });
     } catch (err) {
       setError(err?.message || "Login failed.");
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -103,14 +107,15 @@ export default function AdminLoginPage() {
 
           <button
             type="submit"
-            className="mt-5 w-full rounded-2xl bg-blue-700 px-5 py-4 text-sm font-black text-white shadow-lg shadow-blue-100"
+            disabled={loading}
+            className="mt-5 w-full rounded-2xl bg-blue-700 px-5 py-4 text-sm font-black text-white shadow-lg shadow-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            Login
+            {loading ? "Logging in..." : "Login"}
           </button>
 
           <div className="mt-6 rounded-3xl bg-slate-50 p-4">
             <div className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">
-              Demo users
+              Backend test account
             </div>
 
             <div className="mt-3 space-y-2">

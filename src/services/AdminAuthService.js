@@ -1,3 +1,9 @@
+import {
+  apiRequest,
+  clearStoredAdminToken,
+  setStoredAdminToken,
+} from "./ApiClient";
+
 const ADMIN_AUTH_KEY = "gundam-admin-auth";
 
 export const ADMIN_ROLES = {
@@ -6,44 +12,43 @@ export const ADMIN_ROLES = {
   STAFF: "Staff",
 };
 
+const ROLE_CODE_TO_UI_ROLE = {
+  ADMIN: ADMIN_ROLES.ADMIN,
+  MANAGER: ADMIN_ROLES.MANAGER,
+  STAFF: ADMIN_ROLES.STAFF,
+};
+
 const DEMO_USERS = [
   {
-    id: "admin-demo",
-    name: "Admin Demo",
+    id: "admin-backend",
+    name: "Admin Backend",
     email: "admin@gundam.local",
-    password: "admin123",
     role: ADMIN_ROLES.ADMIN,
-  },
-  {
-    id: "manager-demo",
-    name: "Manager Demo",
-    email: "manager@gundam.local",
-    password: "manager123",
-    role: ADMIN_ROLES.MANAGER,
-  },
-  {
-    id: "staff-demo",
-    name: "Staff Demo",
-    email: "staff@gundam.local",
-    password: "staff123",
-    role: ADMIN_ROLES.STAFF,
   },
 ];
 
-function safeUser(user) {
-  if (!user) return null;
+function normalizeBackendUser(user, token = "") {
+  const roleCode = user?.role?.code || user?.roleCode || "ADMIN";
+  const permissions = Array.isArray(user?.role?.permissions)
+    ? user.role.permissions
+    : Array.isArray(user?.permissions)
+      ? user.permissions
+      : [];
 
   return {
-    id: user.id,
-    name: user.name,
-    email: user.email,
-    role: user.role,
+    id: user?.id,
+    name: user?.name || "Admin",
+    email: user?.email,
+    role: ROLE_CODE_TO_UI_ROLE[roleCode] || user?.role?.name || ADMIN_ROLES.ADMIN,
+    roleCode,
+    permissions,
+    token,
     loggedInAt: new Date().toISOString(),
   };
 }
 
 export function getDemoAdminUsers() {
-  return DEMO_USERS.map(({ password, ...user }) => user);
+  return DEMO_USERS;
 }
 
 export function getCurrentAdmin() {
@@ -59,28 +64,55 @@ export function isAdminAuthenticated() {
   return Boolean(getCurrentAdmin());
 }
 
-export function loginAdmin(email = "", password = "") {
+export async function loginAdmin(email = "", password = "") {
   const normalizedEmail = String(email || "").trim().toLowerCase();
   const normalizedPassword = String(password || "").trim();
 
-  const user = DEMO_USERS.find(
-    (item) =>
-      item.email.toLowerCase() === normalizedEmail &&
-      item.password === normalizedPassword
-  );
-
-  if (!user) {
-    throw new Error("Email hoặc mật khẩu không đúng.");
+  if (!normalizedEmail || !normalizedPassword) {
+    throw new Error("Vui lòng nhập email và mật khẩu.");
   }
 
-  const session = safeUser(user);
+  const data = await apiRequest("/api/auth/login", {
+    method: "POST",
+    body: JSON.stringify({
+      email: normalizedEmail,
+      password: normalizedPassword,
+    }),
+  });
+
+  if (!data?.success || !data?.token || !data?.user) {
+    throw new Error("Đăng nhập thất bại. Backend không trả token hợp lệ.");
+  }
+
+  const session = normalizeBackendUser(data.user, data.token);
+
+  setStoredAdminToken(data.token);
   localStorage.setItem(ADMIN_AUTH_KEY, JSON.stringify(session));
   window.dispatchEvent(new CustomEvent("admin-auth:changed", { detail: session }));
+
+  return session;
+}
+
+export async function refreshCurrentAdmin() {
+  const data = await apiRequest("/api/auth/me");
+
+  if (!data?.success || !data?.user) {
+    throw new Error("Không lấy được thông tin admin.");
+  }
+
+  const current = getCurrentAdmin();
+  const session = normalizeBackendUser(data.user, current?.token || "");
+
+  localStorage.setItem(ADMIN_AUTH_KEY, JSON.stringify(session));
+  window.dispatchEvent(new CustomEvent("admin-auth:changed", { detail: session }));
+
   return session;
 }
 
 export function logoutAdmin() {
+  apiRequest("/api/auth/logout", { method: "POST" }).catch(() => {});
   localStorage.removeItem(ADMIN_AUTH_KEY);
+  clearStoredAdminToken();
   window.dispatchEvent(new CustomEvent("admin-auth:changed", { detail: null }));
 }
 
@@ -89,5 +121,5 @@ export function hasAdminRole(roles = []) {
   if (!current) return false;
 
   if (!Array.isArray(roles) || roles.length === 0) return true;
-  return roles.includes(current.role);
+  return roles.includes(current.role) || roles.includes(current.roleCode);
 }

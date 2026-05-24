@@ -1,5 +1,4 @@
 import { normalizeCartItem, normalizeItems, normalizeText, resolveName } from "./PricingService";
-import { notifyCartStore } from "../store/CartExternalStore";
 
 const CART_KEY = "gundam-cart-final";
 const CHECKOUT_KEY = "gundam-checkout-draft";
@@ -66,7 +65,6 @@ export function forceCartBadgeSync(products = []) {
 }
 
 export function emitCartUpdated(cart = []) {
-  notifyCartStore(cart);
 
   window.dispatchEvent(
     new CustomEvent("cart:updated", {

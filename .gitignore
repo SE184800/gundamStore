@@ -9,3 +9,4 @@ backups/
 *.bak-*
 patch-language-ui.py
 *.backup*
+.env.local
