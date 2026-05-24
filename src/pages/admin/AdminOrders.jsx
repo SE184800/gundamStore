@@ -35,6 +35,8 @@ import {
 import { escapeHtml, getOrderStatusToneClass, maskPhone } from "../../constants/orderConfig";
 import { formatCurrency } from "../../utils/format";
 import { useLang } from "../../store/CmsStore";
+import AdminActionButton from "../../components/admin/AdminActionButton";
+import { ADMIN_ACTIONS, assertAdminAction, canAdminAction } from "../../services/AdminActionPermissionService";
 
 const NEXT_FLOW = [
   ORDER_STATUS.PLACED,
@@ -186,6 +188,18 @@ export default function AdminOrders() {
   const [lang] = useLang();
   const t = getCopy(lang);
 
+  function assertOrderStatusPermission(status) {
+    if (status === ORDER_STATUS.CANCELLED) {
+      return assertAdminAction(ADMIN_ACTIONS.CANCEL_ORDER);
+    }
+
+    if (status === ORDER_STATUS.REFUNDED) {
+      return assertAdminAction(ADMIN_ACTIONS.REFUND_ORDER);
+    }
+
+    return assertAdminAction(ADMIN_ACTIONS.UPDATE_ORDER_STATUS);
+  }
+
   function reload() {
     setOrders(getOrders());
   }
@@ -256,6 +270,13 @@ export default function AdminOrders() {
   }
 
   function changeStatus(id, status) {
+    try {
+      assertOrderStatusPermission(status);
+    } catch (error) {
+      alert(error?.message || "Permission denied.");
+      return;
+    }
+
     const reason = getSafeCancelReason(status, lang);
     if (reason === null) return;
 
@@ -280,6 +301,13 @@ export default function AdminOrders() {
   }
 
   function bulkStatus(status) {
+    try {
+      assertOrderStatusPermission(status);
+    } catch (error) {
+      alert(error?.message || "Permission denied.");
+      return;
+    }
+
     const reason = getSafeCancelReason(status, lang);
     if (reason === null) return;
 
@@ -304,6 +332,13 @@ export default function AdminOrders() {
   }
 
   function exportCsv() {
+    try {
+      assertAdminAction(ADMIN_ACTIONS.EXPORT_DATA);
+    } catch (error) {
+      alert(error?.message || "Permission denied.");
+      return;
+    }
+
     const rows = [
       ["Order ID", "Customer", "Phone", "Status", "Payment", "Total", "Tracking"],
       ...filtered.map((o) => [
@@ -372,6 +407,7 @@ export default function AdminOrders() {
 
   function handleConfirmPreorderDeposit(orderId) {
     try {
+      assertAdminAction(ADMIN_ACTIONS.CONFIRM_PREORDER_DEPOSIT);
       confirmPreorderDeposit(orderId, askAdminNote());
       refreshSelectedOrder(orderId);
       alert(t.actionDone);
@@ -395,6 +431,7 @@ export default function AdminOrders() {
 
   function handleMarkPreorderWaiting(orderId) {
     try {
+      assertAdminAction(ADMIN_ACTIONS.MANAGE_PREORDER);
       markPreorderWaitingArrival(orderId, askAdminNote());
       refreshSelectedOrder(orderId);
       alert(t.actionDone);
@@ -405,6 +442,7 @@ export default function AdminOrders() {
 
   function handleMarkPreorderArrived(orderId) {
     try {
+      assertAdminAction(ADMIN_ACTIONS.MANAGE_PREORDER);
       markPreorderReadyForBalance(orderId, askAdminNote());
       refreshSelectedOrder(orderId);
       alert(t.actionDone);
@@ -415,6 +453,7 @@ export default function AdminOrders() {
 
   function handleConfirmPreorderBalance(orderId) {
     try {
+      assertAdminAction(ADMIN_ACTIONS.UPDATE_PAYMENT_STATUS);
       confirmPreorderBalance(orderId, askAdminNote());
       refreshSelectedOrder(orderId);
       alert(t.actionDone);
@@ -425,6 +464,7 @@ export default function AdminOrders() {
 
   function handleResolvePreorderBalancePayment(orderId, decision) {
     try {
+      assertAdminAction(ADMIN_ACTIONS.APPROVE_PREORDER_BALANCE);
       resolvePreorderBalancePayment(orderId, decision, askAdminNote());
       refreshSelectedOrder(orderId);
       alert(t.actionDone);
@@ -434,6 +474,13 @@ export default function AdminOrders() {
   }
 
   function saveShipping(orderId) {
+    try {
+      assertAdminAction(ADMIN_ACTIONS.UPDATE_SHIPPING);
+    } catch (error) {
+      alert(error?.message || "Permission denied.");
+      return;
+    }
+
     const carrier = document.getElementById("carrier")?.value || "";
     const trackingCode = document.getElementById("trackingCode")?.value || "";
     const eta = document.getElementById("eta")?.value || "";
