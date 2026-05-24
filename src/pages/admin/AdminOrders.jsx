@@ -7,10 +7,15 @@ import {
   RefreshCcw,
   Search,
   Truck,
+  WalletCards,
+  CalendarClock,
+  PackageCheck,
 } from "lucide-react";
 import {
   getOrders,
+  ORDER_TYPE,
   ORDER_STATUS,
+  PREORDER_STATUS,
   PAYMENT_STATUS_OPTIONS,
   getOrderStatusLabel,
   getPaymentStatusLabel,
@@ -20,6 +25,11 @@ import {
   updatePaymentStatus,
   updateOrderShipping,
   updateOrderAdminNote,
+  confirmPreorderDeposit,
+  updatePreorderEta,
+  markPreorderWaitingArrival,
+  markPreorderReadyForBalance,
+  confirmPreorderBalance,
 } from "../../services/OrderService";
 import { escapeHtml, getOrderStatusToneClass, maskPhone } from "../../constants/orderConfig";
 import { formatCurrency } from "../../utils/format";
@@ -48,6 +58,26 @@ function getCopy(lang) {
     revenue: lang === "en" ? "Revenue" : "Doanh thu",
     pending: lang === "en" ? "Pending" : "Chờ xử lý",
     shipping: lang === "en" ? "Shipping" : "Đang giao",
+    preorderOrders: lang === "en" ? "Pre-orders" : "Đơn pre-order",
+    preorderDeposit: lang === "en" ? "Pre-order deposit" : "Cọc pre-order",
+    depositPending: lang === "en" ? "Deposit pending" : "Chờ xác nhận cọc",
+    depositPaid: lang === "en" ? "Deposit confirmed" : "Đã xác nhận cọc",
+    waitingArrival: lang === "en" ? "Waiting arrival" : "Chờ hàng về",
+    readyForBalance: lang === "en" ? "Ready for balance" : "Hàng đã về",
+    balancePaid: lang === "en" ? "Balance paid" : "Đã thanh toán còn lại",
+    confirmDeposit: lang === "en" ? "Confirm deposit" : "Xác nhận cọc",
+    updateEta: lang === "en" ? "Update ETA" : "Cập nhật ETA",
+    markWaiting: lang === "en" ? "Mark waiting arrival" : "Chờ hàng về",
+    markArrived: lang === "en" ? "Mark item arrived" : "Hàng đã về",
+    confirmBalance: lang === "en" ? "Confirm balance" : "Xác nhận còn lại",
+    fullAmount: lang === "en" ? "Full amount" : "Giá sản phẩm",
+    depositAmount: lang === "en" ? "Deposit" : "Tiền cọc",
+    remainingAmount: lang === "en" ? "Remaining" : "Còn lại",
+    eta: lang === "en" ? "ETA" : "Dự kiến về hàng",
+    preorderStatus: lang === "en" ? "Pre-order status" : "Trạng thái pre-order",
+    adminNotePrompt: lang === "en" ? "Enter admin note:" : "Nhập ghi chú admin:",
+    etaPrompt: lang === "en" ? "Enter new ETA:" : "Nhập ETA mới:",
+    actionDone: lang === "en" ? "Action completed." : "Đã xử lý thành công.",
     searchPlaceholder:
       lang === "en"
         ? "Search order ID, customer, phone, tracking..."
@@ -103,9 +133,10 @@ function getCopy(lang) {
   };
 }
 
-function buildStatusTabs(lang) {
+function buildStatusTabs(lang, t) {
   return [
     { key: "all", label: lang === "en" ? "All" : "Tất cả" },
+    { key: "preorder", label: t.preorderOrders },
     ...NEXT_FLOW.map((status) => ({
       key: status,
       label: getOrderStatusLabel(status, lang),
@@ -165,7 +196,8 @@ export default function AdminOrders() {
         .join(" ")
         .toLowerCase();
 
-      if (tab !== "all" && order.status !== tab) return false;
+      if (tab === "preorder" && order.orderType !== ORDER_TYPE.PREORDER) return false;
+      if (tab !== "all" && tab !== "preorder" && order.status !== tab) return false;
       if (query && !text.includes(query.toLowerCase())) return false;
       return true;
     });
@@ -177,11 +209,12 @@ export default function AdminOrders() {
       revenue: orders.reduce((s, o) => s + (Number(o.total) || 0), 0),
       pending: orders.filter((o) => o.status === ORDER_STATUS.PLACED).length,
       shipping: orders.filter((o) => o.status === ORDER_STATUS.SHIPPING).length,
+      preorder: orders.filter((o) => o.orderType === ORDER_TYPE.PREORDER).length,
       completed: orders.filter((o) => o.status === ORDER_STATUS.COMPLETED).length,
     };
   }, [orders]);
 
-  const statusTabs = useMemo(() => buildStatusTabs(lang), [lang]);
+  const statusTabs = useMemo(() => buildStatusTabs(lang, t), [lang]);
 
   function toggleSelect(id) {
     setSelectedIds((prev) =>
@@ -300,6 +333,69 @@ export default function AdminOrders() {
     w.print();
   }
 
+
+  function refreshSelectedOrder(orderId) {
+    reload();
+    setSelectedOrder(getOrders().find((o) => o.id === orderId || o.orderCode === orderId) || null);
+  }
+
+  function askAdminNote() {
+    return window.prompt(t.adminNotePrompt) || "";
+  }
+
+  function handleConfirmPreorderDeposit(orderId) {
+    try {
+      confirmPreorderDeposit(orderId, askAdminNote());
+      refreshSelectedOrder(orderId);
+      alert(t.actionDone);
+    } catch (error) {
+      alert(error?.message || "Action failed.");
+    }
+  }
+
+  function handleUpdatePreorderEta(orderId) {
+    const eta = window.prompt(t.etaPrompt);
+    if (eta === null) return;
+
+    try {
+      updatePreorderEta(orderId, eta, askAdminNote());
+      refreshSelectedOrder(orderId);
+      alert(t.actionDone);
+    } catch (error) {
+      alert(error?.message || "Action failed.");
+    }
+  }
+
+  function handleMarkPreorderWaiting(orderId) {
+    try {
+      markPreorderWaitingArrival(orderId, askAdminNote());
+      refreshSelectedOrder(orderId);
+      alert(t.actionDone);
+    } catch (error) {
+      alert(error?.message || "Action failed.");
+    }
+  }
+
+  function handleMarkPreorderArrived(orderId) {
+    try {
+      markPreorderReadyForBalance(orderId, askAdminNote());
+      refreshSelectedOrder(orderId);
+      alert(t.actionDone);
+    } catch (error) {
+      alert(error?.message || "Action failed.");
+    }
+  }
+
+  function handleConfirmPreorderBalance(orderId) {
+    try {
+      confirmPreorderBalance(orderId, askAdminNote());
+      refreshSelectedOrder(orderId);
+      alert(t.actionDone);
+    } catch (error) {
+      alert(error?.message || "Action failed.");
+    }
+  }
+
   function saveShipping(orderId) {
     const carrier = document.getElementById("carrier")?.value || "";
     const trackingCode = document.getElementById("trackingCode")?.value || "";
@@ -345,7 +441,7 @@ export default function AdminOrders() {
         <p className="mt-1 text-sm font-semibold text-blue-700/80">{t.workflowHintDesc}</p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-5">
+      <div className="grid gap-4 md:grid-cols-6">
         <div className="rounded-3xl bg-white p-5 shadow-sm">
           <p className="text-xs font-black uppercase text-slate-400">{t.totalOrders}</p>
           <p className="mt-2 text-2xl font-black">{summary.total}</p>
@@ -361,6 +457,10 @@ export default function AdminOrders() {
         <div className="rounded-3xl bg-white p-5 shadow-sm">
           <p className="text-xs font-black uppercase text-slate-400">{t.shipping}</p>
           <p className="mt-2 text-2xl font-black text-blue-600">{summary.shipping}</p>
+        </div>
+        <div className="rounded-3xl bg-white p-5 shadow-sm">
+          <p className="text-xs font-black uppercase text-slate-400">{t.preorderOrders}</p>
+          <p className="mt-2 text-2xl font-black text-violet-600">{summary.preorder}</p>
         </div>
       </div>
 
@@ -465,6 +565,11 @@ export default function AdminOrders() {
                         <div className="text-xs text-slate-400">
                           {order.createdAt ? new Date(order.createdAt).toLocaleString("vi-VN") : "-"}
                         </div>
+                        {order.orderType === ORDER_TYPE.PREORDER && (
+                          <div className="mt-2 inline-flex rounded-full bg-violet-50 px-2 py-1 text-[10px] font-black text-violet-700">
+                            PRE-ORDER
+                          </div>
+                        )}
                       </td>
 
                       <td className="px-4 py-4 font-bold">{order.customer?.name || "-"}</td>
@@ -564,6 +669,88 @@ export default function AdminOrders() {
                 </button>
               ))}
             </div>
+
+
+            {/* AdminPreorderPanelStart */}
+            {selectedOrder.orderType === ORDER_TYPE.PREORDER && selectedOrder.preorder && (
+              <div className="mt-6 rounded-3xl border border-violet-100 bg-violet-50 p-5">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <h3 className="flex items-center gap-2 text-xl font-black text-violet-900">
+                      <WalletCards size={22} />
+                      {t.preorderDeposit}
+                    </h3>
+                    <p className="mt-1 text-sm font-semibold text-violet-700/80">
+                      {lang === "en"
+                        ? "Manage deposit confirmation, ETA, arrival and remaining balance."
+                        : "Quản lý xác nhận cọc, ETA, hàng về và thanh toán phần còn lại."}
+                    </p>
+                  </div>
+                  <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-violet-700">
+                    {selectedOrder.preorder.status || PREORDER_STATUS.DEPOSIT_PENDING}
+                  </span>
+                </div>
+
+                <div className="mt-4 grid gap-3 md:grid-cols-5">
+                  <div className="rounded-2xl bg-white p-4">
+                    <div className="text-xs font-black uppercase text-slate-400">{t.fullAmount}</div>
+                    <div className="mt-1 font-black">{formatCurrency(selectedOrder.preorder.fullAmount || selectedOrder.subtotal)}</div>
+                  </div>
+                  <div className="rounded-2xl bg-white p-4">
+                    <div className="text-xs font-black uppercase text-slate-400">{t.depositAmount}</div>
+                    <div className="mt-1 font-black text-red-600">{formatCurrency(selectedOrder.preorder.depositAmount || selectedOrder.total)}</div>
+                  </div>
+                  <div className="rounded-2xl bg-white p-4">
+                    <div className="text-xs font-black uppercase text-slate-400">{t.remainingAmount}</div>
+                    <div className="mt-1 font-black">{formatCurrency(selectedOrder.preorder.remainingAmount || 0)}</div>
+                  </div>
+                  <div className="rounded-2xl bg-white p-4">
+                    <div className="text-xs font-black uppercase text-slate-400">{t.eta}</div>
+                    <div className="mt-1 font-black">{selectedOrder.preorder.eta || "-"}</div>
+                  </div>
+                  <div className="rounded-2xl bg-white p-4">
+                    <div className="text-xs font-black uppercase text-slate-400">{t.preorderStatus}</div>
+                    <div className="mt-1 font-black text-violet-700">{selectedOrder.preorder.status || "-"}</div>
+                  </div>
+                </div>
+
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <button
+                    onClick={() => handleConfirmPreorderDeposit(selectedOrder.id)}
+                    className="rounded-xl bg-violet-700 px-4 py-2 text-xs font-black text-white"
+                  >
+                    {t.confirmDeposit}
+                  </button>
+                  <button
+                    onClick={() => handleUpdatePreorderEta(selectedOrder.id)}
+                    className="rounded-xl bg-white px-4 py-2 text-xs font-black text-violet-700"
+                  >
+                    <CalendarClock size={15} className="mr-1 inline" />
+                    {t.updateEta}
+                  </button>
+                  <button
+                    onClick={() => handleMarkPreorderWaiting(selectedOrder.id)}
+                    className="rounded-xl bg-blue-600 px-4 py-2 text-xs font-black text-white"
+                  >
+                    {t.markWaiting}
+                  </button>
+                  <button
+                    onClick={() => handleMarkPreorderArrived(selectedOrder.id)}
+                    className="rounded-xl bg-amber-500 px-4 py-2 text-xs font-black text-white"
+                  >
+                    <PackageCheck size={15} className="mr-1 inline" />
+                    {t.markArrived}
+                  </button>
+                  <button
+                    onClick={() => handleConfirmPreorderBalance(selectedOrder.id)}
+                    className="rounded-xl bg-green-600 px-4 py-2 text-xs font-black text-white"
+                  >
+                    {t.confirmBalance}
+                  </button>
+                </div>
+              </div>
+            )}
+            {/* AdminPreorderPanelEnd */}
 
             <div className="mt-6 grid gap-5 md:grid-cols-2">
               <div className="rounded-3xl border p-5">

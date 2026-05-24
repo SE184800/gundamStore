@@ -399,3 +399,125 @@ export function requestReturnOrder(orderId, reason = "", note = "") {
   saveOrders(orders);
   return orders;
 }
+
+
+function updatePreorderOrder(orderId, updater, timelineTitle, timelineNote = "") {
+  const now = new Date().toISOString();
+  const order = getOrderById(orderId);
+
+  if (!order) {
+    throw new Error("Order not found.");
+  }
+
+  if (order.orderType !== ORDER_TYPE.PREORDER || !order.preorder) {
+    throw new Error("This is not a preorder order.");
+  }
+
+  const orders = getOrders().map((item) => {
+    if (item.id !== order.id && item.orderCode !== order.id) return item;
+
+    const nextValue = updater(item, now);
+
+    return {
+      ...item,
+      ...nextValue,
+      updatedAt: now,
+      timeline: [
+        ...(item.timeline || []),
+        {
+          status: nextValue.status || item.status,
+          time: now,
+          title: timelineTitle,
+          note: timelineNote || timelineTitle,
+        },
+      ],
+    };
+  });
+
+  saveOrders(orders);
+  return orders;
+}
+
+export function confirmPreorderDeposit(orderId, adminNote = "") {
+  return updatePreorderOrder(
+    orderId,
+    (order) => ({
+      preorder: {
+        ...(order.preorder || {}),
+        status: PREORDER_STATUS.DEPOSIT_PAID,
+        depositStatus: PAYMENT_STATUS.PAID,
+        depositConfirmedAt: new Date().toISOString(),
+      },
+      paymentStatus: PAYMENT_STATUS.PAID,
+      status: order.status === ORDER_STATUS.PLACED ? ORDER_STATUS.CONFIRMED : order.status,
+    }),
+    "Xác nhận cọc pre-order",
+    adminNote || "Admin đã xác nhận tiền cọc pre-order."
+  );
+}
+
+export function updatePreorderEta(orderId, eta = "", adminNote = "") {
+  const cleanEta = String(eta || "").trim();
+
+  if (!cleanEta) {
+    throw new Error("ETA is required.");
+  }
+
+  return updatePreorderOrder(
+    orderId,
+    (order) => ({
+      preorder: {
+        ...(order.preorder || {}),
+        eta: cleanEta,
+      },
+    }),
+    "Cập nhật ETA pre-order",
+    adminNote || `ETA mới: ${cleanEta}`
+  );
+}
+
+export function markPreorderWaitingArrival(orderId, adminNote = "") {
+  return updatePreorderOrder(
+    orderId,
+    (order) => ({
+      preorder: {
+        ...(order.preorder || {}),
+        status: PREORDER_STATUS.WAITING_ARRIVAL,
+      },
+    }),
+    "Pre-order đang chờ hàng về",
+    adminNote || "Đơn pre-order đã chuyển sang trạng thái chờ hàng về."
+  );
+}
+
+export function markPreorderReadyForBalance(orderId, adminNote = "") {
+  return updatePreorderOrder(
+    orderId,
+    (order) => ({
+      preorder: {
+        ...(order.preorder || {}),
+        status: PREORDER_STATUS.READY_FOR_BALANCE,
+        readyForBalanceAt: new Date().toISOString(),
+      },
+    }),
+    "Hàng pre-order đã về",
+    adminNote || "Hàng đã về, cần thông báo khách thanh toán phần còn lại."
+  );
+}
+
+export function confirmPreorderBalance(orderId, adminNote = "") {
+  return updatePreorderOrder(
+    orderId,
+    (order) => ({
+      preorder: {
+        ...(order.preorder || {}),
+        status: PREORDER_STATUS.BALANCE_PAID,
+        balanceStatus: PAYMENT_STATUS.PAID,
+        balanceConfirmedAt: new Date().toISOString(),
+      },
+      status: order.status === ORDER_STATUS.PLACED ? ORDER_STATUS.CONFIRMED : order.status,
+    }),
+    "Xác nhận thanh toán phần còn lại",
+    adminNote || "Admin đã xác nhận khách thanh toán phần còn lại."
+  );
+}
