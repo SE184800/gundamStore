@@ -119,6 +119,115 @@ function getCopy(lang) {
   };
 }
 
+
+function PreorderProgressTracker({ order, lang }) {
+  if (order.orderType !== "preorder" || !order.preorder) return null;
+
+  const current = order.preorder.status || PREORDER_STATUS.DEPOSIT_PENDING;
+
+  const steps = [
+    {
+      key: PREORDER_STATUS.DEPOSIT_PENDING,
+      vi: "Chờ xác nhận cọc",
+      en: "Deposit pending",
+    },
+    {
+      key: PREORDER_STATUS.DEPOSIT_PAID,
+      vi: "Đã xác nhận cọc",
+      en: "Deposit confirmed",
+    },
+    {
+      key: PREORDER_STATUS.WAITING_ARRIVAL,
+      vi: "Chờ hàng về",
+      en: "Waiting arrival",
+    },
+    {
+      key: PREORDER_STATUS.READY_FOR_BALANCE,
+      vi: "Hàng đã về",
+      en: "Ready for balance",
+    },
+    {
+      key: PREORDER_STATUS.BALANCE_PAID,
+      vi: "Đã thanh toán còn lại",
+      en: "Balance paid",
+    },
+  ];
+
+  const currentIndex = Math.max(0, steps.findIndex((step) => step.key === current));
+
+  return (
+    <div className="mt-6 rounded-3xl border border-violet-100 bg-white p-6 shadow-sm">
+      <div className="flex flex-col justify-between gap-3 md:flex-row md:items-start">
+        <div>
+          <h2 className="text-xl font-black text-slate-950">
+            {lang === "en" ? "Pre-order progress" : "Tiến trình pre-order"}
+          </h2>
+          <p className="mt-1 text-sm font-semibold text-slate-500">
+            {lang === "en"
+              ? "Track deposit, arrival ETA and remaining balance status."
+              : "Theo dõi cọc, ETA hàng về và trạng thái thanh toán phần còn lại."}
+          </p>
+        </div>
+
+        <div className="rounded-2xl bg-violet-50 px-4 py-2 text-sm font-black text-violet-700">
+          ETA: {order.preorder.eta || "-"}
+        </div>
+      </div>
+
+      <div className="mt-6 grid gap-3 md:grid-cols-5">
+        {steps.map((step, index) => {
+          const active = index <= currentIndex;
+          return (
+            <div
+              key={step.key}
+              className={`rounded-2xl p-4 text-center text-xs font-black ${
+                active
+                  ? "bg-violet-600 text-white shadow-lg shadow-violet-100"
+                  : "bg-slate-100 text-slate-400"
+              }`}
+            >
+              <div className="mx-auto mb-2 flex h-8 w-8 items-center justify-center rounded-full bg-white/20">
+                {index + 1}
+              </div>
+              {lang === "en" ? step.en : step.vi}
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="mt-5 grid gap-3 md:grid-cols-3">
+        <div className="rounded-2xl bg-amber-50 p-4">
+          <div className="text-xs font-black uppercase text-amber-700">
+            {lang === "en" ? "Deposit" : "Tiền cọc"}
+          </div>
+          <div className="mt-1 text-xl font-black text-red-600">
+            {money(order.preorder.depositAmount || order.total)}
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-slate-50 p-4">
+          <div className="text-xs font-black uppercase text-slate-500">
+            {lang === "en" ? "Remaining" : "Còn lại"}
+          </div>
+          <div className="mt-1 text-xl font-black text-slate-950">
+            {money(order.preorder.remainingAmount || 0)}
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-blue-50 p-4">
+          <div className="text-xs font-black uppercase text-blue-700">
+            {lang === "en" ? "Balance request" : "Yêu cầu thanh toán còn lại"}
+          </div>
+          <div className="mt-1 text-sm font-black text-blue-800">
+            {order.preorder.balancePaymentRequest?.status || "-"}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
 function RequestModal({ type, lang, onClose, onSubmit }) {
   const t = getCopy(lang);
   const reasons = type === "return" ? RETURN_REASONS : CANCEL_REASONS;
@@ -321,6 +430,8 @@ export default function OrderDetailPage() {
               })}
             </div>
           </div>
+
+          <PreorderProgressTracker order={order} lang={lang} />
 
           {(order.cancelRequest?.status === "Pending" || order.returnRequest?.status === "Pending" || order.preorder?.balancePaymentRequest?.status === "Pending") && (
             <div className="mt-6 rounded-3xl border border-amber-100 bg-amber-50 p-5 text-amber-800">

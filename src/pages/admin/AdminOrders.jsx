@@ -59,6 +59,12 @@ function getCopy(lang) {
     revenue: lang === "en" ? "Revenue" : "Doanh thu",
     pending: lang === "en" ? "Pending" : "Chờ xử lý",
     shipping: lang === "en" ? "Shipping" : "Đang giao",
+    attentionOrders: lang === "en" ? "Need action" : "Cần xử lý",
+    attentionDesc:
+      lang === "en"
+        ? "Orders waiting for admin action: pending confirmation, preorder balance requests, or shipping updates."
+        : "Các đơn cần admin xử lý: chờ xác nhận, yêu cầu thanh toán còn lại hoặc cần cập nhật vận chuyển.",
+    viewAttention: lang === "en" ? "View need action" : "Xem đơn cần xử lý",
     preorderOrders: lang === "en" ? "Pre-orders" : "Đơn pre-order",
     preorderDeposit: lang === "en" ? "Pre-order deposit" : "Cọc pre-order",
     depositPending: lang === "en" ? "Deposit pending" : "Chờ xác nhận cọc",
@@ -141,6 +147,7 @@ function getCopy(lang) {
 function buildStatusTabs(lang, t) {
   return [
     { key: "all", label: lang === "en" ? "All" : "Tất cả" },
+    { key: "attention", label: t.attentionOrders },
     { key: "preorder", label: t.preorderOrders },
     { key: "balanceRequests", label: t.balanceRequests },
     ...NEXT_FLOW.map((status) => ({
@@ -202,6 +209,12 @@ export default function AdminOrders() {
         .join(" ")
         .toLowerCase();
 
+      if (tab === "attention") {
+        const needsConfirm = order.status === ORDER_STATUS.PLACED;
+        const needsBalanceReview = order.preorder?.balancePaymentRequest?.status === "Pending";
+        const needsShippingUpdate = order.status === ORDER_STATUS.SHIPPING && !order.shippingInfo?.trackingCode;
+        if (!needsConfirm && !needsBalanceReview && !needsShippingUpdate) return false;
+      }
       if (tab === "preorder" && order.orderType !== ORDER_TYPE.PREORDER) return false;
       if (tab === "balanceRequests" && order.preorder?.balancePaymentRequest?.status !== "Pending") return false;
       if (tab !== "all" && tab !== "preorder" && order.status !== tab) return false;
@@ -215,6 +228,12 @@ export default function AdminOrders() {
       total: orders.length,
       revenue: orders.reduce((s, o) => s + (Number(o.total) || 0), 0),
       pending: orders.filter((o) => o.status === ORDER_STATUS.PLACED).length,
+      attention: orders.filter((o) => {
+        const needsConfirm = o.status === ORDER_STATUS.PLACED;
+        const needsBalanceReview = o.preorder?.balancePaymentRequest?.status === "Pending";
+        const needsShippingUpdate = o.status === ORDER_STATUS.SHIPPING && !o.shippingInfo?.trackingCode;
+        return needsConfirm || needsBalanceReview || needsShippingUpdate;
+      }).length,
       shipping: orders.filter((o) => o.status === ORDER_STATUS.SHIPPING).length,
       preorder: orders.filter((o) => o.orderType === ORDER_TYPE.PREORDER).length,
       balanceRequests: orders.filter((o) => o.preorder?.balancePaymentRequest?.status === "Pending").length,
@@ -485,6 +504,30 @@ export default function AdminOrders() {
           <p className="mt-2 text-2xl font-black text-orange-600">{summary.balanceRequests}</p>
         </div>
       </div>
+
+
+      {/* AttentionPanelStart */}
+      <div className="rounded-3xl border border-amber-100 bg-amber-50 p-5">
+        <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
+          <div>
+            <div className="text-sm font-black uppercase tracking-[0.18em] text-amber-700">
+              {t.attentionOrders}
+            </div>
+            <p className="mt-1 text-sm font-semibold text-amber-800/80">
+              {t.attentionDesc}
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setTab("attention")}
+            className="rounded-2xl bg-amber-500 px-5 py-3 text-sm font-black text-white shadow-lg shadow-amber-100"
+          >
+            {t.viewAttention}: {summary.attention}
+          </button>
+        </div>
+      </div>
+      {/* AttentionPanelEnd */}
 
       <div className="rounded-3xl bg-white p-4 shadow-sm">
         <div className="flex flex-wrap gap-2">
