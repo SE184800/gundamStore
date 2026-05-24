@@ -391,3 +391,34 @@ export async function updateOrderShipping(req, res, next) {
     next(err);
   }
 }
+
+export async function getPublicOrderById(req, res, next) {
+  try {
+    const id = String(req.params.id || "").trim();
+
+    const order = await prisma.order.findFirst({
+      where: {
+        OR: [
+          { id },
+          { orderNo: id },
+        ],
+      },
+      include: includeOrderRelations(),
+    });
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: "Order not found",
+      });
+    }
+
+    res.json({
+      success: true,
+      order,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
