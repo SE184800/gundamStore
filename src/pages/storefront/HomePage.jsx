@@ -20,6 +20,10 @@ import PageShell from "../../components/common/PageShell";
 import { useCms } from "../../store/CmsStore";
 import { translateStaticText } from "../../i18n";
 import ProductCard from "../../components/storefront/ProductCard";
+import {
+  enrichProductsWithBackendIds,
+  getStorefrontProductsFromApi,
+} from "../../services/StorefrontProductApiService";
 
 
 function getHeroTextStyles(banner = {}) {
@@ -354,6 +358,7 @@ function Hero({ banners, lang, actions, heroSettings }) {
 
   if (settings.layout === "v3") {
     return (
+
       <HeroV3Bento
         banners={banners}
         lang={lang}
@@ -1096,6 +1101,9 @@ function LoyaltyBubble({ lang }) {
 }
 
 export default function HomePage() {
+  const [backendProducts, setBackendProducts] = useState([]);
+  const [productApiReady, setProductApiReady] = useState(false);
+  const [productApiError, setProductApiError] = useState("");
   const { state, actions } = useCms();
   const lang = state.settings?.lang || "vi";
   const banners = useMemo(() => {
@@ -1107,7 +1115,34 @@ export default function HomePage() {
   }, [state.banners]);
 
   const sections = useMemo(() => mergeCmsSections(state.homeSections), [state.homeSections]);
-  const products = state.products || [];
+  const localProducts = state.products || [];
+  const enrichedProducts = useMemo(
+    () => enrichProductsWithBackendIds(localProducts, backendProducts),
+    [localProducts, backendProducts]
+  );
+  const products = enrichedProducts;
+
+  useEffect(() => {
+    let alive = true;
+
+    getStorefrontProductsFromApi()
+      .then((items) => {
+        if (!alive) return;
+        setBackendProducts(items);
+        setProductApiReady(true);
+        setProductApiError("");
+      })
+      .catch((error) => {
+        if (!alive) return;
+        setBackendProducts([]);
+        setProductApiReady(false);
+        setProductApiError(error?.message || "Cannot load backend products.");
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, []);
   const categories = state.categories || [];
 
   useEffect(() => {

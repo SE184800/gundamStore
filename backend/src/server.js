@@ -9,6 +9,7 @@ import { errorHandler } from "./middleware/errorHandler.js";
 import healthRoutes from "./routes/healthRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
+import productRoutes from "./routes/productRoutes.js";
 
 const app = express();
 
@@ -25,6 +26,7 @@ app.use(morgan("dev"));
 app.use("/health", healthRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/orders", orderRoutes);
+app.use("/api/products", productRoutes);
 
 app.use((req, res) => {
   res.status(404).json({
