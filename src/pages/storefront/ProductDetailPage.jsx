@@ -29,6 +29,7 @@ import PageShell from "../../components/common/PageShell";
 import { useCms } from "../../store/CmsStore";
 import { translateStaticText } from "../../i18n";
 import { saveCheckoutDraft } from "../../services/CartService";
+import { isWishlistSaved, toggleWishlist } from "../../services/WishlistService";
 import {
   ORDER_TYPE,
   PAYMENT_STATUS,
@@ -271,6 +272,16 @@ function ProductInfo({ product, lang, actions, onPreorder }) {
   const price = Number(product.price || 0);
   const oldPrice = Number(product.oldPrice || 0);
   const save = oldPrice > price ? oldPrice - price : 0;
+  const [wishlistSaved, setWishlistSaved] = useState(false);
+
+  useEffect(() => {
+    setWishlistSaved(isWishlistSaved(product.id));
+  }, [product.id]);
+
+  function handleWishlist() {
+    const next = toggleWishlist(product.id);
+    setWishlistSaved(next.includes(product.id));
+  }
 
   return (
     <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm lg:p-6">
@@ -354,7 +365,17 @@ function ProductInfo({ product, lang, actions, onPreorder }) {
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-3">
-        <button className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700 shadow-sm hover:bg-slate-50"><Heart className="mr-2 inline" size={16} />{t.favorite}</button>
+        <button
+          onClick={handleWishlist}
+          className={`rounded-2xl border px-4 py-3 text-sm font-black shadow-sm ${
+            wishlistSaved
+              ? "border-pink-200 bg-pink-50 text-pink-700"
+              : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+          }`}
+        >
+          <Heart className="mr-2 inline" size={16} fill={wishlistSaved ? "currentColor" : "none"} />
+          {wishlistSaved ? (lang === "en" ? "Saved" : "Đã lưu") : t.favorite}
+        </button>
         <button className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700 shadow-sm hover:bg-slate-50"><Share2 className="mr-2 inline" size={16} />{t.share}</button>
       </div>
     </div>

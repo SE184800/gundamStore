@@ -59,6 +59,7 @@ const copy = {
     customerService: "Chăm sóc khách hàng",
     chats: "Tin nhắn",
     reviews: "Đánh giá",
+    gallery: "Gallery cộng đồng",
     complaints: "Khiếu nại",
     system: "Hệ thống",
     analytics: "Phân tích",
@@ -94,6 +95,7 @@ const copy = {
     customerService: "Customer Service",
     chats: "Chats",
     reviews: "Reviews",
+    gallery: "Community Gallery",
     complaints: "Complaints",
     system: "System",
     analytics: "Analytics",
@@ -186,6 +188,7 @@ function getPageTitle(pathname, t) {
   if (pathname.includes("/admin/orders")) return t.orders;
   if (pathname.includes("/admin/chats")) return t.chats;
   if (pathname.includes("/admin/reviews")) return t.reviews;
+  if (pathname.includes("/admin/community-gallery")) return t.gallery;
   if (pathname.includes("/admin/complaints")) return t.complaints;
   if (pathname.includes("/admin/analytics")) return t.analytics;
   if (pathname.includes("/admin/settings")) return t.settings;
@@ -240,6 +243,7 @@ export default function AdminLayout() {
             <NavGroup title={t.customerService}>
               <NavItem to="/admin/chats" icon={MessageCircle} label={t.chats} />
               <NavItem to="/admin/reviews" icon={Star} label={t.reviews} />
+              <NavItem to="/admin/community-gallery" icon={Image} label={t.gallery} />
               <NavItem to="/admin/complaints" icon={ShieldAlert} label={t.complaints} />
             </NavGroup>
 
