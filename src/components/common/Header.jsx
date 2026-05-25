@@ -17,7 +17,7 @@ import { useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useLang } from "../../store/CmsStore";
 import Logo from "./Logo";
-
+import { useCms } from "../../store/CmsStore";
 const copy = {
   vi: {
     search: "Tìm kiếm Gundam, Gunpla, Model Kit...",
@@ -53,6 +53,7 @@ export default function Header() {
   const [lang, setLang] = useLang();
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
+  const { state, actions } = useCms();
   const t = copy[lang] || copy.vi;
 
   const navItems = [
@@ -145,24 +146,45 @@ export default function Header() {
               <button
                 key={item}
                 onClick={() => setLang(item)}
-                className={`rounded-xl px-4 py-2 text-xs font-black uppercase transition ${
-                  lang === item
+                className={`rounded-xl px-4 py-2 text-xs font-black uppercase transition ${lang === item
                     ? "bg-blue-700 text-white shadow-md"
                     : "text-slate-500 hover:bg-white hover:text-slate-900"
-                }`}
+                  }`}
               >
                 {item}
               </button>
             ))}
           </div>
 
-          <a
-            href="#account"
-            className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-black text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
-          >
-            <User size={19} />
-            {t.account}
-          </a>
+          {state.user ? (
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1.5 rounded-2xl border border-blue-100 bg-blue-50/50 px-4 py-2 text-xs font-black text-blue-700 shadow-sm">
+                <User size={15} />
+                <span>{state.user.username}</span>
+              </div>
+              <button
+                onClick={() => actions.logout()}
+                className="rounded-2xl border border-red-200 bg-white px-3 py-2 text-xs font-bold text-red-600 shadow-sm hover:bg-red-50 transition"
+              >
+                Đăng xuất
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <a
+                href="/login"
+                className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-black text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+              >
+                Sign In
+              </a>
+              <a
+                href="/register"
+                className="rounded-2xl bg-blue-700 px-4 py-2.5 text-xs font-black text-white shadow-md shadow-blue-100 transition hover:bg-blue-800"
+              >
+                Sign Up
+              </a>
+            </div>
+          )}
         </div>
 
         <button
@@ -185,11 +207,10 @@ export default function Header() {
               <div key={item.label} className="group relative">
                 <a
                   href={item.href}
-                  className={`flex items-center gap-2 whitespace-nowrap rounded-2xl px-4 py-2.5 text-sm font-black transition ${
-                    active
+                  className={`flex items-center gap-2 whitespace-nowrap rounded-2xl px-4 py-2.5 text-sm font-black transition ${active
                       ? "bg-blue-700 text-white shadow-lg shadow-blue-100"
                       : "text-slate-700 hover:bg-blue-700 hover:text-white hover:shadow-lg hover:shadow-blue-100"
-                  }`}
+                    }`}
                 >
                   <Icon size={17} className={active ? "text-white" : "text-blue-600 group-hover:text-white"} />
                   {item.label}
@@ -254,9 +275,8 @@ export default function Header() {
                 <button
                   key={item}
                   onClick={() => setLang(item)}
-                  className={`flex-1 rounded-xl px-4 py-2 text-xs font-black uppercase ${
-                    lang === item ? "bg-blue-700 text-white" : "text-slate-500"
-                  }`}
+                  className={`flex-1 rounded-xl px-4 py-2 text-xs font-black uppercase ${lang === item ? "bg-blue-700 text-white" : "text-slate-500"
+                    }`}
                 >
                   {item}
                 </button>

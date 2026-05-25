@@ -45,6 +45,7 @@ const initialState = {
     zalo: "https://zalo.me/",
     facebook: "https://www.facebook.com/gundamstorevn",
   },
+  user: null,
   cart: [
     { productId: "prod-rg-hi-nu", qty: 1, selected: true },
     { productId: "prod-mg-freedom", qty: 1, selected: true },
@@ -92,7 +93,27 @@ export function CmsProvider({ children }) {
       };
       setState((prev) => ({ ...prev, analytics: [item, ...prev.analytics].slice(0, 500) }));
     },
+    login(credentials) {
+      // Mô phỏng kiểm tra tài khoản giống hệ thống thực tế
+      if (credentials.username === "admin" && credentials.password === "admin") {
+        const adminUser = { username: "admin", email: "admin@gundamstore.vn", role: "Admin" };
+        setState((prev) => ({ ...prev, user: adminUser }));
+        return { success: true, user: adminUser };
+      } 
+      
+      if (credentials.username === "user" && credentials.password === "123456") {
+        const guestUser = { username: "GundamBuilder", email: "builder@gmail.com", role: "User" };
+        setState((prev) => ({ ...prev, user: guestUser }));
+        return { success: true, user: guestUser };
+      }
 
+      // Trả về thông báo lỗi cụ thể nếu sai thông tin
+      return { success: false, message: "Tài khoản hoặc mật khẩu không chính xác!" };
+    },
+
+    logout() {
+      setState((prev) => ({ ...prev, user: null }));
+    },
     saveProduct(product) {
       setState((prev) => {
         const exists = prev.products.some((p) => p.id === product.id);
