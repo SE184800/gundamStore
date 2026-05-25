@@ -1,16 +1,48 @@
 import PageShell from "../../components/common/PageShell";
 import ProductCard from "../../components/storefront/ProductCard";
 import { useCms, useLang } from "../../store/CmsStore";
-import { Gift, Flame, TicketPercent, Clock3, PackageCheck } from "lucide-react";
+import {
+  BellRing,
+  Flame,
+  Gift,
+  PackageCheck,
+  ShieldCheck,
+  TicketPercent,
+} from "lucide-react";
+
+function getCopy(lang) {
+  return {
+    badge: lang === "en" ? "Gundam Campaign Hub" : "Gundam Campaign Hub",
+    title: lang === "en" ? "Deals, Restock & Limited Kits" : "Deal, Restock & Hàng Limited",
+    desc:
+      lang === "en"
+        ? "A campaign hub for builders and collectors: flash sale, restock, limited items and coming soon kits."
+        : "Trung tâm chiến dịch cho builder và collector: flash sale, restock, limited và hàng sắp về.",
+    shopNow: lang === "en" ? "Shop now" : "Xem sản phẩm",
+    hotDeals: lang === "en" ? "Hot deals" : "Sản phẩm đang ưu đãi",
+    flashSale: "Flash Sale",
+    restock: "Restock",
+    limited: "Limited",
+    comingSoon: lang === "en" ? "Coming Soon" : "Sắp về",
+    voucher: "Voucher",
+    combo: lang === "en" ? "Builder Combo" : "Combo Builder",
+  };
+}
 
 export default function PromotionsPage() {
   const { state, actions } = useCms();
   const [lang] = useLang();
+  const t = getCopy(lang);
 
   const products = state.products || [];
-  const deals = products.filter((p) => {
-    const tags = p.tags || p.groupIds || [];
-    return Number(p.oldPrice || p.originalPrice || 0) > Number(p.price || 0) || tags.includes("sale") || tags.includes("hot");
+  const deals = products.filter((product) => {
+    const tags = product.tags || product.groupIds || [];
+    return (
+      Number(product.oldPrice || product.originalPrice || 0) > Number(product.price || 0) ||
+      tags.includes("sale") ||
+      tags.includes("hot") ||
+      String(product.status || "").toLowerCase().includes("sale")
+    );
   });
 
   const displayDeals = deals.length ? deals : products.slice(0, 4);
@@ -23,73 +55,55 @@ export default function PromotionsPage() {
           <div className="relative z-10 grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
             <div>
               <div className="inline-flex rounded-full bg-red-600 px-4 py-2 text-xs font-black uppercase tracking-[0.25em]">
-                Gundam Store Deals
+                {t.badge}
               </div>
               <h1 className="mt-5 max-w-3xl text-5xl font-black leading-[0.95] md:text-7xl">
-                Khuyến mãi dành cho Builder
+                {t.title}
               </h1>
               <p className="mt-5 max-w-2xl text-base font-semibold leading-8 text-white/75">
-                Săn flash sale, voucher, combo phụ kiện và ưu đãi pre-order hấp dẫn cho Gunpla collector.
+                {t.desc}
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
-                <a href="#flash-sale" className="rounded-2xl bg-white px-7 py-4 text-sm font-black text-slate-950">
-                  Xem deal ngay
+                <a href="/flash-sale" className="rounded-2xl bg-white px-7 py-4 text-sm font-black text-slate-950">
+                  {t.flashSale}
                 </a>
                 <a href="/shop" className="rounded-2xl border border-white/30 px-7 py-4 text-sm font-black text-white">
-                  Xem sản phẩm
+                  {t.shopNow}
                 </a>
               </div>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <PromoMiniCard icon={Flame} title="Flash Sale" desc="Deal trong ngày" tone="red" />
-              <PromoMiniCard icon={TicketPercent} title="Voucher" desc="Mã giảm giá" tone="blue" />
-              <PromoMiniCard icon={PackageCheck} title="Combo Builder" desc="Tool + Decal" tone="emerald" />
-              <PromoMiniCard icon={Clock3} title="Pre-order Deal" desc="Ưu đãi đặt trước" tone="amber" />
+              <PromoMiniCard href="/flash-sale" icon={Flame} title={t.flashSale} desc="Deal trong ngày" tone="red" />
+              <PromoMiniCard href="/restock" icon={PackageCheck} title={t.restock} desc="Hàng hot về lại" tone="blue" />
+              <PromoMiniCard href="/limited" icon={ShieldCheck} title={t.limited} desc="Collector items" tone="violet" />
+              <PromoMiniCard href="/coming-soon" icon={BellRing} title={t.comingSoon} desc="Theo dõi ETA" tone="amber" />
             </div>
           </div>
         </section>
 
         <section className="mt-8 grid gap-5 lg:grid-cols-3">
-          <CampaignCard
-            label="FLASH SALE"
-            title="Giảm đến 20%"
-            desc="Áp dụng cho các mẫu hot và phụ kiện builder."
-            cta="Săn ngay"
-            className="from-red-600 to-orange-500"
-          />
-          <CampaignCard
-            label="VOUCHER"
-            title="Freeship & Voucher"
-            desc="Tặng voucher cho khách hàng thân thiết."
-            cta="Nhận voucher"
-            className="from-blue-700 to-cyan-500"
-          />
-          <CampaignCard
-            label="COMBO"
-            title="Combo build tiết kiệm"
-            desc="Kìm, decal, action base và tool cơ bản."
-            cta="Xem combo"
-            className="from-slate-900 to-slate-700"
-          />
+          <CampaignCard href="/flash-sale" label="FLASH SALE" title="Giảm đến 20%" desc="Áp dụng cho mẫu hot và phụ kiện builder." cta="Săn ngay" className="from-red-600 to-orange-500" />
+          <CampaignCard href="/restock" label="RESTOCK" title="Hàng vừa về lại" desc="Các mẫu từng hết hàng nay đã có lại." cta="Xem restock" className="from-blue-700 to-cyan-500" />
+          <CampaignCard href="/limited" label="LIMITED" title="Limited / P-Bandai" desc="Phiên bản khó săn cho collector." cta="Xem limited" className="from-violet-900 to-fuchsia-600" />
         </section>
 
         <section id="flash-sale" className="mt-8 rounded-[32px] border border-slate-200 bg-white p-5 shadow-sm">
           <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
             <div>
               <div className="inline-flex rounded-full bg-red-50 px-3 py-1 text-xs font-black uppercase text-red-600">
-                Hot deals
+                {t.hotDeals}
               </div>
-              <h2 className="mt-2 text-3xl font-black text-slate-950">Sản phẩm đang ưu đãi</h2>
+              <h2 className="mt-2 text-3xl font-black text-slate-950">{t.flashSale}</h2>
             </div>
 
-            <div className="rounded-2xl bg-slate-950 px-5 py-3 text-sm font-black text-white">
-              Kết thúc sau: 06 : 24 : 59
-            </div>
+            <a href="/flash-sale" className="rounded-2xl bg-slate-950 px-5 py-3 text-sm font-black text-white">
+              Xem tất cả
+            </a>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {displayDeals.map((product) => (
+            {displayDeals.slice(0, 4).map((product) => (
               <ProductCard key={product.id} product={product} lang={lang} actions={actions} badge="SALE" />
             ))}
           </div>
@@ -99,34 +113,34 @@ export default function PromotionsPage() {
   );
 }
 
-function PromoMiniCard({ icon: Icon, title, desc, tone }) {
+function PromoMiniCard({ href, icon: Icon, title, desc, tone }) {
   const toneClass = {
     red: "bg-red-500",
     blue: "bg-blue-600",
-    emerald: "bg-emerald-500",
+    violet: "bg-violet-500",
     amber: "bg-amber-400 text-slate-950",
   }[tone];
 
   return (
-    <div className="rounded-[26px] border border-white/10 bg-white/10 p-5 backdrop-blur">
+    <a href={href} className="rounded-[26px] border border-white/10 bg-white/10 p-5 backdrop-blur transition hover:-translate-y-1 hover:bg-white/15">
       <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${toneClass}`}>
         <Icon size={22} />
       </div>
       <div className="mt-4 text-xl font-black">{title}</div>
       <div className="mt-1 text-sm font-semibold text-white/70">{desc}</div>
-    </div>
+    </a>
   );
 }
 
-function CampaignCard({ label, title, desc, cta, className }) {
+function CampaignCard({ href, label, title, desc, cta, className }) {
   return (
-    <article className={`overflow-hidden rounded-[30px] bg-gradient-to-br ${className} p-6 text-white shadow-xl`}>
-      <div className="rounded-full bg-white/20 px-3 py-1 text-xs font-black uppercase w-fit">{label}</div>
+    <a href={href} className={`block overflow-hidden rounded-[30px] bg-gradient-to-br ${className} p-6 text-white shadow-xl transition hover:-translate-y-1`}>
+      <div className="w-fit rounded-full bg-white/20 px-3 py-1 text-xs font-black uppercase">{label}</div>
       <h3 className="mt-5 text-3xl font-black">{title}</h3>
       <p className="mt-3 text-sm font-semibold leading-7 text-white/80">{desc}</p>
-      <button className="mt-6 rounded-2xl bg-white px-5 py-3 text-sm font-black text-slate-950">
+      <div className="mt-6 w-fit rounded-2xl bg-white px-5 py-3 text-sm font-black text-slate-950">
         {cta}
-      </button>
-    </article>
+      </div>
+    </a>
   );
 }

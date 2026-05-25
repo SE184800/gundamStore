@@ -4,3 +4,9 @@ dist
 .DS_Store
 .vscode
 *.log
+backups/
+*.bak
+*.bak-*
+patch-language-ui.py
+*.backup*
+.env.local

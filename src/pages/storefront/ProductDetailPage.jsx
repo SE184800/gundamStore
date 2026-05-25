@@ -1,12 +1,15 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   ArrowRight,
+  BellRing,
   Box,
   CheckCircle2,
   ChevronRight,
   Clock,
   CreditCard,
   Factory,
+  GitCompareArrows,
   Heart,
   Layers3,
   MapPin,
@@ -26,6 +29,18 @@ import {
 } from "lucide-react";
 import PageShell from "../../components/common/PageShell";
 import { useCms } from "../../store/CmsStore";
+import { translateStaticText } from "../../i18n";
+import { saveCheckoutDraft } from "../../services/CartService";
+import { isWishlistSaved, toggleWishlist } from "../../services/WishlistService";
+import { isCompareSaved, toggleCompare } from "../../services/CompareService";
+import { registerRestockAlert } from "../../services/RestockAlertService";
+import {
+  ORDER_TYPE,
+  PAYMENT_STATUS,
+  PREORDER_STATUS,
+  calculatePreorderDeposit,
+  getPreorderEtaText,
+} from "../../constants/orderConfig";
 
 const copy = {
   vi: {
@@ -47,6 +62,14 @@ const copy = {
     preorderNow: "Đặt trước ngay",
     favorite: "Yêu thích",
     share: "Chia sẻ",
+    compare: "So sánh",
+    compared: "Đã thêm so sánh",
+    notifyTitle: "Báo khi hàng về",
+    notifyName: "Họ tên",
+    notifyPhone: "Số điện thoại",
+    notifyNote: "Ghi chú nhu cầu",
+    notifySubmit: "Đăng ký báo hàng",
+    notifySuccess: "Đã ghi nhận. Shop sẽ báo khi hàng về.",
     deposit: "Cọc trước",
     eta: "Dự kiến về",
     preorderNote: "Đơn pre-order sẽ được ghi nhận cọc, shop nhắc thanh toán phần còn lại khi hàng về.",
@@ -116,6 +139,14 @@ const copy = {
     preorderNow: "Pre-order now",
     favorite: "Wishlist",
     share: "Share",
+    compare: "Compare",
+    compared: "Compared",
+    notifyTitle: "Notify when available",
+    notifyName: "Full name",
+    notifyPhone: "Phone number",
+    notifyNote: "Demand note",
+    notifySubmit: "Register alert",
+    notifySuccess: "Saved. The shop will notify you when available.",
     deposit: "Deposit",
     eta: "ETA",
     preorderNote: "Pre-order deposit will be recorded. The shop will remind you to pay the remaining balance when the item arrives.",
@@ -173,9 +204,9 @@ function money(value) {
 }
 
 function text(value, lang, fallback = "") {
-  if (!value) return fallback;
-  if (typeof value === "string") return value;
-  return value[lang] || value.vi || value.en || fallback;
+  if (!value) return translateStaticText(fallback, lang);
+  if (typeof value === "string") return translateStaticText(value, lang);
+  return value[lang] || value.vi || value.en || translateStaticText(fallback, lang);
 }
 
 function slugFromPath() {
@@ -254,13 +285,51 @@ function QuantitySelector({ qty, setQty }) {
   );
 }
 
-function ProductInfo({ product, lang, actions }) {
+function ProductInfo({ product, lang, actions, onPreorder }) {
   const t = copy[lang];
   const [qty, setQty] = useState(1);
   const preorder = isPreorder(product);
   const price = Number(product.price || 0);
   const oldPrice = Number(product.oldPrice || 0);
   const save = oldPrice > price ? oldPrice - price : 0;
+  const [wishlistSaved, setWishlistSaved] = useState(false);
+  const [compareSaved, setCompareSaved] = useState(false);
+  const [alertForm, setAlertForm] = useState({ name: "", phone: "", note: "" });
+  const [alertMessage, setAlertMessage] = useState("");
+  const [alertError, setAlertError] = useState("");
+
+  useEffect(() => {
+    setWishlistSaved(isWishlistSaved(product.id));
+    setCompareSaved(isCompareSaved(product.id));
+  }, [product.id]);
+
+  function handleWishlist() {
+    const next = toggleWishlist(product.id);
+    setWishlistSaved(next.includes(product.id));
+  }
+
+  function handleCompare() {
+    const next = toggleCompare(product.id);
+    setCompareSaved(next.includes(product.id));
+  }
+
+  function patchAlert(field, value) {
+    setAlertForm((prev) => ({ ...prev, [field]: value }));
+  }
+
+  function submitRestockAlert(event) {
+    event.preventDefault();
+    setAlertMessage("");
+    setAlertError("");
+
+    try {
+      registerRestockAlert(product, alertForm);
+      setAlertMessage(t.notifySuccess);
+      setAlertForm({ name: "", phone: "", note: "" });
+    } catch (error) {
+      setAlertError(error?.message || "Request failed.");
+    }
+  }
 
   return (
     <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm lg:p-6">
@@ -318,7 +387,7 @@ function ProductInfo({ product, lang, actions }) {
       <div className="mt-5 grid gap-3 sm:grid-cols-2">
         {preorder ? (
           <button
-            onClick={() => actions.addToCart(product.id, qty)}
+            onClick={() => onPreorder ? onPreorder(product, qty) : actions.addToCart(product.id, qty)}
             className="rounded-2xl bg-violet-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-violet-200 hover:bg-violet-700 sm:col-span-2"
           >
             {t.preorderNow}
@@ -343,9 +412,79 @@ function ProductInfo({ product, lang, actions }) {
         )}
       </div>
 
+
+      {/* RestockAlertFormStart */}
+      {(preorder || Number(product.stock || 0) <= 0 || String(product.status || "").toLowerCase().includes("coming")) && (
+        <form onSubmit={submitRestockAlert} className="mt-5 rounded-3xl border border-cyan-100 bg-cyan-50 p-5">
+          <div className="mb-3 flex items-center gap-2 text-sm font-black text-cyan-800">
+            <BellRing size={18} />
+            {t.notifyTitle}
+          </div>
+
+          {alertMessage && (
+            <div className="mb-3 rounded-2xl bg-green-50 p-3 text-xs font-black text-green-700">
+              {alertMessage}
+            </div>
+          )}
+
+          {alertError && (
+            <div className="mb-3 rounded-2xl bg-red-50 p-3 text-xs font-black text-red-600">
+              {alertError}
+            </div>
+          )}
+
+          <div className="grid gap-2 sm:grid-cols-2">
+            <input
+              value={alertForm.name}
+              onChange={(event) => patchAlert("name", event.target.value)}
+              placeholder={t.notifyName}
+              className="rounded-2xl border border-cyan-100 bg-white px-4 py-3 text-sm font-bold outline-none"
+            />
+            <input
+              value={alertForm.phone}
+              onChange={(event) => patchAlert("phone", event.target.value)}
+              placeholder={t.notifyPhone}
+              inputMode="tel"
+              className="rounded-2xl border border-cyan-100 bg-white px-4 py-3 text-sm font-bold outline-none"
+            />
+            <input
+              value={alertForm.note}
+              onChange={(event) => patchAlert("note", event.target.value)}
+              placeholder={t.notifyNote}
+              className="rounded-2xl border border-cyan-100 bg-white px-4 py-3 text-sm font-bold outline-none sm:col-span-2"
+            />
+          </div>
+
+          <button type="submit" className="mt-3 rounded-2xl bg-cyan-700 px-5 py-3 text-sm font-black text-white">
+            {t.notifySubmit}
+          </button>
+        </form>
+      )}
+      {/* RestockAlertFormEnd */}
+
       <div className="mt-4 grid grid-cols-2 gap-3">
-        <button className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700 shadow-sm hover:bg-slate-50"><Heart className="mr-2 inline" size={16} />{t.favorite}</button>
-        <button className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700 shadow-sm hover:bg-slate-50"><Share2 className="mr-2 inline" size={16} />{t.share}</button>
+        <button
+          onClick={handleWishlist}
+          className={`rounded-2xl border px-4 py-3 text-sm font-black shadow-sm ${
+            wishlistSaved
+              ? "border-pink-200 bg-pink-50 text-pink-700"
+              : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+          }`}
+        >
+          <Heart className="mr-2 inline" size={16} fill={wishlistSaved ? "currentColor" : "none"} />
+          {wishlistSaved ? (lang === "en" ? "Saved" : "Đã lưu") : t.favorite}
+        </button>
+        <button
+          onClick={handleCompare}
+          className={`rounded-2xl border px-4 py-3 text-sm font-black shadow-sm ${
+            compareSaved
+              ? "border-cyan-200 bg-cyan-50 text-cyan-700"
+              : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+          }`}
+        >
+          <GitCompareArrows className="mr-2 inline" size={16} />
+          {compareSaved ? t.compared : t.compare}
+        </button>
       </div>
     </div>
   );
@@ -538,6 +677,7 @@ function RelatedCard({ product, lang }) {
 
 export default function ProductDetailPage() {
   const { state, actions } = useCms();
+  const navigate = useNavigate();
   const lang = state.settings?.lang || "vi";
   const t = copy[lang];
   const slug = slugFromPath();
@@ -547,6 +687,56 @@ export default function ProductDetailPage() {
   }, [state.products, slug]);
 
   const [activeImage, setActiveImage] = useState(0);
+
+  function startPreorderCheckout(product, qty = 1) {
+    const quantity = Math.max(1, Number(qty) || 1);
+    const unitPrice = Number(product.price) || 0;
+    const subtotal = unitPrice * quantity;
+    const deposit = calculatePreorderDeposit(subtotal);
+    const etaText = product.preorder?.eta || product.eta || getPreorderEtaText(lang);
+    const image =
+      product.media?.card ||
+      product.media?.home ||
+      product.media?.detailMain ||
+      product.imageUrl ||
+      product.images?.[0] ||
+      "/images/products/hi-nu.jpg";
+
+    saveCheckoutDraft({
+      orderType: ORDER_TYPE.PREORDER,
+      items: [
+        {
+          id: product.id,
+          name: productName(product, lang),
+          image,
+          price: unitPrice,
+          quantity,
+          selected: true,
+          status: "preorder",
+        },
+      ],
+      subtotal,
+      shippingFee: 0,
+      discount: 0,
+      shippingDiscount: 0,
+      voucherCode: "",
+      total: deposit.depositAmount,
+      shippingMethod: "FAST",
+      preorder: {
+        status: PREORDER_STATUS.DEPOSIT_PENDING,
+        eta: etaText,
+        fullAmount: deposit.fullAmount,
+        depositRate: deposit.depositRate,
+        depositAmount: deposit.depositAmount,
+        remainingAmount: deposit.remainingAmount,
+        depositStatus: PAYMENT_STATUS.UNPAID,
+        balanceStatus: PAYMENT_STATUS.UNPAID,
+      },
+    });
+
+    navigate("/checkout");
+  }
+
 
   const productReviews = useMemo(() => {
     if (!product) return [];
@@ -625,7 +815,7 @@ export default function ProductDetailPage() {
               </div>
             </div>
 
-            <ProductInfo product={product} lang={lang} actions={actions} />
+            <ProductInfo product={product} lang={lang} actions={actions} onPreorder={startPreorderCheckout} />
           </div>
         </section>
 
@@ -642,11 +832,14 @@ export default function ProductDetailPage() {
             <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
               <h2 className="mb-4 text-xl font-black text-slate-950">{t.boxTitle}</h2>
               <div className="grid gap-3 sm:grid-cols-2">
-                {(product.boxItems || ["Runner nhựa đầy đủ", "Decal sheet", "Beam Rifle", "Shield", "Beam Saber", "Sách hướng dẫn"]).map((item) => (
-                  <div key={item} className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3 text-sm font-bold text-slate-700">
-                    <CheckCircle2 className="text-emerald-600" size={18} />{item}
-                  </div>
-                ))}
+                {(product.boxItems || ["Runner nhựa đầy đủ", "Decal sheet", "Beam Rifle", "Shield", "Beam Saber", "Sách hướng dẫn"]).map((item) => {
+                  const itemText = text(item, lang, "");
+                  return (
+                    <div key={itemText} className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3 text-sm font-bold text-slate-700">
+                      <CheckCircle2 className="text-emerald-600" size={18} />{itemText}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>

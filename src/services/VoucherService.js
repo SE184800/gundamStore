@@ -1,3 +1,4 @@
+import { getPromotions } from "./PromotionService";
 export const VOUCHERS = [
   {
     code: "GUNDAM10",
@@ -83,5 +84,62 @@ export function applyVoucher(code, subtotal, shippingFee) {
     discount: 0,
     shippingDiscount: 0,
     voucher: null,
+  };
+}
+
+
+function applyDynamicPromotion(code, subtotal, shippingFee) {
+  const normalized = String(code || "").trim().toUpperCase();
+  if (!normalized) return null;
+
+  const promo = getPromotions().find((item) => item.active !== false && item.code === normalized);
+  if (!promo) return null;
+
+  if ((Number(subtotal) || 0) < (Number(promo.minOrder) || 0)) {
+    return {
+      valid: false,
+      discount: 0,
+      shippingDiscount: 0,
+      message: `Voucher cần đơn tối thiểu ${(Number(promo.minOrder) || 0).toLocaleString("vi-VN")}đ`,
+    };
+  }
+
+  if (promo.type === "shipping") {
+    const shippingDiscount = Math.min(
+      Number(shippingFee) || 0,
+      Number(promo.maxDiscount) || Number(promo.value) || 0
+    );
+
+    return {
+      valid: true,
+      discount: 0,
+      shippingDiscount,
+      message: "Áp dụng freeship thành công.",
+    };
+  }
+
+  if (promo.type === "percent") {
+    const raw = (Number(subtotal) || 0) * ((Number(promo.value) || 0) / 100);
+    const discount = Math.min(raw, Number(promo.maxDiscount) || raw);
+
+    return {
+      valid: true,
+      discount,
+      shippingDiscount: 0,
+      message: "Áp dụng mã giảm giá thành công.",
+    };
+  }
+
+  const discount = Math.min(
+    Number(promo.value) || 0,
+    Number(subtotal) || 0,
+    Number(promo.maxDiscount) || Number(promo.value) || 0
+  );
+
+  return {
+    valid: true,
+    discount,
+    shippingDiscount: 0,
+    message: "Áp dụng mã giảm giá thành công.",
   };
 }

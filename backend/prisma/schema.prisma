@@ -1,0 +1,216 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum OrderStatus {
+  PLACED
+  CONFIRMED
+  PACKING
+  SHIPPING
+  DELIVERED
+  COMPLETED
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentStatus {
+  UNPAID
+  PARTIAL
+  PAID
+  REFUNDED
+}
+
+enum PaymentMethod {
+  COD
+  BANK_TRANSFER
+  CARD
+  WALLET
+}
+
+enum ShipmentStatus {
+  PENDING
+  READY_TO_SHIP
+  SHIPPING
+  DELIVERED
+  FAILED
+  RETURNED
+}
+
+enum InventoryLogType {
+  IMPORT
+  EXPORT
+  RESERVE
+  RESTORE
+  ADJUST
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  active       Boolean  @default(true)
+  roleId       String
+  role         Role     @relation(fields: [roleId], references: [id])
+  auditLogs    AuditLog[]
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Role {
+  id          String           @id @default(cuid())
+  code        String           @unique
+  name        String
+  users       User[]
+  permissions RolePermission[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Permission {
+  id        String           @id @default(cuid())
+  code      String           @unique
+  name      String
+  roles     RolePermission[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+}
+
+model Product {
+  id          String      @id @default(cuid())
+  sku         String      @unique
+  slug        String      @unique
+  nameVi      String
+  nameEn      String?
+  description String?
+  price       Int
+  stock       Int         @default(0)
+  active      Boolean     @default(true)
+
+  orderItems  OrderItem[]
+  inventoryLogs InventoryLog[]
+
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model Order {
+  id            String        @id @default(cuid())
+  orderNo       String        @unique
+  customerName  String
+  customerPhone String
+  customerEmail String?
+  customerAddress String
+
+  status        OrderStatus   @default(PLACED)
+  paymentStatus PaymentStatus @default(UNPAID)
+
+  subtotal      Int           @default(0)
+  shippingFee   Int           @default(0)
+  discount      Int           @default(0)
+  total         Int           @default(0)
+
+  note          String?
+  items         OrderItem[]
+  payments      Payment[]
+  shipments     Shipment[]
+  auditLogs     AuditLog[]
+
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  productId String
+  sku       String
+  name      String
+  price     Int
+  quantity  Int
+
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+model Payment {
+  id        String        @id @default(cuid())
+  orderId   String
+  method    PaymentMethod
+  status    PaymentStatus @default(UNPAID)
+  amount    Int
+  reference String?
+  note      String?
+
+  order     Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+}
+
+model Shipment {
+  id            String         @id @default(cuid())
+  orderId        String
+  carrier        String?
+  trackingCode   String?
+  shippingMethod String?
+  status         ShipmentStatus @default(PENDING)
+  fee            Int            @default(0)
+
+  order          Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+}
+
+model InventoryLog {
+  id          String           @id @default(cuid())
+  productId   String
+  type        InventoryLogType
+  quantity    Int
+  beforeStock Int
+  afterStock  Int
+  reason      String?
+  refType     String?
+  refId       String?
+
+  product     Product          @relation(fields: [productId], references: [id])
+
+  createdAt   DateTime         @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actorId   String?
+  orderId   String?
+  action    String
+  entity    String
+  entityId  String?
+  metadata  Json?
+
+  actor     User?    @relation(fields: [actorId], references: [id])
+  order     Order?   @relation(fields: [orderId], references: [id])
+
+  createdAt DateTime @default(now())
+}

@@ -15,33 +15,10 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { useLocation } from "react-router-dom";
-import { useLang } from "../../store/CmsStore";
+import { useI18n } from "../../i18n";
 import Logo from "./Logo";
 import { useCms } from "../../store/CmsStore";
-const copy = {
-  vi: {
-    search: "Tìm kiếm Gundam, Gunpla, Model Kit...",
-    account: "Tài khoản",
-    home: "Trang chủ",
-    products: "Sản phẩm",
-    orders: "Đặt hàng",
-    deals: "Ưu đãi",
-    community: "Cộng đồng",
-    support: "Hỗ trợ",
-    admin: "Admin",
-  },
-  en: {
-    search: "Search Gundam, Gunpla, Model Kit...",
-    account: "Account",
-    home: "Home",
-    products: "Products",
-    orders: "Orders",
-    deals: "Deals",
-    community: "Community",
-    support: "Support",
-    admin: "Admin",
-  },
-};
+
 
 function isActive(pathname, item) {
   if (item.href === "/") return pathname === "/";
@@ -50,76 +27,75 @@ function isActive(pathname, item) {
 }
 
 export default function Header() {
-  const [lang, setLang] = useLang();
+  const { lang, setLang, t } = useI18n();
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
   const { state, actions } = useCms();
-  const t = copy[lang] || copy.vi;
 
   const navItems = [
     {
-      label: t.home,
+      label: t("common.home"),
       href: "/",
       icon: Home,
     },
     {
-      label: t.products,
+      label: t("common.products"),
       href: "/shop",
       icon: Package,
       children: [
-        { label: "Tất cả sản phẩm", href: "/shop", desc: "HG, RG, MG, PG và model kit" },
-        { label: "HG / RG / MG / PG", href: "/shop", desc: "Lọc theo dòng sản phẩm", badge: "HOT" },
-        { label: "Phụ kiện & Tools", href: "/shop?category=tools", desc: "Kìm, nhám, action base, decal" },
-        { label: "Sản phẩm mới", href: "/shop?group=new", desc: "Hàng mới về trong tháng", badge: "NEW" },
+        { label: t("header.allProducts"), href: "/shop", desc: t("header.allProductsDesc") },
+        { label: t("header.grades"), href: "/shop", desc: t("header.gradesDesc"), badge: "HOT" },
+        { label: t("header.tools"), href: "/shop?category=tools", desc: t("header.toolsDesc") },
+        { label: t("header.newProducts"), href: "/shop?group=new", desc: t("header.newProductsDesc"), badge: "NEW" },
       ],
     },
     {
-      label: t.orders,
+      label: t("common.orders"),
       href: "/pre-order",
       icon: ShoppingBag,
       children: [
-        { label: "Pre-order", href: "/pre-order", desc: "Mẫu đang mở đặt trước", badge: "HOT" },
-        { label: "Hàng order", href: "/pre-order", desc: "Đặt mẫu theo yêu cầu" },
-        { label: "Lịch hàng về", href: "/news", desc: "Cập nhật ETA và shipment" },
-        { label: "Chính sách đặt trước", href: "/pre-order", desc: "Cọc, ETA, thanh toán còn lại" },
+        { label: t("header.preorder"), href: "/pre-order", desc: t("header.preorderDesc"), badge: "HOT" },
+        { label: t("header.orderItems"), href: "/pre-order", desc: t("header.orderItemsDesc") },
+        { label: t("header.arrivalCalendar"), href: "/news", desc: t("header.arrivalCalendarDesc") },
+        { label: t("header.preorderPolicy"), href: "/pre-order", desc: t("header.preorderPolicyDesc") },
       ],
     },
     {
-      label: t.deals,
+      label: t("common.deals"),
       href: "/promotions",
       icon: Gift,
       children: [
-        { label: "Khuyến mãi", href: "/promotions", desc: "Tất cả chương trình ưu đãi" },
-        { label: "Flash sale", href: "/promotions#flash-sale", desc: "Deal giới hạn thời gian", badge: "SALE" },
-        { label: "Voucher", href: "/promotions", desc: "Mã giảm giá và freeship" },
-        { label: "Combo builder", href: "/promotions", desc: "Tool + decal + base tiết kiệm" },
+        { label: t("header.promotions"), href: "/promotions", desc: t("header.promotionsDesc") },
+        { label: t("header.flashSale"), href: "/promotions#flash-sale", desc: t("header.flashSaleDesc"), badge: "SALE" },
+        { label: t("header.voucher"), href: "/promotions", desc: t("header.voucherDesc") },
+        { label: t("header.combo"), href: "/promotions", desc: t("header.comboDesc") },
       ],
     },
     {
-      label: t.community,
+      label: t("common.community"),
       href: "/news",
       icon: Newspaper,
       children: [
-        { label: "Tin tức", href: "/news", desc: "Hàng mới, review, thông báo" },
-        { label: "Sự kiện", href: "/news/events", desc: "Workshop, expo, livestream", badge: "NEW" },
-        { label: "Cuộc thi", href: "/news/events", desc: "Build contest cộng đồng" },
-        { label: "Hướng dẫn build", href: "/build-guide", desc: "Tips cho builder mới" },
-        { label: "Livestream", href: "/news/events", desc: "Unbox, preorder opening" },
+        { label: t("header.news"), href: "/news", desc: t("header.newsDesc") },
+        { label: t("header.events"), href: "/news/events", desc: t("header.eventsDesc"), badge: "NEW" },
+        { label: t("header.contest"), href: "/news/events", desc: t("header.contestDesc") },
+        { label: t("header.buildGuide"), href: "/build-guide", desc: t("header.buildGuideDesc") },
+        { label: t("header.livestream"), href: "/news/events", desc: t("header.livestreamDesc") },
       ],
     },
     {
-      label: t.support,
+      label: t("common.support"),
       href: "/order-lookup",
       icon: ShieldCheck,
       children: [
-        { label: "Tra cứu đơn", href: "/order-lookup", desc: "Kiểm tra trạng thái đơn hàng" },
-        { label: "Liên hệ", href: "/contact", desc: "Chat với shop" },
-        { label: "FAQ", href: "/faq", desc: "Câu hỏi thường gặp" },
-        { label: "Đổi trả", href: "/return-policy", desc: "Chính sách hỗ trợ" },
+        { label: t("header.orderLookup"), href: "/order-lookup", desc: t("header.orderLookupDesc") },
+        { label: t("common.contact"), href: "/contact", desc: t("header.contactDesc") },
+        { label: t("common.faq"), href: "/faq", desc: t("header.faqDesc") },
+        { label: t("header.returnPolicy"), href: "/return-policy", desc: t("header.returnPolicyDesc") },
       ],
     },
     {
-      label: t.admin,
+      label: t("common.admin"),
       href: "/admin",
       icon: User,
     },
@@ -136,7 +112,7 @@ export default function Header() {
           <Search size={21} className="text-blue-600" />
           <input
             className="w-full bg-transparent px-3 text-sm font-semibold outline-none placeholder:text-slate-400"
-            placeholder={t.search}
+            placeholder={t("common.searchPlaceholder")}
           />
         </div>
 
@@ -145,13 +121,14 @@ export default function Header() {
             {["vi", "en"].map((item) => (
               <button
                 key={item}
+                type="button"
                 onClick={() => setLang(item)}
                 className={`rounded-xl px-4 py-2 text-xs font-black uppercase transition ${lang === item
                     ? "bg-blue-700 text-white shadow-md"
                     : "text-slate-500 hover:bg-white hover:text-slate-900"
                   }`}
               >
-                {item}
+                {item.toUpperCase()}
               </button>
             ))}
           </div>
@@ -188,8 +165,10 @@ export default function Header() {
         </div>
 
         <button
+          type="button"
           onClick={() => setMobileOpen(true)}
           className="ml-auto rounded-2xl border border-slate-200 p-3 md:hidden"
+          aria-label="Open menu"
         >
           <Menu size={22} />
         </button>
@@ -224,7 +203,7 @@ export default function Header() {
                         {item.label}
                       </div>
                       <div className="mt-1 text-sm font-semibold text-slate-500">
-                        Chọn nhanh chức năng bên dưới
+                        {t("common.quickSelect")}
                       </div>
                     </div>
 
@@ -265,7 +244,7 @@ export default function Header() {
           <div className="ml-auto h-full w-[86%] max-w-[420px] overflow-y-auto bg-white p-5 shadow-2xl">
             <div className="mb-5 flex items-center justify-between">
               <Logo className="h-11 w-auto object-contain" />
-              <button onClick={() => setMobileOpen(false)} className="rounded-2xl border border-slate-200 p-3">
+              <button type="button" onClick={() => setMobileOpen(false)} className="rounded-2xl border border-slate-200 p-3">
                 <X size={20} />
               </button>
             </div>
@@ -274,11 +253,12 @@ export default function Header() {
               {["vi", "en"].map((item) => (
                 <button
                   key={item}
+                  type="button"
                   onClick={() => setLang(item)}
                   className={`flex-1 rounded-xl px-4 py-2 text-xs font-black uppercase ${lang === item ? "bg-blue-700 text-white" : "text-slate-500"
                     }`}
                 >
-                  {item}
+                  {item.toUpperCase()}
                 </button>
               ))}
             </div>

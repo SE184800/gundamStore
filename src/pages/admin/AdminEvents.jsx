@@ -1,10 +1,11 @@
-import { useState } from "react";
-import { Edit3, Plus, Trash2 } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Download, Edit3, Plus, Trash2, Users } from "lucide-react";
 import AdminDrawer from "../../components/admin/AdminDrawer";
 import AdminPageHeader from "../../components/admin/AdminPageHeader";
 import AdminStatusBadge from "../../components/admin/AdminStatusBadge";
 import { AdminSelect, AdminTextField, AdminTextarea, AdminToggle } from "../../components/admin/AdminField";
 import { useCms } from "../../store/CmsStore";
+import { getEventRegistrations, getEventRegistrationSummary, updateEventRegistrationStatus } from "../../services/EventRegistrationService";
 
 const emptyEvent = {
   id: "",
@@ -34,8 +35,16 @@ export default function AdminEvents() {
   const { state, actions } = useCms();
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(emptyEvent);
+  const [selectedEventId, setSelectedEventId] = useState("all");
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const rows = state.events || [];
+  const registrationSummary = useMemo(() => getEventRegistrationSummary(), [refreshKey]);
+  const registrations = useMemo(() => {
+    const allRows = getEventRegistrations();
+    if (selectedEventId === "all") return allRows;
+    return allRows.filter((item) => item.eventId === selectedEventId);
+  }, [selectedEventId, refreshKey]);
 
   function patch(field, value) {
     setDraft((prev) => ({ ...prev, [field]: value }));
@@ -53,6 +62,39 @@ export default function AdminEvents() {
       agendaText: Array.isArray(event.agenda) ? event.agenda.join("\n") : "",
     });
     setOpen(true);
+  }
+
+
+  function updateRegistration(id, status) {
+    updateEventRegistrationStatus(id, status);
+    setRefreshKey((value) => value + 1);
+  }
+
+  function exportRegistrations() {
+    const rowsForExport = [
+      ["Registration ID", "Event", "Name", "Phone", "Email", "Status", "Created At"],
+      ...registrations.map((item) => [
+        item.id,
+        item.eventTitle,
+        item.name,
+        item.phone,
+        item.email,
+        item.status,
+        item.createdAt,
+      ]),
+    ];
+
+    const csv = rowsForExport
+      .map((row) => row.map((cell) => `"${String(cell || "").replaceAll('"', '""')}"`).join(","))
+      .join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "event-registrations.csv";
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   function saveEvent() {
@@ -82,6 +124,104 @@ export default function AdminEvents() {
           </button>
         }
       />
+
+
+      <section className="mb-6 grid gap-4 md:grid-cols-4">
+        <div className="rounded-3xl bg-white p-5 shadow-sm">
+          <div className="text-xs font-black uppercase text-slate-400">Registrations</div>
+          <div className="mt-2 text-3xl font-black text-blue-700">{registrationSummary.total}</div>
+        </div>
+        <div className="rounded-3xl bg-white p-5 shadow-sm">
+          <div className="text-xs font-black uppercase text-slate-400">Pending</div>
+          <div className="mt-2 text-3xl font-black text-amber-600">{registrationSummary.pending}</div>
+        </div>
+        <div className="rounded-3xl bg-white p-5 shadow-sm">
+          <div className="text-xs font-black uppercase text-slate-400">Confirmed</div>
+          <div className="mt-2 text-3xl font-black text-green-600">{registrationSummary.confirmed}</div>
+        </div>
+        <div className="rounded-3xl bg-white p-5 shadow-sm">
+          <div className="text-xs font-black uppercase text-slate-400">Cancelled</div>
+          <div className="mt-2 text-3xl font-black text-red-600">{registrationSummary.cancelled}</div>
+        </div>
+      </section>
+
+      <section className="mb-6 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2 text-sm font-black text-slate-950">
+              <Users size={18} className="text-blue-700" />
+              Event registrations
+            </div>
+            <p className="mt-1 text-xs font-semibold text-slate-500">
+              Demo localStorage registrations from customer event detail page.
+            </p>
+          </div>
+
+          <button onClick={exportRegistrations} className="rounded-2xl border px-4 py-2 text-xs font-black hover:bg-slate-50">
+            <Download size={15} className="mr-1 inline" />
+            Export CSV
+          </button>
+        </div>
+
+        <div className="mb-4">
+          <select
+            value={selectedEventId}
+            onChange={(event) => setSelectedEventId(event.target.value)}
+            className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-black outline-none"
+          >
+            <option value="all">All events</option>
+            {rows.map((event) => (
+              <option key={event.id} value={event.id}>
+                {event.title}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[900px] text-sm">
+            <thead className="bg-slate-50 text-left text-xs font-black uppercase text-slate-500">
+              <tr>
+                <th className="px-4 py-3">Event</th>
+                <th className="px-4 py-3">Name</th>
+                <th className="px-4 py-3">Phone</th>
+                <th className="px-4 py-3">Email</th>
+                <th className="px-4 py-3">Note</th>
+                <th className="px-4 py-3">Status</th>
+                <th className="px-4 py-3">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {registrations.length === 0 ? (
+                <tr>
+                  <td colSpan="7" className="px-4 py-8 text-center font-bold text-slate-400">
+                    No registrations yet.
+                  </td>
+                </tr>
+              ) : (
+                registrations.map((item) => (
+                  <tr key={item.id} className="border-t">
+                    <td className="px-4 py-3 font-bold">{item.eventTitle}</td>
+                    <td className="px-4 py-3">{item.name}</td>
+                    <td className="px-4 py-3">{item.phone}</td>
+                    <td className="px-4 py-3">{item.email || "-"}</td>
+                    <td className="px-4 py-3">{item.note || "-"}</td>
+                    <td className="px-4 py-3"><AdminStatusBadge>{item.status}</AdminStatusBadge></td>
+                    <td className="px-4 py-3">
+                      <button onClick={() => updateRegistration(item.id, "Confirmed")} className="mr-2 rounded-xl bg-green-50 px-3 py-2 text-xs font-black text-green-700">
+                        Confirm
+                      </button>
+                      <button onClick={() => updateRegistration(item.id, "Cancelled")} className="rounded-xl bg-red-50 px-3 py-2 text-xs font-black text-red-700">
+                        Cancel
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
 
       <section className="overflow-hidden rounded-md border border-slate-200 bg-white">
         <div className="overflow-x-auto">
