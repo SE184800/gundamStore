@@ -53,6 +53,9 @@ const AdminProductGroups = lazy(() => import("./pages/admin/AdminProductGroups")
 const AdminProductGroupMapping = lazy(() => import("./pages/admin/AdminProductGroupMapping"));
 const AdminPricing = lazy(() => import("./pages/admin/AdminPricing"));
 const AdminInventory = lazy(() => import("./pages/admin/AdminInventory"));
+const AdminInventoryReceipts = lazy(() => import("./pages/admin/AdminInventoryReceipts"));
+const AdminInventoryStockCount = lazy(() => import("./pages/admin/AdminInventoryStockCount"));
+const AdminInventoryAdjustments = lazy(() => import("./pages/admin/AdminInventoryAdjustments"));
 const AdminPromotions = lazy(() => import("./pages/admin/AdminPromotions"));
 const AdminCategories = lazy(() => import("./pages/admin/AdminCategories"));
 const AdminProductCategoryMapping = lazy(() => import("./pages/admin/AdminProductCategoryMapping"));
@@ -166,6 +169,10 @@ export default function App() {
             <Route path="pricing-inventory" element={<Navigate to="/admin/pricing" replace />} />
             <Route path="pricing" element={<AdminPricing />} />
             <Route path="inventory" element={<AdminInventory />} />
+            <Route path="inventory/receipts" element={<AdminInventoryReceipts />} />
+
+            <Route path="inventory/adjustments" element={<AdminInventoryAdjustments />} />
+            <Route path="inventory/stock-count" element={<AdminInventoryStockCount />} />
             <Route path="promotions" element={<AdminPromotions />} />
             <Route path="categories" element={<AdminCategories />} />
             <Route path="product-category-mapping" element={<AdminProductCategoryMapping />} />

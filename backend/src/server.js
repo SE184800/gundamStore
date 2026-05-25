@@ -10,6 +10,8 @@ import healthRoutes from "./routes/healthRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
 import productRoutes from "./routes/productRoutes.js";
+import inventoryRoutes from "./routes/inventoryRoutes.js";
+import pricingRoutes from "./routes/pricingRoutes.js";
 
 const app = express();
 
@@ -27,6 +29,8 @@ app.use("/health", healthRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/products", productRoutes);
+app.use("/api/inventory", inventoryRoutes);
+app.use("/api/pricing", pricingRoutes);
 
 app.use((req, res) => {
   res.status(404).json({
