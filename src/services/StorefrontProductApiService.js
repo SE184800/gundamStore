@@ -141,6 +141,8 @@ export function mapBackendProductToStorefront(product = {}) {
   const imageUrl = firstImageUrl(product);
   const collections = getBackendCollectionKeys(product);
   const groups = getBackendGroups(product);
+  const effectivePrice = Number(product.effectivePrice ?? product.price) || 0;
+  const compareAtPrice = Number(product.compareAtPrice ?? product.oldPrice ?? 0);
 
   return {
     id: product.id,
@@ -162,8 +164,8 @@ export function mapBackendProductToStorefront(product = {}) {
     description: product.description || "",
     descriptionEn: product.descriptionEn || "",
 
-    price: Number(product.price) || 0,
-    oldPrice: Number(product.oldPrice) || 0,
+    price: effectivePrice,
+    oldPrice: compareAtPrice,
     stock: Number(product.stock) || 0,
     status: product.status || (Number(product.stock) > 0 ? "inStock" : "outOfStock"),
     active: product.active !== false,
@@ -195,6 +197,7 @@ export function mapBackendProductToStorefront(product = {}) {
     groupItems: product.groupItems || [],
     groupIds: groups.map((group) => group.id).filter(Boolean),
     collections,
+    promotion: product.activePromotion || null,
 
     source: "backend",
     backendRaw: product,

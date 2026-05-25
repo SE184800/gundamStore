@@ -44,8 +44,81 @@ function productInclude() {
       include: { group: true },
       orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
     },
+    promotionProducts: {
+      include: { promotion: true },
+      orderBy: { createdAt: "desc" },
+    },
   };
 }
+
+
+function isPromotionActive(promotion, now = new Date()) {
+  if (!promotion?.active) return false;
+
+  const start = new Date(promotion.startDate);
+  const end = promotion.endDate ? new Date(promotion.endDate) : null;
+
+  return start <= now && (!end || now <= end);
+}
+
+function calculatePromotionPrice(product, promotion) {
+  const basePrice = Number(product.price || 0);
+  const value = Number(promotion.value || 0);
+
+  let discountAmount = 0;
+
+  if (promotion.type === "PERCENT") {
+    discountAmount = Math.round((basePrice * value) / 100);
+  } else {
+    discountAmount = value;
+  }
+
+  const effectivePrice = Math.max(0, basePrice - discountAmount);
+
+  return {
+    id: promotion.id,
+    code: promotion.code,
+    nameVi: promotion.nameVi,
+    nameEn: promotion.nameEn,
+    type: promotion.type,
+    value: promotion.value,
+    priority: promotion.priority,
+    discountAmount,
+    effectivePrice,
+    startDate: promotion.startDate,
+    endDate: promotion.endDate,
+  };
+}
+
+function decorateProductWithPromotion(product) {
+  const promotions = (product.promotionProducts || [])
+    .map((item) => item.promotion)
+    .filter((promotion) => isPromotionActive(promotion))
+    .map((promotion) => calculatePromotionPrice(product, promotion))
+    .sort((a, b) => {
+      if (b.priority !== a.priority) return b.priority - a.priority;
+      return b.discountAmount - a.discountAmount;
+    });
+
+  const activePromotion = promotions[0] || null;
+
+  if (!activePromotion) {
+    return {
+      ...product,
+      activePromotion: null,
+      effectivePrice: Number(product.price || 0),
+      compareAtPrice: Number(product.oldPrice || 0),
+    };
+  }
+
+  return {
+    ...product,
+    activePromotion,
+    effectivePrice: activePromotion.effectivePrice,
+    compareAtPrice: Number(product.price || 0),
+  };
+}
+
 
 function intValue(value, fallback = 0) {
   const n = Number(value);
@@ -169,7 +242,10 @@ export async function listStorefrontProducts(req, res, next) {
       take: 200,
     });
 
-    res.json({ success: true, products });
+    res.json({
+      success: true,
+      products: products.map(decorateProductWithPromotion),
+    });
   } catch (err) {
     next(err);
   }
@@ -207,7 +283,10 @@ export async function getStorefrontProductByKey(req, res, next) {
       });
     }
 
-    res.json({ success: true, product });
+    res.json({
+      success: true,
+      product: decorateProductWithPromotion(product),
+    });
   } catch (err) {
     next(err);
   }
