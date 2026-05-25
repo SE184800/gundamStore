@@ -13,6 +13,7 @@ import {
   User,
   X,
 } from "lucide-react";
+import HeaderCart from "../layout/HeaderCart";
 import { useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useI18n } from "../../i18n";
@@ -132,7 +133,7 @@ export default function Header() {
               </button>
             ))}
           </div>
-
+          <HeaderCart />
           {state.user ? (
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-1.5 rounded-2xl border border-blue-100 bg-blue-50/50 px-4 py-2 text-xs font-black text-blue-700 shadow-sm">

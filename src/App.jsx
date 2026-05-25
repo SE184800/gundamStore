@@ -4,7 +4,6 @@ import { lazy, Suspense } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 
 // 🛠️ GIỮ LẠI CÁC ĐƯỜNG IMPORT KHÔNG DÙNG LAZY
-import HeaderCart from "./components/layout/HeaderCart";
 import AddToCartBridge from "./components/cart/AddToCartBridge";
 import Login from "./components/Login"; // Route Login mới tinh của bạn
 import AdminProtectedRoute from "./components/admin/AdminProtectedRoute";
@@ -186,7 +185,6 @@ export default function App() {
       </Suspense>
 
       <AddToCartBridge />
-      <HeaderCart />
     </>
   );
 }

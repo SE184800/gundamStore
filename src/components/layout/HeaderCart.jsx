@@ -39,19 +39,27 @@ export default function HeaderCart() {
 
   return (
     <Link
-      to="/cart"
-      className="fixed right-[230px] top-[72px] z-[9999] flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-lg transition hover:scale-105 hover:bg-blue-700"
-      title="Giỏ hàng"
-    >
-      <ShoppingCart size={22} />
+    to="/cart"
+    className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-lg transition hover:scale-105 hover:bg-blue-700"
+    title="Giỏ hàng"
+  >
+    <ShoppingCart size={22} />
 
+    {/* 🛠️ CHIẾC HỘP BẢO VỆ: Ép vị trí cố định ở góc trên bên phải nút xanh */}
+    <div className="absolute -right-2 -top-2 z-10 flex h-6 min-w-[24px]">
       <span
-        id="gundam-floating-cart-badge"
-        className="absolute -right-2 -top-2 flex h-6 min-w-[24px] items-center justify-center rounded-full bg-red-500 px-1 text-xs font-black text-white"
-        style={{ display: count > 0 ? "flex" : "none" }}
+        id="gundam-floating-cart-badge" // 🛠️ GIỮ NGUYÊN ID GỐC cho hàm updateCartBadgeDom chạy
+        className="flex h-full w-full items-center justify-center rounded-full bg-red-500 px-1 text-xs font-black text-white shadow-md"
+        style={{ 
+          display: count > 0 ? "flex" : "none",
+          position: "relative", // Biến nó thành relative để tự hủy thuộc tính fixed của file CSS cũ
+          right: "auto",
+          top: "auto"
+        }}
       >
         {count}
       </span>
-    </Link>
+    </div>
+  </Link>
   );
 }
