@@ -187,3 +187,147 @@ export function AdminImageUploader({
     </div>
   );
 }
+
+
+export function AdminMultiImageUploader({
+  label,
+  tip,
+  required,
+  value = [],
+  onChange,
+  recommended = "1200 x 1200 px",
+}) {
+  const images = Array.isArray(value) ? value.filter(Boolean) : [];
+
+  async function handleUpload(event) {
+    const files = Array.from(event.target.files || []);
+    if (!files.length) return;
+
+    const base64List = await Promise.all(files.map((file) => fileToBase64(file)));
+    const next = Array.from(new Set([...images, ...base64List]));
+    onChange?.(next);
+    event.target.value = "";
+  }
+
+  function remove(index) {
+    onChange?.(images.filter((_, itemIndex) => itemIndex !== index));
+  }
+
+  function move(index, direction) {
+    const next = [...images];
+    const target = index + direction;
+    if (target < 0 || target >= next.length) return;
+    const [item] = next.splice(index, 1);
+    next.splice(target, 0, item);
+    onChange?.(next);
+  }
+
+  return (
+    <div>
+      <AdminFieldLabel label={label} tip={tip} required={required} />
+
+      <div className="rounded-md border border-dashed border-slate-300 bg-slate-50 p-4">
+        {images.length ? (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {images.map((src, index) => (
+              <div key={`${src}-${index}`} className="overflow-hidden rounded-md border border-slate-200 bg-white">
+                <div className="h-36 bg-slate-100">
+                  <img src={src} alt="" className="h-full w-full object-cover" />
+                </div>
+                <div className="flex items-center justify-between gap-2 p-2">
+                  <span className="text-[11px] font-black text-slate-500">
+                    {index === 0 ? "Primary" : `Gallery ${index + 1}`}
+                  </span>
+                  <div className="flex gap-1">
+                    <button type="button" onClick={() => move(index, -1)} className="rounded border px-2 py-1 text-[11px] font-bold">↑</button>
+                    <button type="button" onClick={() => move(index, 1)} className="rounded border px-2 py-1 text-[11px] font-bold">↓</button>
+                    <button type="button" onClick={() => remove(index)} className="rounded border border-red-200 bg-red-50 px-2 py-1 text-[11px] font-bold text-red-600">X</button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="flex min-h-36 items-center justify-center rounded-md border border-slate-200 bg-white text-center">
+            <div>
+              <ImagePlus className="mx-auto text-slate-300" size={32} />
+              <div className="mt-2 text-sm font-black text-slate-800">No gallery images selected</div>
+              <div className="mt-1 text-xs font-semibold text-slate-500">Recommended: {recommended}</div>
+            </div>
+          </div>
+        )}
+
+        <div className="mt-3">
+          <label className="inline-flex cursor-pointer items-center gap-2 rounded-md bg-blue-700 px-3 py-2 text-xs font-black text-white hover:bg-blue-800">
+            <UploadCloud size={14} />
+            Upload multiple images
+            <input type="file" accept="image/*" multiple className="hidden" onChange={handleUpload} />
+          </label>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function AdminVideoUploader({
+  label,
+  tip,
+  required,
+  value,
+  onChange,
+  accept = "video/*",
+}) {
+  const [preview, setPreview] = useState(value || "");
+
+  async function handleUpload(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const base64 = await fileToBase64(file);
+    setPreview(base64);
+    onChange?.(base64);
+    event.target.value = "";
+  }
+
+  function remove() {
+    setPreview("");
+    onChange?.("");
+  }
+
+  return (
+    <div>
+      <AdminFieldLabel label={label} tip={tip} required={required} />
+
+      <div className="rounded-md border border-dashed border-slate-300 bg-slate-50 p-4">
+        <div className="flex min-h-44 items-center justify-center overflow-hidden rounded-md border border-slate-200 bg-white">
+          {preview ? (
+            <video src={preview} className="max-h-64 w-full object-contain" controls />
+          ) : (
+            <div className="text-center">
+              <UploadCloud className="mx-auto text-slate-300" size={32} />
+              <div className="mt-2 text-sm font-black text-slate-800">No video selected</div>
+              <div className="mt-1 text-xs font-semibold text-slate-500">MP4/WebM recommended</div>
+            </div>
+          )}
+        </div>
+
+        <div className="mt-3 flex gap-2">
+          <label className="inline-flex cursor-pointer items-center gap-2 rounded-md bg-blue-700 px-3 py-2 text-xs font-black text-white hover:bg-blue-800">
+            <UploadCloud size={14} />
+            Upload video
+            <input type="file" accept={accept} className="hidden" onChange={handleUpload} />
+          </label>
+
+          <button
+            type="button"
+            onClick={remove}
+            className="inline-flex items-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50"
+          >
+            <X size={14} />
+            Remove
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

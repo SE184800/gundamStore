@@ -251,22 +251,34 @@ function collectionKeyMatchesSource(collectionKey, source) {
 
 function getSectionProducts(products, section, displayMappings = []) {
   const source = section.dataSource || section.source || section.collection || section.id;
+  const activeProducts = products.filter((product) => product.active !== false);
 
-  const mappedProductIds = (displayMappings || [])
-    .filter((mapping) => (mapping.collectionKeys || []).some((key) => collectionKeyMatchesSource(key, source)))
-    .map((mapping) => mapping.productId);
+  const backendGroupedProducts = activeProducts.filter((product) => {
+    const isBackendProduct = Boolean(product.backendProductId || String(product.source || "").includes("backend"));
+    const collections = Array.isArray(product.collections) ? product.collections : [];
+
+    return (
+      isBackendProduct &&
+      collections.some((key) => collectionKeyMatchesSource(key, source))
+    );
+  });
 
   let result = [];
 
-  if (mappedProductIds.length > 0) {
-    result = products
-      .filter((product) => product.active !== false)
-      .filter((product) => mappedProductIds.includes(product.id))
-      .sort((a, b) => mappedProductIds.indexOf(a.id) - mappedProductIds.indexOf(b.id));
+  if (backendGroupedProducts.length > 0) {
+    result = backendGroupedProducts;
   } else {
-    result = products
-      .filter((product) => product.active !== false)
-      .filter((product) => productMatchesSource(product, source));
+    const mappedProductIds = (displayMappings || [])
+      .filter((mapping) => (mapping.collectionKeys || []).some((key) => collectionKeyMatchesSource(key, source)))
+      .map((mapping) => mapping.productId);
+
+    if (mappedProductIds.length > 0) {
+      result = activeProducts
+        .filter((product) => mappedProductIds.includes(product.id))
+        .sort((a, b) => mappedProductIds.indexOf(a.id) - mappedProductIds.indexOf(b.id));
+    } else {
+      result = activeProducts.filter((product) => productMatchesSource(product, source));
+    }
   }
 
   if (String(source).includes("best")) {
@@ -282,7 +294,7 @@ function getSectionProducts(products, section, displayMappings = []) {
   }
 
   if (!result.length) {
-    result = products.filter((product) => product.active !== false);
+    result = activeProducts;
   }
 
   return result.slice(0, 8);

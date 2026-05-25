@@ -51,17 +51,17 @@ enum InventoryLogType {
 }
 
 model User {
-  id           String   @id @default(cuid())
+  id           String     @id @default(cuid())
   name         String
-  email        String   @unique
+  email        String     @unique
   passwordHash String
-  active       Boolean  @default(true)
+  active       Boolean    @default(true)
   roleId       String
-  role         Role     @relation(fields: [roleId], references: [id])
+  role         Role       @relation(fields: [roleId], references: [id])
   auditLogs    AuditLog[]
 
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Role {
@@ -71,15 +71,15 @@ model Role {
   users       User[]
   permissions RolePermission[]
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Permission {
-  id        String           @id @default(cuid())
-  code      String           @unique
-  name      String
-  roles     RolePermission[]
+  id    String           @id @default(cuid())
+  code  String           @unique
+  name  String
+  roles RolePermission[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -89,58 +89,184 @@ model RolePermission {
   roleId       String
   permissionId String
 
-  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
 
   @@id([roleId, permissionId])
 }
 
-model Product {
-  id          String      @id @default(cuid())
-  sku         String      @unique
-  slug        String      @unique
+model ProductCategory {
+  id          String  @id @default(cuid())
+  code        String  @unique
+  slug        String  @unique
   nameVi      String
   nameEn      String?
   description String?
-  price       Int
-  stock       Int         @default(0)
-  active      Boolean     @default(true)
+  active      Boolean @default(true)
+  sortOrder   Int     @default(0)
 
-  orderItems  OrderItem[]
+  products Product[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Supplier {
+  id          String  @id @default(cuid())
+  code        String  @unique
+  name        String
+  contactName String?
+  phone       String?
+  email       String?
+  address     String?
+  note        String?
+  active      Boolean @default(true)
+
+  products Product[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ProductGroup {
+  id          String  @id @default(cuid())
+  code        String  @unique
+  slug        String  @unique
+  nameVi      String
+  nameEn      String?
+  description String?
+  active      Boolean @default(true)
+  sortOrder   Int     @default(0)
+
+  products ProductGroupItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ProductGroupItem {
+  id        String  @id @default(cuid())
+  productId String
+  groupId   String
+  sortOrder Int     @default(0)
+  featured  Boolean @default(false)
+
+  product Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  group   ProductGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([productId, groupId])
+}
+
+model ProductImage {
+  id        String  @id @default(cuid())
+  productId String
+  url       String
+  alt       String?
+  type      String  @default("gallery")
+  sortOrder Int     @default(0)
+  active    Boolean @default(true)
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ProductPrice {
+  id        String    @id @default(cuid())
+  productId String
+  price     Int
+  oldPrice  Int       @default(0)
+  startDate DateTime
+  endDate   DateTime?
+  active    Boolean   @default(true)
+  note      String?
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([productId, active, startDate, endDate])
+}
+
+model Product {
+  id            String  @id @default(cuid())
+  sku           String  @unique
+  slug          String  @unique
+  barcode       String?
+  nameVi        String
+  nameEn        String?
+  shortVi       String?
+  shortEn       String?
+  description   String?
+  descriptionEn String?
+
+  price    Int
+  oldPrice Int     @default(0)
+  stock    Int     @default(0)
+  status   String  @default("inStock")
+  active   Boolean @default(true)
+
+  imageUrl String?
+  brand    String?
+  grade    String?
+  scale    String?
+  tone     String?
+  sold     Int     @default(0)
+  rating   Float   @default(0)
+
+  specs    Json?
+  boxItems Json?
+  media    Json?
+
+  categoryId String?
+  supplierId String?
+
+  category   ProductCategory?   @relation(fields: [categoryId], references: [id])
+  supplier   Supplier?          @relation(fields: [supplierId], references: [id])
+  images     ProductImage[]
+  groupItems ProductGroupItem[]
+
+  orderItems    OrderItem[]
   inventoryLogs InventoryLog[]
+  prices        ProductPrice[]
 
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Order {
-  id            String        @id @default(cuid())
-  orderNo       String        @unique
-  customerName  String
-  customerPhone String
-  customerEmail String?
+  id              String  @id @default(cuid())
+  orderNo         String  @unique
+  customerName    String
+  customerPhone   String
+  customerEmail   String?
   customerAddress String
 
   status        OrderStatus   @default(PLACED)
   paymentStatus PaymentStatus @default(UNPAID)
 
-  subtotal      Int           @default(0)
-  shippingFee   Int           @default(0)
-  discount      Int           @default(0)
-  total         Int           @default(0)
+  subtotal    Int @default(0)
+  shippingFee Int @default(0)
+  discount    Int @default(0)
+  total       Int @default(0)
 
-  note          String?
-  items         OrderItem[]
-  payments      Payment[]
-  shipments     Shipment[]
-  auditLogs     AuditLog[]
+  note      String?
+  items     OrderItem[]
+  payments  Payment[]
+  shipments Shipment[]
+  auditLogs AuditLog[]
 
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model OrderItem {
-  id        String  @id @default(cuid())
+  id        String @id @default(cuid())
   orderId   String
   productId String
   sku       String
@@ -148,8 +274,8 @@ model OrderItem {
   price     Int
   quantity  Int
 
-  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product   Product @relation(fields: [productId], references: [id])
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
 
   createdAt DateTime @default(now())
 }
@@ -163,14 +289,14 @@ model Payment {
   reference String?
   note      String?
 
-  order     Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Shipment {
-  id            String         @id @default(cuid())
+  id             String         @id @default(cuid())
   orderId        String
   carrier        String?
   trackingCode   String?
@@ -178,10 +304,10 @@ model Shipment {
   status         ShipmentStatus @default(PENDING)
   fee            Int            @default(0)
 
-  order          Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model InventoryLog {
@@ -195,22 +321,22 @@ model InventoryLog {
   refType     String?
   refId       String?
 
-  product     Product          @relation(fields: [productId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
 
-  createdAt   DateTime         @default(now())
+  createdAt DateTime @default(now())
 }
 
 model AuditLog {
-  id        String   @id @default(cuid())
-  actorId   String?
-  orderId   String?
-  action    String
-  entity    String
-  entityId  String?
-  metadata  Json?
+  id       String  @id @default(cuid())
+  actorId  String?
+  orderId  String?
+  action   String
+  entity   String
+  entityId String?
+  metadata Json?
 
-  actor     User?    @relation(fields: [actorId], references: [id])
-  order     Order?   @relation(fields: [orderId], references: [id])
+  actor User?  @relation(fields: [actorId], references: [id])
+  order Order? @relation(fields: [orderId], references: [id])
 
   createdAt DateTime @default(now())
 }
