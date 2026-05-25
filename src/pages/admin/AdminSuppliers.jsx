@@ -1,58 +1,114 @@
-import { useMemo, useState } from "react";
-import { Edit3, Plus, Search, Trash2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Edit3, Plus, RefreshCcw, Search, Trash2 } from "lucide-react";
 import AdminDrawer from "../../components/admin/AdminDrawer";
-import { AdminSelect, AdminTextField, AdminTextarea, AdminToggle } from "../../components/admin/AdminField";
+import { AdminTextarea, AdminTextField, AdminToggle } from "../../components/admin/AdminField";
 import AdminPageHeader from "../../components/admin/AdminPageHeader";
-import AdminStatusBadge from "../../components/admin/AdminStatusBadge";
-import { useCms } from "../../store/CmsStore";
-import { makeAdminId } from "./productAdminV4Helpers";
+import { logoutAdmin } from "../../services/AdminAuthService";
+import {
+  createAdminSupplierApi,
+  deleteAdminSupplierApi,
+  getAdminSuppliersApi,
+  updateAdminSupplierApi,
+} from "../../services/AdminCatalogApiService";
 
-const emptySupplier = {
+const empty = {
   id: "",
+  code: "",
   name: "",
-  country: "Japan",
   contactName: "",
   phone: "",
   email: "",
-  website: "",
+  address: "",
   note: "",
   active: true,
 };
 
-export default function AdminSuppliers() {
-  const { state, actions } = useCms();
-  const [query, setQuery] = useState("");
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [draft, setDraft] = useState(emptySupplier);
+function makeCode(value = "") {
+  return String(value || "")
+    .trim()
+    .toUpperCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^A-Z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
 
-  const rows = useMemo(() => {
-    return (state.suppliers || []).filter((item) =>
-      `${item.name || ""} ${item.country || ""} ${item.phone || ""} ${item.email || ""}`.toLowerCase().includes(query.toLowerCase())
+export default function AdminSuppliers() {
+  const [rows, setRows] = useState([]);
+  const [query, setQuery] = useState("");
+  const [draft, setDraft] = useState(empty);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [apiError, setApiError] = useState("");
+
+  async function reload() {
+    setLoading(true);
+    setApiError("");
+
+    try {
+      setRows(await getAdminSuppliersApi());
+    } catch (error) {
+      console.error("ADMIN_SUPPLIERS_ERROR", error);
+      if (error?.status === 401 || error?.message === "Unauthorized") {
+        logoutAdmin();
+        window.location.href = "/admin/login";
+        return;
+      }
+      setApiError(error?.message || "Cannot load suppliers.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    void reload();
+  }, []);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return rows.filter((item) =>
+      !q ||
+      [item.code, item.name, item.contactName, item.phone, item.email, item.address]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase()
+        .includes(q)
     );
-  }, [state.suppliers, query]);
+  }, [rows, query]);
 
   function patch(field, value) {
-    setDraft((prev) => ({ ...prev, [field]: value }));
+    setDraft((prev) => {
+      const next = { ...prev, [field]: value };
+      if (field === "name" && !prev.code) next.code = makeCode(value);
+      return next;
+    });
   }
 
   function openCreate() {
-    setDraft(emptySupplier);
+    setDraft(empty);
     setDrawerOpen(true);
   }
 
   function openEdit(item) {
-    setDraft({ ...emptySupplier, ...item });
+    setDraft({ ...empty, ...item });
     setDrawerOpen(true);
   }
 
-  function save() {
-    const payload = { ...draft, id: draft.id || makeAdminId("sup") };
-    if (actions.saveSupplier) actions.saveSupplier(payload);
-    setDrawerOpen(false);
+  async function save() {
+    try {
+      if (draft.id) await updateAdminSupplierApi(draft.id, draft);
+      else await createAdminSupplierApi(draft);
+      setDrawerOpen(false);
+      await reload();
+    } catch (error) {
+      alert(error?.message || "Save supplier failed.");
+    }
   }
 
-  function remove(id) {
-    if (actions.deleteSupplier) actions.deleteSupplier(id);
+  async function remove(item) {
+    if (!window.confirm(`Ẩn nhà cung cấp ${item.name}?`)) return;
+    await deleteAdminSupplierApi(item.id);
+    await reload();
   }
 
   return (
@@ -60,65 +116,95 @@ export default function AdminSuppliers() {
       <AdminPageHeader
         eyebrow="Product Management"
         title="Suppliers"
-        desc="Quản lý nhà cung cấp, nguồn hàng hoặc đơn vị phân phối. Supplier là thuộc tính của Product Master."
-        action={<button onClick={openCreate} className="rounded-md bg-blue-700 px-4 py-2 text-xs font-black text-white hover:bg-blue-800"><Plus size={15} className="mr-1 inline" />Create supplier</button>}
+        desc="Quản lý nhà cung cấp / nguồn hàng từ PostgreSQL."
+        action={
+          <button onClick={openCreate} className="rounded-md bg-blue-700 px-4 py-2 text-xs font-black text-white hover:bg-blue-800">
+            <Plus size={15} className="mr-1 inline" />
+            Create supplier
+          </button>
+        }
       />
 
+      <section className="mb-4 rounded-3xl border border-emerald-100 bg-emerald-50 p-4 text-sm font-bold text-emerald-800">
+        PostgreSQL Suppliers · {loading ? "Loading..." : `${rows.length} suppliers`}
+      </section>
+
+      {apiError && <section className="mb-4 rounded-3xl border border-red-100 bg-red-50 p-4 text-sm font-bold text-red-700">{apiError}</section>}
+
       <section className="mb-4 rounded-md border border-slate-200 bg-white p-4">
-        <div className="flex items-center rounded-md border border-slate-300 bg-white px-3 py-2">
-          <Search size={16} className="text-slate-400" />
-          <input value={query} onChange={(e) => setQuery(e.target.value)} className="w-full bg-transparent px-2 text-sm outline-none" placeholder="Tìm theo tên NCC, quốc gia, phone, email..." />
+        <div className="grid gap-3 lg:grid-cols-[1fr_auto]">
+          <div className="flex items-center rounded-md border border-slate-300 bg-white px-3 py-2">
+            <Search size={16} className="text-slate-400" />
+            <input value={query} onChange={(e) => setQuery(e.target.value)} className="w-full bg-transparent px-2 text-sm outline-none" placeholder="Tìm nhà cung cấp..." />
+          </div>
+          <button onClick={() => void reload()} className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-black text-slate-700 hover:bg-slate-50">
+            <RefreshCcw size={15} className="mr-1 inline" />
+            Refresh
+          </button>
         </div>
       </section>
 
       <section className="overflow-hidden rounded-md border border-slate-200 bg-white">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[980px] text-sm">
-            <thead className="bg-slate-50 text-left text-xs font-black uppercase text-slate-500">
-              <tr>
-                <th className="sticky left-0 z-10 bg-slate-50 px-4 py-3">Actions</th>
-                <th className="px-4 py-3">Supplier name</th>
-                <th className="px-4 py-3">Country</th>
-                <th className="px-4 py-3">Contact</th>
-                <th className="px-4 py-3">Phone</th>
-                <th className="px-4 py-3">Email</th>
-                <th className="px-4 py-3">Status</th>
+        <table className="w-full min-w-[1050px] text-sm">
+          <thead className="bg-slate-50 text-left text-xs font-black uppercase text-slate-500">
+            <tr>
+              <th className="px-4 py-3">Actions</th>
+              <th className="px-4 py-3">Code</th>
+              <th className="px-4 py-3">Supplier</th>
+              <th className="px-4 py-3">Contact</th>
+              <th className="px-4 py-3">Address</th>
+              <th className="px-4 py-3">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map((item) => (
+              <tr key={item.id} className="border-t border-slate-100 hover:bg-slate-50">
+                <td className="px-4 py-3">
+                  <div className="flex gap-2">
+                    <button onClick={() => openEdit(item)} className="rounded-md border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50">
+                      <Edit3 size={14} className="mr-1 inline" /> Edit
+                    </button>
+                    <button onClick={() => void remove(item)} className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-600 hover:bg-red-100">
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </td>
+                <td className="px-4 py-3 font-black text-blue-700">{item.code}</td>
+                <td className="px-4 py-3">
+                  <div className="font-black text-slate-950">{item.name}</div>
+                  <div className="text-xs text-slate-500">{item.note || "-"}</div>
+                </td>
+                <td className="px-4 py-3 text-sm text-slate-600">
+                  <div>{item.contactName || "-"}</div>
+                  <div>{item.phone || "-"}</div>
+                  <div>{item.email || "-"}</div>
+                </td>
+                <td className="px-4 py-3 text-slate-500">{item.address || "-"}</td>
+                <td className="px-4 py-3">
+                  <span className={`rounded-full px-3 py-1 text-[11px] font-black ${item.active !== false ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
+                    {item.active !== false ? "ACTIVE" : "INACTIVE"}
+                  </span>
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {rows.map((item) => (
-                <tr key={item.id} className="group border-t border-slate-100 hover:bg-slate-50">
-                  <td className="sticky left-0 z-10 bg-white px-4 py-3 group-hover:bg-slate-50">
-                    <div className="flex gap-2">
-                      <button onClick={() => openEdit(item)} className="rounded-md border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50"><Edit3 size={14} className="mr-1 inline" />Edit</button>
-                      <button onClick={() => remove(item.id)} className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-600 hover:bg-red-100"><Trash2 size={14} /></button>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 font-black text-slate-950">{item.name}</td>
-                  <td className="px-4 py-3">{item.country || "-"}</td>
-                  <td className="px-4 py-3">{item.contactName || "-"}</td>
-                  <td className="px-4 py-3">{item.phone || "-"}</td>
-                  <td className="px-4 py-3">{item.email || "-"}</td>
-                  <td className="px-4 py-3"><AdminStatusBadge>{item.active === false ? "Inactive" : "Active"}</AdminStatusBadge></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+            ))}
+          </tbody>
+        </table>
       </section>
 
-      <AdminDrawer open={drawerOpen} title={draft.id ? "Edit supplier" : "Create supplier"} subtitle="Thông tin nhà cung cấp giúp truy xuất nguồn hàng và phục vụ nhập kho." onClose={() => setDrawerOpen(false)} onSave={save} saveLabel="Save supplier">
+      <AdminDrawer open={drawerOpen} title={draft.id ? "Edit supplier" : "Create supplier"} subtitle="PostgreSQL supplier" onClose={() => setDrawerOpen(false)} onSave={save} saveLabel="Save supplier">
         <div className="grid gap-5 md:grid-cols-2">
-          <AdminTextField label="Tên nhà cung cấp" required tip="Tên NCC hoặc đơn vị phân phối." value={draft.name} onChange={(v) => patch("name", v)} />
-          <AdminSelect label="Quốc gia" tip="Dùng để phân loại nguồn hàng." value={draft.country} onChange={(v) => patch("country", v)} options={["Japan", "Vietnam", "China", "Hong Kong", "Thailand", "Other"]} />
-          <AdminTextField label="Người liên hệ" tip="Tên nhân sự phụ trách bên NCC." value={draft.contactName} onChange={(v) => patch("contactName", v)} />
-          <AdminTextField label="Số điện thoại" tip="Số điện thoại liên hệ khi cần đặt hàng hoặc xử lý sự cố." value={draft.phone} onChange={(v) => patch("phone", v)} />
-          <AdminTextField label="Email" tip="Email nhận báo giá, PO hoặc thông tin nhập hàng." value={draft.email} onChange={(v) => patch("email", v)} />
-          <AdminTextField label="Website / Link" tip="Website hoặc link catalog của NCC." value={draft.website} onChange={(v) => patch("website", v)} />
+          <AdminTextField label="Supplier name" required value={draft.name} onChange={(v) => patch("name", v)} />
+          <AdminTextField label="Code" required value={draft.code} onChange={(v) => patch("code", makeCode(v))} />
+          <AdminTextField label="Contact name" value={draft.contactName} onChange={(v) => patch("contactName", v)} />
+          <AdminTextField label="Phone" value={draft.phone} onChange={(v) => patch("phone", v)} />
+          <AdminTextField label="Email" value={draft.email} onChange={(v) => patch("email", v)} />
+          <AdminToggle label="Active" checked={draft.active !== false} onChange={(v) => patch("active", v)} />
           <div className="md:col-span-2">
-            <AdminTextarea label="Ghi chú vận hành" tip="Ví dụ: lead time, điều kiện đặt hàng, chính sách đổi trả từ NCC." rows={4} value={draft.note} onChange={(v) => patch("note", v)} />
+            <AdminTextarea label="Address" rows={3} value={draft.address} onChange={(v) => patch("address", v)} />
           </div>
-          <AdminToggle label="Đang hợp tác" tip="Tắt nếu NCC tạm ngưng hoặc không còn nhập hàng." checked={draft.active !== false} onChange={(v) => patch("active", v)} />
+          <div className="md:col-span-2">
+            <AdminTextarea label="Note" rows={3} value={draft.note} onChange={(v) => patch("note", v)} />
+          </div>
         </div>
       </AdminDrawer>
     </>

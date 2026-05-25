@@ -1,79 +1,126 @@
-import { useMemo, useState } from "react";
-import { Edit3, Plus, Search, Trash2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Edit3, Plus, RefreshCcw, Search, Trash2 } from "lucide-react";
 import AdminDrawer from "../../components/admin/AdminDrawer";
-import { AdminImageUploader, AdminTextField, AdminToggle } from "../../components/admin/AdminField";
+import { AdminTextarea, AdminTextField, AdminToggle } from "../../components/admin/AdminField";
 import AdminPageHeader from "../../components/admin/AdminPageHeader";
-import AdminStatusBadge from "../../components/admin/AdminStatusBadge";
-import { useCms, useLang } from "../../store/CmsStore";
-import { getAdminText, makeAdminId, makeAdminSlug } from "./productAdminV4Helpers";
+import { logoutAdmin } from "../../services/AdminAuthService";
+import {
+  createAdminCategoryApi,
+  deleteAdminCategoryApi,
+  getAdminCategoriesApi,
+  updateAdminCategoryApi,
+} from "../../services/AdminCatalogApiService";
 
-const emptyCategory = {
+const empty = {
   id: "",
   code: "",
   slug: "",
-  name: { vi: "", en: "" },
-  description: { vi: "", en: "" },
-  icon: "",
-  sort: 1,
+  nameVi: "",
+  nameEn: "",
+  description: "",
+  sortOrder: 0,
   active: true,
 };
 
+function makeSlug(value = "") {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function makeCode(value = "") {
+  return String(value || "")
+    .trim()
+    .toUpperCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^A-Z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
 export default function AdminProductCategories() {
-  const { state, actions } = useCms();
-  const [lang] = useLang();
+  const [rows, setRows] = useState([]);
   const [query, setQuery] = useState("");
+  const [draft, setDraft] = useState(empty);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [draft, setDraft] = useState(emptyCategory);
+  const [loading, setLoading] = useState(false);
+  const [apiError, setApiError] = useState("");
 
-  const rows = useMemo(() => {
-    const list = state.productCategories || state.categories || [];
-    return list.filter((item) => {
-      const q = query.toLowerCase();
-      return `${item.code || ""} ${item.slug || ""} ${getAdminText(item.name, lang)}`.toLowerCase().includes(q);
-    });
-  }, [state.productCategories, state.categories, query, lang]);
+  async function reload() {
+    setLoading(true);
+    setApiError("");
 
-  function patch(field, value) {
-    setDraft((prev) => ({ ...prev, [field]: value }));
+    try {
+      setRows(await getAdminCategoriesApi());
+    } catch (error) {
+      console.error("ADMIN_CATEGORIES_ERROR", error);
+      if (error?.status === 401 || error?.message === "Unauthorized") {
+        logoutAdmin();
+        window.location.href = "/admin/login";
+        return;
+      }
+      setApiError(error?.message || "Cannot load categories.");
+    } finally {
+      setLoading(false);
+    }
   }
 
-  function patchName(locale, value) {
-    setDraft((prev) => ({
-      ...prev,
-      name: { ...prev.name, [locale]: value },
-      slug: prev.slug || makeAdminSlug(value),
-      code: prev.code || makeAdminSlug(value).toUpperCase(),
-    }));
+  useEffect(() => {
+    void reload();
+  }, []);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return rows.filter((item) =>
+      !q ||
+      [item.code, item.slug, item.nameVi, item.nameEn, item.description]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase()
+        .includes(q)
+    );
+  }, [rows, query]);
+
+  function patch(field, value) {
+    setDraft((prev) => {
+      const next = { ...prev, [field]: value };
+      if (field === "nameVi") {
+        if (!prev.slug) next.slug = makeSlug(value);
+        if (!prev.code) next.code = makeCode(value);
+      }
+      return next;
+    });
   }
 
   function openCreate() {
-    setDraft(emptyCategory);
+    setDraft(empty);
     setDrawerOpen(true);
   }
 
   function openEdit(item) {
-    setDraft({ ...emptyCategory, ...item });
+    setDraft({ ...empty, ...item });
     setDrawerOpen(true);
   }
 
-  function save() {
-    const id = draft.id || makeAdminId("cat");
-    const payload = {
-      ...draft,
-      id,
-      slug: draft.slug || makeAdminSlug(draft.name?.vi || draft.name?.en || id),
-      sort: Number(draft.sort || 1),
-    };
-
-    if (actions.saveProductCategory) actions.saveProductCategory(payload);
-    else if (actions.saveCategory) actions.saveCategory(payload);
-
-    setDrawerOpen(false);
+  async function save() {
+    try {
+      if (draft.id) await updateAdminCategoryApi(draft.id, draft);
+      else await createAdminCategoryApi(draft);
+      setDrawerOpen(false);
+      await reload();
+    } catch (error) {
+      alert(error?.message || "Save category failed.");
+    }
   }
 
-  function remove(id) {
-    if (actions.deleteProductCategory) actions.deleteProductCategory(id);
-    else if (actions.deleteCategory) actions.deleteCategory(id);
+  async function remove(item) {
+    if (!window.confirm(`Ẩn danh mục ${item.nameVi}?`)) return;
+    await deleteAdminCategoryApi(item.id);
+    await reload();
   }
 
   return (
@@ -81,67 +128,91 @@ export default function AdminProductCategories() {
       <AdminPageHeader
         eyebrow="Product Management"
         title="Product Categories"
-        desc="Quản lý danh mục sản phẩm như HG, RG, MG, PG, Tools. Danh mục có icon để hiển thị ngoài storefront."
-        action={<button onClick={openCreate} className="rounded-md bg-blue-700 px-4 py-2 text-xs font-black text-white hover:bg-blue-800"><Plus size={15} className="mr-1 inline" />Create category</button>}
+        desc="Quản lý danh mục sản phẩm từ PostgreSQL để dùng cho product master và storefront."
+        action={
+          <button onClick={openCreate} className="rounded-md bg-blue-700 px-4 py-2 text-xs font-black text-white hover:bg-blue-800">
+            <Plus size={15} className="mr-1 inline" />
+            Create category
+          </button>
+        }
       />
 
+      <section className="mb-4 rounded-3xl border border-emerald-100 bg-emerald-50 p-4 text-sm font-bold text-emerald-800">
+        PostgreSQL Categories · {loading ? "Loading..." : `${rows.length} categories`}
+      </section>
+
+      {apiError && (
+        <section className="mb-4 rounded-3xl border border-red-100 bg-red-50 p-4 text-sm font-bold text-red-700">
+          {apiError}
+        </section>
+      )}
+
       <section className="mb-4 rounded-md border border-slate-200 bg-white p-4">
-        <div className="flex items-center rounded-md border border-slate-300 bg-white px-3 py-2">
-          <Search size={16} className="text-slate-400" />
-          <input value={query} onChange={(e) => setQuery(e.target.value)} className="w-full bg-transparent px-2 text-sm outline-none" placeholder="Tìm theo mã, tên danh mục, slug..." />
+        <div className="grid gap-3 lg:grid-cols-[1fr_auto]">
+          <div className="flex items-center rounded-md border border-slate-300 bg-white px-3 py-2">
+            <Search size={16} className="text-slate-400" />
+            <input value={query} onChange={(e) => setQuery(e.target.value)} className="w-full bg-transparent px-2 text-sm outline-none" placeholder="Tìm theo code, slug, tên danh mục..." />
+          </div>
+          <button onClick={() => void reload()} className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-black text-slate-700 hover:bg-slate-50">
+            <RefreshCcw size={15} className="mr-1 inline" />
+            Refresh
+          </button>
         </div>
       </section>
 
       <section className="overflow-hidden rounded-md border border-slate-200 bg-white">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[900px] text-sm">
-            <thead className="bg-slate-50 text-left text-xs font-black uppercase text-slate-500">
-              <tr>
-                <th className="sticky left-0 z-10 bg-slate-50 px-4 py-3">Actions</th>
-                <th className="px-4 py-3">Icon</th>
-                <th className="px-4 py-3">Code</th>
-                <th className="px-4 py-3">Category name</th>
-                <th className="px-4 py-3">Slug</th>
-                <th className="px-4 py-3 text-right">Sort</th>
-                <th className="px-4 py-3">Status</th>
+        <table className="w-full min-w-[900px] text-sm">
+          <thead className="bg-slate-50 text-left text-xs font-black uppercase text-slate-500">
+            <tr>
+              <th className="px-4 py-3">Actions</th>
+              <th className="px-4 py-3">Code</th>
+              <th className="px-4 py-3">Category</th>
+              <th className="px-4 py-3">Slug</th>
+              <th className="px-4 py-3 text-right">Sort</th>
+              <th className="px-4 py-3">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map((item) => (
+              <tr key={item.id} className="border-t border-slate-100 hover:bg-slate-50">
+                <td className="px-4 py-3">
+                  <div className="flex gap-2">
+                    <button onClick={() => openEdit(item)} className="rounded-md border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50">
+                      <Edit3 size={14} className="mr-1 inline" /> Edit
+                    </button>
+                    <button onClick={() => void remove(item)} className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-600 hover:bg-red-100">
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </td>
+                <td className="px-4 py-3 font-black text-blue-700">{item.code}</td>
+                <td className="px-4 py-3">
+                  <div className="font-black text-slate-950">{item.nameVi}</div>
+                  <div className="text-xs text-slate-500">{item.nameEn}</div>
+                </td>
+                <td className="px-4 py-3 text-slate-500">{item.slug}</td>
+                <td className="px-4 py-3 text-right font-black">{item.sortOrder}</td>
+                <td className="px-4 py-3">
+                  <span className={`rounded-full px-3 py-1 text-[11px] font-black ${item.active !== false ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
+                    {item.active !== false ? "ACTIVE" : "INACTIVE"}
+                  </span>
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {rows.map((item) => (
-                <tr key={item.id} className="group border-t border-slate-100 hover:bg-slate-50">
-                  <td className="sticky left-0 z-10 bg-white px-4 py-3 group-hover:bg-slate-50">
-                    <div className="flex gap-2">
-                      <button onClick={() => openEdit(item)} className="rounded-md border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50"><Edit3 size={14} className="mr-1 inline" />Edit</button>
-                      <button onClick={() => remove(item.id)} className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-600 hover:bg-red-100"><Trash2 size={14} /></button>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="h-12 w-12 overflow-hidden rounded-md border border-slate-200 bg-slate-50">
-                      {item.icon ? <img src={item.icon} className="h-full w-full object-cover" /> : null}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 font-black text-blue-700">{item.code || "-"}</td>
-                  <td className="px-4 py-3 font-black text-slate-950">{getAdminText(item.name, lang)}</td>
-                  <td className="px-4 py-3 text-slate-500">{item.slug || "-"}</td>
-                  <td className="px-4 py-3 text-right font-black">{item.sort || 1}</td>
-                  <td className="px-4 py-3"><AdminStatusBadge>{item.active === false ? "Inactive" : "Active"}</AdminStatusBadge></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+            ))}
+          </tbody>
+        </table>
       </section>
 
-      <AdminDrawer open={drawerOpen} title={draft.id ? "Edit category" : "Create category"} subtitle="Danh mục dùng để phân loại sản phẩm và hiển thị icon ngoài storefront." onClose={() => setDrawerOpen(false)} onSave={save} saveLabel="Save category">
+      <AdminDrawer open={drawerOpen} title={draft.id ? "Edit category" : "Create category"} subtitle="PostgreSQL category" onClose={() => setDrawerOpen(false)} onSave={save} saveLabel="Save category">
         <div className="grid gap-5 md:grid-cols-2">
-          <AdminTextField label="Tên danh mục tiếng Việt" required tip="Tên khách hàng nhìn thấy, ví dụ: Real Grade, Master Grade." value={draft.name?.vi} onChange={(v) => patchName("vi", v)} />
-          <AdminTextField label="Tên danh mục tiếng Anh" tip="Tên khi website chuyển sang tiếng Anh." value={draft.name?.en} onChange={(v) => patchName("en", v)} />
-          <AdminTextField label="Mã danh mục" required tip="Mã ngắn để quản trị, ví dụ: HG, RG, MG, PG." value={draft.code} onChange={(v) => patch("code", v.toUpperCase())} />
-          <AdminTextField label="Đường dẫn danh mục" tip="URL lọc danh mục ngoài website." value={draft.slug} onChange={(v) => patch("slug", v)} />
-          <AdminTextField label="Thứ tự hiển thị" tip="Số nhỏ sẽ hiển thị trước." type="number" value={draft.sort} onChange={(v) => patch("sort", v)} />
-          <AdminToggle label="Hiển thị danh mục" tip="Tắt nếu chưa muốn khách thấy danh mục này." checked={draft.active !== false} onChange={(v) => patch("active", v)} />
+          <AdminTextField label="Tên VI" required value={draft.nameVi} onChange={(v) => patch("nameVi", v)} />
+          <AdminTextField label="Tên EN" value={draft.nameEn} onChange={(v) => patch("nameEn", v)} />
+          <AdminTextField label="Code" required value={draft.code} onChange={(v) => patch("code", makeCode(v))} />
+          <AdminTextField label="Slug" required value={draft.slug} onChange={(v) => patch("slug", makeSlug(v))} />
+          <AdminTextField label="Sort order" type="number" value={draft.sortOrder} onChange={(v) => patch("sortOrder", v)} />
+          <AdminToggle label="Active" checked={draft.active !== false} onChange={(v) => patch("active", v)} />
           <div className="md:col-span-2">
-            <AdminImageUploader label="Icon danh mục" tip="Icon hiển thị ngoài trang chủ. Bắt buộc dùng ảnh vuông, khuyến nghị 512 x 512 px." recommended="512 x 512 px" value={draft.icon} onChange={(v) => patch("icon", v)} />
+            <AdminTextarea label="Mô tả" rows={4} value={draft.description} onChange={(v) => patch("description", v)} />
           </div>
         </div>
       </AdminDrawer>

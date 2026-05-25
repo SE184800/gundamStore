@@ -51,7 +51,8 @@ const copy = {
     suppliers: "Nhà cung cấp",
     groups: "Nhóm sản phẩm",
     groupMapping: "Gán nhóm",
-    pricingInventory: "Giá & tồn kho",
+    pricing: "Giá bán",
+    inventory: "Tồn kho",
     promotions: "Khuyến mãi",
     sales: "Bán hàng & đơn hàng",
     orders: "Đơn hàng",
@@ -90,7 +91,8 @@ const copy = {
     suppliers: "Suppliers",
     groups: "Product Groups",
     groupMapping: "Group Mapping",
-    pricingInventory: "Pricing & Inventory",
+    pricing: "Pricing",
+    inventory: "Inventory",
     promotions: "Promotions",
     sales: "Sales & Orders",
     orders: "Orders",
@@ -192,7 +194,8 @@ function getPageTitle(pathname, t) {
   if (pathname.includes("/admin/suppliers")) return t.suppliers;
   if (pathname.includes("/admin/product-groups")) return t.groups;
   if (pathname.includes("/admin/product-group-mapping")) return t.groupMapping;
-  if (pathname.includes("/admin/pricing-inventory")) return t.pricingInventory;
+  if (pathname.includes("/admin/pricing")) return t.pricing;
+  if (pathname.includes("/admin/inventory")) return t.inventory;
   if (pathname.includes("/admin/promotions")) return t.promotions;
   if (pathname.includes("/admin/orders")) return t.orders;
   if (pathname.includes("/admin/restock-alerts")) return t.restockAlerts;
@@ -245,7 +248,8 @@ export default function AdminLayout() {
               <NavItem to="/admin/suppliers" icon={Truck} label={t.suppliers} />
               <NavItem to="/admin/product-groups" icon={ShoppingCart} label={t.groups} />
               <NavItem to="/admin/product-group-mapping" icon={ClipboardList} label={t.groupMapping} />
-              <NavItem to="/admin/pricing-inventory" icon={WalletCards} label={t.pricingInventory} />
+              <NavItem to="/admin/pricing" icon={WalletCards} label={t.pricing} />
+              <NavItem to="/admin/inventory" icon={Package} label={t.inventory} />
               <NavItem to="/admin/promotions" icon={Percent} label={t.promotions} />
             </NavGroup>
 
