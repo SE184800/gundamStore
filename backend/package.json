@@ -11,7 +11,8 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
     "seed": "node prisma/seed.js",
-    "seed:catalog": "node prisma/seedCatalog.js"
+    "seed:catalog": "node prisma/seedCatalog.js",
+    "smoke:admin": "node scripts/smokeAdminApis.js"
   },
   "dependencies": {
     "@prisma/client": "^6.0.0",

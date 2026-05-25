@@ -12,6 +12,7 @@ import orderRoutes from "./routes/orderRoutes.js";
 import productRoutes from "./routes/productRoutes.js";
 import inventoryRoutes from "./routes/inventoryRoutes.js";
 import pricingRoutes from "./routes/pricingRoutes.js";
+import promotionRoutes from "./routes/promotionRoutes.js";
 
 const app = express();
 
@@ -31,6 +32,7 @@ app.use("/api/orders", orderRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/inventory", inventoryRoutes);
 app.use("/api/pricing", pricingRoutes);
+app.use("/api/promotions", promotionRoutes);
 
 app.use((req, res) => {
   res.status(404).json({

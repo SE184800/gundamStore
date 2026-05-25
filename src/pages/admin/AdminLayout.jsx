@@ -6,6 +6,7 @@ import {
   ChevronDown,
   ClipboardList,
   FileText,
+  History,
   CalendarDays,
   Image,
   LayoutDashboard,
@@ -48,6 +49,8 @@ const copy = {
     media: "Thư viện media",
     themeSeo: "Giao diện / SEO",
     productManagement: "Quản lý sản phẩm",
+    inventoryOperations: "Vận hành tồn kho",
+    pricingOperations: "Giá & khuyến mãi",
     products: "Sản phẩm",
     categories: "Danh mục sản phẩm",
     suppliers: "Nhà cung cấp",
@@ -58,6 +61,7 @@ const copy = {
     inventoryReceipts: "Nhập hàng",
     inventoryAdjustments: "Điều chỉnh tồn",
     stockCount: "Kiểm tồn",
+    inventoryTransactions: "Lịch sử giao dịch",
     promotions: "Khuyến mãi",
     sales: "Bán hàng & đơn hàng",
     orders: "Đơn hàng",
@@ -91,6 +95,8 @@ const copy = {
     themeSeo: "Theme / SEO",
     communication: "Communication",
     productManagement: "Product Management",
+    inventoryOperations: "Inventory Operations",
+    pricingOperations: "Pricing & Promotions",
     products: "Products",
     categories: "Product Categories",
     suppliers: "Suppliers",
@@ -101,6 +107,7 @@ const copy = {
     inventoryReceipts: "Goods Receipt",
     inventoryAdjustments: "Stock Adjustment",
     stockCount: "Stock Count",
+    inventoryTransactions: "Transactions",
     promotions: "Promotions",
     sales: "Sales & Orders",
     orders: "Orders",
@@ -203,6 +210,7 @@ function getPageTitle(pathname, t) {
   if (pathname.includes("/admin/product-groups")) return t.groups;
   if (pathname.includes("/admin/product-group-mapping")) return t.groupMapping;
   if (pathname.includes("/admin/pricing")) return t.pricing;
+  if (pathname.includes("/admin/inventory/transactions")) return t.inventoryTransactions;
   if (pathname.includes("/admin/inventory/adjustments")) return t.inventoryAdjustments;
   if (pathname.includes("/admin/inventory/stock-count")) return t.stockCount;
   if (pathname.includes("/admin/inventory/receipts")) return t.inventoryReceipts;
@@ -259,11 +267,18 @@ export default function AdminLayout() {
               <NavItem to="/admin/suppliers" icon={Truck} label={t.suppliers} />
               <NavItem to="/admin/product-groups" icon={ShoppingCart} label={t.groups} />
               <NavItem to="/admin/product-group-mapping" icon={ClipboardList} label={t.groupMapping} />
-              <NavItem to="/admin/pricing" icon={WalletCards} label={t.pricing} />
+            </NavGroup>
+
+            <NavGroup title={t.inventoryOperations}>
               <NavItem to="/admin/inventory" icon={Package} label={t.inventory} />
               <NavItem to="/admin/inventory/receipts" icon={Truck} label={t.inventoryReceipts} />
               <NavItem to="/admin/inventory/adjustments" icon={SlidersHorizontal} label={t.inventoryAdjustments} />
               <NavItem to="/admin/inventory/stock-count" icon={ClipboardCheck} label={t.stockCount} />
+              <NavItem to="/admin/inventory/transactions" icon={History} label={t.inventoryTransactions} />
+            </NavGroup>
+
+            <NavGroup title={t.pricingOperations}>
+              <NavItem to="/admin/pricing" icon={WalletCards} label={t.pricing} />
               <NavItem to="/admin/promotions" icon={Percent} label={t.promotions} />
             </NavGroup>
 

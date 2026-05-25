@@ -245,6 +245,7 @@ model Product {
   stockCountItems       StockCountItem[]
   inventoryLogs         InventoryLog[]
   prices                ProductPrice[]
+  promotionProducts     PromotionProduct[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -446,4 +447,39 @@ model StockCountItem {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Promotion {
+  id        String    @id @default(cuid())
+  code      String    @unique
+  nameVi    String
+  nameEn    String?
+  type      String    @default("PERCENT")
+  value     Int
+  startDate DateTime
+  endDate   DateTime?
+  active    Boolean   @default(true)
+  priority  Int       @default(0)
+  note      String?
+
+  products PromotionProduct[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([active, startDate, endDate, priority])
+}
+
+model PromotionProduct {
+  id          String @id @default(cuid())
+  promotionId String
+  productId   String
+
+  promotion Promotion @relation(fields: [promotionId], references: [id], onDelete: Cascade)
+  product   Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([promotionId, productId])
 }
