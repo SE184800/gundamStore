@@ -17,7 +17,7 @@ export const env = {
   port: Number(process.env.PORT || 4000),
   nodeEnv,
   databaseUrl: process.env.DATABASE_URL,
-  jwtSecret: jwtSecret || "dev-only-secret",
+  jwtSecret: jwtSecret || "change-this-in-real-env",
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || "1d",
   frontendOrigin: process.env.FRONTEND_ORIGIN || "http://localhost:5173",
 };
