@@ -19,7 +19,7 @@ const app = express();
 app.use(helmet());
 app.use(
   cors({
-    origin: env.frontendOrigin,
+    origin: env.FRONTEND_ORIGIN,
     credentials: true,
   })
 );
@@ -47,8 +47,8 @@ async function start() {
   try {
     await prisma.$connect();
 
-    app.listen(env.port, "0.0.0.0", () => {
-      console.log(`Gundam Store backend running on http://localhost:${env.port}`);
+    app.listen(env.PORT, "0.0.0.0", () => {
+      console.log(`Gundam Store backend running on http://localhost:${env.PORT}`);
     });
   } catch (err) {
     console.error("Failed to start backend", err);

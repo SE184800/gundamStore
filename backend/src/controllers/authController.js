@@ -16,10 +16,10 @@ function safeUser(user) {
     email: user.email,
     role: user.role
       ? {
-          code: user.role.code,
-          name: user.role.name,
-          permissions: user.role.permissions?.map((item) => item.permission.code) || [],
-        }
+        code: user.role.code,
+        name: user.role.name,
+        permissions: user.role.permissions?.map((item) => item.permission.code) || [],
+      }
       : null,
   };
 }
@@ -56,8 +56,8 @@ export async function login(req, res, next) {
         sub: user.id,
         role: user.role.code,
       },
-      env.jwtSecret,
-      { expiresIn: env.jwtExpiresIn }
+      env.JWT_SECRET,
+      { expiresIn: env.JWT_EXPIRES_IN }
     );
 
     res.json({
