@@ -1,3 +1,4 @@
+import { authService } from "../services/AuthService";
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 import {
   enrichProductsWithBackendIds,
@@ -118,26 +119,38 @@ export function CmsProvider({ children }) {
       };
       setState((prev) => ({ ...prev, analytics: [item, ...prev.analytics].slice(0, 500) }));
     },
-    login(credentials) {
-      // Mô phỏng kiểm tra tài khoản giống hệ thống thực tế
-      if (credentials.username === "admin" && credentials.password === "admin") {
-        const adminUser = { username: "admin", email: "admin@gundamstore.vn", role: "Admin" };
-        setState((prev) => ({ ...prev, user: adminUser }));
-        return { success: true, user: adminUser };
-      } 
-      
-      if (credentials.username === "user" && credentials.password === "123456") {
-        const guestUser = { username: "GundamBuilder", email: "builder@gmail.com", role: "User" };
-        setState((prev) => ({ ...prev, user: guestUser }));
-        return { success: true, user: guestUser };
-      }
-
-      // Trả về thông báo lỗi cụ thể nếu sai thông tin
-      return { success: false, message: "Tài khoản hoặc mật khẩu không chính xác!" };
+    login: async ({ email, password }) => {
+      try {
+        // Gửi dữ liệu sang authService để kích hoạt Axios chạy ngầm qua cổng 4000
+        const res = await authService.login(email, password);
+        
+        if (res.success && res.token) {
+          // 1. Lưu token vào LocalStorage để các request sau tự lấy sử dụng
+          localStorage.setItem("gundam_token", res.token);
+          
+          // 2. 🛠️ ĐÃ FIX: Đổi từ 'set' của Zustand sang 'setState' chuẩn của Context
+          setState((prev) => ({ ...prev, user: res.user })); 
+          
+          return { success: true };
+        }
+        
+        return { success: false, message: res.message || "Tài khoản hoặc mật khẩu không đúng!" };
+      } catch (error) {
+  // 🛠️ CHÈN DÒNG NÀY VÀO: Ép Front-end phải in tuốt tuột lỗi hệ thống ra tab Console
+  console.error("❌ LỖI CMSTORE BẮT ĐƯỢC:", error); 
+  
+  // Xem đối tượng lỗi chi tiết từ Axios trả về (nếu có)
+  if (error.response) {
+    console.log("Dữ liệu lỗi từ BE khạc ra:", error.response.data);
+  }
+  return { success: false, message: error.message };
+}
     },
-
-    logout() {
-      setState((prev) => ({ ...prev, user: null }));
+    // 🛠️ ĐÃ CẬP NHẬT: Hàm logout chuẩn cú pháp React Context API
+    logout: () => {
+      localStorage.removeItem("gundam_token");
+      // 🛠️ ĐÃ FIX: Đổi từ 'set' sang 'setState' để tránh sập ứng dụng khi bấm Đăng xuất
+      setState((prev) => ({ ...prev, user: null })); 
     },
     saveProduct(product) {
       setState((prev) => {
@@ -388,18 +401,18 @@ export function CmsProvider({ children }) {
       }));
       actions.track("staff_reply_sent");
     },
-    
+
     saveCommunication(comm) {
       setState((prev) => {
         const communicationsList = prev.communications || [];
         const exists = communicationsList.some((c) => String(c.id) === String(comm.id));
-        
+
         const next = exists
           ? communicationsList.map((c) => (String(c.id) === String(comm.id) ? { ...c, ...comm } : c))
           : [{ ...comm, id: comm.id || makeId("comm") }, ...communicationsList];
-          
-        return { 
-          ...prev, 
+
+        return {
+          ...prev,
           communications: next
         };
       });
@@ -422,7 +435,7 @@ export function CmsProvider({ children }) {
       localStorage.removeItem(STORAGE_KEY);
       setState(initialState);
     },
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [state]);
 
   const value = useMemo(() => ({ state, actions }), [state, actions]);

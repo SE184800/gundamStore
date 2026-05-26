@@ -1,7 +1,7 @@
 const ADMIN_TOKEN_KEY = "gundam-admin-token";
 
 export function getApiBaseUrl() {
-  return import.meta.env.VITE_API_URL || "";
+  return import.meta.env.VITE_BASE_URL || "";
 }
 
 export function getStoredAdminToken() {

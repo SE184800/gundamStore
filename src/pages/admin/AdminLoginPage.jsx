@@ -27,10 +27,10 @@ export default function AdminLoginPage() {
     setLoading(true);
 
     try {
-      await loginAdmin(form.email, form.password);
+      await loginAdmin({ email: form.email, password: form.password });
       navigate(redirectTo, { replace: true });
     } catch (err) {
-      setError(err?.message || "Login failed.");
+      setError(err?.response?.data?.message || err?.message || "Login failed.");
     } finally {
       setLoading(false);
     }

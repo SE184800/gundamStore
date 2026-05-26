@@ -1,6 +1,7 @@
 import {
   CalendarDays,
   ChevronDown,
+  Globe,
   Gift,
   Home,
   Menu,
@@ -14,7 +15,7 @@ import {
   X,
 } from "lucide-react";
 import HeaderCart from "../layout/HeaderCart";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { useI18n } from "../../i18n";
 import Logo from "./Logo";
@@ -30,6 +31,7 @@ function isActive(pathname, item) {
 export default function Header() {
   const { lang, setLang, t } = useI18n();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [displayLang, setDisplayLang] = useState(() => lang || "en");
   const location = useLocation();
   const { state, actions } = useCms();
 
@@ -101,7 +103,9 @@ export default function Header() {
       icon: User,
     },
   ];
-
+  useEffect(() => {
+    setDisplayLang(lang);
+  }, [lang]);
   return (
     <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 shadow-sm backdrop-blur">
       <div className="mx-auto flex h-[64px] max-w-[1440px] items-center gap-3 px-4 lg:px-8">
@@ -117,23 +121,43 @@ export default function Header() {
           />
         </div>
 
-        <div className="ml-auto hidden items-center gap-2 md:flex">
-          <div className="flex rounded-2xl border border-slate-200 bg-slate-50 p-1 shadow-sm">
-            {["vi", "en"].map((item) => (
-              <button
-                key={item}
-                type="button"
-                onClick={() => setLang(item)}
-                className={`rounded-xl px-4 py-2 text-xs font-black uppercase transition ${lang === item
-                    ? "bg-blue-700 text-white shadow-md"
-                    : "text-slate-500 hover:bg-white hover:text-slate-900"
-                  }`}
-              >
-                {item.toUpperCase()}
-              </button>
-            ))}
+        <div className="ml-auto hidden items-center gap-1.5 md:flex">
+          <div className="group relative flex h-11 items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3.5 text-sm font-semibold text-slate-700 shadow-sm transition-all hover:bg-slate-100 hover:border-slate-300 cursor-pointer">
+            <Globe size={16} className="text-slate-500" />
+            <ChevronDown size={14} className="text-slate-400 transition-transform duration-300 group-hover:rotate-180" />
+
+            {/* VÙNG ĐỆM AN TOÀN VÀ DROPDOWN BÊN DƯỚI */}
+            <div className="absolute right-0 top-full z-[99] pt-2 hidden w-32 group-hover:block">
+              <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-1.5 shadow-xl animate-in fade-in slide-in-from-top-1 duration-200">
+
+                {/* NÚT TIẾNG VIỆT */}
+                <button
+                  type="button"
+                  onClick={() => setLang("vi")} // Chỉ cần gọi hàm hệ thống, useEffect sẽ lo phần giao diện
+                  className={`flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-xs font-bold transition-all ${displayLang?.toLowerCase().includes("vi")
+                      ? "bg-blue-600 text-white shadow-sm"
+                      : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                    }`}
+                >
+                  <span>🇻🇳</span> Tiếng Việt
+                </button>
+
+                {/* NÚT ENGLISH */}
+                <button
+                  type="button"
+                  onClick={() => setLang("en")} // Chỉ cần gọi hàm hệ thống, useEffect sẽ lo phần giao diện
+                  className={`flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-xs font-bold transition-all mt-0.5 ${!displayLang?.toLowerCase().includes("vi")
+                      ? "bg-blue-600 text-white shadow-sm"
+                      : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                    }`}
+                >
+                  <span>🇺🇸</span> English
+                </button>
+              </div>
+            </div>
           </div>
           <HeaderCart />
+
           {state.user ? (
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-1.5 rounded-2xl border border-blue-100 bg-blue-50/50 px-4 py-2 text-xs font-black text-blue-700 shadow-sm">
@@ -188,8 +212,8 @@ export default function Header() {
                 <a
                   href={item.href}
                   className={`flex items-center gap-2 whitespace-nowrap rounded-2xl px-4 py-2.5 text-sm font-black transition ${active
-                      ? "bg-blue-700 text-white shadow-lg shadow-blue-100"
-                      : "text-slate-700 hover:bg-blue-700 hover:text-white hover:shadow-lg hover:shadow-blue-100"
+                    ? "bg-blue-700 text-white shadow-lg shadow-blue-100"
+                    : "text-slate-700 hover:bg-blue-700 hover:text-white hover:shadow-lg hover:shadow-blue-100"
                     }`}
                 >
                   <Icon size={17} className={active ? "text-white" : "text-blue-600 group-hover:text-white"} />
