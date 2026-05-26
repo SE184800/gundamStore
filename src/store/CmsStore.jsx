@@ -119,38 +119,51 @@ export function CmsProvider({ children }) {
       };
       setState((prev) => ({ ...prev, analytics: [item, ...prev.analytics].slice(0, 500) }));
     },
+    register: async (registerData) => {
+      try {
+        const response = await authService.register(
+          registerData.name,
+          registerData.email,
+          registerData.password
+        );
+        return response // Trả về { success: true, token, user } cho file Register nhận
+      } catch (customError) {
+        console.log("Lỗi đã qua xử lý của Interceptor:", customError);
+        return customError; // Trả thẳng cục này về cho Formik/Register đón nhận
+      }
+    },
     login: async ({ email, password }) => {
       try {
         // Gửi dữ liệu sang authService để kích hoạt Axios chạy ngầm qua cổng 4000
         const res = await authService.login(email, password);
-        
+
         if (res.success && res.token) {
           // 1. Lưu token vào LocalStorage để các request sau tự lấy sử dụng
           localStorage.setItem("gundam_token", res.token);
-          
+
           // 2. 🛠️ ĐÃ FIX: Đổi từ 'set' của Zustand sang 'setState' chuẩn của Context
-          setState((prev) => ({ ...prev, user: res.user })); 
-          
+          setState((prev) => ({ ...prev, user: res.user }));
+
           return { success: true };
         }
-        
+
         return { success: false, message: res.message || "Tài khoản hoặc mật khẩu không đúng!" };
       } catch (error) {
-  // 🛠️ CHÈN DÒNG NÀY VÀO: Ép Front-end phải in tuốt tuột lỗi hệ thống ra tab Console
-  console.error("❌ LỖI CMSTORE BẮT ĐƯỢC:", error); 
-  
-  // Xem đối tượng lỗi chi tiết từ Axios trả về (nếu có)
-  if (error.response) {
-    console.log("Dữ liệu lỗi từ BE khạc ra:", error.response.data);
-  }
-  return { success: false, message: error.message };
-}
+        // 🛠️ CHÈN DÒNG NÀY VÀO: Ép Front-end phải in tuốt tuột lỗi hệ thống ra tab Console
+        console.error("❌ LỖI CMSTORE BẮT ĐƯỢC:", error);
+
+        // Xem đối tượng lỗi chi tiết từ Axios trả về (nếu có)
+        if (error.response) {
+          console.log("Dữ liệu lỗi từ BE khạc ra:", error.response.data);
+        }
+        return { success: false, message: error.message };
+      }
     },
     // 🛠️ ĐÃ CẬP NHẬT: Hàm logout chuẩn cú pháp React Context API
     logout: () => {
       localStorage.removeItem("gundam_token");
       // 🛠️ ĐÃ FIX: Đổi từ 'set' sang 'setState' để tránh sập ứng dụng khi bấm Đăng xuất
-      setState((prev) => ({ ...prev, user: null })); 
+      setState((prev) => ({ ...prev, user: null }));
     },
     saveProduct(product) {
       setState((prev) => {

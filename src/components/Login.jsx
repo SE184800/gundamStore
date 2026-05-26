@@ -4,6 +4,7 @@ import { useCms } from "../store/CmsStore";
 import { ShieldAlert, CheckCircle2, Lock, User, Eye, EyeOff } from "lucide-react";
 import Logo from "./common/Logo";
 import Toast from "../utils/Toast";
+import { Link } from "react-router-dom";
 export default function Login() {
   const { actions } = useCms();
   const navigate = useNavigate();
@@ -126,9 +127,9 @@ export default function Login() {
         {/* KHU VỰC CHUYỂN ĐỔI SANG ĐĂNG KÝ */}
         <div className="mt-6 text-center text-xs font-semibold text-slate-500">
           Bạn chưa có tài khoản?{" "}
-          <a href="/register" className="font-black text-blue-600 hover:text-blue-800 transition hover:underline">
+          <Link to="/register" className="font-black text-blue-600 hover:text-blue-800 transition hover:underline">
             Đăng ký ngay
-          </a>
+          </Link>
         </div>
 
         {/* 🛠️ ĐÃ CẬP NHẬT: Tài khoản mẫu hiển thị dạng Email chuẩn xác với dữ liệu Neon DB */}
