@@ -2,7 +2,7 @@ import AutoTranslate from "./components/common/AutoTranslate.jsx";
 import SeoManager from "./components/common/SeoManager";
 import { lazy, Suspense } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
-
+import Register from "./components/Register.jsx";
 // 🛠️ GIỮ LẠI CÁC ĐƯỜNG IMPORT KHÔNG DÙNG LAZY
 import AddToCartBridge from "./components/cart/AddToCartBridge";
 import Login from "./components/Login"; // Route Login mới tinh của bạn
@@ -100,17 +100,18 @@ export default function App() {
         <Routes>
           {/* 🛒 Storefront Core Routes (Đã dọn dẹp sạch sẽ trùng lặp) */}
           <Route path="/" element={<HomePage />} />
+          <Route path="/register" element={<Register />} />
           <Route path="/login" element={<Login />} />
           <Route path="/shop" element={<ShopPage />} />
           <Route path="/accessories" element={<AccessoriesPage />} />
           <Route path="/promotions" element={<PromotionsPage />} />
-          
+
           {/* Campaign Collections */}
           <Route path="/flash-sale" element={<CampaignCollectionPage type="flash-sale" />} />
           <Route path="/restock" element={<CampaignCollectionPage type="restock" />} />
           <Route path="/limited" element={<CampaignCollectionPage type="limited" />} />
           <Route path="/coming-soon" element={<CampaignCollectionPage type="coming-soon" />} />
-          
+
           {/* Customer Service & Pages */}
           <Route path="/pre-order" element={<PreOrderPage />} />
           <Route path="/build-guide" element={<BuildGuidePage />} />
@@ -139,12 +140,12 @@ export default function App() {
           {/* 🔐 Admin Module (Grouped & Protected) */}
           <Route path="/admin/login" element={<AdminLoginPage />} />
           <Route path="/admin/access-denied" element={<AdminAccessDeniedPage />} />
-          
+
           <Route path="/admin" element={<AdminProtectedRoute><AdminLayout /></AdminProtectedRoute>}>
             <Route index element={<AdminDashboard />} />
             <Route path="reports" element={<AdminReports />} />
             <Route path="communication" element={<AdminCommunication />} />
-            
+
             {/* CMS Sub-routes */}
             <Route path="cms" element={<AdminStorefrontCMS />} />
             <Route path="cms/pages" element={<AdminStorefrontCMS />} />
