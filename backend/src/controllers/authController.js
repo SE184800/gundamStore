@@ -56,8 +56,8 @@ export async function login(req, res, next) {
         sub: user.id,
         role: user.role.code,
       },
-      env.JWT_SECRET,
-      { expiresIn: env.JWT_EXPIRES_IN }
+      env.jwtSecret || "gundam_secret_key_fallback", // 🌟 Gọi đúng jwtSecret và thêm phòng hờ
+      { expiresIn: env.jwtExpiresIn || "1d" }
     );
 
     res.json({
