@@ -50,7 +50,12 @@ const AdminProductCategories = lazy(() => import("./pages/admin/AdminProductCate
 const AdminSuppliers = lazy(() => import("./pages/admin/AdminSuppliers"));
 const AdminProductGroups = lazy(() => import("./pages/admin/AdminProductGroups"));
 const AdminProductGroupMapping = lazy(() => import("./pages/admin/AdminProductGroupMapping"));
-const AdminPricingInventory = lazy(() => import("./pages/admin/AdminPricingInventory"));
+const AdminPricing = lazy(() => import("./pages/admin/AdminPricing"));
+const AdminInventory = lazy(() => import("./pages/admin/AdminInventory"));
+const AdminInventoryReceipts = lazy(() => import("./pages/admin/AdminInventoryReceipts"));
+const AdminInventoryStockCount = lazy(() => import("./pages/admin/AdminInventoryStockCount"));
+const AdminInventoryAdjustments = lazy(() => import("./pages/admin/AdminInventoryAdjustments"));
+const AdminInventoryTransactions = lazy(() => import("./pages/admin/AdminInventoryTransactions"));
 const AdminPromotions = lazy(() => import("./pages/admin/AdminPromotions"));
 const AdminCategories = lazy(() => import("./pages/admin/AdminCategories"));
 const AdminProductCategoryMapping = lazy(() => import("./pages/admin/AdminProductCategoryMapping"));
@@ -161,7 +166,14 @@ export default function App() {
             <Route path="suppliers" element={<AdminSuppliers />} />
             <Route path="product-groups" element={<AdminProductGroups />} />
             <Route path="product-group-mapping" element={<AdminProductGroupMapping />} />
-            <Route path="pricing-inventory" element={<AdminPricingInventory />} />
+            <Route path="pricing-inventory" element={<Navigate to="/admin/pricing" replace />} />
+            <Route path="pricing" element={<AdminPricing />} />
+            <Route path="inventory" element={<AdminInventory />} />
+            <Route path="inventory/receipts" element={<AdminInventoryReceipts />} />
+
+            <Route path="inventory/adjustments" element={<AdminInventoryAdjustments />} />
+            <Route path="inventory/stock-count" element={<AdminInventoryStockCount />} />
+            <Route path="inventory/transactions" element={<AdminInventoryTransactions />} />
             <Route path="promotions" element={<AdminPromotions />} />
             <Route path="categories" element={<AdminCategories />} />
             <Route path="product-category-mapping" element={<AdminProductCategoryMapping />} />

@@ -6,6 +6,7 @@ import {
   ChevronDown,
   ClipboardList,
   FileText,
+  History,
   CalendarDays,
   Image,
   LayoutDashboard,
@@ -23,6 +24,8 @@ import {
   Tags,
   TestTube2,
   Truck,
+  SlidersHorizontal,
+  ClipboardCheck,
   UploadCloud,
   Users,
   WalletCards,
@@ -46,12 +49,19 @@ const copy = {
     media: "Thư viện media",
     themeSeo: "Giao diện / SEO",
     productManagement: "Quản lý sản phẩm",
+    inventoryOperations: "Vận hành tồn kho",
+    pricingOperations: "Giá & khuyến mãi",
     products: "Sản phẩm",
     categories: "Danh mục sản phẩm",
     suppliers: "Nhà cung cấp",
     groups: "Nhóm sản phẩm",
     groupMapping: "Gán nhóm",
-    pricingInventory: "Giá & tồn kho",
+    pricing: "Giá bán",
+    inventory: "Tồn kho",
+    inventoryReceipts: "Nhập hàng",
+    inventoryAdjustments: "Điều chỉnh tồn",
+    stockCount: "Kiểm tồn",
+    inventoryTransactions: "Lịch sử giao dịch",
     promotions: "Khuyến mãi",
     sales: "Bán hàng & đơn hàng",
     orders: "Đơn hàng",
@@ -85,12 +95,19 @@ const copy = {
     themeSeo: "Theme / SEO",
     communication: "Communication",
     productManagement: "Product Management",
+    inventoryOperations: "Inventory Operations",
+    pricingOperations: "Pricing & Promotions",
     products: "Products",
     categories: "Product Categories",
     suppliers: "Suppliers",
     groups: "Product Groups",
     groupMapping: "Group Mapping",
-    pricingInventory: "Pricing & Inventory",
+    pricing: "Pricing",
+    inventory: "Inventory",
+    inventoryReceipts: "Goods Receipt",
+    inventoryAdjustments: "Stock Adjustment",
+    stockCount: "Stock Count",
+    inventoryTransactions: "Transactions",
     promotions: "Promotions",
     sales: "Sales & Orders",
     orders: "Orders",
@@ -192,7 +209,12 @@ function getPageTitle(pathname, t) {
   if (pathname.includes("/admin/suppliers")) return t.suppliers;
   if (pathname.includes("/admin/product-groups")) return t.groups;
   if (pathname.includes("/admin/product-group-mapping")) return t.groupMapping;
-  if (pathname.includes("/admin/pricing-inventory")) return t.pricingInventory;
+  if (pathname.includes("/admin/pricing")) return t.pricing;
+  if (pathname.includes("/admin/inventory/transactions")) return t.inventoryTransactions;
+  if (pathname.includes("/admin/inventory/adjustments")) return t.inventoryAdjustments;
+  if (pathname.includes("/admin/inventory/stock-count")) return t.stockCount;
+  if (pathname.includes("/admin/inventory/receipts")) return t.inventoryReceipts;
+  if (pathname.includes("/admin/inventory")) return t.inventory;
   if (pathname.includes("/admin/promotions")) return t.promotions;
   if (pathname.includes("/admin/orders")) return t.orders;
   if (pathname.includes("/admin/restock-alerts")) return t.restockAlerts;
@@ -245,7 +267,18 @@ export default function AdminLayout() {
               <NavItem to="/admin/suppliers" icon={Truck} label={t.suppliers} />
               <NavItem to="/admin/product-groups" icon={ShoppingCart} label={t.groups} />
               <NavItem to="/admin/product-group-mapping" icon={ClipboardList} label={t.groupMapping} />
-              <NavItem to="/admin/pricing-inventory" icon={WalletCards} label={t.pricingInventory} />
+            </NavGroup>
+
+            <NavGroup title={t.inventoryOperations}>
+              <NavItem to="/admin/inventory" icon={Package} label={t.inventory} />
+              <NavItem to="/admin/inventory/receipts" icon={Truck} label={t.inventoryReceipts} />
+              <NavItem to="/admin/inventory/adjustments" icon={SlidersHorizontal} label={t.inventoryAdjustments} />
+              <NavItem to="/admin/inventory/stock-count" icon={ClipboardCheck} label={t.stockCount} />
+              <NavItem to="/admin/inventory/transactions" icon={History} label={t.inventoryTransactions} />
+            </NavGroup>
+
+            <NavGroup title={t.pricingOperations}>
+              <NavItem to="/admin/pricing" icon={WalletCards} label={t.pricing} />
               <NavItem to="/admin/promotions" icon={Percent} label={t.promotions} />
             </NavGroup>
 

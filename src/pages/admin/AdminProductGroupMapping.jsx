@@ -1,77 +1,178 @@
-
-import { useMemo, useState } from "react";
-import { Search } from "lucide-react";
-import { useCms, useLang } from "../../store/CmsStore";
-import { getText } from "../../utils/format";
-
-function groupName(group, lang) {
-  return group.name?.[lang] || group.name?.vi || group.key;
-}
+import { useEffect, useMemo, useState } from "react";
+import { RefreshCcw, Search, Save } from "lucide-react";
+import AdminPageHeader from "../../components/admin/AdminPageHeader";
+import { logoutAdmin } from "../../services/AdminAuthService";
+import {
+  getAdminCatalogReferenceApi,
+  getAdminProductsFromApi,
+  setAdminProductGroupsApi,
+} from "../../services/AdminCatalogApiService";
 
 export default function AdminProductGroupMapping() {
-  const { state, actions } = useCms();
-  const [lang] = useLang();
+  const [products, setProducts] = useState([]);
+  const [groups, setGroups] = useState([]);
   const [query, setQuery] = useState("");
+  const [savingId, setSavingId] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [apiError, setApiError] = useState("");
 
-  const groups = [...(state.productGroups || [])].filter((g) => g.active !== false).sort((a, b) => Number(a.sort || 0) - Number(b.sort || 0));
+  async function reload() {
+    setLoading(true);
+    setApiError("");
 
-  const products = useMemo(() => {
-    return (state.products || []).filter((product) => {
-      const haystack = `${getText(product.name, lang)} ${product.sku || ""}`.toLowerCase();
-      return haystack.includes(query.toLowerCase());
-    });
-  }, [state.products, lang, query]);
+    try {
+      const [rows, ref] = await Promise.all([
+        getAdminProductsFromApi(),
+        getAdminCatalogReferenceApi(),
+      ]);
 
-  function getMapped(productId) {
-    return (state.productGroupMappings || []).find((item) => item.productId === productId)?.groupIds || [];
+      setProducts(rows);
+      setGroups(ref.groups || []);
+    } catch (error) {
+      console.error("ADMIN_PRODUCT_GROUP_MAPPING_ERROR", error);
+      if (error?.status === 401 || error?.message === "Unauthorized") {
+        logoutAdmin();
+        window.location.href = "/admin/login";
+        return;
+      }
+      setApiError(error?.message || "Cannot load product group mapping.");
+    } finally {
+      setLoading(false);
+    }
   }
 
-  function toggle(productId, groupId) {
-    const current = getMapped(productId);
-    const next = current.includes(groupId) ? current.filter((id) => id !== groupId) : [...current, groupId];
-    actions.setProductGroups(productId, next);
+  useEffect(() => {
+    void reload();
+  }, []);
+
+  const rows = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return products.filter((item) =>
+      !q ||
+      [item.sku, item.slug, item.nameVi, item.nameEn, item.category?.nameVi, item.supplier?.name]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase()
+        .includes(q)
+    );
+  }, [products, query]);
+
+  function toggleLocal(productId, groupId) {
+    setProducts((prev) =>
+      prev.map((product) => {
+        if (product.id !== productId) return product;
+
+        const current = Array.isArray(product.groupIds) ? product.groupIds : [];
+        const next = current.includes(groupId)
+          ? current.filter((id) => id !== groupId)
+          : [...current, groupId];
+
+        return { ...product, groupIds: next };
+      })
+    );
+  }
+
+  async function saveProduct(product) {
+    setSavingId(product.id);
+
+    try {
+      await setAdminProductGroupsApi(product.id, product.groupIds || []);
+      await reload();
+    } catch (error) {
+      alert(error?.message || "Save group mapping failed.");
+    } finally {
+      setSavingId("");
+    }
   }
 
   return (
     <>
-      <section className="rounded-[2rem] border border-blue-100 bg-white p-6 shadow-xl shadow-blue-100/50">
-        <h1 className="text-3xl font-black text-slate-950">Product Group Mapping</h1>
-        <p className="mt-2 text-sm leading-6 text-slate-600">Gắn sản phẩm vào nhiều group: Hot, New, Pre-order, Sales. Trang chủ/block sản phẩm đọc từ mapping này.</p>
+      <AdminPageHeader
+        eyebrow="Product Management"
+        title="Product Group Mapping"
+        desc="Gắn sản phẩm vào nhóm hiển thị như Hàng mới về, Hàng order, Hàng bán chạy, Hàng sale."
+        action={
+          <button onClick={() => void reload()} className="rounded-md border border-slate-300 bg-white px-4 py-2 text-xs font-black text-slate-700 hover:bg-slate-50">
+            <RefreshCcw size={15} className="mr-1 inline" />
+            Refresh
+          </button>
+        }
+      />
+
+      <section className="mb-4 rounded-3xl border border-emerald-100 bg-emerald-50 p-4 text-sm font-bold text-emerald-800">
+        PostgreSQL Mapping · {loading ? "Loading..." : `${products.length} products · ${groups.length} groups`}
       </section>
 
-      <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-        <div className="mb-5 flex items-center rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-          <Search size={18} className="text-blue-600" />
-          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search products..." className="w-full bg-transparent px-3 text-sm font-bold outline-none" />
-        </div>
+      {apiError && <section className="mb-4 rounded-3xl border border-red-100 bg-red-50 p-4 text-sm font-bold text-red-700">{apiError}</section>}
 
-        <div className="space-y-4">
-          {products.map((product) => {
-            const mapped = getMapped(product.id);
-            return (
-              <div key={product.id} className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
-                <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <div className="font-black text-slate-950">{getText(product.name, lang)}</div>
-                    <div className="mt-1 text-xs font-semibold text-slate-500">{product.sku} • {product.status}</div>
+      <section className="mb-4 rounded-md border border-slate-200 bg-white p-4">
+        <div className="flex items-center rounded-md border border-slate-300 bg-white px-3 py-2">
+          <Search size={16} className="text-slate-400" />
+          <input value={query} onChange={(e) => setQuery(e.target.value)} className="w-full bg-transparent px-2 text-sm outline-none" placeholder="Tìm sản phẩm..." />
+        </div>
+      </section>
+
+      <section className="overflow-hidden rounded-md border border-slate-200 bg-white">
+        <table className="w-full min-w-[1250px] text-sm">
+          <thead className="bg-slate-50 text-left text-xs font-black uppercase text-slate-500">
+            <tr>
+              <th className="px-4 py-3">Product</th>
+              <th className="px-4 py-3">SKU</th>
+              <th className="px-4 py-3">Category</th>
+              <th className="px-4 py-3">Groups</th>
+              <th className="px-4 py-3 text-right">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((product) => (
+              <tr key={product.id} className="border-t border-slate-100 align-top hover:bg-slate-50">
+                <td className="px-4 py-3">
+                  <div className="flex gap-3">
+                    <div className="h-14 w-14 overflow-hidden rounded-2xl border bg-slate-50">
+                      {product.imageUrl ? <img src={product.imageUrl} alt="" className="h-full w-full object-cover" /> : null}
+                    </div>
+                    <div>
+                      <div className="font-black text-slate-950">{product.nameVi}</div>
+                      <div className="text-xs text-slate-500">{product.nameEn}</div>
+                    </div>
                   </div>
-                  <div className="rounded-xl bg-blue-50 px-3 py-2 text-xs font-black text-blue-700">Mapped: {mapped.length}</div>
-                </div>
-
-                <div className="flex flex-wrap gap-2">
-                  {groups.map((group) => {
-                    const checked = mapped.includes(group.id);
-                    return (
-                      <button key={group.id} onClick={() => toggle(product.id, group.id)} className={`rounded-xl px-3 py-2 text-xs font-black transition ${checked ? "bg-blue-700 text-white shadow-lg shadow-blue-100" : "bg-white text-slate-600 hover:bg-blue-50 hover:text-blue-700"}`}>
-                        {groupName(group, lang)}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+                </td>
+                <td className="px-4 py-3 font-bold">{product.sku}</td>
+                <td className="px-4 py-3 text-slate-600">{product.category?.nameVi || "-"}</td>
+                <td className="px-4 py-3">
+                  <div className="flex flex-wrap gap-2">
+                    {groups.map((group) => {
+                      const checked = product.groupIds?.includes(group.id);
+                      return (
+                        <button
+                          key={group.id}
+                          type="button"
+                          onClick={() => toggleLocal(product.id, group.id)}
+                          className={`rounded-xl px-3 py-2 text-xs font-black ${
+                            checked
+                              ? "bg-blue-700 text-white"
+                              : "bg-slate-100 text-slate-600 hover:bg-blue-50"
+                          }`}
+                        >
+                          {group.nameVi}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </td>
+                <td className="px-4 py-3 text-right">
+                  <button
+                    onClick={() => void saveProduct(product)}
+                    className="rounded-md bg-blue-700 px-4 py-2 text-xs font-black text-white hover:bg-blue-800"
+                  >
+                    <Save size={14} className="mr-1 inline" />
+                    {savingId === product.id ? "Saving..." : "Save"}
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </section>
     </>
   );
