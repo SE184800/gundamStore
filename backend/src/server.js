@@ -22,7 +22,7 @@ app.use(helmet());
 // ✅ CHỈNH SỬA 1: Cấu hình CORS mở cửa cho cả cổng 5173 và 5174 của cậu
 app.use(
   cors({
-    origin: ["http://localhost:5173", "http://localhost:5174"],
+    origin: ["http://localhost:5173", "http://localhost:5174", "https://expert-giggle-5g4q5vp5xx9wcvjjj-5173.app.github.dev"],
     credentials: true,
   })
 );

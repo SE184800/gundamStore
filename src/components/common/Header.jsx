@@ -13,14 +13,17 @@ import {
   ShoppingBag,
   User,
   X,
+  Heart,
+  LogOut,
+  Settings
 } from "lucide-react";
 import HeaderCart from "../layout/HeaderCart";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { useI18n } from "../../i18n";
 import Logo from "./Logo";
 import { useCms } from "../../store/CmsStore";
-
+import { Link } from "react-router-dom";
 
 function isActive(pathname, item) {
   if (item.href === "/") return pathname === "/";
@@ -31,10 +34,11 @@ function isActive(pathname, item) {
 export default function Header() {
   const { lang, setLang, t } = useI18n();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [displayLang, setDisplayLang] = useState(() => lang || "en");
   const location = useLocation();
   const { state, actions } = useCms();
-
+  const menuRef = useRef(null);
   const navItems = [
     {
       label: t("common.home"),
@@ -104,6 +108,15 @@ export default function Header() {
     },
   ];
   useEffect(() => {
+    function handleClickOutside(event) {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setUserMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+  useEffect(() => {
     setDisplayLang(lang);
   }, [lang]);
   return (
@@ -135,8 +148,8 @@ export default function Header() {
                   type="button"
                   onClick={() => setLang("vi")} // Chỉ cần gọi hàm hệ thống, useEffect sẽ lo phần giao diện
                   className={`flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-xs font-bold transition-all ${displayLang?.toLowerCase().includes("vi")
-                      ? "bg-blue-600 text-white shadow-sm"
-                      : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                    ? "bg-blue-600 text-white shadow-sm"
+                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                     }`}
                 >
                   <span>🇻🇳</span> Tiếng Việt
@@ -147,8 +160,8 @@ export default function Header() {
                   type="button"
                   onClick={() => setLang("en")} // Chỉ cần gọi hàm hệ thống, useEffect sẽ lo phần giao diện
                   className={`flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-xs font-bold transition-all mt-0.5 ${!displayLang?.toLowerCase().includes("vi")
-                      ? "bg-blue-600 text-white shadow-sm"
-                      : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                    ? "bg-blue-600 text-white shadow-sm"
+                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                     }`}
                 >
                   <span>🇺🇸</span> English
@@ -159,17 +172,61 @@ export default function Header() {
           <HeaderCart />
 
           {state.user ? (
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-1.5 rounded-2xl border border-blue-100 bg-blue-50/50 px-4 py-2 text-xs font-black text-blue-700 shadow-sm">
-                <User size={15} />
-                <span>{state.user.username}</span>
-              </div>
+            <div className="relative" ref={menuRef}>
+              {/* NÚT CLICK CHỨA BIỂU TƯỢNG VÀ TÊN USER THẬT */}
               <button
-                onClick={() => actions.logout()}
-                className="rounded-2xl border border-red-200 bg-white px-3 py-2 text-xs font-bold text-red-600 shadow-sm hover:bg-red-50 transition"
+                type="button"
+                onClick={() => setUserMenuOpen(!userMenuOpen)}
+                className="flex items-center gap-2 rounded-2xl border border-blue-100 bg-blue-50/60 px-3.5 py-2 text-sm font-black text-blue-700 shadow-sm hover:bg-blue-50 transition active:scale-[0.98]"
               >
-                Đăng xuất
+                <div className="flex h-6 w-6 items-center justify-center rounded-xl bg-blue-600 text-white shadow-sm">
+                  <User size={14} />
+                </div>
+                {/* Lấy trường .name sạch từ API thay vì .username trống */}
+                <span className="max-w-[120px] truncate">{state.user.name}</span>
+                <ChevronDown size={14} className={`text-blue-500 transition-transform duration-300 ${userMenuOpen ? "rotate-180" : ""}`} />
               </button>
+
+              {/* DROPLIST TRỔ XUỐNG KHI CLICK */}
+              {userMenuOpen && (
+                <div className="absolute right-0 top-full z-[99] mt-2 w-52 rounded-2xl border border-slate-100 bg-white p-1.5 shadow-[0_20px_50px_rgba(15,23,42,0.12)] animate-in fade-in slide-in-from-top-2 duration-200">
+                  {/* OPTION 1: USER PROFILE */}
+                  <Link
+                    to="/profile"
+                    onClick={() => setUserMenuOpen(false)}
+                    className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-xs font-bold text-slate-700 transition hover:bg-slate-50 hover:text-blue-600"
+                  >
+                    <Settings size={15} className="text-slate-400 group-hover:text-blue-600" />
+                    {t("header.userProfile")}
+                  </Link>
+
+                  {/* OPTION 2: FAVORITE LIST */}
+                  <Link
+                    to="/favorites"
+                    onClick={() => setUserMenuOpen(false)}
+                    className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-xs font-bold text-slate-700 transition hover:bg-slate-50 hover:text-blue-600"
+                  >
+                    <Heart size={15} className="text-slate-400 group-hover:text-blue-600" />
+                    {t("header.favoriteList")}
+                  </Link>
+
+                  {/* VẠCH PHÂN CÁCH NÉT ĐỨT TINH TẾ */}
+                  <div className="my-1 border-t border-dashed border-slate-100"></div>
+
+                  {/* OPTION 3: LOGOUT */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setUserMenuOpen(false);
+                      actions.logout();
+                    }}
+                    className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-xs font-black text-red-600 transition hover:bg-red-50"
+                  >
+                    <LogOut size={15} className="text-red-500" />
+                    {t("header.logout")}
+                  </button>
+                </div>
+              )}
             </div>
           ) : (
             <div className="flex items-center gap-2">
