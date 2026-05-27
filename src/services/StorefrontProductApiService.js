@@ -174,8 +174,8 @@ export function mapBackendProductToStorefront(product = {}) {
     images: Array.isArray(product.images)
       ? product.images.map((item) => item.url || item).filter(Boolean)
       : imageUrl
-      ? [imageUrl]
-      : [],
+        ? [imageUrl]
+        : [],
     media: product.media || null,
 
     brand: product.brand || "",
@@ -272,7 +272,7 @@ export function enrichProductsWithBackendIds(localProducts = [], backendProducts
 }
 
 export async function getStorefrontProductsFromApi() {
-  const data = await apiRequest("/api/products", {
+  const data = await apiRequest("/products", {
     token: "",
   });
 
@@ -285,7 +285,7 @@ export async function getStorefrontProductsFromApi() {
 }
 
 export async function getStorefrontProductByKeyFromApi(key = "") {
-  const data = await apiRequest(`/api/products/${encodeURIComponent(key)}`, {
+  const data = await apiRequest(`/products/${encodeURIComponent(key)}`, {
     token: "",
   });
 

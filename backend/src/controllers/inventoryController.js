@@ -16,7 +16,7 @@ export async function getInventoryDashboard(req, res, next) {
   try {
     const products = await prisma.product.findMany({
       include: {
-        category: true,
+        ProductCategory: true,
         supplier: true,
         images: {
           where: { active: true },
