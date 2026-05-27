@@ -529,7 +529,7 @@ function HeroV3Bento({ banners, lang, actions, settings }) {
         <a
           href={activeBanner.ctaUrl || activeBanner.link || "/shop"}
           onClick={() => actions?.track?.("banner_click", { meta: { bannerId: activeBanner.id || "hero-v3" } })}
-          className="group relative h-[420px] overflow-hidden rounded-[30px] border border-slate-800 bg-slate-950 shadow-[0_32px_120px_rgba(15,23,42,0.22)]"
+          className="group relative h-[360px] overflow-hidden rounded-[24px] border border-slate-800 bg-slate-950 shadow-[0_24px_80px_rgba(15,23,42,0.18)] sm:h-[420px] sm:rounded-[30px]"
           style={{ backgroundColor: campaignBg }}
         >
           <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/70 to-transparent" />
@@ -542,7 +542,7 @@ function HeroV3Bento({ banners, lang, actions, settings }) {
 
           <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/70 to-transparent" />
 
-          <div className="relative z-10 flex h-full max-w-[560px] flex-col justify-center p-7 md:p-10">
+          <div className="relative z-10 flex h-full max-w-[560px] flex-col justify-center p-5 sm:p-7 md:p-10">
             {activeBanner.showEyebrow !== false && (
               <div className={`${activeBanner.showEyebrow === false ? "hidden" : "mb-4 flex"} flex-wrap gap-2`}>
                 <span className="rounded-full bg-red-600 px-4 py-2 text-xs font-black uppercase tracking-wide text-white shadow-lg">
@@ -555,12 +555,12 @@ function HeroV3Bento({ banners, lang, actions, settings }) {
             )}
 
             {activeBanner.showHeading !== false && (
-              <h1 className="line-clamp-2 text-5xl font-black leading-[0.9] tracking-tight text-white md:text-7xl" style={heroTextStyles.heading}>
+              <h1 className="line-clamp-2 text-3xl font-black leading-[0.94] tracking-tight text-white sm:text-5xl md:text-7xl" style={heroTextStyles.heading}>
                 {text(activeBanner.heading, lang, t.heroTitle)}
               </h1>
             )}
 
-            <p className="mt-5 line-clamp-2 text-xl font-black text-white md:text-2xl"style={heroTextStyles.title}>
+            <p className="mt-4 line-clamp-2 text-base font-black text-white sm:text-xl md:text-2xl"style={heroTextStyles.title}>
               {text(activeBanner.title, lang, t.heroSub)}
             </p>
 
@@ -580,10 +580,10 @@ function HeroV3Bento({ banners, lang, actions, settings }) {
 
             {activeBanner.showCta !== false && (
               <div className={`${activeBanner.showCta === false ? "hidden" : "mt-7 flex"} flex-wrap gap-3`}>
-                <span className="rounded-2xl bg-blue-700 px-8 py-4 text-sm font-black uppercase tracking-wide text-white shadow-xl shadow-blue-900/30 transition group-hover:bg-blue-600">
+                <span className="rounded-2xl bg-blue-700 px-5 py-3 text-xs font-black uppercase tracking-wide text-white shadow-xl shadow-blue-900/30 transition group-hover:bg-blue-600 sm:px-8 sm:py-4 sm:text-sm">
                   {text(activeBanner.ctaText, lang, t.buyNow)}
                 </span>
-                <span className="rounded-2xl border border-white/30 bg-white/10 px-7 py-4 text-sm font-black uppercase tracking-wide text-white backdrop-blur">
+                <span className="rounded-2xl border border-white/30 bg-white/10 px-5 py-3 text-xs font-black uppercase tracking-wide text-white backdrop-blur sm:px-7 sm:py-4 sm:text-sm">
                   {lang === "vi" ? "Xem chi tiết" : "View details"}
                 </span>
               </div>
@@ -607,7 +607,7 @@ function HeroV3Bento({ banners, lang, actions, settings }) {
           </div>
         </a>
 
-        <div className="grid gap-3">
+        <div className="hidden gap-3 lg:grid">
           {[sideOne, sideTwo].map((banner, index) => (
             <a
               key={`${banner.id}-${index}`}
@@ -803,15 +803,15 @@ function HeroV2Classic({ banners, lang, actions }) {
           }}
         />
 
-        <div className="relative z-10 grid h-[420px] overflow-hidden lg:grid-cols-[0.68fr_1.32fr]">
-          <div className="flex flex-col justify-center p-7 md:p-9 lg:p-10">
+        <div className="relative z-10 grid min-h-[360px] overflow-hidden lg:h-[420px] lg:grid-cols-[0.68fr_1.32fr]">
+          <div className="flex flex-col justify-center p-5 sm:p-7 md:p-9 lg:p-10">
             {activeBanner.showEyebrow !== false && (
               <div className={`${activeBanner.showEyebrow === false ? "hidden" : "mb-4 inline-flex"} w-fit rounded-full border border-blue-200 bg-white/80 px-4 py-2 text-[11px] font-black uppercase tracking-[0.28em] text-blue-700 shadow-sm backdrop-blur`}>
                 {t.eyebrow}
               </div>
             )}
 
-            <h1 className="line-clamp-2 max-w-[500px] text-5xl font-black leading-[0.92] tracking-tight text-slate-950 md:text-6xl" style={heroTextStyles.heading}>
+            <h1 className="line-clamp-2 max-w-[500px] text-3xl font-black leading-[0.94] tracking-tight text-slate-950 sm:text-5xl md:text-6xl" style={heroTextStyles.heading}>
               {text(activeBanner.heading, lang, t.heroTitle)}
             </h1>
 

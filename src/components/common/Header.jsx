@@ -189,14 +189,17 @@ export default function Header() {
           )}
         </div>
 
-        <button
-          type="button"
-          onClick={() => setMobileOpen(true)}
-          className="ml-auto rounded-2xl border border-slate-200 p-3 md:hidden"
-          aria-label="Open menu"
-        >
-          <Menu size={22} />
-        </button>
+        <div className="ml-auto flex items-center gap-2 md:hidden">
+          <HeaderCart />
+          <button
+            type="button"
+            onClick={() => setMobileOpen(true)}
+            className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm"
+            aria-label="Open menu"
+          >
+            <Menu size={22} />
+          </button>
+        </div>
       </div>
 
       <nav className="border-t border-slate-100 bg-gradient-to-r from-slate-50 via-white to-slate-50">
@@ -274,7 +277,7 @@ export default function Header() {
               </button>
             </div>
 
-            <div className="mb-5 flex rounded-2xl border border-slate-200 bg-slate-50 p-1">
+            <div className="mb-4 flex rounded-2xl border border-slate-200 bg-slate-50 p-1">
               {["vi", "en"].map((item) => (
                 <button
                   key={item}
@@ -288,12 +291,37 @@ export default function Header() {
               ))}
             </div>
 
+            <div className="mb-4 flex items-center rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3">
+              <Search size={18} className="text-blue-600" />
+              <input
+                className="w-full bg-transparent px-3 text-sm font-semibold outline-none placeholder:text-slate-400"
+                placeholder={t("common.searchPlaceholder")}
+              />
+            </div>
+
+            <div className="mb-5 grid grid-cols-2 gap-2">
+              <a
+                href="/login"
+                onClick={() => setMobileOpen(false)}
+                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-center text-xs font-black text-slate-700 shadow-sm"
+              >
+                Sign In
+              </a>
+              <a
+                href="/admin/login"
+                onClick={() => setMobileOpen(false)}
+                className="rounded-2xl bg-blue-700 px-4 py-3 text-center text-xs font-black text-white shadow-sm"
+              >
+                Admin
+              </a>
+            </div>
+
             <div className="space-y-3">
               {navItems.map((item) => {
                 const Icon = item.icon;
                 return (
                   <div key={item.label} className="rounded-2xl border border-slate-200 p-3">
-                    <a href={item.href} className="flex items-center gap-2 text-base font-black text-slate-950">
+                    <a href={item.href} onClick={() => setMobileOpen(false)} className="flex items-center gap-2 text-base font-black text-slate-950">
                       <Icon size={18} className="text-blue-700" />
                       {item.label}
                     </a>
@@ -304,6 +332,7 @@ export default function Header() {
                           <a
                             key={child.label}
                             href={child.href}
+                            onClick={() => setMobileOpen(false)}
                             className="rounded-xl bg-slate-50 px-3 py-2 text-sm font-bold text-slate-600"
                           >
                             {child.label}
