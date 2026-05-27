@@ -63,7 +63,7 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
 
   return (
     <>
-      <article className="group overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:border-blue-200 hover:shadow-xl">
+      <article className="group overflow-hidden rounded-[22px] border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:border-blue-200 hover:shadow-xl sm:rounded-[24px]">
         <a href={detailUrl} className="block">
           <div className="relative aspect-square overflow-hidden bg-slate-100">
             {badge && (
@@ -80,10 +80,10 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
           </div>
         </a>
 
-        <div className="p-4">
+        <div className="p-3 sm:p-4">
           <div className="mb-2 flex items-start justify-between gap-2">
             <a href={detailUrl} className="block flex-1">
-              <h3 className="line-clamp-2 min-h-[44px] text-base font-black leading-snug text-slate-950 transition hover:text-blue-700">
+              <h3 className="line-clamp-2 min-h-[40px] text-sm font-black leading-snug text-slate-950 transition hover:text-blue-700 sm:min-h-[44px] sm:text-base">
                 {name}
               </h3>
             </a>
@@ -114,7 +114,7 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
                   {formatCurrency(oldPrice)}
                 </div>
               ) : null}
-              <div className="text-lg font-black text-slate-950">
+              <div className="text-base font-black text-slate-950 sm:text-lg">
                 {formatCurrency(price)}
               </div>
             </div>
@@ -139,12 +139,12 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
               {t("product.preorder")}
             </button>
           ) : (
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-2">
               <button
                 type="button"
                 data-cart-managed="true"
                 onClick={addCart}
-                className="flex items-center justify-center gap-1 rounded-2xl border border-blue-200 bg-blue-50 px-3 py-2.5 text-xs font-black text-blue-700 transition hover:bg-blue-700 hover:text-white"
+                className="flex min-h-11 items-center justify-center gap-1 rounded-2xl border border-blue-200 bg-blue-50 px-3 py-2.5 text-xs font-black text-blue-700 transition hover:bg-blue-700 hover:text-white"
               >
                 <ShoppingCart size={15} />
                 {t("product.addCart")}
@@ -154,7 +154,7 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
                 type="button"
                 data-cart-managed="true"
                 onClick={buyNow}
-                className="flex items-center justify-center gap-1 rounded-2xl bg-blue-700 px-3 py-2.5 text-xs font-black text-white shadow-lg shadow-blue-100 transition hover:bg-blue-800"
+                className="flex min-h-11 items-center justify-center gap-1 rounded-2xl bg-blue-700 px-3 py-2.5 text-xs font-black text-white shadow-lg shadow-blue-100 transition hover:bg-blue-800"
               >
                 <Zap size={15} />
                 {t("product.buyNow")}
@@ -166,8 +166,8 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
 
       {quickOpen &&
         createPortal(
-          <div className="fixed inset-0 z-[999999] flex items-start justify-center bg-slate-950/70 p-4 pt-6 backdrop-blur-md">
-            <div className="relative grid max-h-[82vh] w-full max-w-[920px] overflow-hidden rounded-[28px] bg-white shadow-[0_50px_160px_rgba(0,0,0,0.35)] lg:grid-cols-[0.9fr_1.1fr]">
+          <div className="fixed inset-0 z-[999999] flex items-end justify-center bg-slate-950/70 p-0 backdrop-blur-md sm:items-start sm:p-4 sm:pt-6">
+            <div className="relative grid max-h-[92vh] w-full max-w-[920px] overflow-hidden rounded-t-[28px] bg-white shadow-[0_50px_160px_rgba(0,0,0,0.35)] sm:rounded-[28px] lg:grid-cols-[0.9fr_1.1fr]">
               <button
                 onClick={() => setQuickOpen(false)}
                 className="absolute right-4 top-4 z-20 flex h-11 w-11 items-center justify-center rounded-full bg-slate-900/80 text-white shadow-lg transition hover:bg-red-600"
@@ -180,7 +180,7 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
                   <img
                     src={image}
                     alt={name}
-                    className="max-h-[54vh] w-full rounded-2xl object-contain"
+                    className="max-h-[34vh] w-full rounded-2xl object-contain sm:max-h-[54vh]"
                   />
                 </div>
               </div>
@@ -220,7 +220,7 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
                   {stock > 0 ? `✓ ${t("product.stockReady")}: ${stock}` : t("product.preorderContact")}
                 </div>
 
-                <div className="mt-6 flex items-center gap-3">
+                <div className="mt-6 grid gap-3 sm:flex sm:items-center">
                   <div className="flex items-center rounded-xl border border-slate-200">
                     <button onClick={() => setQty(Math.max(1, qty - 1))} className="p-3">
                       <Minus size={16} />
@@ -234,7 +234,7 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
                   <button
                     data-cart-managed="true"
                     onClick={addCart}
-                    className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-blue-700 px-6 py-4 text-sm font-black text-white shadow-lg shadow-blue-100 transition hover:bg-blue-800"
+                    className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-2xl bg-blue-700 px-6 py-4 text-sm font-black text-white shadow-lg shadow-blue-100 transition hover:bg-blue-800"
                   >
                     <ShoppingCart size={18} />
                     {t("product.addToCart")}
@@ -242,7 +242,7 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
 
                   <a
                     href={detailUrl}
-                    className="rounded-2xl border border-slate-200 px-5 py-4 text-sm font-black text-slate-700 hover:bg-slate-50"
+                    className="text-center rounded-2xl border border-slate-200 px-5 py-4 text-sm font-black text-slate-700 hover:bg-slate-50"
                   >
                     {t("product.details")}
                   </a>

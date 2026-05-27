@@ -12,10 +12,8 @@ ReactDOM.createRoot(document.getElementById("root")).render(
     <CmsProvider>
       <BrowserRouter>
         <I18nProvider enableLegacyAutoTranslate>
-      <I18nProvider>
-      <App />
-    </I18nProvider>
-    </I18nProvider>
+          <App />
+        </I18nProvider>
       </BrowserRouter>
     </CmsProvider>
   </React.StrictMode>

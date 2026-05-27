@@ -498,25 +498,25 @@ export default function ShopPage() {
           <span className="text-slate-950">{t.shopPage}</span>
         </div>
 
-        <div className="relative overflow-hidden rounded-[2rem] border border-blue-100 bg-white p-6 shadow-xl shadow-blue-100/60 lg:p-8">
+        <div className="relative overflow-hidden rounded-[24px] border border-blue-100 bg-white p-4 shadow-xl shadow-blue-100/60 sm:rounded-[2rem] sm:p-6 lg:p-8">
           <div className="absolute inset-0 bg-gradient-to-br from-white via-blue-50 to-cyan-50" />
           <div className="relative">
             <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-blue-100 bg-white px-3 py-1 text-xs font-black text-blue-700">
               <Sparkles size={14} />
               {t.shopPage}
             </div>
-            <h1 className="text-3xl font-black text-slate-950 lg:text-5xl">{t.title}</h1>
+            <h1 className="text-2xl font-black text-slate-950 sm:text-3xl lg:text-5xl">{t.title}</h1>
             <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">{t.subtitle}</p>
           </div>
         </div>
 
-        <div className="mt-4 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="mt-4 rounded-[24px] border border-slate-200 bg-white p-3 shadow-sm sm:rounded-3xl sm:p-4">
           <div className="mb-3 flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-slate-500">
             <Filter size={15} className="text-blue-600" />
             {t.quickForYou}
           </div>
 
-          <div className="flex gap-2 overflow-x-auto pb-1">
+          <div className="mobile-hide-scrollbar flex gap-2 overflow-x-auto pb-1">
             {quickChips.map((chip) => (
               <button
                 key={chip.key}
@@ -532,7 +532,7 @@ export default function ShopPage() {
 
       <section className="mx-auto grid max-w-[1440px] gap-5 px-4 py-5 lg:grid-cols-[280px_1fr] lg:px-8">
         <aside className="hidden space-y-4 lg:block">
-          <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="rounded-[24px] border border-slate-200 bg-white p-3 shadow-sm sm:rounded-3xl sm:p-4">
             <div className="mb-4 flex items-center justify-between gap-3">
               <div className="flex items-center gap-2 text-sm font-black text-slate-950">
                 <SlidersHorizontal size={17} className="text-blue-600" />
@@ -585,7 +585,7 @@ export default function ShopPage() {
                 )}
               </div>
 
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap sm:items-center">
                 <button
                   onClick={() => setMobileFilterOpen(true)}
                   className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700 lg:hidden"
@@ -595,7 +595,7 @@ export default function ShopPage() {
                   {activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
                 </button>
 
-                <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2">
+                <div className="flex min-h-11 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2">
                   <span className="text-xs font-black text-slate-500">{t.sort}</span>
                   <select
                     value={sort}
@@ -644,7 +644,7 @@ export default function ShopPage() {
           </div>
 
           {products.length > 0 ? (
-            <div className={view === "grid" ? "grid gap-4 sm:grid-cols-2 xl:grid-cols-3" : "space-y-4"}>
+            <div className={view === "grid" ? "grid gap-3 sm:grid-cols-2 xl:grid-cols-3 sm:gap-4" : "space-y-4"}>
               {products.map((product) => (
                 <ProductCard key={product.id} product={product} view={view} lang={lang} actions={actions} />
               ))}
@@ -670,8 +670,8 @@ export default function ShopPage() {
       </section>
 
       {mobileFilterOpen && (
-        <div className="fixed inset-0 z-[9999] bg-slate-950/60 p-4 backdrop-blur-sm lg:hidden">
-          <div className="ml-auto h-full max-w-md overflow-y-auto rounded-3xl bg-white p-5 shadow-2xl">
+        <div className="fixed inset-0 z-[9999] bg-slate-950/60 p-0 backdrop-blur-sm lg:hidden">
+          <div className="ml-auto h-full w-full max-w-md overflow-y-auto rounded-none bg-white p-5 shadow-2xl sm:rounded-l-3xl">
             <div className="mb-4 flex items-center justify-between">
               <div className="text-lg font-black text-slate-950">{t.mobileFilters}</div>
               <button
