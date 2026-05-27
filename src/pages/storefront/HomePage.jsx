@@ -520,7 +520,7 @@ function HeroV3Bento({ banners, lang, actions, settings }) {
 
 
   return (
-    <section className="mx-auto max-w-[1440px] px-4 pt-4 lg:px-8">
+    <section className="mobile-hero-fit mx-auto max-w-[1440px] px-3 pt-3 sm:px-4 sm:pt-4 lg:px-8">
       <div
         className="grid gap-3 lg:grid-cols-[1.75fr_0.95fr]"
         onMouseEnter={() => setPaused(true)}
@@ -789,7 +789,7 @@ function HeroV2Classic({ banners, lang, actions }) {
   return (
     <section className="mx-auto max-w-[1440px] px-4 pt-4 lg:px-8">
       <div
-        className="relative overflow-hidden rounded-[34px] border border-blue-100 shadow-[0_30px_110px_rgba(37,99,235,0.16)]"
+        className="mobile-no-overflow relative overflow-hidden rounded-[24px] border border-blue-100 shadow-[0_20px_70px_rgba(37,99,235,0.12)] sm:rounded-[34px] sm:shadow-[0_30px_110px_rgba(37,99,235,0.16)]"
         style={{ backgroundColor: heroBg }}
         onMouseEnter={() => setPaused(true)}
         onMouseLeave={() => setPaused(false)}
@@ -803,7 +803,7 @@ function HeroV2Classic({ banners, lang, actions }) {
           }}
         />
 
-        <div className="relative z-10 grid min-h-[360px] overflow-hidden lg:h-[420px] lg:grid-cols-[0.68fr_1.32fr]">
+        <div className="relative z-10 grid min-h-[340px] overflow-hidden sm:min-h-[360px] lg:h-[420px] lg:grid-cols-[0.68fr_1.32fr]">
           <div className="flex flex-col justify-center p-5 sm:p-7 md:p-9 lg:p-10">
             {activeBanner.showEyebrow !== false && (
               <div className={`${activeBanner.showEyebrow === false ? "hidden" : "mb-4 inline-flex"} w-fit rounded-full border border-blue-200 bg-white/80 px-4 py-2 text-[11px] font-black uppercase tracking-[0.28em] text-blue-700 shadow-sm backdrop-blur`}>

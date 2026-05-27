@@ -124,3 +124,82 @@ video {
     border-radius: 20px;
   }
 }
+
+/* Hard mobile containment for UAT */
+html,
+body,
+#root {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  min-width: 0;
+}
+
+* {
+  min-width: 0;
+}
+
+@media (max-width: 640px) {
+  body {
+    overflow-x: hidden;
+  }
+
+  main,
+  section,
+  header,
+  footer {
+    max-width: 100vw;
+    overflow-x: clip;
+  }
+
+  .mobile-no-overflow {
+    max-width: calc(100vw - 24px);
+    overflow: hidden;
+  }
+
+  .mobile-full-bleed-safe {
+    width: 100%;
+    max-width: 100vw;
+  }
+
+  .mobile-hero-fit {
+    width: 100%;
+    max-width: calc(100vw - 24px);
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .mobile-floating-compact {
+    right: 12px !important;
+    bottom: 12px !important;
+    gap: 8px !important;
+  }
+
+  .mobile-floating-compact a,
+  .mobile-floating-compact button {
+    padding: 8px !important;
+    opacity: 0.9 !important;
+  }
+
+  .mobile-floating-compact a span:first-child,
+  .mobile-floating-compact button span:first-child {
+    width: 42px !important;
+    height: 42px !important;
+  }
+
+  .mobile-floating-compact a span:last-child,
+  .mobile-floating-compact button span:last-child {
+    display: none !important;
+  }
+
+  .mobile-chat-panel {
+    left: 12px !important;
+    right: 12px !important;
+    bottom: 92px !important;
+    width: auto !important;
+    max-width: none !important;
+  }
+}

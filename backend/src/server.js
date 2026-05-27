@@ -19,10 +19,29 @@ const app = express();
 
 app.use(helmet());
 
-// ✅ CHỈNH SỬA 1: Cấu hình CORS mở cửa cho cả cổng 5173 và 5174 của cậu
+const allowedCorsOrigins = [
+  env.frontendOrigin,
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "http://127.0.0.1:5173",
+  "http://127.0.0.1:5174",
+].filter(Boolean);
+
+function isAllowedCodespacesOrigin(origin = "") {
+  return /^https:\/\/[a-z0-9-]+-(5173|5174)\.app\.github\.dev$/i.test(origin);
+}
+
 app.use(
   cors({
-    origin: ["http://localhost:5173", "http://localhost:5174"],
+    origin(origin, callback) {
+      if (!origin) return callback(null, true);
+
+      if (allowedCorsOrigins.includes(origin) || isAllowedCodespacesOrigin(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error(`CORS blocked origin: ${origin}`));
+    },
     credentials: true,
   })
 );
@@ -54,7 +73,7 @@ async function start() {
     console.log("💾 Kết nối Neon PostgreSQL Database thành công!");
 
     // ✅ CHỈNH SỬA 2: Ép cứng cổng 4800 hoặc lấy từ env nếu có, không lo bị undefined
-    const REAL_PORT = env.PORT || 4800;
+    const REAL_PORT = env.port || 4800;
 
     app.listen(REAL_PORT, "0.0.0.0", () => {
       console.log("======================================================");
