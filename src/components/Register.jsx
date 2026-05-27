@@ -6,7 +6,7 @@ import { useFormik } from "formik";
 import * as Yup from "yup";
 import Logo from "./common/Logo";
 import Toast from "../utils/Toast";
-
+import TermsModal from "./common/TermsModal";
 export default function Register() {
   const { actions } = useCms();
   const navigate = useNavigate();
@@ -14,7 +14,7 @@ export default function Register() {
   // Trạng thái ẩn/hiện mật khẩu độc lập cho cả 2 ô nhập (Giữ nguyên)
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
+  const [isTermsOpen, setIsTermsOpen] = useState(false);
   // State quản lý hệ thống thông báo Toast (Dành cho lỗi hệ thống hoặc lỗi trùng email từ BE)
   const [toast, setToast] = useState({ show: false, type: "", message: "" });
 
@@ -43,6 +43,8 @@ export default function Register() {
     confirmPassword: Yup.string()
       .oneOf([Yup.ref("password"), null], "Mật khẩu nhập lại không trùng khớp")
       .required("Vui lòng xác nhận lại mật khẩu"),
+    acceptedTerms: Yup.boolean()
+      .oneOf([true], "Bạn phải đồng ý với Điều khoản và Chính sách bảo mật")
   });
 
   // 🚀 Cấu hình Hook Formik quản lý trạng thái form tập trung
@@ -52,6 +54,7 @@ export default function Register() {
       email: "",
       password: "",
       confirmPassword: "",
+      acceptedTerms: false,
     },
     validationSchema: validationSchema,
     onSubmit: async (values, { setSubmitting }) => {
@@ -80,7 +83,7 @@ export default function Register() {
 
       {/* 🍞 TOAST ĐỒNG NHẤT HỆ THỐNG */}
       <Toast show={toast.show} type={toast.type} message={toast.message} />
-
+      <TermsModal isOpen={isTermsOpen} onClose={() => setIsTermsOpen(false)} />
       {/* KHUNG BOX CONTAINER */}
       <div className="w-full max-w-[440px] rounded-[32px] border border-slate-200 bg-white p-8 shadow-xl">
 
@@ -193,8 +196,42 @@ export default function Register() {
               <p className="px-1 text-[11px] font-bold text-red-500">⚠️ {formik.errors.confirmPassword}</p>
             )}
           </div>
-
-          {/* 5. NÚT SUBMIT ĐĂNG KÝ HỆ THỐNG */}
+          <div className="space-y-1">
+            <div className="flex items-start gap-2.5 px-1 py-1">
+              <input
+                type="checkbox"
+                name="acceptedTerms"
+                id="acceptedTerms"
+                checked={formik.values.acceptedTerms}
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+                className="mt-0.5 h-4 w-4 cursor-pointer rounded border-slate-300 text-blue-600 accent-blue-600 focus:ring-blue-500"
+              />
+              <label htmlFor="acceptedTerms" className="cursor-pointer text-xs font-semibold leading-tight text-slate-500 select-none">
+                Tôi đồng ý với{" "}
+                <button
+                  type="button"
+                  onClick={() => setIsTermsOpen(true)}
+                  className="font-black text-blue-600 transition hover:text-blue-800 hover:underline"
+                >
+                  Điều khoản dịch vụ
+                </button>{" "}
+                &{" "}
+                <button
+                  type="button"
+                  onClick={() => setIsTermsOpen(true)}
+                  className="font-black text-blue-600 transition hover:text-blue-800 hover:underline"
+                >
+                  Chính sách bảo mật
+                </button>
+              </label>
+            </div>
+            {/* IN LỖI ĐỎ NẾU CHƯA TÍCH CHỌN MÀ BẤM REGISTER */}
+            {formik.touched.acceptedTerms && formik.errors.acceptedTerms && (
+              <p className="px-1 text-[11px] font-bold text-red-500">⚠️ {formik.errors.acceptedTerms}</p>
+            )}
+          </div>
+          {/* 6. NÚT SUBMIT ĐĂNG KÝ HỆ THỐNG */}
           <button
             type="submit"
             disabled={formik.isSubmitting}
