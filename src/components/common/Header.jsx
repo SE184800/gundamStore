@@ -35,7 +35,7 @@ export default function Header() {
   const { lang, setLang, t } = useI18n();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [displayLang, setDisplayLang] = useState(() => lang || "en");
+  const [displayLang, setDisplayLang] = useState(() => lang || "vi");
   const location = useLocation();
   const { state, actions } = useCms();
   const menuRef = useRef(null);
@@ -229,18 +229,18 @@ export default function Header() {
               )}
             </div>
           ) : (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2" key={lang}>
               <a
                 href="/login"
                 className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-black text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
               >
-                Sign In
+                {t("header.signIn")}
               </a>
               <a
                 href="/register"
                 className="rounded-2xl bg-blue-700 px-4 py-2.5 text-xs font-black text-white shadow-md shadow-blue-100 transition hover:bg-blue-800"
               >
-                Sign Up
+                {t("header.signUp")}
               </a>
             </div>
           )}

@@ -1,7 +1,6 @@
-import { Facebook, Mail, MapPin, MessageCircle, Youtube } from "lucide-react";
+import { Facebook, Mail, MapPin, MessageCircle, Youtube,Phone } from "lucide-react";
 import { useI18n } from "../../i18n";
 import Logo from "./Logo";
-
 export default function Footer() {
   const { t } = useI18n();
 
@@ -77,13 +76,13 @@ export default function Footer() {
             ))}
           </div>
 
-          <div className="rounded-[28px] border border-white/10 bg-white/5 p-5">
+          {/* <div className="rounded-[28px] border border-white/10 bg-white/5 p-5">
             <h3 className="text-xl font-black">{t("footer.newsletterTitle")}</h3>
             <p className="mt-2 text-sm font-semibold leading-6 text-white/60">
               {t("footer.newsletterDesc")}
-            </p>
+            </p> */}
 
-            <div className="mt-4 flex gap-2">
+            {/* <div className="mt-4 flex gap-2">
               <input
                 className="min-w-0 flex-1 rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-sm font-semibold text-white outline-none placeholder:text-white/35"
                 placeholder={t("footer.emailPlaceholder")}
@@ -91,9 +90,9 @@ export default function Footer() {
               <button className="rounded-2xl bg-blue-700 px-4 py-3 text-sm font-black text-white hover:bg-blue-600">
                 {t("common.send")}
               </button>
-            </div>
+            </div> */}
 
-            <div className="mt-5 flex gap-2">
+            {/* <div className="mt-5 flex gap-2">
               {[
                 [Facebook, "Facebook"],
                 [Youtube, "YouTube"],
@@ -108,8 +107,8 @@ export default function Footer() {
                   <Icon size={19} />
                 </a>
               ))}
-            </div>
-          </div>
+            </div> */}
+          {/* </div> */}
         </div>
 
         <div className="mt-10 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-5 text-xs font-bold text-white/45">

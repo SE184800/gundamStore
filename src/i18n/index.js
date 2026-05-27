@@ -31,6 +31,8 @@ export const STRINGS = {
       faq: "FAQ",
     },
     header: {
+      signIn: "Đăng nhập",
+      signUp: "Đăng ký",
       logout: "Đăng xuất",
       favoriteList: "Danh sách yêu thích",
       userProfile: "Thông tin cá nhân",
@@ -143,6 +145,8 @@ export const STRINGS = {
       faq: "FAQ",
     },
     header: {
+      signIn: "Sign in",
+      signUp: "Sign up",
       logout: "Log out",
       favoriteList: "Favorite List",
       userProfile: "User Profile",

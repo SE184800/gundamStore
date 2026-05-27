@@ -14,7 +14,7 @@ export default function TermsModal({ isOpen, onClose }) {
             <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
               <Scale size={18} />
             </div>
-            <h3 className="text-base font-black text-slate-900">Terms & Privacy Policy</h3>
+            <h3 className="text-base font-black text-slate-900">Điều khoản dịch vụ và chính sách bảo mật</h3>
           </div>
           <button
             type="button"
