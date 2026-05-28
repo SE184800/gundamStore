@@ -49,6 +49,92 @@ function includeOrderRelations() {
   };
 }
 
+const CUSTOMER_CANCEL_ALLOWED_STATUSES = new Set(["PLACED", "CONFIRMED"]);
+const ADMIN_CANCEL_ALLOWED_STATUSES = new Set(["PLACED", "CONFIRMED", "PACKING"]);
+
+function cleanCancelText(value = "", max = 500) {
+  return String(value || "")
+    .replace(/[<>]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, max);
+}
+
+function getCancelConflictMessage(status = "") {
+  if (["DELIVERED", "COMPLETED", "REFUNDED"].includes(status)) {
+    return "Đơn hàng đã giao/hoàn tất/hoàn tiền nên không thể hủy.";
+  }
+
+  if (status === "CANCELLED") {
+    return "Đơn hàng đã được hủy.";
+  }
+
+  return "Đơn hàng không thể hủy ở trạng thái hiện tại.";
+}
+
+async function restoreOrderStockOnce(tx, order, { actorId = null, reason = "", note = "" } = {}) {
+  if (!order || order.stockRestoredAt) {
+    return false;
+  }
+
+  const now = new Date();
+
+  for (const item of order.items || []) {
+    const productSnapshot = await tx.product.findUnique({
+      where: { id: item.productId },
+      select: {
+        id: true,
+        sku: true,
+        stock: true,
+      },
+    });
+
+    if (!productSnapshot) {
+      const error = new Error(`Product ${item.productId} was not found for stock restore`);
+      error.statusCode = 409;
+      throw error;
+    }
+
+    const beforeStock = productSnapshot.stock;
+    const afterStock = beforeStock + item.quantity;
+
+    await tx.product.update({
+      where: { id: productSnapshot.id },
+      data: {
+        stock: {
+          increment: item.quantity,
+        },
+      },
+    });
+
+    await tx.inventoryLog.create({
+      data: {
+        productId: productSnapshot.id,
+        type: "RESTORE",
+        quantity: item.quantity,
+        beforeStock,
+        afterStock,
+        reason: reason || "Order cancellation stock restore",
+        refType: "ORDER_CANCEL",
+        refId: order.id,
+      },
+    });
+  }
+
+  await tx.order.update({
+    where: { id: order.id },
+    data: {
+      stockRestoredAt: now,
+      cancelledAt: order.cancelledAt || now,
+      cancelReason: reason || order.cancelReason || null,
+      cancelNote: note || order.cancelNote || null,
+      cancelledById: actorId || order.cancelledById || null,
+    },
+  });
+
+  return true;
+}
+
 export async function createOrder(req, res, next) {
   try {
     const body = createOrderSchema.parse(req.body);
@@ -270,6 +356,99 @@ export async function getMyOrderById(req, res, next) {
   }
 }
 
+export async function cancelMyOrder(req, res, next) {
+  try {
+    const schema = z.object({
+      reason: z.string().max(300).optional().or(z.literal("")),
+      note: z.string().max(500).optional().or(z.literal("")),
+    });
+
+    const body = schema.parse(req.body || {});
+    const id = String(req.params.id || "").trim();
+
+    const currentOrder = await prisma.order.findFirst({
+      where: {
+        customerId: req.user.id,
+        OR: [
+          { id },
+          { orderNo: id },
+        ],
+      },
+      include: includeOrderRelations(),
+    });
+
+    if (!currentOrder) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy đơn hàng.",
+      });
+    }
+
+    if (currentOrder.status === "CANCELLED") {
+      return res.json({
+        success: true,
+        order: currentOrder,
+        message: "Đơn hàng đã được hủy trước đó.",
+      });
+    }
+
+    if (!CUSTOMER_CANCEL_ALLOWED_STATUSES.has(currentOrder.status)) {
+      return res.status(409).json({
+        success: false,
+        message: getCancelConflictMessage(currentOrder.status),
+      });
+    }
+
+    const reason = cleanCancelText(body.reason || "Customer cancelled order", 300);
+    const note = cleanCancelText(body.note || "", 500);
+
+    const order = await prisma.$transaction(async (tx) => {
+      await tx.order.update({
+        where: { id: currentOrder.id },
+        data: {
+          status: "CANCELLED",
+          cancelledAt: new Date(),
+          cancelReason: reason,
+          cancelNote: note || null,
+          cancelledById: req.user.id,
+        },
+      });
+
+      await restoreOrderStockOnce(tx, currentOrder, {
+        actorId: req.user.id,
+        reason,
+        note,
+      });
+
+      await tx.auditLog.create({
+        data: {
+          actorId: req.user.id,
+          orderId: currentOrder.id,
+          action: "CUSTOMER_CANCEL_ORDER",
+          entity: "Order",
+          entityId: currentOrder.id,
+          metadata: {
+            reason,
+            note,
+          },
+        },
+      });
+
+      return tx.order.findUnique({
+        where: { id: currentOrder.id },
+        include: includeOrderRelations(),
+      });
+    });
+
+    return res.json({
+      success: true,
+      order,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function listAdminOrders(req, res, next) {
   try {
     const orders = await prisma.order.findMany({
@@ -304,27 +483,88 @@ export async function updateOrderStatus(req, res, next) {
         "CANCELLED",
         "REFUNDED",
       ]),
+      reason: z.string().max(300).optional().or(z.literal("")),
+      note: z.string().max(500).optional().or(z.literal("")),
     });
 
     const body = schema.parse(req.body);
 
-    const order = await prisma.order.update({
+    const currentOrder = await prisma.order.findUnique({
       where: { id: req.params.id },
-      data: { status: body.status },
       include: includeOrderRelations(),
     });
 
-    await prisma.auditLog.create({
-      data: {
-        actorId: req.user.id,
-        orderId: order.id,
-        action: "UPDATE_ORDER_STATUS",
-        entity: "Order",
-        entityId: order.id,
-        metadata: {
-          status: body.status,
+    if (!currentOrder) {
+      return res.status(404).json({
+        success: false,
+        message: "Order not found",
+      });
+    }
+
+    if (currentOrder.status === "CANCELLED" && body.status !== "CANCELLED") {
+      return res.status(409).json({
+        success: false,
+        message: "Đơn hàng đã hủy nên không thể chuyển lại trạng thái khác.",
+      });
+    }
+
+    if (body.status === "CANCELLED" && currentOrder.status !== "CANCELLED") {
+      if (!ADMIN_CANCEL_ALLOWED_STATUSES.has(currentOrder.status)) {
+        return res.status(409).json({
+          success: false,
+          message: getCancelConflictMessage(currentOrder.status),
+        });
+      }
+    }
+
+    const reason = cleanCancelText(body.reason || "Admin cancelled order", 300);
+    const note = cleanCancelText(body.note || "", 500);
+
+    const order = await prisma.$transaction(async (tx) => {
+      if (body.status === "CANCELLED") {
+        await tx.order.update({
+          where: { id: currentOrder.id },
+          data: {
+            status: "CANCELLED",
+            cancelledAt: currentOrder.cancelledAt || new Date(),
+            cancelReason: reason,
+            cancelNote: note || null,
+            cancelledById: req.user.id,
+          },
+        });
+
+        await restoreOrderStockOnce(tx, currentOrder, {
+          actorId: req.user.id,
+          reason,
+          note,
+        });
+      } else {
+        await tx.order.update({
+          where: { id: currentOrder.id },
+          data: { status: body.status },
+        });
+      }
+
+      await tx.auditLog.create({
+        data: {
+          actorId: req.user.id,
+          orderId: currentOrder.id,
+          action: "UPDATE_ORDER_STATUS",
+          entity: "Order",
+          entityId: currentOrder.id,
+          metadata: {
+            fromStatus: currentOrder.status,
+            toStatus: body.status,
+            reason: body.reason || "",
+            note: body.note || "",
+          },
         },
-      },
+      });
+
+      return tx.order.findUnique({
+        where: { id: currentOrder.id },
+        include: includeOrderRelations(),
+      });
     });
 
     res.json({
@@ -335,7 +575,6 @@ export async function updateOrderStatus(req, res, next) {
     next(err);
   }
 }
-
 
 export async function updateOrderPayment(req, res, next) {
   try {
