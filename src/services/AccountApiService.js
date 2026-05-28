@@ -1,16 +1,23 @@
-import { apiRequest, getStoredAdminToken } from "./ApiClient";
+import { apiRequest, getStoredAccountToken } from "./ApiClient";
+
+function accountRequest(path, options = {}) {
+  return apiRequest(path, {
+    ...options,
+    token: getStoredAccountToken(),
+  });
+}
 
 export function hasAccountToken() {
-  return Boolean(getStoredAdminToken());
+  return Boolean(getStoredAccountToken());
 }
 
 export async function getMyAccount() {
-  const data = await apiRequest("/api/account/me");
+  const data = await accountRequest("/api/account/me");
   return data.account;
 }
 
 export async function updateMyAccount(payload = {}) {
-  const data = await apiRequest("/api/account/me", {
+  const data = await accountRequest("/api/account/me", {
     method: "PATCH",
     body: JSON.stringify(payload),
   });
@@ -19,7 +26,7 @@ export async function updateMyAccount(payload = {}) {
 }
 
 export async function getMyWishlist() {
-  const data = await apiRequest("/api/account/wishlist");
+  const data = await accountRequest("/api/account/wishlist");
   return data.items || [];
 }
 
@@ -33,7 +40,7 @@ export async function addMyWishlistItem(product) {
           slug: product?.slug,
         };
 
-  const data = await apiRequest("/api/account/wishlist", {
+  const data = await accountRequest("/api/account/wishlist", {
     method: "POST",
     body: JSON.stringify(payload),
   });
@@ -42,7 +49,7 @@ export async function addMyWishlistItem(product) {
 }
 
 export async function removeMyWishlistItem(productId) {
-  const data = await apiRequest(`/api/account/wishlist/${encodeURIComponent(productId)}`, {
+  const data = await accountRequest(`/api/account/wishlist/${encodeURIComponent(productId)}`, {
     method: "DELETE",
   });
 
@@ -50,7 +57,7 @@ export async function removeMyWishlistItem(productId) {
 }
 
 export async function clearMyWishlistApi() {
-  const data = await apiRequest("/api/account/wishlist", {
+  const data = await accountRequest("/api/account/wishlist", {
     method: "DELETE",
   });
 

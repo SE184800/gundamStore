@@ -4,123 +4,113 @@ import {
   setStoredAdminToken,
 } from "./ApiClient";
 
-const ADMIN_AUTH_KEY = "gundam-admin-auth";
-
 export const ADMIN_ROLES = {
-  ADMIN: "Admin",
-  MANAGER: "Manager",
-  STAFF: "Staff",
+  SUPER_ADMIN: "SUPER_ADMIN",
+  ADMIN: "ADMIN",
+  MANAGER: "MANAGER",
+  STAFF: "STAFF",
+  CATALOG_MANAGER: "CATALOG_MANAGER",
+  ORDER_MANAGER: "ORDER_MANAGER",
+  CONTENT_MANAGER: "CONTENT_MANAGER",
+  SUPPORT_AGENT: "SUPPORT_AGENT",
 };
 
-const ROLE_CODE_TO_UI_ROLE = {
-  ADMIN: ADMIN_ROLES.ADMIN,
-  MANAGER: ADMIN_ROLES.MANAGER,
-  STAFF: ADMIN_ROLES.STAFF,
-};
+const ADMIN_SESSION_KEY = "gundam-admin-auth";
+const ADMIN_USER_KEY = "gundam-admin-user";
 
-const DEMO_USERS = [
-  {
-    id: "admin-backend",
-    name: "Admin Backend",
-    email: "admin@gundam.local",
-    role: ADMIN_ROLES.ADMIN,
-  },
-];
+export function getDemoAdminUsers() {
+  return [
+    {
+      email: "admin@gundam.local",
+      role: "ADMIN",
+    },
+    {
+      email: "manager@gundam.local",
+      role: "MANAGER",
+    },
+    {
+      email: "staff@gundam.local",
+      role: "STAFF",
+    },
+  ];
+}
 
-function normalizeBackendUser(user, token = "") {
-  const roleCode = user?.role?.code || user?.roleCode || "ADMIN";
-  const permissions = Array.isArray(user?.role?.permissions)
-    ? user.role.permissions
-    : Array.isArray(user?.permissions)
-      ? user.permissions
-      : [];
+function normalizeAdminUser(user = {}) {
+  const roleCode =
+    user.role?.code ||
+    user.roleCode ||
+    user.role ||
+    ADMIN_ROLES.ADMIN;
 
   return {
-    id: user?.id,
-    name: user?.name || "Admin",
-    email: user?.email,
-    role: ROLE_CODE_TO_UI_ROLE[roleCode] || user?.role?.name || ADMIN_ROLES.ADMIN,
-    roleCode,
-    permissions,
-    token,
-    loggedInAt: new Date().toISOString(),
+    ...user,
+    id: user.id || user.email || "admin",
+    name: user.name || user.fullName || user.email || "Admin User",
+    email: user.email || "",
+    role: typeof roleCode === "string" ? roleCode : ADMIN_ROLES.ADMIN,
+    roleCode: typeof roleCode === "string" ? roleCode : ADMIN_ROLES.ADMIN,
+    permissions: user.permissions || user.role?.permissions || [],
   };
 }
 
-export function getDemoAdminUsers() {
-  return DEMO_USERS;
+export async function loginAdmin({ email, password }) {
+  const data = await apiRequest("/api/auth/login", {
+    method: "POST",
+    token: "",
+    body: JSON.stringify({
+      email,
+      password,
+    }),
+  });
+
+  const token = data?.token || data?.data?.token || data?.accessToken || "";
+  const user = data?.user || data?.data?.user || data?.admin || null;
+
+  if (!token || !user) {
+    throw new Error(data?.message || "Admin login failed.");
+  }
+
+  const admin = normalizeAdminUser(user);
+
+  setStoredAdminToken(token);
+
+  localStorage.setItem(
+    ADMIN_SESSION_KEY,
+    JSON.stringify({
+      token,
+      admin,
+      loggedInAt: new Date().toISOString(),
+    })
+  );
+
+  localStorage.setItem(ADMIN_USER_KEY, JSON.stringify(admin));
+
+  return {
+    success: true,
+    token,
+    admin,
+    user: admin,
+  };
 }
 
 export function getCurrentAdmin() {
   try {
-    const parsed = JSON.parse(localStorage.getItem(ADMIN_AUTH_KEY) || "null");
-    return parsed?.email ? parsed : null;
+    const session = JSON.parse(localStorage.getItem(ADMIN_SESSION_KEY) || "null");
+
+    if (session?.admin) return session.admin;
+    if (session?.user) return session.user;
+
+    const user = JSON.parse(localStorage.getItem(ADMIN_USER_KEY) || "null");
+    if (user) return user;
+
+    return null;
   } catch {
     return null;
   }
 }
 
-export function isAdminAuthenticated() {
-  return Boolean(getCurrentAdmin());
-}
-
-export async function loginAdmin({ email = "", password = "" } = {}) {
-  const normalizedEmail = String(email || "").trim().toLowerCase();
-  const normalizedPassword = String(password || "").trim();
-
-  if (!normalizedEmail || !normalizedPassword) {
-    throw new Error("Vui lòng nhập email và mật khẩu.");
-  }
-
-  const data = await apiRequest("/auth/login", {
-    method: "POST",
-    body: JSON.stringify({
-      email: normalizedEmail,
-      password: normalizedPassword,
-    }),
-  });
-
-  // if (!data?.success || !data?.token || !data?.user) {
-  //   throw new Error("Đăng nhập thất bại. Backend không trả token hợp lệ.");
-  // }
-  const token = data?.token || data?.metadata?.token || "mock-admin-token";
-  const user = data?.user || data?.metadata?.user || { id: "admin", name: "Admin", email: normalizedEmail, role: "ADMIN" };
-  const session = normalizeBackendUser(data.user, data.token);
-
-  setStoredAdminToken(data.token);
-  localStorage.setItem(ADMIN_AUTH_KEY, JSON.stringify(session));
-  window.dispatchEvent(new CustomEvent("admin-auth:changed", { detail: session }));
-
-  return session;
-}
-
-export async function refreshCurrentAdmin() {
-  const data = await apiRequest("/api/auth/me");
-
-  if (!data?.success || !data?.user) {
-    throw new Error("Không lấy được thông tin admin.");
-  }
-
-  const current = getCurrentAdmin();
-  const session = normalizeBackendUser(data.user, current?.token || "");
-
-  localStorage.setItem(ADMIN_AUTH_KEY, JSON.stringify(session));
-  window.dispatchEvent(new CustomEvent("admin-auth:changed", { detail: session }));
-
-  return session;
-}
-
 export function logoutAdmin() {
-  apiRequest("/api/auth/logout", { method: "POST" }).catch(() => { });
-  localStorage.removeItem(ADMIN_AUTH_KEY);
   clearStoredAdminToken();
-  window.dispatchEvent(new CustomEvent("admin-auth:changed", { detail: null }));
-}
-
-export function hasAdminRole(roles = []) {
-  const current = getCurrentAdmin();
-  if (!current) return false;
-
-  if (!Array.isArray(roles) || roles.length === 0) return true;
-  return roles.includes(current.role) || roles.includes(current.roleCode);
+  localStorage.removeItem(ADMIN_SESSION_KEY);
+  localStorage.removeItem(ADMIN_USER_KEY);
 }

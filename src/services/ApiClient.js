@@ -1,4 +1,5 @@
 const ADMIN_TOKEN_KEY = "gundam-admin-token";
+const ACCOUNT_TOKEN_KEY = "gundam_token";
 
 export function getApiBaseUrl() {
   return import.meta.env.VITE_BASE_URL || "";
@@ -14,6 +15,27 @@ export function getStoredAdminToken() {
   } catch {
     return "";
   }
+}
+
+export function getStoredAccountToken() {
+  try {
+    const accountToken = localStorage.getItem(ACCOUNT_TOKEN_KEY) || "";
+    if (accountToken) return accountToken;
+
+    // Dev/UAT fallback: allow admin session to test account APIs.
+    return getStoredAdminToken();
+  } catch {
+    return "";
+  }
+}
+
+export function setStoredAccountToken(token = "") {
+  if (!token) return;
+  localStorage.setItem(ACCOUNT_TOKEN_KEY, token);
+}
+
+export function clearStoredAccountToken() {
+  localStorage.removeItem(ACCOUNT_TOKEN_KEY);
 }
 
 export function setStoredAdminToken(token = "") {
