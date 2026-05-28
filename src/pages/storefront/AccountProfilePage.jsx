@@ -17,6 +17,7 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import PageShell from "../../components/common/PageShell";
+import AddressBookSection from "../../components/storefront/AddressBookSection";
 import { useCms } from "../../store/CmsStore";
 import {
   getMyAccount,
@@ -341,6 +342,8 @@ export default function AccountProfilePage() {
                     {saving ? "Đang lưu..." : "Lưu thay đổi"}
                   </button>
                 </div>
+
+                <AddressBookSection />
 
                 <div className="mt-6 grid gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-4 text-sm font-bold text-slate-600 md:grid-cols-3">
                   <div>
