@@ -9,6 +9,7 @@ import { errorHandler } from "./middleware/errorHandler.js";
 import healthRoutes from "./routes/healthRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
+import accountRoutes from "./routes/accountRoutes.js";
 import productRoutes from "./routes/productRoutes.js";
 // 🟢 Giữ nguyên các tuyến đường mới kéo từ sandbox về
 import inventoryRoutes from "./routes/inventoryRoutes.js";
@@ -52,6 +53,7 @@ app.use(morgan("dev"));
 app.use("/health", healthRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/orders", orderRoutes);
+app.use("/api/account", accountRoutes);
 app.use("/api/products", productRoutes);
 // 🟢 Kích hoạt các tuyến đường mới
 app.use("/api/inventory", inventoryRoutes);
