@@ -1,8 +1,7 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { PackageSearch, Search, ShieldCheck, WalletCards } from "lucide-react";
+import { AlertCircle, Loader2, PackageSearch, Search, ShieldCheck } from "lucide-react";
 import {
-  getOrders,
   ORDER_STATUS,
   ORDER_TYPE,
   getOrderStatusLabel,
@@ -10,10 +9,11 @@ import {
 import {
   getOrderStatusToneClass,
   maskPhone,
-  PREORDER_STATUS,
 } from "../../constants/orderConfig";
 import StorefrontShell from "../../components/storefront/StorefrontShell";
 import { useLang } from "../../store/CmsStore";
+import { hasAccountToken } from "../../services/AccountApiService";
+import { getMyStorefrontOrdersApi } from "../../services/StorefrontOrderApiService";
 
 const money = (n) => (Number(n) || 0).toLocaleString("vi-VN") + "đ";
 
@@ -23,12 +23,15 @@ function getCopy(lang) {
     title: lang === "en" ? "Track your orders" : "Theo dõi đơn hàng của tôi",
     desc:
       lang === "en"
-        ? "View normal orders, pre-orders, cancellation and return/refund status."
-        : "Xem đơn thường, đơn pre-order, trạng thái hủy đơn và trả hàng/hoàn tiền.",
+        ? "Your orders are loaded securely from the backend account API."
+        : "Đơn hàng được tải bảo mật từ backend theo tài khoản đăng nhập.",
+    loginRequired:
+      lang === "en"
+        ? "Please sign in to view your orders."
+        : "Vui lòng đăng nhập để xem đơn hàng của bạn.",
+    login: lang === "en" ? "Sign in" : "Đăng nhập",
     search: lang === "en" ? "Search by order ID or product..." : "Tìm mã đơn hoặc sản phẩm...",
     all: lang === "en" ? "All" : "Tất cả",
-    normal: lang === "en" ? "Normal" : "Đơn thường",
-    preorder: lang === "en" ? "Pre-order" : "Pre-order",
     active: lang === "en" ? "Active" : "Đang xử lý",
     completed: lang === "en" ? "Completed" : "Hoàn tất",
     cancelled: lang === "en" ? "Cancelled" : "Đã hủy",
@@ -37,18 +40,13 @@ function getCopy(lang) {
     total: lang === "en" ? "Total" : "Tổng tiền",
     detail: lang === "en" ? "View detail" : "Xem chi tiết",
     phone: lang === "en" ? "Phone" : "SĐT",
-    preorderStatus: lang === "en" ? "Pre-order status" : "Trạng thái pre-order",
-    balancePending: lang === "en" ? "Balance request pending" : "Chờ duyệt thanh toán còn lại",
-    deposit: lang === "en" ? "Deposit" : "Tiền cọc",
-    remaining: lang === "en" ? "Remaining" : "Còn lại",
+    loading: lang === "en" ? "Loading orders..." : "Đang tải đơn hàng...",
   };
 }
 
 function getTabs(t) {
   return [
     { key: "all", label: t.all },
-    { key: "normal", label: t.normal },
-    { key: "preorder", label: t.preorder },
     { key: "active", label: t.active },
     { key: "completed", label: t.completed },
     { key: "cancelled", label: t.cancelled },
@@ -62,17 +60,48 @@ function isActiveOrder(order) {
 export default function MyOrdersPage() {
   const [lang] = useLang();
   const t = getCopy(lang);
+
   const [tab, setTab] = useState("all");
   const [query, setQuery] = useState("");
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const orders = useMemo(() => getOrders(), []);
+  useEffect(() => {
+    let alive = true;
+
+    async function loadOrders() {
+      if (!hasAccountToken()) {
+        setLoading(false);
+        setError(t.loginRequired);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError("");
+        const items = await getMyStorefrontOrdersApi();
+        if (!alive) return;
+        setOrders(items);
+      } catch (err) {
+        if (!alive) return;
+        setError(err?.message || "Không thể tải đơn hàng.");
+      } finally {
+        if (alive) setLoading(false);
+      }
+    }
+
+    loadOrders();
+
+    return () => {
+      alive = false;
+    };
+  }, [t.loginRequired]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
 
     return orders.filter((order) => {
-      if (tab === "normal" && order.orderType === ORDER_TYPE.PREORDER) return false;
-      if (tab === "preorder" && order.orderType !== ORDER_TYPE.PREORDER) return false;
       if (tab === "active" && !isActiveOrder(order)) return false;
       if (tab === "completed" && order.status !== ORDER_STATUS.COMPLETED) return false;
       if (tab === "cancelled" && order.status !== ORDER_STATUS.CANCELLED) return false;
@@ -82,6 +111,7 @@ export default function MyOrdersPage() {
       const text = [
         order.id,
         order.orderCode,
+        order.orderNo,
         order.customer?.phone,
         ...(order.items || []).map((item) => item.name),
       ]
@@ -138,37 +168,45 @@ export default function MyOrdersPage() {
             </div>
           </div>
 
-          <div className="mt-8 space-y-4">
-            {filtered.length === 0 ? (
-              <div className="rounded-3xl bg-white p-10 text-center font-bold text-slate-500">
-                {t.empty}
-              </div>
-            ) : (
-              filtered.map((order) => {
-                const isPreorder = order.orderType === ORDER_TYPE.PREORDER;
-                const balancePending = order.preorder?.balancePaymentRequest?.status === "Pending";
-
-                return (
+          {loading ? (
+            <div className="mt-8 flex min-h-[260px] items-center justify-center rounded-3xl bg-white p-10 font-black text-slate-500">
+              <Loader2 className="mr-3 animate-spin text-blue-600" />
+              {t.loading}
+            </div>
+          ) : error ? (
+            <div className="mt-8 rounded-3xl bg-white p-10 text-center">
+              <AlertCircle className="mx-auto text-amber-500" size={42} />
+              <div className="mt-4 font-black text-slate-700">{error}</div>
+              <Link
+                to="/login"
+                className="mt-5 inline-flex rounded-2xl bg-blue-600 px-5 py-3 text-sm font-black text-white"
+              >
+                {t.login}
+              </Link>
+            </div>
+          ) : (
+            <div className="mt-8 space-y-4">
+              {filtered.length === 0 ? (
+                <div className="rounded-3xl bg-white p-10 text-center font-bold text-slate-500">
+                  {t.empty}
+                </div>
+              ) : (
+                filtered.map((order) => (
                   <div key={order.id} className="rounded-3xl bg-white p-5 shadow-sm">
                     <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-start">
                       <div className="flex-1">
                         <div className="flex flex-wrap items-center gap-2">
-                          <div className="font-black text-blue-600">{order.id}</div>
+                          <div className="font-black text-blue-600">
+                            {order.orderCode || order.id}
+                          </div>
 
                           <span className={`rounded-full px-3 py-1 text-xs font-black ${getOrderStatusToneClass(order.status)}`}>
                             {getOrderStatusLabel(order.status, lang)}
                           </span>
 
-                          {isPreorder && (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-violet-50 px-3 py-1 text-xs font-black text-violet-700">
-                              <WalletCards size={13} />
+                          {order.orderType === ORDER_TYPE.PREORDER && (
+                            <span className="rounded-full bg-violet-50 px-3 py-1 text-xs font-black text-violet-700">
                               PRE-ORDER
-                            </span>
-                          )}
-
-                          {balancePending && (
-                            <span className="rounded-full bg-orange-50 px-3 py-1 text-xs font-black text-orange-700">
-                              {t.balancePending}
                             </span>
                           )}
                         </div>
@@ -191,12 +229,9 @@ export default function MyOrdersPage() {
                         <div className="mt-4 grid gap-3 md:grid-cols-2">
                           {(order.items || []).slice(0, 2).map((item) => (
                             <div key={`${order.id}-${item.id}`} className="flex gap-3 rounded-2xl bg-slate-50 p-3">
-                              <img
-                                src={item.image}
-                                alt={item.name}
-                                loading="lazy"
-                                className="h-16 w-16 rounded-xl bg-white object-cover"
-                              />
+                              <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-white text-xs font-black text-slate-400">
+                                SP
+                              </div>
                               <div>
                                 <div className="line-clamp-1 text-sm font-black text-slate-900">{item.name}</div>
                                 <div className="mt-1 text-xs font-bold text-slate-500">x{item.quantity || 1}</div>
@@ -204,23 +239,6 @@ export default function MyOrdersPage() {
                             </div>
                           ))}
                         </div>
-
-                        {isPreorder && order.preorder && (
-                          <div className="mt-4 grid gap-3 rounded-2xl border border-violet-100 bg-violet-50 p-4 text-sm md:grid-cols-3">
-                            <div>
-                              <span className="block text-xs font-black uppercase text-violet-700">{t.preorderStatus}</span>
-                              <b>{order.preorder.status || PREORDER_STATUS.DEPOSIT_PENDING}</b>
-                            </div>
-                            <div>
-                              <span className="block text-xs font-black uppercase text-violet-700">{t.deposit}</span>
-                              <b className="text-red-600">{money(order.preorder.depositAmount || order.total)}</b>
-                            </div>
-                            <div>
-                              <span className="block text-xs font-black uppercase text-violet-700">{t.remaining}</span>
-                              <b>{money(order.preorder.remainingAmount || 0)}</b>
-                            </div>
-                          </div>
-                        )}
                       </div>
 
                       <div className="text-left lg:text-right">
@@ -238,10 +256,10 @@ export default function MyOrdersPage() {
                       </div>
                     </div>
                   </div>
-                );
-              })
-            )}
-          </div>
+                ))
+              )}
+            </div>
+          )}
         </div>
       </main>
     </StorefrontShell>

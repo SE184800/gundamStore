@@ -14,7 +14,8 @@
     "seed:catalog": "node prisma/seedCatalog.js",
     "smoke:admin": "node scripts/smokeAdminApis.js",
     "smoke:stock-race": "node scripts/smokeStockRace.mjs",
-    "seed:customer": "node scripts/seedCustomerAccount.mjs"
+    "seed:customer": "node scripts/seedCustomerAccount.mjs",
+    "smoke:customer-order": "node scripts/smokeCustomerOrderFlow.mjs"
   },
   "dependencies": {
     "@prisma/client": "^6.0.0",

@@ -33,7 +33,7 @@ import {
 } from "../../constants/orderConfig";
 import { getCart, saveCart } from "../../services/CartService";
 import StorefrontShell from "../../components/storefront/StorefrontShell";
-import { getStorefrontOrderByIdFromApi } from "../../services/StorefrontOrderLookupApiService";
+import { getMyStorefrontOrderByIdApi } from "../../services/StorefrontOrderApiService";
 import { useLang } from "../../store/CmsStore";
 
 const money = (n) => (Number(n) || 0).toLocaleString("vi-VN") + "đ";
@@ -309,7 +309,7 @@ export default function OrderDetailPage() {
     setBackendLoading(true);
     setBackendError("");
 
-    getStorefrontOrderByIdFromApi(id)
+    getMyStorefrontOrderByIdApi(id)
       .then((item) => {
         if (!alive) return;
         setBackendOrder(item);
@@ -330,8 +330,8 @@ export default function OrderDetailPage() {
     };
   }, [id, refreshKey]);
 
-  const order = backendOrder || localOrder;
-  const isBackendOrder = order?.source === "backend";
+  const order = backendOrder;
+  const isBackendOrder = true;
 
   if (backendLoading && !order) {
     return (
@@ -435,7 +435,7 @@ export default function OrderDetailPage() {
     <StorefrontShell>
       <main className="min-h-screen bg-[#F5F7FB] px-4 py-6 md:px-6 md:py-8">
         <div className="mx-auto max-w-7xl">
-          <Link to="/order-lookup" className="font-black text-blue-600">
+          <Link to="/orders" className="font-black text-blue-600">
             ← {t.back}
           </Link>
 

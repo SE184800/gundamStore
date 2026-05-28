@@ -116,9 +116,10 @@ export async function createOrder(req, res, next) {
       const created = await tx.order.create({
         data: {
           orderNo: generateOrderNo(),
+          customerId: req.user?.id || null,
           customerName: body.customerName,
           customerPhone: body.customerPhone,
-          customerEmail: body.customerEmail || null,
+          customerEmail: body.customerEmail || req.user?.email || null,
           customerAddress: body.customerAddress,
           shippingFee: body.shippingFee,
           discount: body.discount,
@@ -207,6 +208,60 @@ export async function createOrder(req, res, next) {
     });
 
     res.status(201).json({
+      success: true,
+      order,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+
+export async function listMyOrders(req, res, next) {
+  try {
+    const orders = await prisma.order.findMany({
+      where: {
+        customerId: req.user.id,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+      include: includeOrderRelations(),
+      take: 100,
+    });
+
+    return res.json({
+      success: true,
+      orders,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getMyOrderById(req, res, next) {
+  try {
+    const id = String(req.params.id || "").trim();
+
+    const order = await prisma.order.findFirst({
+      where: {
+        customerId: req.user.id,
+        OR: [
+          { id },
+          { orderNo: id },
+        ],
+      },
+      include: includeOrderRelations(),
+    });
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy đơn hàng.",
+      });
+    }
+
+    return res.json({
       success: true,
       order,
     });
