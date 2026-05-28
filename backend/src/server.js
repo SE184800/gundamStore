@@ -5,6 +5,8 @@ import morgan from "morgan";
 import { env } from "./config/env.js";
 import { prisma } from "./config/prisma.js";
 import { errorHandler } from "./middleware/errorHandler.js";
+import { requireAdminRole } from "./middleware/requireAdminRole.js";
+import { requireAuth } from "./middleware/auth.js";
 
 import healthRoutes from "./routes/healthRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
@@ -51,6 +53,15 @@ app.use(express.json({ limit: "1mb" }));
 app.use(morgan("dev"));
 
 app.use("/health", healthRoutes);
+
+app.use([
+  "/api/admin",
+  "/api/products/admin",
+  "/api/orders/admin",
+  "/api/inventory",
+  "/api/purchase-receipts",
+], requireAuth, requireAdminRole);
+
 app.use("/api/auth", authRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/account", accountRoutes);
