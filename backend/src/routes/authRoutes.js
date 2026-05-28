@@ -1,10 +1,18 @@
 import express from "express";
 import { login, logout, me, register } from "../controllers/authController.js";
 import { requireAuth } from "../middleware/auth.js";
+import { createRateLimit } from "../middleware/rateLimit.js";
 
 const router = express.Router();
-router.post("/register", register);
-router.post("/login", login);
+
+const authRateLimit = createRateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  keyPrefix: "auth",
+  message: "Bạn thao tác quá nhanh. Vui lòng thử lại sau.",
+});
+router.post("/register", authRateLimit, register);
+router.post("/login", authRateLimit, login);
 router.get("/me", requireAuth, me);
 router.post("/logout", requireAuth, logout);
 
