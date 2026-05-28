@@ -67,3 +67,18 @@ Avoid using `prisma db push` in production.
    - My orders
    - Cancel order
    - Admin order operation
+
+
+## Public UAT smoke test
+
+After frontend and backend are deployed publicly, run:
+
+    BACKEND_URL="https://your-backend-url" FRONTEND_URL="https://your-frontend-url" npm run smoke:uat
+
+This checks:
+
+- Backend `/health`
+- Backend `/health/ready`
+- Backend CORS against deployed frontend
+- Frontend home page
+- Frontend SPA route fallback
