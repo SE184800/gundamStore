@@ -18,6 +18,17 @@ export const ADMIN_ROLES = {
 const ADMIN_SESSION_KEY = "gundam-admin-auth";
 const ADMIN_USER_KEY = "gundam-admin-user";
 
+const ADMIN_ALLOWED_ROLES = new Set([
+  ADMIN_ROLES.SUPER_ADMIN,
+  ADMIN_ROLES.ADMIN,
+  ADMIN_ROLES.MANAGER,
+  ADMIN_ROLES.STAFF,
+  ADMIN_ROLES.CATALOG_MANAGER,
+  ADMIN_ROLES.ORDER_MANAGER,
+  ADMIN_ROLES.CONTENT_MANAGER,
+  ADMIN_ROLES.SUPPORT_AGENT,
+]);
+
 export function getDemoAdminUsers() {
   return [
     {
@@ -71,6 +82,10 @@ export async function loginAdmin({ email, password }) {
   }
 
   const admin = normalizeAdminUser(user);
+
+  if (!ADMIN_ALLOWED_ROLES.has(admin.roleCode) && !ADMIN_ALLOWED_ROLES.has(admin.role)) {
+    throw new Error("This account does not have admin access.");
+  }
 
   setStoredAdminToken(token);
 
