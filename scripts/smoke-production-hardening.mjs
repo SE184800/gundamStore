@@ -126,6 +126,60 @@ async function run() {
     fail("Public order lookup requires phone/email", err.message);
   }
 
+  try {
+    const { response, data } = await request("/api/products");
+    const products = data?.products || data?.data || [];
+
+    const candidate = products.find((product) => Number(product.stock || 0) < 99);
+
+    if (!response.ok || !Array.isArray(products)) {
+      fail("Oversell order is rejected", `Cannot load products. HTTP ${response.status}`);
+    } else if (!candidate) {
+      pass("Oversell order is rejected", "Skipped because no product has stock below 99");
+    } else {
+      const stock = Number(candidate.stock || 0);
+      const quantity = Math.min(99, Math.max(1, stock + 1));
+      const productId = candidate.backendProductId || candidate.productId || candidate.id;
+
+      const payload = {
+        customerName: "Smoke Oversell Test",
+        customerPhone: "0900000000",
+        customerEmail: "smoke@example.com",
+        customerAddress: "Smoke test address",
+        shippingFee: 0,
+        discount: 0,
+        items: [
+          {
+            productId,
+            sku: candidate.sku || "",
+            slug: candidate.slug || "",
+            quantity,
+          },
+        ],
+      };
+
+      const result = await request("/api/orders", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+
+      if ([400, 409].includes(result.response.status) && result.data?.success === false) {
+        pass(
+          "Oversell order is rejected",
+          `HTTP ${result.response.status}; stock=${stock}; requested=${quantity}`
+        );
+      } else {
+        fail(
+          "Oversell order is rejected",
+          `Expected 400/409 but got HTTP ${result.response.status} ${JSON.stringify(result.data)}`
+        );
+      }
+    }
+  } catch (err) {
+    fail("Oversell order is rejected", err.message);
+  }
+
+
   const failed = results.filter((item) => !item.ok);
 
   console.log("======================================");
