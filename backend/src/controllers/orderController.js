@@ -8,6 +8,8 @@ const createOrderSchema = z.object({
   customerAddress: z.string().min(5).max(255),
   shippingFee: z.number().int().min(0).default(0),
   discount: z.number().int().min(0).default(0),
+  paymentMethod: z.enum(["COD", "BANK_TRANSFER", "CARD", "WALLET"]).default("COD"),
+  paymentReference: z.string().max(120).optional().or(z.literal("")),
   note: z.string().max(500).optional(),
   items: z.array(
     z.object({
@@ -47,6 +49,24 @@ function includeOrderRelations() {
     payments: true,
     shipments: true,
   };
+}
+
+function getInitialPaymentStatus(method = "COD") {
+  // COD is unpaid until delivery/collection. Other methods wait for admin confirmation.
+  return "UNPAID";
+}
+
+function cleanPaymentText(value = "", max = 500) {
+  return String(value || "")
+    .replace(/[<>]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, max);
+}
+
+function canUpdatePaymentStatus(order) {
+  if (!order) return false;
+  return !["CANCELLED", "REFUNDED"].includes(order.status);
 }
 
 const CUSTOMER_CANCEL_ALLOWED_STATUSES = new Set(["PLACED", "CONFIRMED"]);
@@ -207,11 +227,24 @@ export async function createOrder(req, res, next) {
           customerPhone: body.customerPhone,
           customerEmail: body.customerEmail || req.user?.email || null,
           customerAddress: body.customerAddress,
+          paymentStatus: getInitialPaymentStatus(body.paymentMethod),
           shippingFee: body.shippingFee,
           discount: body.discount,
           subtotal,
           total,
           note: body.note || null,
+          payments: {
+            create: {
+              method: body.paymentMethod,
+              status: getInitialPaymentStatus(body.paymentMethod),
+              amount: total,
+              reference: cleanPaymentText(body.paymentReference || "", 120) || null,
+              note:
+                body.paymentMethod === "COD"
+                  ? "Thanh toán khi nhận hàng."
+                  : "Chờ xác nhận thanh toán từ admin.",
+            },
+          },
           items: {
             create: resolvedItems.map((item) => {
               const product = item.product;
@@ -600,6 +633,24 @@ export async function updateOrderPayment(req, res, next) {
       });
     }
 
+    if (!canUpdatePaymentStatus(currentOrder)) {
+      return res.status(409).json({
+        success: false,
+        message: "Không thể cập nhật thanh toán cho đơn đã hủy hoặc đã hoàn tiền.",
+      });
+    }
+
+    const cleanReference = cleanPaymentText(body.reference || "", 120);
+    const cleanNote = cleanPaymentText(body.note || "", 500);
+    const paymentAmount = body.amount ?? currentOrder.total;
+
+    if (paymentAmount > currentOrder.total) {
+      return res.status(400).json({
+        success: false,
+        message: "Số tiền thanh toán không được lớn hơn tổng giá trị đơn hàng.",
+      });
+    }
+
     const order = await prisma.$transaction(async (tx) => {
       await tx.order.update({
         where: { id: currentOrder.id },
@@ -609,11 +660,11 @@ export async function updateOrderPayment(req, res, next) {
       await tx.payment.create({
         data: {
           orderId: currentOrder.id,
-          method: body.method || "COD",
+          method: body.method || currentOrder.payments?.[0]?.method || "COD",
           status: body.paymentStatus,
-          amount: body.amount ?? currentOrder.total,
-          reference: body.reference || null,
-          note: body.note || null,
+          amount: paymentAmount,
+          reference: cleanReference || null,
+          note: cleanNote || null,
         },
       });
 
@@ -626,10 +677,10 @@ export async function updateOrderPayment(req, res, next) {
           entityId: currentOrder.id,
           metadata: {
             paymentStatus: body.paymentStatus,
-            method: body.method || "COD",
-            amount: body.amount ?? currentOrder.total,
-            reference: body.reference || "",
-            note: body.note || "",
+            method: body.method || currentOrder.payments?.[0]?.method || "COD",
+            amount: paymentAmount,
+            reference: cleanReference,
+            note: cleanNote,
           },
         },
       });
@@ -678,6 +729,24 @@ export async function updateOrderShipping(req, res, next) {
       return res.status(404).json({
         success: false,
         message: "Order not found",
+      });
+    }
+
+    if (!canUpdatePaymentStatus(currentOrder)) {
+      return res.status(409).json({
+        success: false,
+        message: "Không thể cập nhật thanh toán cho đơn đã hủy hoặc đã hoàn tiền.",
+      });
+    }
+
+    const cleanReference = cleanPaymentText(body.reference || "", 120);
+    const cleanNote = cleanPaymentText(body.note || "", 500);
+    const paymentAmount = body.amount ?? currentOrder.total;
+
+    if (paymentAmount > currentOrder.total) {
+      return res.status(400).json({
+        success: false,
+        message: "Số tiền thanh toán không được lớn hơn tổng giá trị đơn hàng.",
       });
     }
 
