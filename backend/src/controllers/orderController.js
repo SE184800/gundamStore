@@ -395,6 +395,26 @@ export async function updateOrderShipping(req, res, next) {
 export async function getPublicOrderById(req, res, next) {
   try {
     const id = String(req.params.id || "").trim();
+    const phone = String(req.query.phone || "").trim();
+    const email = String(req.query.email || "").trim().toLowerCase();
+
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: "Vui lòng nhập mã đơn hàng.",
+      });
+    }
+
+    if (!phone && !email) {
+      return res.status(400).json({
+        success: false,
+        message: "Vui lòng nhập số điện thoại hoặc email để tra cứu đơn hàng.",
+      });
+    }
+
+    function normalizePhone(value = "") {
+      return String(value || "").replace(/[^0-9]/g, "");
+    }
 
     const order = await prisma.order.findFirst({
       where: {
@@ -409,16 +429,32 @@ export async function getPublicOrderById(req, res, next) {
     if (!order) {
       return res.status(404).json({
         success: false,
-        message: "Order not found",
+        message: "Không tìm thấy đơn hàng phù hợp.",
       });
     }
 
-    res.json({
+    const phoneMatches =
+      phone && normalizePhone(order.customerPhone) === normalizePhone(phone);
+
+    const emailMatches =
+      email && String(order.customerEmail || "").toLowerCase() === email;
+
+    if (!phoneMatches && !emailMatches) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy đơn hàng phù hợp.",
+      });
+    }
+
+    return res.json({
       success: true,
       order,
     });
   } catch (err) {
-    next(err);
+    console.error("Public order lookup failed:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Không thể tra cứu đơn hàng lúc này. Vui lòng thử lại sau.",
+    });
   }
 }
-

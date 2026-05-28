@@ -20,7 +20,7 @@ const app = express();
 app.use(helmet());
 
 const allowedCorsOrigins = [
-  env.FRONTEND_ORIGIN,
+  env.frontendOrigin,
   "http://localhost:5173",
   "http://localhost:5174",
   "http://127.0.0.1:5173",

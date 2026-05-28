@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { LockKeyhole, PackageSearch, Search, ShieldCheck } from "lucide-react";
-import { findOrderForSecureLookup } from "../../services/OrderService";
+import { lookupPublicOrderFromApi } from "../../services/OrderService";
 import {
   getOrderStatusLabel,
   getOrderStatusToneClass,
@@ -56,8 +56,9 @@ export default function OrderLookupPage() {
   const [searched, setSearched] = useState(false);
   const [error, setError] = useState("");
   const [order, setOrder] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-  function lookupOrder() {
+  async function lookupOrder() {
     const code = orderCode.trim();
     const inputPhone = phone.trim();
 
@@ -70,14 +71,24 @@ export default function OrderLookupPage() {
       return;
     }
 
-    const result = findOrderForSecureLookup(code, inputPhone);
+    try {
+      setLoading(true);
+      const result = await lookupPublicOrderFromApi(code, {
+        phone: inputPhone,
+      });
 
-    if (!result) {
-      setError(t.notFound);
-      return;
+      setOrder(result);
+    } catch (err) {
+      if (err?.status === 404) {
+        setError(t.notFound);
+      } else if (err?.status === 429) {
+        setError(err?.message || "Bạn thao tác quá nhanh. Vui lòng thử lại sau.");
+      } else {
+        setError(err?.message || t.notFound);
+      }
+    } finally {
+      setLoading(false);
     }
-
-    setOrder(result);
   }
 
   return (
@@ -130,11 +141,17 @@ export default function OrderLookupPage() {
               </label>
 
               <button
+                type="button"
+                disabled={loading}
                 onClick={lookupOrder}
-                className="rounded-2xl bg-blue-600 px-6 py-3 font-black text-white shadow-lg hover:bg-blue-700"
+                className={`rounded-2xl px-6 py-3 font-black text-white shadow-lg ${
+                  loading
+                    ? "cursor-not-allowed bg-slate-400"
+                    : "bg-blue-600 hover:bg-blue-700"
+                }`}
               >
                 <Search size={18} className="mr-2 inline" />
-                {t.lookup}
+                {loading ? (lang === "en" ? "Checking..." : "Đang tra cứu...") : t.lookup}
               </button>
             </div>
 
