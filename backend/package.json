@@ -19,7 +19,10 @@
     "smoke:cancel-restore": "node scripts/smokeCancelOrderRestoreStock.mjs",
     "smoke:address-book": "node scripts/smokeAddressBook.mjs",
     "smoke:payment-workflow": "node scripts/smokePaymentWorkflow.mjs",
-    "smoke:admin-order-operation": "node scripts/smokeAdminOrderOperation.mjs"
+    "smoke:admin-order-operation": "node scripts/smokeAdminOrderOperation.mjs",
+    "check:env": "node scripts/checkProductionEnv.mjs",
+    "prisma:migrate:deploy": "prisma migrate deploy",
+    "smoke:readiness": "node scripts/smokeProductionReadiness.mjs"
   },
   "dependencies": {
     "@prisma/client": "^6.0.0",
