@@ -14,6 +14,7 @@ import {
   getOrderStatusLabel,
   getPaymentStatusLabel,
   getOrderStatusToneClass,
+  getAllowedNextOrderStatuses,
   maskPhone,
 } from "../../constants/orderConfig";
 import { formatCurrency } from "../../utils/format";
@@ -88,6 +89,12 @@ function getCopy(lang) {
       lang === "en"
         ? "Orders waiting for confirmation, payment update, or shipping tracking."
         : "Các đơn cần xác nhận, cập nhật thanh toán hoặc bổ sung vận chuyển.",
+    cancelReason: lang === "en" ? "Cancellation reason" : "Lý do hủy đơn",
+    paymentReference: lang === "en" ? "Payment reference" : "Mã giao dịch",
+    paymentNote: lang === "en" ? "Payment note" : "Ghi chú thanh toán",
+    paymentHistory: lang === "en" ? "Payment history" : "Lịch sử thanh toán",
+    shippingHistory: lang === "en" ? "Shipping history" : "Lịch sử vận chuyển",
+    savePayment: lang === "en" ? "Save payment" : "Lưu thanh toán",
   };
 }
 
@@ -110,9 +117,16 @@ function getNeedsAttention(order) {
 }
 
 function getNextStatus(status) {
-  const idx = STATUS_FLOW.indexOf(status);
-  if (idx < 0 || idx >= STATUS_FLOW.length - 3) return "";
-  return STATUS_FLOW[idx + 1];
+  const allowed = getAllowedNextOrderStatuses(status).filter((item) => item !== ORDER_STATUS.CANCELLED);
+  return allowed[0] || "";
+}
+
+function getAllowedStatusOptions(status) {
+  return [status, ...getAllowedNextOrderStatuses(status)].filter(Boolean);
+}
+
+function isTerminalStatus(status) {
+  return [ORDER_STATUS.CANCELLED, ORDER_STATUS.REFUNDED, ORDER_STATUS.COMPLETED].includes(status);
 }
 
 export default function AdminOrders() {
@@ -126,6 +140,19 @@ export default function AdminOrders() {
   const [tab, setTab] = useState("all");
   const [selectedIds, setSelectedIds] = useState([]);
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [shippingForm, setShippingForm] = useState({
+    carrier: "",
+    trackingCode: "",
+    eta: "",
+    adminNote: "",
+  });
+  const [paymentForm, setPaymentForm] = useState({
+    paymentStatus: "Unpaid",
+    method: "COD",
+    amount: 0,
+    reference: "",
+    note: "",
+  });
 
   async function reload() {
     setLoadingOrders(true);
@@ -208,6 +235,37 @@ export default function AdminOrders() {
     };
   }, [orders]);
 
+  function openOrderDetail(order) {
+    setSelectedOrder(order);
+    setShippingForm({
+      carrier: order.shippingInfo?.carrier || "",
+      trackingCode: order.shippingInfo?.trackingCode || "",
+      eta: order.shippingInfo?.eta || "",
+      adminNote: order.adminNote || order.shippingInfo?.note || "",
+    });
+    setPaymentForm({
+      paymentStatus: order.paymentStatus || "Unpaid",
+      method: order.paymentMethod || "COD",
+      amount: Number(order.total || 0),
+      reference: order.paymentReference || "",
+      note: order.paymentNote || "",
+    });
+  }
+
+  function patchShippingForm(key, value) {
+    setShippingForm((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
+  }
+
+  function patchPaymentForm(key, value) {
+    setPaymentForm((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
+  }
+
   function toggleSelect(id) {
     setSelectedIds((prev) =>
       prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
@@ -222,7 +280,21 @@ export default function AdminOrders() {
 
   async function changeStatus(order, status) {
     try {
-      await updateAdminOrderStatusApi(order.id, status, "");
+      let note = "";
+
+      if (status === ORDER_STATUS.CANCELLED) {
+        const reason = window.prompt(t.cancelReason);
+
+        if (!reason || !reason.trim()) return;
+
+        note = reason.trim();
+
+        if (!window.confirm("Xác nhận hủy đơn? Tồn kho sẽ được hoàn lại nếu đơn còn đủ điều kiện.")) {
+          return;
+        }
+      }
+
+      await updateAdminOrderStatusApi(order.id, status, note);
       await reload();
     } catch (error) {
       alert(error?.message || "Update status failed.");
@@ -238,9 +310,16 @@ export default function AdminOrders() {
 
   async function changePayment(order, paymentStatus) {
     try {
+      let reference = "";
+
+      if (paymentStatus === "Paid" && order.paymentMethod !== "COD") {
+        reference = window.prompt(t.paymentReference) || "";
+      }
+
       await updateAdminOrderPaymentApi(order.id, paymentStatus, {
         method: order.paymentMethod || "COD",
         amount: Number(order.total || 0),
+        reference,
         note: "Updated payment from admin orders UI",
       });
       await reload();
@@ -249,25 +328,42 @@ export default function AdminOrders() {
     }
   }
 
-  async function saveShipping(orderId) {
-    const carrier = document.getElementById("carrier")?.value || "";
-    const trackingCode = document.getElementById("trackingCode")?.value || "";
-    const eta = document.getElementById("eta")?.value || "";
-    const adminNote = document.getElementById("adminNote")?.value || "";
+  async function savePayment(orderId) {
+    try {
+      await updateAdminOrderPaymentApi(orderId, paymentForm.paymentStatus, {
+        method: paymentForm.method || "COD",
+        amount: Number(paymentForm.amount || 0),
+        reference: paymentForm.reference || "",
+        note: paymentForm.note || "",
+      });
 
+      const rows = await reload();
+      const refreshed = rows.find((order) => order.id === orderId || order.orderCode === orderId);
+      if (refreshed) openOrderDetail(refreshed);
+
+      alert("Đã lưu thanh toán.");
+    } catch (error) {
+      alert(error?.message || "Save payment failed.");
+    }
+  }
+
+  async function saveShipping(orderId) {
     try {
       const order = orders.find((item) => item.id === orderId || item.orderCode === orderId);
 
       await updateAdminOrderShippingApi(orderId, {
-        carrier,
-        trackingCode,
+        carrier: shippingForm.carrier,
+        trackingCode: shippingForm.trackingCode,
         shippingMethod: order?.shippingMethod || "FAST",
         status: order?.status === ORDER_STATUS.DELIVERED ? "DELIVERED" : "SHIPPING",
         fee: order?.shippingFee || 0,
-        note: adminNote || eta || "Updated shipping from admin orders UI",
+        note: shippingForm.adminNote || shippingForm.eta || "Updated shipping from admin orders UI",
       });
 
-      await reload();
+      const rows = await reload();
+      const refreshed = rows.find((item) => item.id === orderId || item.orderCode === orderId);
+      if (refreshed) openOrderDetail(refreshed);
+
       alert("Đã lưu vận chuyển.");
     } catch (error) {
       alert(error?.message || "Save shipping failed.");
@@ -517,7 +613,7 @@ export default function AdminOrders() {
                       <td className="px-4 py-4">
                         <div className="flex gap-2">
                           <button
-                            onClick={() => setSelectedOrder(order)}
+                            onClick={() => openOrderDetail(order)}
                             className="rounded-xl bg-blue-50 p-2 text-blue-600"
                           >
                             <Eye size={17} />
@@ -584,10 +680,11 @@ export default function AdminOrders() {
                       <td className="px-4 py-4">
                         <select
                           value={order.status || ORDER_STATUS.PLACED}
+                          disabled={isTerminalStatus(order.status)}
                           onChange={(event) => void changeStatus(order, event.target.value)}
-                          className={`rounded-xl px-3 py-2 text-xs font-black ${getOrderStatusToneClass(order.status)}`}
+                          className={`rounded-xl px-3 py-2 text-xs font-black disabled:cursor-not-allowed disabled:opacity-60 ${getOrderStatusToneClass(order.status)}`}
                         >
-                          {STATUS_FLOW.map((status) => (
+                          {getAllowedStatusOptions(order.status).map((status) => (
                             <option key={status} value={status}>
                               {getOrderStatusLabel(status, lang)}
                             </option>
@@ -654,30 +751,92 @@ export default function AdminOrders() {
                 </div>
               </div>
 
+              <div data-admin-payment-panel="true" className="rounded-3xl border p-5">
+                <h3 className="font-black">{t.payment}</h3>
+                <div className="mt-3 grid gap-3">
+                  <select
+                    value={paymentForm.paymentStatus}
+                    onChange={(event) => patchPaymentForm("paymentStatus", event.target.value)}
+                    className="rounded-xl border px-4 py-3"
+                  >
+                    {PAYMENT_STATUS_OPTIONS.map((status) => (
+                      <option key={status} value={status}>
+                        {getPaymentStatusLabel(status, lang)}
+                      </option>
+                    ))}
+                  </select>
+
+                  <select
+                    value={paymentForm.method}
+                    onChange={(event) => patchPaymentForm("method", event.target.value)}
+                    className="rounded-xl border px-4 py-3"
+                  >
+                    <option value="COD">COD</option>
+                    <option value="BANK_TRANSFER">BANK_TRANSFER</option>
+                    <option value="CARD">CARD</option>
+                    <option value="WALLET">WALLET</option>
+                  </select>
+
+                  <input
+                    value={paymentForm.amount}
+                    onChange={(event) => patchPaymentForm("amount", event.target.value)}
+                    inputMode="numeric"
+                    placeholder="Amount"
+                    className="rounded-xl border px-4 py-3"
+                  />
+
+                  <input
+                    value={paymentForm.reference}
+                    onChange={(event) => patchPaymentForm("reference", event.target.value)}
+                    placeholder={t.paymentReference}
+                    className="rounded-xl border px-4 py-3"
+                  />
+
+                  <textarea
+                    value={paymentForm.note}
+                    onChange={(event) => patchPaymentForm("note", event.target.value)}
+                    placeholder={t.paymentNote}
+                    rows={3}
+                    className="rounded-xl border px-4 py-3"
+                  />
+
+                  <button
+                    onClick={() => void savePayment(selectedOrder.id)}
+                    className="rounded-2xl bg-emerald-600 py-3 font-black text-white"
+                  >
+                    {t.savePayment}
+                  </button>
+                </div>
+              </div>
+
               <div className="rounded-3xl border p-5">
                 <h3 className="font-black">{t.shipment}</h3>
                 <div className="mt-3 grid gap-3">
                   <input
                     id="carrier"
-                    defaultValue={selectedOrder.shippingInfo?.carrier || ""}
+                    value={shippingForm.carrier}
+                    onChange={(event) => patchShippingForm("carrier", event.target.value)}
                     placeholder="Carrier: GHN / GHTK / Viettel Post"
                     className="rounded-xl border px-4 py-3"
                   />
                   <input
                     id="trackingCode"
-                    defaultValue={selectedOrder.shippingInfo?.trackingCode || ""}
+                    value={shippingForm.trackingCode}
+                    onChange={(event) => patchShippingForm("trackingCode", event.target.value)}
                     placeholder="Tracking code"
                     className="rounded-xl border px-4 py-3"
                   />
                   <input
                     id="eta"
-                    defaultValue={selectedOrder.shippingInfo?.eta || ""}
+                    value={shippingForm.eta}
+                    onChange={(event) => patchShippingForm("eta", event.target.value)}
                     placeholder="ETA: 1-3 ngày"
                     className="rounded-xl border px-4 py-3"
                   />
                   <textarea
                     id="adminNote"
-                    defaultValue={selectedOrder.adminNote || ""}
+                    value={shippingForm.adminNote}
+                    onChange={(event) => patchShippingForm("adminNote", event.target.value)}
                     placeholder="Ghi chú nội bộ"
                     rows={3}
                     className="rounded-xl border px-4 py-3"
@@ -708,6 +867,42 @@ export default function AdminOrders() {
                   </div>
                 </div>
               ))}
+            </div>
+
+            <div data-admin-history-panel="true" className="mt-6 grid gap-5 md:grid-cols-2">
+              <div className="rounded-3xl border p-5">
+                <h3 className="font-black">{t.paymentHistory}</h3>
+                <div className="mt-3 space-y-3 text-sm">
+                  {(selectedOrder.paymentHistory || []).length === 0 ? (
+                    <div className="text-slate-400">Chưa có lịch sử thanh toán.</div>
+                  ) : (
+                    selectedOrder.paymentHistory.map((item) => (
+                      <div key={item.id} className="rounded-2xl bg-slate-50 p-3">
+                        <div className="font-black">{item.status} · {item.method}</div>
+                        <div className="text-slate-500">{formatCurrency(item.amount || 0)} · {item.reference || "-"}</div>
+                        <div className="text-xs text-slate-400">{item.createdAt ? new Date(item.createdAt).toLocaleString("vi-VN") : "-"}</div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              <div className="rounded-3xl border p-5">
+                <h3 className="font-black">{t.shippingHistory}</h3>
+                <div className="mt-3 space-y-3 text-sm">
+                  {(selectedOrder.shippingHistory || []).length === 0 ? (
+                    <div className="text-slate-400">Chưa có lịch sử vận chuyển.</div>
+                  ) : (
+                    selectedOrder.shippingHistory.map((item) => (
+                      <div key={item.id} className="rounded-2xl bg-slate-50 p-3">
+                        <div className="font-black">{item.status} · {item.carrier || "-"}</div>
+                        <div className="text-slate-500">{item.trackingCode || "-"}</div>
+                        <div className="text-xs text-slate-400">{item.createdAt ? new Date(item.createdAt).toLocaleString("vi-VN") : "-"}</div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
             </div>
 
             <div className="mt-6 flex justify-between rounded-3xl bg-blue-50 p-5 text-xl font-black">

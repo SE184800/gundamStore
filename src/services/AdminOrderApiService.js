@@ -43,6 +43,14 @@ const UI_TO_API_PAYMENT_METHOD = {
   MOMO: "WALLET",
 };
 
+function getLatestByCreatedAt(items = []) {
+  if (!Array.isArray(items) || items.length === 0) return null;
+
+  return [...items].sort((a, b) => {
+    return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+  })[0];
+}
+
 export function toBackendOrderStatus(status = "") {
   return UI_TO_API_STATUS[status] || "PLACED";
 }
@@ -56,8 +64,8 @@ export function toBackendPaymentMethod(method = "") {
 }
 
 export function mapBackendOrder(order = {}) {
-  const shipment = Array.isArray(order.shipments) ? order.shipments[0] : null;
-  const payment = Array.isArray(order.payments) ? order.payments[0] : null;
+  const shipment = getLatestByCreatedAt(order.shipments);
+  const payment = getLatestByCreatedAt(order.payments);
 
   const uiStatus = API_TO_UI_STATUS[order.status] || ORDER_STATUS.PLACED;
   const uiPaymentStatus =
@@ -96,6 +104,9 @@ export function mapBackendOrder(order = {}) {
     voucherCode: "",
     paymentMethod: payment?.method || "COD",
     paymentStatus: uiPaymentStatus,
+    paymentReference: payment?.reference || "",
+    paymentNote: payment?.note || "",
+    paymentHistory: Array.isArray(order.payments) ? [...order.payments].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)) : [],
     shippingMethod: shipment?.shippingMethod || "FAST",
 
     shippingInfo: {
@@ -104,7 +115,9 @@ export function mapBackendOrder(order = {}) {
       eta: "",
       fee: shipment?.fee || order.shippingFee || 0,
       status: shipment?.status || "",
+      note: shipment?.note || "",
     },
+    shippingHistory: Array.isArray(order.shipments) ? [...order.shipments].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)) : [],
 
     status: uiStatus,
 
