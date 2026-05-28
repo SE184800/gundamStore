@@ -82,7 +82,22 @@ export async function createOrder(req, res, next) {
       });
     }
 
+    const reservationMap = new Map();
+
     for (const item of resolvedItems) {
+      const productId = item.product.id;
+      const current = reservationMap.get(productId) || {
+        product: item.product,
+        quantity: 0,
+      };
+
+      current.quantity += item.quantity;
+      reservationMap.set(productId, current);
+    }
+
+    const stockReservations = Array.from(reservationMap.values());
+
+    for (const item of stockReservations) {
       if (item.product.stock < item.quantity) {
         return res.status(400).json({
           success: false,
@@ -127,19 +142,56 @@ export async function createOrder(req, res, next) {
         include: includeOrderRelations(),
       });
 
-      for (const item of resolvedItems) {
-        const product = item.product;
-        const beforeStock = product.stock;
-        const afterStock = beforeStock - item.quantity;
-
-        await tx.product.update({
-          where: { id: product.id },
-          data: { stock: afterStock },
+      for (const item of stockReservations) {
+        const productSnapshot = await tx.product.findUnique({
+          where: { id: item.product.id },
+          select: {
+            id: true,
+            sku: true,
+            stock: true,
+            active: true,
+          },
         });
+
+        if (!productSnapshot || !productSnapshot.active) {
+          const error = new Error(`Product ${item.product.sku} is no longer available`);
+          error.statusCode = 409;
+          throw error;
+        }
+
+        if (productSnapshot.stock < item.quantity) {
+          const error = new Error(`Insufficient stock for product ${productSnapshot.sku}`);
+          error.statusCode = 409;
+          throw error;
+        }
+
+        const updated = await tx.product.updateMany({
+          where: {
+            id: productSnapshot.id,
+            active: true,
+            stock: {
+              gte: item.quantity,
+            },
+          },
+          data: {
+            stock: {
+              decrement: item.quantity,
+            },
+          },
+        });
+
+        if (updated.count !== 1) {
+          const error = new Error(`Insufficient stock for product ${productSnapshot.sku}`);
+          error.statusCode = 409;
+          throw error;
+        }
+
+        const beforeStock = productSnapshot.stock;
+        const afterStock = beforeStock - item.quantity;
 
         await tx.inventoryLog.create({
           data: {
-            productId: product.id,
+            productId: productSnapshot.id,
             type: "RESERVE",
             quantity: item.quantity,
             beforeStock,
