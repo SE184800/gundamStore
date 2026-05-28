@@ -4,6 +4,7 @@ import { Eye, Heart, Minus, Plus, ShoppingCart, Star, X, Zap } from "lucide-reac
 import { formatCurrency } from "../../utils/format";
 import { resolveText, useI18n } from "../../i18n";
 import { addProductToCart, forceCartBadgeSync } from "../../services/CartService";
+import { addMyWishlistItem, hasAccountToken } from "../../services/AccountApiService";
 
 function getImage(product) {
   return (
@@ -27,6 +28,9 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
 
   const [quickOpen, setQuickOpen] = useState(false);
   const [qty, setQty] = useState(1);
+  const [wishlistSaving, setWishlistSaving] = useState(false);
+  const [wishlistSaved, setWishlistSaved] = useState(false);
+  const [wishlistMessage, setWishlistMessage] = useState("");
 
   const name = resolveText(product?.name, lang, t("product.defaultName"));
   const short = resolveText(product?.short, lang, t("product.defaultShort"));
@@ -61,6 +65,30 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
     window.location.href = isPreorder ? detailUrl : "/checkout";
   }
 
+  async function addWishlist(e) {
+    e?.preventDefault?.();
+    e?.stopPropagation?.();
+
+    setWishlistMessage("");
+
+    if (!hasAccountToken()) {
+      setWishlistMessage("Vui lòng đăng nhập để lưu yêu thích.");
+      return;
+    }
+
+    try {
+      setWishlistSaving(true);
+      await addMyWishlistItem(product);
+      setWishlistSaved(true);
+      setWishlistMessage("Đã lưu vào yêu thích.");
+      actions?.track?.("add_to_wishlist", { productId: product?.id });
+    } catch (err) {
+      setWishlistMessage(err?.message || "Không thể lưu yêu thích.");
+    } finally {
+      setWishlistSaving(false);
+    }
+  }
+
   return (
     <>
       <article className="group overflow-hidden rounded-[22px] border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:border-blue-200 hover:shadow-xl sm:rounded-[24px]">
@@ -71,6 +99,21 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
                 {badge}
               </div>
             )}
+
+            <button
+              type="button"
+              data-wishlist-card-button="true"
+              onClick={addWishlist}
+              disabled={wishlistSaving}
+              title={wishlistSaved ? "Đã lưu yêu thích" : "Lưu yêu thích"}
+              className={`absolute right-3 top-3 z-10 flex h-10 w-10 items-center justify-center rounded-full border bg-white/90 shadow-lg backdrop-blur transition hover:scale-110 ${
+                wishlistSaved
+                  ? "border-red-100 text-red-600"
+                  : "border-white/70 text-slate-500 hover:border-red-100 hover:text-red-600"
+              } ${wishlistSaving ? "cursor-not-allowed opacity-60" : ""}`}
+            >
+              <Heart size={18} fill={wishlistSaved ? "currentColor" : "none"} />
+            </button>
 
             <img
               src={image}
@@ -124,6 +167,19 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
               {product?.rating || "4.9"}
             </div>
           </div>
+
+          {wishlistMessage && (
+            <div
+              data-wishlist-card-message="true"
+              className={`mb-3 rounded-2xl px-3 py-2 text-xs font-black ${
+                wishlistSaved
+                  ? "bg-emerald-50 text-emerald-700"
+                  : "bg-amber-50 text-amber-700"
+              }`}
+            >
+              {wishlistMessage}
+            </div>
+          )}
 
           {isPreorder ? (
             <button
@@ -247,10 +303,32 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
                     {t("product.details")}
                   </a>
 
-                  <button className="rounded-2xl border border-slate-200 p-4 text-slate-600 hover:bg-slate-50">
-                    <Heart size={18} />
+                  <button
+                    type="button"
+                    onClick={addWishlist}
+                    disabled={wishlistSaving}
+                    title={wishlistSaved ? "Đã lưu yêu thích" : "Lưu yêu thích"}
+                    className={`rounded-2xl border p-4 transition ${
+                      wishlistSaved
+                        ? "border-red-100 bg-red-50 text-red-600"
+                        : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                    } ${wishlistSaving ? "cursor-not-allowed opacity-60" : ""}`}
+                  >
+                    <Heart size={18} fill={wishlistSaved ? "currentColor" : "none"} />
                   </button>
                 </div>
+
+                {wishlistMessage && (
+                  <div
+                    className={`mt-3 rounded-2xl px-4 py-3 text-sm font-black ${
+                      wishlistSaved
+                        ? "bg-emerald-50 text-emerald-700"
+                        : "bg-amber-50 text-amber-700"
+                    }`}
+                  >
+                    {wishlistMessage}
+                  </div>
+                )}
               </div>
             </div>
           </div>,

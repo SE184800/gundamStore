@@ -60,8 +60,67 @@ model User {
   role         Role       @relation(fields: [roleId], references: [id])
   auditLogs    AuditLog[]
 
+  profile       UserProfile?
+  addresses     UserAddress[]
+  wishlistItems WishlistItem[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model UserProfile {
+  id         String    @id @default(cuid())
+  userId     String    @unique
+  phone      String?
+  birthday   DateTime?
+  gender     String?
+  avatarUrl  String?
+  note       String?
+  city       String?
+  district   String?
+  ward       String?
+  address    String?
+  postalCode String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model UserAddress {
+  id          String  @id @default(cuid())
+  userId      String
+  label       String  @default("Nhà riêng")
+  receiver    String
+  phone       String
+  address     String
+  city        String?
+  district    String?
+  ward        String?
+  postalCode  String?
+  isDefault   Boolean @default(false)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, isDefault])
+}
+
+model WishlistItem {
+  id        String @id @default(cuid())
+  userId    String
+  productId String
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, productId])
+  @@index([userId, createdAt])
 }
 
 model Role {
@@ -246,6 +305,7 @@ model Product {
   inventoryLogs         InventoryLog[]
   prices                ProductPrice[]
   promotionProducts     PromotionProduct[]
+  wishlistItems        WishlistItem[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

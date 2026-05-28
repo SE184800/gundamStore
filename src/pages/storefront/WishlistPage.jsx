@@ -1,8 +1,10 @@
 import {
+  AlertCircle,
   Bell,
   CreditCard,
   Eye,
   Heart,
+  Loader2,
   Lock,
   LogOut,
   MapPin,
@@ -12,15 +14,16 @@ import {
   Trash2,
   User,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import PageShell from "../../components/common/PageShell";
 import { useCms, useLang } from "../../store/CmsStore";
 import {
-  clearWishlist,
-  getWishlistIds,
-  toggleWishlist,
-} from "../../services/WishlistService";
+  clearMyWishlistApi,
+  getMyWishlist,
+  hasAccountToken,
+  removeMyWishlistItem,
+} from "../../services/AccountApiService";
 
 const menuItems = [
   { label: "Thông tin cá nhân", href: "/profile", icon: User },
@@ -32,26 +35,42 @@ const menuItems = [
   { label: "Đổi mật khẩu", href: "/profile#password", icon: Lock },
 ];
 
-function getProductName(product, lang) {
-  if (typeof product.name === "string") return product.name;
-  return product.name?.[lang] || product.name?.vi || product.name?.en || product.title || "Gundam product";
-}
-
-function getProductImage(product) {
-  return (
-    product.imageUrl ||
-    product.images?.[0] ||
-    product.media?.card ||
-    product.media?.detailMain ||
-    "/images/products/hi-nu.jpg"
-  );
-}
-
 function formatCurrency(value = 0) {
   return new Intl.NumberFormat("vi-VN").format(Number(value) || 0) + " ₫";
 }
 
-function AccountSidebar({ user, onLogout }) {
+function mapWishlistProduct(item = {}) {
+  const product = item.product || item;
+
+  return {
+    wishlistItemId: item.id,
+    id: product.id || item.productId,
+    backendProductId: product.id || item.productId,
+    productId: product.id || item.productId,
+    sku: product.sku || "",
+    slug: product.slug || product.id || item.productId,
+    nameVi: product.nameVi || product.name?.vi || product.name || "Sản phẩm Gundam",
+    nameEn: product.nameEn || product.name?.en || product.nameVi || product.name || "Gundam Product",
+    price: Number(product.price || 0),
+    oldPrice: Number(product.oldPrice || 0),
+    stock: Number(product.stock || 0),
+    status: product.status || "inStock",
+    imageUrl: product.imageUrl || product.images?.[0] || "/images/products/hi-nu.jpg",
+    brand: product.brand || "Bandai Spirits",
+    grade: product.grade || "",
+    scale: product.scale || "",
+    active: product.active !== false,
+    createdAt: item.createdAt,
+  };
+}
+
+function getProductName(product, lang) {
+  return lang === "en"
+    ? product.nameEn || product.nameVi || "Gundam Product"
+    : product.nameVi || product.nameEn || "Sản phẩm Gundam";
+}
+
+function AccountSidebar({ user, wishlistCount, onLogout }) {
   return (
     <aside className="space-y-4">
       <section className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
@@ -62,12 +81,16 @@ function AccountSidebar({ user, onLogout }) {
             <User size={24} />
           </span>
 
-          <div>
-            <div className="font-black text-slate-950">{user?.name || "Admin Demo"}</div>
-            <div className="mt-1 text-sm font-semibold text-slate-500">
+          <div className="min-w-0">
+            <div className="truncate font-black text-slate-950">{user?.name || "Admin Demo"}</div>
+            <div className="mt-1 truncate text-sm font-semibold text-slate-500">
               {user?.email || "admin@demo.com"}
             </div>
           </div>
+        </div>
+
+        <div className="mt-4 rounded-2xl bg-blue-50 px-4 py-3 text-sm font-black text-blue-700">
+          {wishlistCount} sản phẩm yêu thích
         </div>
 
         <div className="mt-5 border-t border-slate-100 pt-3">
@@ -102,38 +125,30 @@ function AccountSidebar({ user, onLogout }) {
       </section>
 
       <section className="rounded-[28px] border border-blue-100 bg-blue-50 p-5 shadow-sm">
-        <div className="font-black text-slate-950">Bạn cần hỗ trợ?</div>
+        <div className="font-black text-slate-950">Wishlist lưu trên backend</div>
         <p className="mt-2 text-sm font-semibold leading-6 text-slate-500">
-          Đội ngũ của chúng tôi luôn sẵn sàng hỗ trợ bạn 24/7.
+          Danh sách yêu thích hiện đã đồng bộ qua API /api/account/wishlist.
         </p>
-
-        <Link
-          to="/contact"
-          className="mt-4 flex min-h-11 items-center justify-center rounded-2xl bg-white text-sm font-black text-blue-700"
-        >
-          Liên hệ ngay
-        </Link>
       </section>
     </aside>
   );
 }
 
-function ProductRow({ product, lang, onRemove, onAddToCart }) {
+function ProductRow({ product, lang, removing, onRemove, onAddToCart }) {
   const name = getProductName(product, lang);
-  const image = getProductImage(product);
   const stock = Number(product.stock || 0);
 
   return (
     <article className="grid gap-4 border-b border-slate-100 py-5 last:border-b-0 md:grid-cols-[180px_1fr_210px] md:items-center">
       <Link to={`/product/${product.slug || product.id}`} className="overflow-hidden rounded-2xl bg-slate-100">
-        <img src={image} alt={name} className="h-40 w-full object-cover md:h-28" />
+        <img src={product.imageUrl} alt={name} className="h-40 w-full object-cover md:h-28" />
       </Link>
 
       <div>
         <h3 className="text-lg font-black text-slate-950">{name}</h3>
 
         <div className="mt-1 text-sm font-bold text-blue-700">
-          {product.brand || product.supplier?.nameVi || "Bandai Spirits"}
+          {product.brand || "Bandai Spirits"}
         </div>
 
         <div className="mt-3 flex flex-wrap gap-2">
@@ -158,8 +173,16 @@ function ProductRow({ product, lang, onRemove, onAddToCart }) {
           </span>
         </div>
 
-        <div className="mt-3 text-xl font-black text-red-600">
-          {formatCurrency(product.price)}
+        <div className="mt-3 flex items-center gap-2">
+          <div className="text-xl font-black text-red-600">
+            {formatCurrency(product.price)}
+          </div>
+
+          {product.oldPrice > product.price && (
+            <div className="text-sm font-bold text-slate-400 line-through">
+              {formatCurrency(product.oldPrice)}
+            </div>
+          )}
         </div>
       </div>
 
@@ -167,7 +190,12 @@ function ProductRow({ product, lang, onRemove, onAddToCart }) {
         <button
           type="button"
           onClick={onAddToCart}
-          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-blue-700 px-4 text-sm font-black text-white shadow-lg shadow-blue-100 hover:bg-blue-800"
+          disabled={stock <= 0}
+          className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl px-4 text-sm font-black text-white shadow-lg ${
+            stock <= 0
+              ? "cursor-not-allowed bg-slate-400"
+              : "bg-blue-700 shadow-blue-100 hover:bg-blue-800"
+          }`}
         >
           <ShoppingCart size={17} />
           Thêm vào giỏ
@@ -184,9 +212,14 @@ function ProductRow({ product, lang, onRemove, onAddToCart }) {
         <button
           type="button"
           onClick={onRemove}
-          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-red-100 bg-white px-4 text-sm font-black text-red-600 hover:bg-red-50"
+          disabled={removing}
+          className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border px-4 text-sm font-black ${
+            removing
+              ? "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400"
+              : "border-red-100 bg-white text-red-600 hover:bg-red-50"
+          }`}
         >
-          <Trash2 size={17} />
+          {removing ? <Loader2 size={17} className="animate-spin" /> : <Trash2 size={17} />}
           Xóa khỏi yêu thích
         </button>
       </div>
@@ -197,26 +230,34 @@ function ProductRow({ product, lang, onRemove, onAddToCart }) {
 export default function WishlistPage() {
   const { state, actions } = useCms();
   const [lang] = useLang();
+
   const [query, setQuery] = useState("");
-  const [version, setVersion] = useState(0);
+  const [wishlistItems, setWishlistItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [removingId, setRemovingId] = useState("");
+  const [clearing, setClearing] = useState(false);
+  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
 
   const user = state.user || {
     name: "Admin Demo",
     email: "admin@demo.com",
   };
 
-  const wishlistIds = useMemo(() => getWishlistIds(), [version]);
+  const hasToken = useMemo(() => hasAccountToken(), []);
 
   const products = useMemo(() => {
     const q = query.trim().toLowerCase();
 
-    return (state.products || [])
-      .filter((product) => wishlistIds.includes(product.id))
+    return wishlistItems
+      .map(mapWishlistProduct)
+      .filter((product) => product.active)
       .filter((product) => {
         if (!q) return true;
 
         return [
-          getProductName(product, lang),
+          product.nameVi,
+          product.nameEn,
           product.sku,
           product.grade,
           product.scale,
@@ -227,28 +268,81 @@ export default function WishlistPage() {
           .toLowerCase()
           .includes(q);
       });
-  }, [state.products, wishlistIds, query, lang]);
+  }, [wishlistItems, query]);
 
-  function refresh() {
-    setVersion((value) => value + 1);
+  async function loadWishlist() {
+    if (!hasToken) {
+      setLoading(false);
+      setError("Bạn cần đăng nhập để xem danh sách yêu thích.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError("");
+      const items = await getMyWishlist();
+      setWishlistItems(Array.isArray(items) ? items : []);
+    } catch (err) {
+      setError(err?.message || "Không thể tải danh sách yêu thích.");
+    } finally {
+      setLoading(false);
+    }
   }
 
-  function remove(productId) {
-    toggleWishlist(productId);
-    refresh();
+  useEffect(() => {
+    loadWishlist();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function remove(productId) {
+    try {
+      setRemovingId(productId);
+      setMessage("");
+      setError("");
+
+      await removeMyWishlistItem(productId);
+
+      setWishlistItems((prev) =>
+        prev.filter((item) => {
+          const product = mapWishlistProduct(item);
+          return product.id !== productId;
+        })
+      );
+
+      setMessage("Đã xóa sản phẩm khỏi danh sách yêu thích.");
+    } catch (err) {
+      setError(err?.message || "Không thể xóa sản phẩm yêu thích.");
+    } finally {
+      setRemovingId("");
+    }
   }
 
-  function clearAll() {
-    clearWishlist();
-    refresh();
+  async function clearAll() {
+    try {
+      setClearing(true);
+      setMessage("");
+      setError("");
+
+      await clearMyWishlistApi();
+
+      setWishlistItems([]);
+      setMessage("Đã xóa toàn bộ danh sách yêu thích.");
+    } catch (err) {
+      setError(err?.message || "Không thể xóa danh sách yêu thích.");
+    } finally {
+      setClearing(false);
+    }
   }
 
   function addToCart(product) {
     actions.addToCart(product.backendProductId || product.productId || product.id, 1);
+    setMessage("Đã thêm sản phẩm vào giỏ hàng.");
   }
 
   function logout() {
-    actions.logout();
+    actions.logout?.();
+    localStorage.removeItem("gundam-admin-token");
+    localStorage.removeItem("gundam-admin-auth");
     window.location.href = "/";
   }
 
@@ -257,7 +351,7 @@ export default function WishlistPage() {
       <main className="min-h-screen bg-gradient-to-b from-white via-blue-50/40 to-slate-100">
         <div className="mx-auto max-w-[1440px] px-4 py-8 lg:px-8">
           <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
-            <AccountSidebar user={user} onLogout={logout} />
+            <AccountSidebar user={user} wishlistCount={wishlistItems.length} onLogout={logout} />
 
             <section>
               <div className="text-sm font-bold text-slate-500">
@@ -279,7 +373,7 @@ export default function WishlistPage() {
                   </div>
 
                   <p className="mt-2 text-sm font-semibold text-slate-500">
-                    Các sản phẩm bạn yêu thích và muốn mua sau.
+                    Danh sách này được lưu trên backend theo tài khoản đăng nhập.
                   </p>
                 </div>
 
@@ -311,22 +405,44 @@ export default function WishlistPage() {
                     <button
                       type="button"
                       onClick={clearAll}
-                      className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-red-100 bg-red-50 px-4 text-sm font-black text-red-600 hover:bg-red-100"
+                      disabled={clearing || wishlistItems.length === 0}
+                      className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border px-4 text-sm font-black ${
+                        clearing || wishlistItems.length === 0
+                          ? "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400"
+                          : "border-red-100 bg-red-50 text-red-600 hover:bg-red-100"
+                      }`}
                     >
-                      <Trash2 size={16} />
+                      {clearing ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
                       Xóa tất cả
                     </button>
                   </div>
                 </div>
 
-                {products.length === 0 ? (
+                {error && (
+                  <div className="mt-5 flex items-start gap-3 rounded-2xl bg-red-50 p-4 text-sm font-black text-red-600">
+                    <AlertCircle size={18} />
+                    <span>{error}</span>
+                  </div>
+                )}
+
+                {message && (
+                  <div className="mt-5 rounded-2xl bg-emerald-50 p-4 text-sm font-black text-emerald-700">
+                    {message}
+                  </div>
+                )}
+
+                {loading ? (
+                  <div className="mt-5 flex min-h-[260px] items-center justify-center rounded-[24px] bg-slate-50">
+                    <Loader2 className="animate-spin text-blue-700" size={34} />
+                  </div>
+                ) : products.length === 0 ? (
                   <div className="mt-5 rounded-[24px] border border-dashed border-slate-300 bg-slate-50 p-10 text-center">
                     <Heart className="mx-auto text-slate-300" size={48} />
                     <div className="mt-4 text-xl font-black text-slate-600">
                       Chưa có sản phẩm yêu thích
                     </div>
                     <p className="mx-auto mt-2 max-w-md text-sm font-semibold leading-6 text-slate-500">
-                      Hãy bấm biểu tượng trái tim tại sản phẩm bạn thích để lưu lại và mua sau.
+                      Hãy thêm sản phẩm vào wishlist để hệ thống lưu theo tài khoản.
                     </p>
 
                     <Link
@@ -343,6 +459,7 @@ export default function WishlistPage() {
                         key={product.id}
                         product={product}
                         lang={lang}
+                        removing={removingId === product.id}
                         onRemove={() => remove(product.id)}
                         onAddToCart={() => addToCart(product)}
                       />

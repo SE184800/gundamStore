@@ -180,6 +180,113 @@ async function run() {
   }
 
 
+  if (token) {
+    try {
+      const { response, data } = await request("/api/account/me", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok && data?.success && data?.account) {
+        pass("Account profile API works", `HTTP ${response.status}`);
+      } else {
+        fail("Account profile API works", `HTTP ${response.status} ${JSON.stringify(data)}`);
+      }
+    } catch (err) {
+      fail("Account profile API works", err.message);
+    }
+
+    try {
+      const { response, data } = await request("/api/account/me", {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          name: "Admin Demo",
+          phone: "0901234567",
+          gender: "Nam",
+          city: "Hồ Chí Minh",
+          district: "Quận 1",
+          ward: "Phường Bến Nghé",
+          address: "Smoke test address",
+          postalCode: "700000",
+        }),
+      });
+
+      if (response.ok && data?.success && data?.account?.profile?.phone === "0901234567") {
+        pass("Account profile update works", `HTTP ${response.status}`);
+      } else {
+        fail("Account profile update works", `HTTP ${response.status} ${JSON.stringify(data)}`);
+      }
+    } catch (err) {
+      fail("Account profile update works", err.message);
+    }
+
+    try {
+      const productResult = await request("/api/products");
+      const products = productResult.data?.products || productResult.data?.data || [];
+      const product = products.find((item) => item?.id);
+
+      if (!product) {
+        pass("Wishlist API add/list/remove works", "Skipped because no product exists");
+      } else {
+        const addResult = await request("/api/account/wishlist", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            productId: product.id,
+          }),
+        });
+
+        const listResult = await request("/api/account/wishlist", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const items = listResult.data?.items || [];
+        const found = items.some((item) => item.productId === product.id);
+
+        const removeResult = await request(`/api/account/wishlist/${encodeURIComponent(product.id)}`, {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (
+          [200, 201].includes(addResult.response.status) &&
+          listResult.response.ok &&
+          found &&
+          removeResult.response.ok
+        ) {
+          pass("Wishlist API add/list/remove works", `product=${product.sku || product.id}`);
+        } else {
+          fail(
+            "Wishlist API add/list/remove works",
+            JSON.stringify({
+              add: addResult.response.status,
+              list: listResult.response.status,
+              found,
+              remove: removeResult.response.status,
+            })
+          );
+        }
+      }
+    } catch (err) {
+      fail("Wishlist API add/list/remove works", err.message);
+    }
+  } else {
+    fail("Account profile API works", "Skipped because login token is missing");
+    fail("Account profile update works", "Skipped because login token is missing");
+    fail("Wishlist API add/list/remove works", "Skipped because login token is missing");
+  }
+
+
   const failed = results.filter((item) => !item.ok);
 
   console.log("======================================");
