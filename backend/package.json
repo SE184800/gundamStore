@@ -18,7 +18,8 @@
     "smoke:customer-order": "node scripts/smokeCustomerOrderFlow.mjs",
     "smoke:cancel-restore": "node scripts/smokeCancelOrderRestoreStock.mjs",
     "smoke:address-book": "node scripts/smokeAddressBook.mjs",
-    "smoke:payment-workflow": "node scripts/smokePaymentWorkflow.mjs"
+    "smoke:payment-workflow": "node scripts/smokePaymentWorkflow.mjs",
+    "smoke:admin-order-operation": "node scripts/smokeAdminOrderOperation.mjs"
   },
   "dependencies": {
     "@prisma/client": "^6.0.0",
