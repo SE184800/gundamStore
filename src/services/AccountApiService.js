@@ -25,6 +25,43 @@ export async function updateMyAccount(payload = {}) {
   return data.account;
 }
 
+export async function getMyAddresses() {
+  const data = await accountRequest("/api/account/addresses");
+  return data.addresses || [];
+}
+
+export async function createMyAddress(payload = {}) {
+  const data = await accountRequest("/api/account/addresses", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+
+  return data.address;
+}
+
+export async function updateMyAddress(id, payload = {}) {
+  const data = await accountRequest(`/api/account/addresses/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+
+  return data.address;
+}
+
+export async function deleteMyAddress(id) {
+  return accountRequest(`/api/account/addresses/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+  });
+}
+
+export async function setDefaultMyAddress(id) {
+  const data = await accountRequest(`/api/account/addresses/${encodeURIComponent(id)}/default`, {
+    method: "PATCH",
+  });
+
+  return data.address;
+}
+
 export async function getMyWishlist() {
   const data = await accountRequest("/api/account/wishlist");
   return data.items || [];

@@ -13,7 +13,7 @@ import {
   createStorefrontOrderApi,
 } from "../../services/StorefrontOrderApiService";
 import StorefrontShell from "../../components/storefront/StorefrontShell";
-import { getMyAccount, hasAccountToken } from "../../services/AccountApiService";
+import { getMyAccount, getMyAddresses, hasAccountToken } from "../../services/AccountApiService";
 import {
   ORDER_TYPE,
   PAYMENT_METHODS,
@@ -32,6 +32,9 @@ function getCopy(lang) {
     noDraft: lang === "en" ? "No checkout data found" : "Không có dữ liệu checkout",
     backCart: lang === "en" ? "Back to cart" : "Quay lại giỏ hàng",
     addressTitle: lang === "en" ? "Shipping address" : "Địa chỉ nhận hàng",
+    savedAddresses: lang === "en" ? "Saved addresses" : "Địa chỉ đã lưu",
+    chooseSavedAddress: lang === "en" ? "Choose saved address" : "Chọn địa chỉ đã lưu",
+    defaultAddress: lang === "en" ? "Default" : "Mặc định",
     name: lang === "en" ? "Recipient name" : "Họ tên người nhận",
     phone: lang === "en" ? "Phone number" : "Số điện thoại",
     province: lang === "en" ? "Province / City" : "Tỉnh / Thành phố",
@@ -113,6 +116,22 @@ export default function CheckoutPage() {
     shippingMethod: "FAST",
   });
 
+  const [savedAddresses, setSavedAddresses] = useState([]);
+  const [selectedAddressId, setSelectedAddressId] = useState("");
+
+  function applySavedAddress(address) {
+    if (!address) return;
+
+    setSelectedAddressId(address.id || "");
+    setCustomer((prev) => ({
+      ...prev,
+      name: address.receiver || prev.name,
+      phone: address.phone || prev.phone,
+      address: address.address || prev.address,
+      province: address.city || prev.province || "Hồ Chí Minh",
+    }));
+  }
+
   useEffect(() => {
     let alive = true;
 
@@ -127,11 +146,31 @@ export default function CheckoutPage() {
     }
 
     if (hasAccountToken()) {
-      getMyAccount()
-        .then((account) => {
+      Promise.all([
+        getMyAccount(),
+        getMyAddresses().catch(() => []),
+      ])
+        .then(([account, addresses]) => {
           if (!alive) return;
 
           const profile = account?.profile || {};
+          const items = Array.isArray(addresses) ? addresses : [];
+          const defaultAddress = items.find((item) => item.isDefault) || items[0] || null;
+
+          setSavedAddresses(items);
+
+          if (defaultAddress) {
+            setSelectedAddressId(defaultAddress.id);
+            setCustomer((prev) => ({
+              ...prev,
+              name: prev.name || defaultAddress.receiver || account?.name || "",
+              email: prev.email || account?.email || "",
+              phone: prev.phone || defaultAddress.phone || profile.phone || "",
+              address: prev.address || defaultAddress.address || profile.address || "",
+              province: prev.province || defaultAddress.city || profile.city || "Hồ Chí Minh",
+            }));
+            return;
+          }
 
           setCustomer((prev) => ({
             ...prev,
@@ -397,6 +436,41 @@ export default function CheckoutPage() {
                 <h2 className="flex items-center gap-2 text-xl font-black">
                   <MapPin size={22} /> {t.addressTitle}
                 </h2>
+
+                {savedAddresses.length > 0 && (
+                  <div data-checkout-address-book="true" className="mt-5 rounded-2xl border border-blue-100 bg-blue-50 p-4">
+                    <div className="text-sm font-black text-blue-800">{t.savedAddresses}</div>
+                    <div className="mt-3 grid gap-3 md:grid-cols-2">
+                      {savedAddresses.map((address) => (
+                        <button
+                          key={address.id}
+                          type="button"
+                          onClick={() => applySavedAddress(address)}
+                          className={`rounded-2xl border p-4 text-left text-sm transition ${
+                            selectedAddressId === address.id
+                              ? "border-blue-500 bg-white ring-2 ring-blue-100"
+                              : "border-blue-100 bg-white/70 hover:border-blue-300"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <b className="text-slate-950">{address.label || t.chooseSavedAddress}</b>
+                            {address.isDefault && (
+                              <span className="rounded-full bg-amber-50 px-2 py-1 text-[11px] font-black text-amber-700">
+                                {t.defaultAddress}
+                              </span>
+                            )}
+                          </div>
+                          <div className="mt-2 font-bold text-slate-700">
+                            {address.receiver} · {address.phone}
+                          </div>
+                          <div className="mt-1 text-xs font-semibold leading-5 text-slate-500">
+                            {[address.address, address.ward, address.district, address.city].filter(Boolean).join(", ")}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 <div className="mt-5 grid gap-4 md:grid-cols-2">
                   <input

@@ -39,6 +39,70 @@ function mapWishlistItem(item) {
   };
 }
 
+function cleanText(value = "", max = 255) {
+  return String(value || "")
+    .replace(/[<>]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, max);
+}
+
+function mapAddress(address) {
+  if (!address) return null;
+
+  return {
+    id: address.id,
+    label: address.label,
+    receiver: address.receiver,
+    phone: address.phone,
+    address: address.address,
+    city: address.city || "",
+    district: address.district || "",
+    ward: address.ward || "",
+    postalCode: address.postalCode || "",
+    isDefault: Boolean(address.isDefault),
+    createdAt: address.createdAt,
+    updatedAt: address.updatedAt,
+  };
+}
+
+const createAddressSchema = z.object({
+  label: z.string().trim().min(1).max(80).default("Nhà riêng"),
+  receiver: z.string().trim().min(2).max(120),
+  phone: z.string().trim().min(8).max(30),
+  address: z.string().trim().min(5).max(255),
+  city: z.string().trim().max(120).optional().or(z.literal("")),
+  district: z.string().trim().max(120).optional().or(z.literal("")),
+  ward: z.string().trim().max(120).optional().or(z.literal("")),
+  postalCode: z.string().trim().max(30).optional().or(z.literal("")),
+  isDefault: z.boolean().optional(),
+});
+
+const updateAddressSchema = createAddressSchema.partial();
+
+async function normalizeDefaultAddress(tx, userId, addressId) {
+  await tx.userAddress.updateMany({
+    where: {
+      userId,
+      id: {
+        not: addressId,
+      },
+    },
+    data: {
+      isDefault: false,
+    },
+  });
+
+  await tx.userAddress.update({
+    where: {
+      id: addressId,
+    },
+    data: {
+      isDefault: true,
+    },
+  });
+}
+
 export async function getMyProfile(req, res, next) {
   try {
     const user = await prisma.user.findUnique({
@@ -141,6 +205,248 @@ export async function updateMyProfile(req, res, next) {
     return res.json({
       success: true,
       account: safeProfile(user),
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+
+export async function listMyAddresses(req, res, next) {
+  try {
+    const addresses = await prisma.userAddress.findMany({
+      where: {
+        userId: req.user.id,
+      },
+      orderBy: [
+        { isDefault: "desc" },
+        { updatedAt: "desc" },
+      ],
+    });
+
+    return res.json({
+      success: true,
+      addresses: addresses.map(mapAddress),
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function createMyAddress(req, res, next) {
+  try {
+    const body = createAddressSchema.parse(req.body);
+
+    const address = await prisma.$transaction(async (tx) => {
+      const count = await tx.userAddress.count({
+        where: {
+          userId: req.user.id,
+        },
+      });
+
+      if (count >= 20) {
+        const error = new Error("Bạn đã lưu tối đa 20 địa chỉ.");
+        error.statusCode = 409;
+        throw error;
+      }
+
+      const shouldDefault = body.isDefault === true || count === 0;
+
+      if (shouldDefault) {
+        await tx.userAddress.updateMany({
+          where: {
+            userId: req.user.id,
+          },
+          data: {
+            isDefault: false,
+          },
+        });
+      }
+
+      return tx.userAddress.create({
+        data: {
+          userId: req.user.id,
+          label: cleanText(body.label || "Nhà riêng", 80),
+          receiver: cleanText(body.receiver, 120),
+          phone: cleanText(body.phone, 30),
+          address: cleanText(body.address, 255),
+          city: cleanText(body.city || "", 120) || null,
+          district: cleanText(body.district || "", 120) || null,
+          ward: cleanText(body.ward || "", 120) || null,
+          postalCode: cleanText(body.postalCode || "", 30) || null,
+          isDefault: shouldDefault,
+        },
+      });
+    });
+
+    return res.status(201).json({
+      success: true,
+      address: mapAddress(address),
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function updateMyAddress(req, res, next) {
+  try {
+    const id = String(req.params.id || "").trim();
+    const body = updateAddressSchema.parse(req.body);
+
+    const updated = await prisma.$transaction(async (tx) => {
+      const existing = await tx.userAddress.findFirst({
+        where: {
+          id,
+          userId: req.user.id,
+        },
+      });
+
+      if (!existing) {
+        return null;
+      }
+
+      const address = await tx.userAddress.update({
+        where: {
+          id,
+        },
+        data: {
+          ...(body.label !== undefined ? { label: cleanText(body.label || "Nhà riêng", 80) } : {}),
+          ...(body.receiver !== undefined ? { receiver: cleanText(body.receiver, 120) } : {}),
+          ...(body.phone !== undefined ? { phone: cleanText(body.phone, 30) } : {}),
+          ...(body.address !== undefined ? { address: cleanText(body.address, 255) } : {}),
+          ...(body.city !== undefined ? { city: cleanText(body.city || "", 120) || null } : {}),
+          ...(body.district !== undefined ? { district: cleanText(body.district || "", 120) || null } : {}),
+          ...(body.ward !== undefined ? { ward: cleanText(body.ward || "", 120) || null } : {}),
+          ...(body.postalCode !== undefined ? { postalCode: cleanText(body.postalCode || "", 30) || null } : {}),
+        },
+      });
+
+      if (body.isDefault === true) {
+        await normalizeDefaultAddress(tx, req.user.id, id);
+
+        return tx.userAddress.findUnique({
+          where: {
+            id,
+          },
+        });
+      }
+
+      return address;
+    });
+
+    if (!updated) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy địa chỉ.",
+      });
+    }
+
+    return res.json({
+      success: true,
+      address: mapAddress(updated),
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function deleteMyAddress(req, res, next) {
+  try {
+    const id = String(req.params.id || "").trim();
+
+    const result = await prisma.$transaction(async (tx) => {
+      const existing = await tx.userAddress.findFirst({
+        where: {
+          id,
+          userId: req.user.id,
+        },
+      });
+
+      if (!existing) {
+        return null;
+      }
+
+      await tx.userAddress.delete({
+        where: {
+          id,
+        },
+      });
+
+      if (existing.isDefault) {
+        const nextDefault = await tx.userAddress.findFirst({
+          where: {
+            userId: req.user.id,
+          },
+          orderBy: {
+            updatedAt: "desc",
+          },
+        });
+
+        if (nextDefault) {
+          await tx.userAddress.update({
+            where: {
+              id: nextDefault.id,
+            },
+            data: {
+              isDefault: true,
+            },
+          });
+        }
+      }
+
+      return existing;
+    });
+
+    if (!result) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy địa chỉ.",
+      });
+    }
+
+    return res.json({
+      success: true,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function setDefaultMyAddress(req, res, next) {
+  try {
+    const id = String(req.params.id || "").trim();
+
+    const address = await prisma.$transaction(async (tx) => {
+      const existing = await tx.userAddress.findFirst({
+        where: {
+          id,
+          userId: req.user.id,
+        },
+      });
+
+      if (!existing) {
+        return null;
+      }
+
+      await normalizeDefaultAddress(tx, req.user.id, id);
+
+      return tx.userAddress.findUnique({
+        where: {
+          id,
+        },
+      });
+    });
+
+    if (!address) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy địa chỉ.",
+      });
+    }
+
+    return res.json({
+      success: true,
+      address: mapAddress(address),
     });
   } catch (err) {
     next(err);
