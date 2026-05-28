@@ -333,6 +333,13 @@ model Order {
   total       Int @default(0)
 
   note      String?
+
+  cancelledAt     DateTime?
+  cancelReason    String?
+  cancelNote      String?
+  cancelledById   String?
+  stockRestoredAt DateTime?
+
   items     OrderItem[]
   payments  Payment[]
   shipments Shipment[]
@@ -342,6 +349,7 @@ model Order {
   updatedAt DateTime @updatedAt
 
   @@index([customerId, createdAt])
+  @@index([status, stockRestoredAt])
 }
 
 model OrderItem {

@@ -4,6 +4,7 @@ import {
   getPublicOrderById,
   listMyOrders,
   getMyOrderById,
+  cancelMyOrder,
   listAdminOrders,
   updateOrderStatus,
   updateOrderPayment,
@@ -31,6 +32,7 @@ const orderLookupRateLimit = createRateLimit({
 router.post("/", createOrderRateLimit, optionalAuth, createOrder);
 router.get("/my", requireAuth, listMyOrders);
 router.get("/my/:id", requireAuth, getMyOrderById);
+router.patch("/my/:id/cancel", requireAuth, cancelMyOrder);
 router.get("/public/:id", orderLookupRateLimit, getPublicOrderById);
 
 router.get(

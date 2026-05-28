@@ -33,7 +33,7 @@ import {
 } from "../../constants/orderConfig";
 import { getCart, saveCart } from "../../services/CartService";
 import StorefrontShell from "../../components/storefront/StorefrontShell";
-import { getMyStorefrontOrderByIdApi } from "../../services/StorefrontOrderApiService";
+import { cancelMyStorefrontOrderApi, getMyStorefrontOrderByIdApi } from "../../services/StorefrontOrderApiService";
 import { useLang } from "../../store/CmsStore";
 
 const money = (n) => (Number(n) || 0).toLocaleString("vi-VN") + "đ";
@@ -361,7 +361,7 @@ export default function OrderDetailPage() {
   }
 
   const currentIndex = PUBLIC_STEPS.indexOf(order.status);
-  const directCancel = !isBackendOrder && canCustomerCancelDirect(order.status);
+  const directCancel = canCustomerCancelDirect(order.status);
   const cancelRequest = !isBackendOrder && canCustomerRequestCancel(order.status);
   const returnRequest = !isBackendOrder && canCustomerRequestReturn(order.status);
   const balanceRequestEligible =
@@ -406,9 +406,18 @@ export default function OrderDetailPage() {
     }
   }
 
-  function submitRequest(type, reason, note) {
+  async function submitRequest(type, reason, note) {
     try {
       if (type === "cancelDirect") {
+        if (isBackendOrder) {
+          const updated = await cancelMyStorefrontOrderApi(order.id, { reason, note });
+          setBackendOrder(updated);
+          alert(t.cancelledSuccess);
+          setModalType(null);
+          setRefreshKey((value) => value + 1);
+          return;
+        }
+
         cancelOrderDirectly(order.id, reason, note);
         alert(t.cancelledSuccess);
         navigate("/orders");

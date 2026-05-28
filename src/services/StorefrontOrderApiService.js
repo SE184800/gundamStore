@@ -198,3 +198,27 @@ export async function getMyStorefrontOrderByIdApi(id = "") {
 
   return mapBackendOrderForStorefront(data.order);
 }
+
+
+export async function cancelMyStorefrontOrderApi(id = "", payload = {}) {
+  const cleanId = String(id || "").trim();
+
+  if (!cleanId) {
+    throw new Error("Order id is required.");
+  }
+
+  const data = await apiRequest(`/api/orders/my/${encodeURIComponent(cleanId)}/cancel`, {
+    method: "PATCH",
+    token: getStoredAccountToken(),
+    body: JSON.stringify({
+      reason: payload.reason || "",
+      note: payload.note || "",
+    }),
+  });
+
+  if (!data?.success || !data.order) {
+    throw new Error(data?.message || "Cannot cancel order.");
+  }
+
+  return mapBackendOrderForStorefront(data.order);
+}
