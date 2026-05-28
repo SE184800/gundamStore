@@ -13,6 +13,7 @@ import {
   createStorefrontOrderApi,
 } from "../../services/StorefrontOrderApiService";
 import StorefrontShell from "../../components/storefront/StorefrontShell";
+import { getMyAccount, hasAccountToken } from "../../services/AccountApiService";
 import {
   ORDER_TYPE,
   PAYMENT_METHODS,
@@ -113,6 +114,8 @@ export default function CheckoutPage() {
   });
 
   useEffect(() => {
+    let alive = true;
+
     const checkoutDraft = getCheckoutDraft();
     setDraft(checkoutDraft);
 
@@ -122,6 +125,31 @@ export default function CheckoutPage() {
         shippingMethod: checkoutDraft.shippingMethod,
       }));
     }
+
+    if (hasAccountToken()) {
+      getMyAccount()
+        .then((account) => {
+          if (!alive) return;
+
+          const profile = account?.profile || {};
+
+          setCustomer((prev) => ({
+            ...prev,
+            name: prev.name || account?.name || "",
+            email: prev.email || account?.email || "",
+            phone: prev.phone || profile.phone || "",
+            address: prev.address || profile.address || "",
+            province: prev.province || profile.city || "Hồ Chí Minh",
+          }));
+        })
+        .catch((error) => {
+          console.warn("Checkout account prefill skipped", error);
+        });
+    }
+
+    return () => {
+      alive = false;
+    };
   }, []);
 
   const selectedShipping = getShippingMethod(customer.shippingMethod);

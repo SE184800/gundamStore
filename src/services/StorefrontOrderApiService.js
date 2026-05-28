@@ -1,4 +1,5 @@
-import { apiRequest } from "./ApiClient";
+import { apiRequest, getStoredAccountToken } from "./ApiClient";
+import { mapBackendOrderForStorefront } from "./StorefrontOrderLookupApiService";
 
 const PRODUCT_ALIASES = {
   "prod-hg-aerial": {
@@ -159,7 +160,7 @@ export async function createStorefrontOrderApi(payload) {
   const data = await apiRequest("/api/orders", {
     method: "POST",
     body: JSON.stringify(payload),
-    token: "",
+    token: getStoredAccountToken(),
   });
 
   if (!data?.success || !data.order) {
@@ -167,4 +168,33 @@ export async function createStorefrontOrderApi(payload) {
   }
 
   return data.order;
+}
+
+
+export async function getMyStorefrontOrdersApi() {
+  const data = await apiRequest("/api/orders/my", {
+    token: getStoredAccountToken(),
+  });
+
+  return Array.isArray(data?.orders)
+    ? data.orders.map(mapBackendOrderForStorefront)
+    : [];
+}
+
+export async function getMyStorefrontOrderByIdApi(id = "") {
+  const cleanId = String(id || "").trim();
+
+  if (!cleanId) {
+    throw new Error("Order id is required.");
+  }
+
+  const data = await apiRequest(`/api/orders/my/${encodeURIComponent(cleanId)}`, {
+    token: getStoredAccountToken(),
+  });
+
+  if (!data?.success || !data.order) {
+    throw new Error(data?.message || "Order not found.");
+  }
+
+  return mapBackendOrderForStorefront(data.order);
 }

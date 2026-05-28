@@ -63,9 +63,11 @@ model User {
   profile       UserProfile?
   addresses     UserAddress[]
   wishlistItems WishlistItem[]
+  orders        Order[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
 }
 
 model UserProfile {
@@ -314,10 +316,13 @@ model Product {
 model Order {
   id              String  @id @default(cuid())
   orderNo         String  @unique
+  customerId      String?
   customerName    String
   customerPhone   String
   customerEmail   String?
   customerAddress String
+
+  customer User? @relation(fields: [customerId], references: [id], onDelete: SetNull)
 
   status        OrderStatus   @default(PLACED)
   paymentStatus PaymentStatus @default(UNPAID)
@@ -335,6 +340,8 @@ model Order {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([customerId, createdAt])
 }
 
 model OrderItem {

@@ -2,12 +2,14 @@ import express from "express";
 import {
   createOrder,
   getPublicOrderById,
+  listMyOrders,
+  getMyOrderById,
   listAdminOrders,
   updateOrderStatus,
   updateOrderPayment,
   updateOrderShipping,
 } from "../controllers/orderController.js";
-import { requireAuth, requirePermission } from "../middleware/auth.js";
+import { optionalAuth, requireAuth, requirePermission } from "../middleware/auth.js";
 import { createRateLimit } from "../middleware/rateLimit.js";
 
 const router = express.Router();
@@ -26,7 +28,9 @@ const orderLookupRateLimit = createRateLimit({
   message: "Bạn tra cứu đơn hàng quá nhanh. Vui lòng thử lại sau.",
 });
 
-router.post("/", createOrderRateLimit, createOrder);
+router.post("/", createOrderRateLimit, optionalAuth, createOrder);
+router.get("/my", requireAuth, listMyOrders);
+router.get("/my/:id", requireAuth, getMyOrderById);
 router.get("/public/:id", orderLookupRateLimit, getPublicOrderById);
 
 router.get(
