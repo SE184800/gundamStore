@@ -100,6 +100,21 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
               </div>
             )}
 
+            <button
+              type="button"
+              data-wishlist-card-button="true"
+              onClick={addWishlist}
+              disabled={wishlistSaving}
+              title={wishlistSaved ? "Đã lưu yêu thích" : "Lưu yêu thích"}
+              className={`absolute right-3 top-3 z-10 flex h-10 w-10 items-center justify-center rounded-full border bg-white/90 shadow-lg backdrop-blur transition hover:scale-110 ${
+                wishlistSaved
+                  ? "border-red-100 text-red-600"
+                  : "border-white/70 text-slate-500 hover:border-red-100 hover:text-red-600"
+              } ${wishlistSaving ? "cursor-not-allowed opacity-60" : ""}`}
+            >
+              <Heart size={18} fill={wishlistSaved ? "currentColor" : "none"} />
+            </button>
+
             <img
               src={image}
               alt={name}
@@ -152,6 +167,19 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
               {product?.rating || "4.9"}
             </div>
           </div>
+
+          {wishlistMessage && (
+            <div
+              data-wishlist-card-message="true"
+              className={`mb-3 rounded-2xl px-3 py-2 text-xs font-black ${
+                wishlistSaved
+                  ? "bg-emerald-50 text-emerald-700"
+                  : "bg-amber-50 text-amber-700"
+              }`}
+            >
+              {wishlistMessage}
+            </div>
+          )}
 
           {isPreorder ? (
             <button
