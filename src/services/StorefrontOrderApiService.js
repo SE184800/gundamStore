@@ -134,6 +134,15 @@ function normalizeSlug(item = {}) {
   return alias.slug || item.slug || "";
 }
 
+function normalizePaymentMethod(method = "COD") {
+  const value = String(method || "COD").trim().toUpperCase();
+
+  if (value === "BANK") return "BANK_TRANSFER";
+  if (value === "MOMO") return "WALLET";
+
+  return ["COD", "BANK_TRANSFER", "CARD", "WALLET"].includes(value) ? value : "COD";
+}
+
 export function buildCreateOrderPayload({
   customer,
   draft,
@@ -146,6 +155,8 @@ export function buildCreateOrderPayload({
     customerAddress: [customer.address, customer.province].filter(Boolean).join(", "),
     shippingFee: Number(pricing.shippingFee) || 0,
     discount: Number(pricing.discount || 0) + Number(pricing.shippingDiscount || 0),
+    paymentMethod: normalizePaymentMethod(customer.paymentMethod),
+    paymentReference: customer.paymentReference || "",
     note: customer.note || "",
     items: (draft.items || []).map((item) => ({
       productId: normalizeProductId(item),

@@ -60,6 +60,7 @@ export const ORDER_ALLOWED_TRANSITIONS = {
 
 export const PAYMENT_STATUS = {
   UNPAID: "Unpaid",
+  PARTIAL: "Partial",
   PAID: "Paid",
   REFUNDED: "Refunded",
 };
@@ -68,14 +69,16 @@ export const PAYMENT_STATUS_OPTIONS = Object.values(PAYMENT_STATUS);
 
 export const PAYMENT_STATUS_LABELS = {
   [PAYMENT_STATUS.UNPAID]: { vi: "Chưa thanh toán", en: "Unpaid" },
+  [PAYMENT_STATUS.PARTIAL]: { vi: "Thanh toán một phần", en: "Partial" },
   [PAYMENT_STATUS.PAID]: { vi: "Đã thanh toán", en: "Paid" },
   [PAYMENT_STATUS.REFUNDED]: { vi: "Đã hoàn tiền", en: "Refunded" },
 };
 
 export const PAYMENT_METHODS = [
   { value: "COD", label: { vi: "COD - Thanh toán khi nhận hàng", en: "COD - Cash on delivery" } },
-  { value: "BANK", label: { vi: "Chuyển khoản ngân hàng", en: "Bank transfer" } },
-  { value: "MOMO", label: { vi: "Ví MoMo", en: "MoMo wallet" } },
+  { value: "BANK_TRANSFER", label: { vi: "Chuyển khoản ngân hàng", en: "Bank transfer" } },
+  { value: "CARD", label: { vi: "Thẻ ngân hàng", en: "Bank card" } },
+  { value: "WALLET", label: { vi: "Ví điện tử", en: "E-wallet" } },
 ];
 
 export const SHIPPING_METHODS = [
