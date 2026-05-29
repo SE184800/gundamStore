@@ -4,7 +4,7 @@ import { Eye, Heart, Minus, Plus, ShoppingCart, Star, X, Zap } from "lucide-reac
 import { formatCurrency } from "../../utils/format";
 import { resolveText, useI18n } from "../../i18n";
 import { addProductToCart, forceCartBadgeSync } from "../../services/CartService";
-
+import Toast from "../../utils/Toast";
 function getImage(product) {
   return (
     product?.media?.card ||
@@ -27,7 +27,7 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
 
   const [quickOpen, setQuickOpen] = useState(false);
   const [qty, setQty] = useState(1);
-
+  const [toastConfig, setToastConfig] = useState({ show: false, type: "success", message: "" });
   const name = resolveText(product?.name, lang, t("product.defaultName"));
   const short = resolveText(product?.short, lang, t("product.defaultShort"));
   const desc = resolveText(product?.description, lang, short);
@@ -49,6 +49,15 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
     }
 
     forceCartBadgeSync();
+    setToastConfig({
+      show: true,
+      type: "success",
+      message: `Đã thêm sản phẩm vào giỏ hàng thành công!`
+    });
+    // ⏳ TỰ ĐỘNG ẨN: Sau 2.5 giây tự động tắt Toast
+    setTimeout(() => {
+      setToastConfig((prev) => ({ ...prev, show: false }));
+    }, 2500);
 
     actions?.track?.("add_to_cart", { productId: product?.id, qty });
   }
@@ -256,6 +265,14 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
           </div>,
           document.body
         )}
+      {createPortal(
+        <Toast
+          show={toastConfig.show}
+          type={toastConfig.type}
+          message={toastConfig.message}
+        />,
+        document.body
+      )}
     </>
   );
 }

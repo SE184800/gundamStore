@@ -6,7 +6,8 @@ import { applyVoucher } from "../../services/VoucherService";
 import { getStock } from "../../services/InventoryService";
 import StorefrontShell from "../../components/storefront/StorefrontShell";
 import { SHIPPING_METHODS, getLocalized, getShippingMethod } from "../../constants/orderConfig";
-import { useLang } from "../../store/CmsStore";
+import { useI18n } from "../../i18n";
+import Toast from "../../utils/Toast";
 
 const money = (n) => (Number(n) || 0).toLocaleString("vi-VN") + "đ";
 
@@ -28,7 +29,7 @@ function getCopy(lang) {
     overStock: lang === "en" ? "Quantity exceeds available stock" : "Số lượng vượt tồn kho",
     stockAlert: lang === "en" ? "Only" : "Sản phẩm này chỉ còn",
     stockAlertSuffix: lang === "en" ? "items in stock." : "sản phẩm trong kho.",
-    selectAtLeastOne: lang === "en" ? "Please select at least 1 product." : "Vui lòng chọn ít nhất 1 sản phẩm.",
+    selectAtLeastOne: lang === "en" ? "Please select at least 1 product to proceed." : "Vui lòng chọn ít nhất 1 sản phẩm để tiếp tục.",
     paymentSummary: lang === "en" ? "Payment summary" : "Tóm tắt thanh toán",
     voucher: lang === "en" ? "Voucher" : "Mã khuyến mãi",
     shipping: lang === "en" ? "Shipping" : "Vận chuyển",
@@ -69,44 +70,61 @@ function isSameCartItem(a = {}, b = {}) {
 }
 
 export default function CartPage() {
+  const [toast, setToast] = useState({ show: false, type: "", message: "" });
   const navigate = useNavigate();
-  const [lang] = useLang();
+  const { lang } = useI18n();
   const t = getCopy(lang);
-
-  const [cart, setCart] = useState([]);
+  const [cart, setCart] = useState(() => getCart());
   const [voucherCode, setVoucherCode] = useState("");
   const [shippingMethod, setShippingMethod] = useState("FAST");
 
-  useEffect(() => {
-    setCart(getCart());
-  }, []);
+  console.log("=== BẮT ĐẦU RENDER GIỎ HÀNG ===");
+  console.log("1. Mảng cart tổng hiện tại trong State:", cart);
 
-  const selectedItems = useMemo(
-    () => cart.filter((item) => item.selected !== false),
-    [cart]
+  const selectedItems = cart.filter((item) => item.selected !== false);
+
+  const subtotal = selectedItems.reduce(
+    (sum, item) => sum + (Number(item.price) || 0) * (Number(item.quantity) || 1),
+    0
   );
-
-  const subtotal = useMemo(
-    () =>
-      selectedItems.reduce(
-        (sum, item) => sum + (Number(item.price) || 0) * (item.quantity || 1),
-        0
-      ),
-    [selectedItems]
-  );
-
   const selectedShipping = getShippingMethod(shippingMethod);
   const baseShippingFee = selectedItems.length ? Number(selectedShipping.fee || 0) : 0;
-
   const voucher = applyVoucher(voucherCode, subtotal, baseShippingFee);
+
   const total = Math.max(
     0,
     subtotal + baseShippingFee - voucher.discount - voucher.shippingDiscount
   );
 
+  console.log("4. Tổng số tiền thanh toán cuối cùng (total):", total);
+  console.log("=================================");
+
+  // 🟢 BỔ SUNG 1: Tự động bắn Toast khi hệ thống kiểm tra xong mã Voucher
+  useEffect(() => {
+    if (!voucherCode) return;
+
+    const delayDebounce = setTimeout(() => {
+      setToast({
+        show: true,
+        type: voucher.valid ? "success" : "error",
+        message: voucher.message || (voucher.valid ? "Áp dụng voucher thành công!" : "Mã giảm giá không hợp lệ.")
+      });
+    }, 800);
+
+    return () => clearTimeout(delayDebounce);
+  }, [voucher.valid, voucherCode]);
+
   function updateCart(next) {
-    setCart(next);
-    saveCart(next);
+    console.log("👉 Hàm updateCart ĐÃ ĐƯỢC KÍCH HOẠT!");
+    console.log("👉 Dữ liệu mảng NEXT chuẩn bị lưu:", next);
+
+    localStorage.setItem("gundam-cart-final", JSON.stringify(next));
+
+    if (typeof emitCartUpdated === "function") {
+      emitCartUpdated(next);
+    }
+
+    setCart([...next]);
   }
 
   function getAvailable(item) {
@@ -119,7 +137,11 @@ export default function CartPage() {
     const available = getAvailable(item);
 
     if ((item.quantity || 1) >= available) {
-      alert(`${t.stockAlert} ${available} ${t.stockAlertSuffix}`);
+      setToast({
+        show: true,
+        type: "warning",
+        message: `${t.stockAlert} ${available} ${t.stockAlertSuffix}`
+      });
       return;
     }
 
@@ -129,7 +151,14 @@ export default function CartPage() {
       )
     );
   }
-
+  useEffect(() => {
+    if (toast.show) {
+      const timer = setTimeout(() => {
+        setToast({ show: false, type: "", message: "" });
+      }, 2000); // 3 giây tự động reset
+      return () => clearTimeout(timer);
+    }
+  }, [toast.show]);
   function decreaseQty(item) {
     updateCart(
       cart.map((x) =>
@@ -147,7 +176,11 @@ export default function CartPage() {
 
   function goCheckout() {
     if (!selectedItems.length) {
-      alert(t.selectAtLeastOne);
+      setToast({
+        show: true,
+        type: "error",
+        message: t.selectAtLeastOne
+      });
       return;
     }
 
@@ -156,7 +189,11 @@ export default function CartPage() {
     );
 
     if (invalidItem) {
-      alert(`${getItemName(invalidItem, lang)}: ${t.stockAlert} ${getAvailable(invalidItem)} ${t.stockAlertSuffix}`);
+      setToast({
+        show: true,
+        type: "error",
+        message: `${getItemName(invalidItem, lang)}: ${t.stockAlert} ${getAvailable(invalidItem)} ${t.stockAlertSuffix}`
+      });
       return;
     }
 
@@ -238,22 +275,21 @@ export default function CartPage() {
                   return (
                     <div
                       key={getCartIdentity(item)}
-                      className={`grid items-center gap-4 rounded-3xl bg-white p-5 shadow-sm md:grid-cols-[40px_1fr_130px_140px_150px_70px] ${
-                        overStock ? "ring-2 ring-red-200" : ""
-                      }`}
+                      className={`grid items-center gap-4 rounded-3xl bg-white p-5 shadow-sm md:grid-cols-[40px_1fr_130px_140px_150px_70px] ${overStock ? "ring-2 ring-red-200" : ""
+                        }`}
                     >
                       <input
                         type="checkbox"
                         checked={item.selected !== false}
-                        onChange={() =>
-                          updateCart(
-                            cart.map((x) =>
-                              isSameCartItem(x, item)
-                                ? { ...x, selected: x.selected === false }
-                                : x
-                            )
-                          )
-                        }
+                        onChange={() => {
+                          const updatedCart = cart.map((x) => {
+                            if (isSameCartItem(x, item)) {
+                              return { ...x, selected: item.selected === false ? true : false };
+                            }
+                            return x;
+                          });
+                          updateCart(updatedCart);
+                        }}
                         className="h-5 w-5"
                       />
 
@@ -274,11 +310,10 @@ export default function CartPage() {
                             <ShieldCheck size={13} /> {t.guaranteed}
                           </div>
 
-                          <div className={`mt-2 inline-flex rounded-full px-3 py-1 text-[11px] font-black ${
-                            item.backendProductId
-                              ? "bg-emerald-50 text-emerald-700"
-                              : "bg-amber-50 text-amber-700"
-                          }`}>
+                          <div className={`mt-2 inline-flex rounded-full px-3 py-1 text-[11px] font-black ${item.backendProductId
+                            ? "bg-emerald-50 text-emerald-700"
+                            : "bg-amber-50 text-amber-700"
+                            }`}>
                             {item.backendProductId ? `DB Product • ${item.sku || item.backendProductId}` : "Local product"}
                           </div>
 
@@ -309,11 +344,10 @@ export default function CartPage() {
                         <button
                           onClick={() => increaseQty(item)}
                           disabled={qty >= available}
-                          className={`rounded-xl border p-2 ${
-                            qty >= available
-                              ? "cursor-not-allowed bg-slate-100 text-slate-300"
-                              : "hover:bg-slate-50"
-                          }`}
+                          className={`rounded-xl border p-2 ${qty >= available
+                            ? "cursor-not-allowed bg-slate-100 text-slate-300"
+                            : "hover:bg-slate-50"
+                            }`}
                         >
                           <Plus size={15} />
                         </button>
@@ -321,8 +355,17 @@ export default function CartPage() {
 
                       <div className="font-black text-slate-950">{money(lineTotal)}</div>
 
+                      {/* 🟢 BỔ SUNG 2: Sửa nút xóa để kích hoạt Toast thành công */}
                       <button
-                        onClick={() => updateCart(cart.filter((x) => !isSameCartItem(x, item)))}
+                        onClick={() => {
+                          const nextCart = cart.filter((x) => !isSameCartItem(x, item));
+                          updateCart(nextCart);
+                          setToast({
+                            show: true,
+                            type: "error",
+                            message: lang === "en" ? "Removed product from cart." : "Đã xóa sản phẩm khỏi giỏ hàng."
+                          });
+                        }}
                         className="rounded-xl bg-red-50 p-3 text-red-500 hover:bg-red-100"
                       >
                         <Trash2 size={18} />
@@ -371,9 +414,8 @@ export default function CartPage() {
                   {SHIPPING_METHODS.map((method) => (
                     <label
                       key={method.value}
-                      className={`cursor-pointer rounded-2xl border bg-white p-3 text-sm ${
-                        shippingMethod === method.value ? "border-blue-500 ring-2 ring-blue-100" : "border-slate-200"
-                      }`}
+                      className={`cursor-pointer rounded-2xl border bg-white p-3 text-sm ${shippingMethod === method.value ? "border-blue-500 ring-2 ring-blue-100" : "border-slate-200"
+                        }`}
                     >
                       <input
                         type="radio"
@@ -432,6 +474,16 @@ export default function CartPage() {
           </div>
         </div>
       </main>
+      {toast.show && (
+        <div className="fixed bottom-5 right-5 z-[9999] animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <Toast
+            show={toast.show}
+            type={toast.type}
+            message={toast.message}
+            onClose={() => setToast({ ...toast, show: false })}
+          />
+        </div>
+      )}
     </StorefrontShell>
   );
 }

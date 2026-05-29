@@ -42,7 +42,7 @@ const copy = {
     cmsOverview: "Tổng quan CMS",
     pages: "Trang nội dung",
     homeBuilder: "Thiết kế trang chủ",
-    banners: "Banner",
+    banners: "Biểu ngữ",
     news: "Tin tức",
     events: "Sự kiện",
     navigation: "Điều hướng",
@@ -87,7 +87,7 @@ const copy = {
     cmsOverview: "CMS Overview",
     pages: "Pages",
     homeBuilder: "Home Builder",
-    banners: "Banners",
+    banners: "Banner",
     news: "News",
     events: "Events",
     navigation: "Navigation",
@@ -300,7 +300,7 @@ export default function AdminLayout() {
               <NavItem to="/admin/settings" icon={Settings} label={t.settings} />
               <NavItem to="/admin/qa-helper" icon={TestTube2} label={t.qaHelper} />
             </NavGroup>
-</nav>
+          </nav>
         </aside>
 
         <main className="min-w-0">
@@ -324,11 +324,10 @@ export default function AdminLayout() {
                       key={item}
                       type="button"
                       onClick={() => setLang(item)}
-                      className={`rounded px-3 py-1.5 text-xs font-black uppercase transition ${
-                        lang === item
-                          ? "bg-blue-700 text-white shadow-sm"
-                          : "text-slate-500 hover:bg-white hover:text-slate-900"
-                      }`}
+                      className={`rounded px-3 py-1.5 text-xs font-black uppercase transition ${lang === item
+                        ? "bg-blue-700 text-white shadow-sm"
+                        : "text-slate-500 hover:bg-white hover:text-slate-900"
+                        }`}
                     >
                       {item.toUpperCase()}
                     </button>

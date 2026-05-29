@@ -3,6 +3,7 @@ import {
   ArrowRight,
   Box,
   CheckCircle2,
+  ChevronLeft,
   ChevronRight,
   Clock,
   Crown,
@@ -31,8 +32,8 @@ function getHeroTextStyles(banner = {}) {
     banner.fontFamily === "serif"
       ? "Georgia, serif"
       : banner.fontFamily === "mono"
-      ? "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace"
-      : "system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif";
+        ? "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace"
+        : "system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif";
 
   return {
     heading: {
@@ -417,20 +418,20 @@ function HeroV3Bento({ banners, lang, actions, settings }) {
   const safeBanners = activeBanners.length
     ? activeBanners
     : [
-        {
-          id: "fallback-bento-1",
-          heading: { vi: "RG Hi-ν Gundam", en: "RG Hi-ν Gundam" },
-          title: { vi: "Huyền thoại trở lại", en: "Legend returns" },
-          subtitle: { vi: "Hàng chính hãng Bandai, số lượng có hạn.", en: "Authentic Bandai, limited stock." },
-          imageUrl: "/images/banners/banner-1.jpg",
-          ctaText: { vi: "Mua ngay", en: "Shop now" },
-          ctaUrl: "/shop",
-          backgroundColor: "#07111f",
-          active: true,
-          status: "Live",
-          priority: 1,
-        },
-      ];
+      {
+        id: "fallback-bento-1",
+        heading: { vi: "RG Hi-ν Gundam", en: "RG Hi-ν Gundam" },
+        title: { vi: "Huyền thoại trở lại", en: "Legend returns" },
+        subtitle: { vi: "Hàng chính hãng Bandai, số lượng có hạn.", en: "Authentic Bandai, limited stock." },
+        imageUrl: "/images/banners/banner-1.jpg",
+        ctaText: { vi: "Mua ngay", en: "Shop now" },
+        ctaUrl: "/shop",
+        backgroundColor: "#07111f",
+        active: true,
+        status: "Live",
+        priority: 1,
+      },
+    ];
 
   const activeBanner = safeBanners[activeIndex] || safeBanners[0];
   const heroTextStyles = getHeroTextStyles(activeBanner);
@@ -497,8 +498,8 @@ function HeroV3Bento({ banners, lang, actions, settings }) {
     activeBanner.fontFamily === "serif"
       ? "Georgia, serif"
       : activeBanner.fontFamily === "mono"
-      ? "ui-monospace, SFMono-Regular, Menlo, monospace"
-      : "system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif";
+        ? "ui-monospace, SFMono-Regular, Menlo, monospace"
+        : "system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif";
 
   const headingStyle = {
     color: activeBanner.headingColor || undefined,
@@ -560,11 +561,11 @@ function HeroV3Bento({ banners, lang, actions, settings }) {
               </h1>
             )}
 
-            <p className="mt-4 line-clamp-2 text-base font-black text-white sm:text-xl md:text-2xl"style={heroTextStyles.title}>
+            <p className="mt-4 line-clamp-2 text-base font-black text-white sm:text-xl md:text-2xl" style={heroTextStyles.title}>
               {text(activeBanner.title, lang, t.heroSub)}
             </p>
 
-            <p className="mt-3 line-clamp-3 max-w-[460px] text-sm font-semibold leading-7 text-white/80"style={heroTextStyles.subtitle}>
+            <p className="mt-3 line-clamp-3 max-w-[460px] text-sm font-semibold leading-7 text-white/80" style={heroTextStyles.subtitle}>
               {text(activeBanner.subtitle, lang, "Hàng chính hãng Bandai, số lượng có hạn.")}
             </p>
 
@@ -599,9 +600,8 @@ function HeroV3Bento({ banners, lang, actions, settings }) {
                   e.preventDefault();
                   goToBanner(index);
                 }}
-                className={`h-2.5 rounded-full transition ${
-                  activeIndex === index ? "w-12 bg-blue-500" : "w-9 bg-white/30 hover:bg-white/60"
-                }`}
+                className={`h-2.5 rounded-full transition ${activeIndex === index ? "w-12 bg-blue-500" : "w-9 bg-white/30 hover:bg-white/60"
+                  }`}
               />
             ))}
           </div>
@@ -620,9 +620,8 @@ function HeroV3Bento({ banners, lang, actions, settings }) {
               )}
               <div className="absolute inset-0 bg-gradient-to-r from-slate-950/85 via-slate-950/35 to-transparent" />
               <div className="relative z-10 flex h-full max-w-[290px] flex-col justify-center p-6 text-white">
-                <span className={`mb-3 w-fit rounded-full px-3 py-1 text-xs font-black uppercase ${
-                  index === 0 ? "bg-emerald-500" : "bg-amber-500 text-slate-950"
-                }`}>
+                <span className={`mb-3 w-fit rounded-full px-3 py-1 text-xs font-black uppercase ${index === 0 ? "bg-emerald-500" : "bg-amber-500 text-slate-950"
+                  }`}>
                   {index === 0 ? "Pre-order" : "Flash Sale"}
                 </span>
                 <h3 className="text-2xl font-black leading-tight">
@@ -651,11 +650,10 @@ function HeroV3Bento({ banners, lang, actions, settings }) {
               <button
                 key={banner.id || index}
                 onClick={() => goToBanner(index)}
-                className={`group relative h-[98px] overflow-hidden rounded-2xl border text-left shadow-sm transition ${
-                  activeIndex === index
-                    ? "border-blue-600 ring-4 ring-blue-100"
-                    : "border-slate-200 hover:border-blue-300"
-                }`}
+                className={`group relative h-[98px] overflow-hidden rounded-2xl border text-left shadow-sm transition ${activeIndex === index
+                  ? "border-blue-600 ring-4 ring-blue-100"
+                  : "border-slate-200 hover:border-blue-300"
+                  }`}
               >
                 {renderMedia(
                   banner,
@@ -712,19 +710,19 @@ function HeroV2Classic({ banners, lang, actions }) {
   const safeBanners = activeBanners.length
     ? activeBanners
     : [
-        {
-          id: "fallback-hero",
-          title: { vi: "RG Hi-ν Gundam", en: "RG Hi-ν Gundam" },
-          heading: { vi: "GUNDAM / GUNPLA", en: "GUNDAM / GUNPLA" },
-          subtitle: { vi: "Hàng chính hãng Bandai.", en: "Authentic Bandai." },
-          imageUrl: "/images/banners/banner-1.jpg",
-          backgroundColor: "#ffffff",
-          mediaType: "image",
-          active: true,
-          ctaText: { vi: "Mua ngay", en: "Shop now" },
-          ctaUrl: "/shop",
-        },
-      ];
+      {
+        id: "fallback-hero",
+        title: { vi: "RG Hi-ν Gundam", en: "RG Hi-ν Gundam" },
+        heading: { vi: "GUNDAM / GUNPLA", en: "GUNDAM / GUNPLA" },
+        subtitle: { vi: "Hàng chính hãng Bandai.", en: "Authentic Bandai." },
+        imageUrl: "/images/banners/banner-1.jpg",
+        backgroundColor: "#ffffff",
+        mediaType: "image",
+        active: true,
+        ctaText: { vi: "Mua ngay", en: "Shop now" },
+        ctaUrl: "/shop",
+      },
+    ];
 
   useEffect(() => {
     if (safeBanners.length <= 1 || paused) return;
@@ -764,8 +762,8 @@ function HeroV2Classic({ banners, lang, actions }) {
     activeBanner.fontFamily === "serif"
       ? "Georgia, serif"
       : activeBanner.fontFamily === "mono"
-      ? "ui-monospace, SFMono-Regular, Menlo, monospace"
-      : "system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif";
+        ? "ui-monospace, SFMono-Regular, Menlo, monospace"
+        : "system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif";
 
   const headingStyle = {
     color: activeBanner.headingColor || undefined,
@@ -815,11 +813,11 @@ function HeroV2Classic({ banners, lang, actions }) {
               {text(activeBanner.heading, lang, t.heroTitle)}
             </h1>
 
-            <p className="mt-4 line-clamp-2 max-w-[460px] text-lg font-black leading-snug text-slate-800 md:text-2xl"style={heroTextStyles.title}>
+            <p className="mt-4 line-clamp-2 max-w-[460px] text-lg font-black leading-snug text-slate-800 md:text-2xl" style={heroTextStyles.title}>
               {text(activeBanner.title, lang, t.heroSub)}
             </p>
 
-            <p className="mt-3 line-clamp-3 max-w-[440px] text-sm font-semibold leading-7 text-slate-600"style={heroTextStyles.subtitle}>
+            <p className="mt-3 line-clamp-3 max-w-[440px] text-sm font-semibold leading-7 text-slate-600" style={heroTextStyles.subtitle}>
               {text(activeBanner.subtitle, lang, "Hàng chính hãng Bandai.")}
             </p>
 
@@ -834,7 +832,7 @@ function HeroV2Classic({ banners, lang, actions }) {
             )}
 
             {activeBanner.showCta !== false && (
-              <div className={activeBanner.showCta === false ? "hidden" : "mt-6"}>
+              <div className={activeBanner.showCta === false ? "hidden" : "mt-3"}>
                 <a
                   href={activeBanner.ctaUrl || activeBanner.link || "/shop"}
                   onClick={() => actions?.track?.("banner_click", { meta: { bannerId: activeBanner.id || "hero" } })}
@@ -852,7 +850,7 @@ function HeroV2Classic({ banners, lang, actions }) {
                   className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-xl font-black text-slate-700 shadow-sm transition hover:bg-blue-700 hover:text-white"
                   aria-label="Previous banner"
                 >
-                  ‹
+                  <ChevronLeft size={20} className="stroke-[3]" />
                 </button>
 
                 <div className="flex items-center gap-2">
@@ -860,9 +858,8 @@ function HeroV2Classic({ banners, lang, actions }) {
                     <button
                       key={item.id || index}
                       onClick={() => goToBanner(index)}
-                      className={`relative h-2.5 overflow-hidden rounded-full transition ${
-                        activeIndex === index ? "w-12 bg-blue-100" : "w-2.5 bg-slate-300 hover:bg-slate-400"
-                      }`}
+                      className={`relative h-2.5 overflow-hidden rounded-full transition ${activeIndex === index ? "w-12 bg-blue-100" : "w-2.5 bg-slate-300 hover:bg-slate-400"
+                        }`}
                       aria-label={`Banner ${index + 1}`}
                     >
                       {activeIndex === index && (
@@ -884,7 +881,7 @@ function HeroV2Classic({ banners, lang, actions }) {
                   className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-xl font-black text-slate-700 shadow-sm transition hover:bg-blue-700 hover:text-white"
                   aria-label="Next banner"
                 >
-                  ›
+                  <ChevronRight size={20} className="stroke-[3]" />
                 </button>
               </div>
             )}
@@ -944,11 +941,10 @@ function HeroV2Classic({ banners, lang, actions }) {
                   key={item.id || index}
                   type="button"
                   onClick={() => goToBanner(index)}
-                  className={`h-2.5 rounded-full transition ${
-                    activeIndex === index
-                      ? "w-12 bg-blue-700"
-                      : "w-2.5 bg-slate-300 hover:bg-blue-400"
-                  }`}
+                  className={`h-2.5 rounded-full transition ${activeIndex === index
+                    ? "w-12 bg-blue-700"
+                    : "w-2.5 bg-slate-300 hover:bg-blue-400"
+                    }`}
                   aria-label={`Banner ${index + 1}`}
                 />
               ))}
@@ -1010,22 +1006,28 @@ function CategorySidebar({ categories, lang }) {
   };
 
   return (
-    <aside className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="mb-4">
-        <div className="text-xs font-black uppercase tracking-[0.22em] text-blue-700">
+    <aside className="w-full bg-transparent lg:bg-white p-0 lg:p-5 border-0 lg:border border-slate-200 rounded-none lg:rounded-[28px] shadow-none lg:shadow-sm">
+
+      {/* Tiêu đề danh mục: Ẩn bớt text thừa trên Mobile để gọn màn hình, hiện đầy đủ trên Desktop */}
+      <div className="mb-3 lg:mb-4 px-3 lg:px-0">
+        <div className="text-[10px] lg:text-xs font-black uppercase tracking-[0.22em] text-blue-700">
           Category
         </div>
-        <h3 className="mt-1 text-xl font-black text-slate-950">
+        <h3 className="mt-0.5 text-base lg:text-xl font-black text-slate-950">
           {lang === "vi" ? "Dòng sản phẩm" : "Product lines"}
         </h3>
-        <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">
+        {/* 🟢 Đã gài class 'hidden lg:block' để ẩn hoàn toàn dòng ghi chú kỹ thuật trên điện thoại */}
+        <p className="mt-1 text-xs font-semibold leading-5 text-slate-500 hidden lg:block">
           {lang === "vi"
-            ? "Ảnh danh mục nên upload dạng vuông 512 x 512 px."
-            : "Category image should be square 512 x 512 px."}
+            ? "Danh mục các phân khúc của sản phẩm Gundam"
+            : "Category list for Gundam toy figure"}
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      {/* 🟢 TRỤC QUAY RESPONSIVE THẦN THÁNH:
+          - Trên mobile: flex flex-nowrap overflow-x-auto -> Biến thành thanh vuốt ngang 1 hàng duy nhất.
+          - Trên desktop (lg:): lg:grid lg:grid-cols-2 -> Trả về giao diện hộp 2 cột nằm dọc Sidebar. */}
+      <div className="flex flex-nowrap gap-3 w-full overflow-x-auto pb-4 pt-1 px-3 lg:px-0 scrollbar-none snap-x snap-mandatory lg:grid lg:grid-cols-2 lg:gap-3 lg:overflow-x-visible lg:pb-0">
         {list.map((category, index) => {
           const fullName = text(category.name, lang, category.label || category.code || "Category");
           const shortCode = category.code || category.shortName || fullName;
@@ -1037,7 +1039,7 @@ function CategorySidebar({ categories, lang }) {
               key={category.id || category.code || fullName}
               href={href}
               title={fullName}
-              className="group overflow-hidden rounded-2xl border border-slate-200 bg-white transition hover:-translate-y-1 hover:border-blue-300 hover:shadow-xl"
+              className="group w-[95px] max-w-[95px] md:w-full md:max-w-none shrink-0 snap-start overflow-hidden rounded-2xl border border-slate-200 bg-white transition hover:-translate-y-1 hover:border-blue-300 hover:shadow-xl lg:w-full lg:max-w-none lg:shrink"
             >
               <div className="aspect-square w-full overflow-hidden bg-gradient-to-br from-slate-100 to-blue-50">
                 <img
@@ -1047,8 +1049,9 @@ function CategorySidebar({ categories, lang }) {
                 />
               </div>
 
-              <div className="p-3 text-center">
-                <div className="text-lg font-black leading-tight text-slate-950 group-hover:text-blue-700">
+              {/* Co nhỏ text lại một chút trên mobile (text-xs) để chữ HG / High Grade nằm vừa khít phom */}
+              <div className="p-2 lg:p-3 text-center">
+                <div className="text-xs lg:text-lg font-black leading-tight text-slate-950 group-hover:text-blue-700 truncate">
                   {shortCode}
                 </div>
               </div>
@@ -1180,7 +1183,7 @@ export default function HomePage() {
         <Hero banners={(state?.publishedHero?.banners || banners)} lang={lang} actions={actions} heroSettings={(state?.publishedHero?.heroSettings || state?.heroSettings)} />
         <TrustStrip lang={lang} />
 
-        <main className="mx-auto grid max-w-[1200px] gap-4 px-4 pb-8 lg:grid-cols-[190px_1fr]">
+        <main className="mx-auto grid max-w-[1200px] gap-4 px-4 pb-8 lg:grid-cols-[300px_1fr]">
           <CategorySidebar categories={categories.length ? categories : fallbackCategories} lang={lang} />
 
           <div className="space-y-4">
