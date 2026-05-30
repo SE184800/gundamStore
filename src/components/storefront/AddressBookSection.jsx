@@ -1,5 +1,6 @@
 import { Loader2, MapPin, Pencil, Plus, Star, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useLang } from "../../store/CmsStore";
 import {
   createMyAddress,
   deleteMyAddress,
@@ -8,12 +9,85 @@ import {
   updateMyAddress,
 } from "../../services/AccountApiService";
 
+const copy = {
+  vi: {
+    homeLabel: "Nhà riêng",
+    defaultCity: "Hồ Chí Minh",
+    loadError: "Không thể tải sổ địa chỉ.",
+    receiverError: "Vui lòng nhập tên người nhận ít nhất 2 ký tự.",
+    phoneError: "Vui lòng nhập số điện thoại hợp lệ.",
+    addressError: "Vui lòng nhập địa chỉ chi tiết ít nhất 5 ký tự.",
+    updated: "Đã cập nhật địa chỉ.",
+    added: "Đã thêm địa chỉ mới.",
+    saveError: "Không thể lưu địa chỉ.",
+    deleteConfirm: "{t.delete} địa chỉ này?",
+    deleted: "Đã xóa địa chỉ.",
+    deleteError: "Không thể xóa địa chỉ.",
+    defaultSet: "Đã đặt làm địa chỉ mặc định.",
+    defaultError: "Không thể đặt địa chỉ mặc định.",
+    title: "{t.title}",
+    desc: "{t.desc}",
+    addressName: "Tên địa chỉ",
+    addressNamePlaceholder: "Nhà riêng / Công ty",
+    receiver: "Người nhận",
+    phone: "Số điện thoại",
+    city: "Tỉnh / Thành phố",
+    district: "Quận / Huyện",
+    ward: "Phường / Xã",
+    detail: "Địa chỉ chi tiết",
+    postalCode: "Mã bưu điện",
+    setDefault: "{t.setDefault}",
+    cancelEdit: "{t.cancelEdit}",
+    updateAddress: "Cập nhật địa chỉ",
+    addAddress: "Thêm địa chỉ",
+    empty: "{t.empty}",
+    default: "{t.default}",
+    edit: "{t.edit}",
+    delete: "{t.delete}",
+  },
+  en: {
+    homeLabel: "Home",
+    defaultCity: "Ho Chi Minh City",
+    loadError: "Unable to load address book.",
+    receiverError: "Please enter a receiver name with at least 2 characters.",
+    phoneError: "Please enter a valid phone number.",
+    addressError: "Please enter a detailed address with at least 5 characters.",
+    updated: "Address updated.",
+    added: "New address added.",
+    saveError: "Unable to save address.",
+    deleteConfirm: "Delete this address?",
+    deleted: "Address deleted.",
+    deleteError: "Unable to delete address.",
+    defaultSet: "Default address updated.",
+    defaultError: "Unable to set default address.",
+    title: "Shipping address book",
+    desc: "Manage multiple addresses and choose the default address for checkout.",
+    addressName: "Address name",
+    addressNamePlaceholder: "Home / Office",
+    receiver: "Receiver",
+    phone: "Phone",
+    city: "Province / City",
+    district: "District",
+    ward: "Ward",
+    detail: "Detailed address",
+    postalCode: "Postal code",
+    setDefault: "Set as default address",
+    cancelEdit: "Cancel edit",
+    updateAddress: "Update address",
+    addAddress: "Add address",
+    empty: "No address yet.",
+    default: "Default",
+    edit: "Edit",
+    delete: "Delete",
+  },
+};
+
 const emptyForm = {
-  label: "Nhà riêng",
+  label: "",
   receiver: "",
   phone: "",
   address: "",
-  city: "Hồ Chí Minh",
+  city: "",
   district: "",
   ward: "",
   postalCode: "",
@@ -41,8 +115,10 @@ function formatAddress(item) {
 }
 
 export default function AddressBookSection() {
+  const [lang] = useLang();
+  const t = copy[lang] || copy.vi;
   const [addresses, setAddresses] = useState([]);
-  const [form, setForm] = useState(emptyForm);
+  const [form, setForm] = useState(() => ({ ...emptyForm, label: t.homeLabel, city: t.defaultCity }));
   const [editingId, setEditingId] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -56,7 +132,7 @@ export default function AddressBookSection() {
       const items = await getMyAddresses();
       setAddresses(Array.isArray(items) ? items : []);
     } catch (err) {
-      setError(err?.message || "Không thể tải sổ địa chỉ.");
+      setError(err?.message || t.loadError);
     } finally {
       setLoading(false);
     }
@@ -76,7 +152,7 @@ export default function AddressBookSection() {
   function startEdit(item) {
     setEditingId(item.id);
     setForm({
-      label: item.label || "Nhà riêng",
+      label: item.label || t.homeLabel,
       receiver: item.receiver || "",
       phone: item.phone || "",
       address: item.address || "",
@@ -92,7 +168,7 @@ export default function AddressBookSection() {
 
   function resetForm() {
     setEditingId("");
-    setForm(emptyForm);
+    setForm({ ...emptyForm, label: t.homeLabel, city: t.defaultCity });
   }
 
   function validateAddressForm() {
@@ -101,17 +177,17 @@ export default function AddressBookSection() {
     const address = String(form.address || "").trim();
 
     if (receiver.length < 2) {
-      setError("Vui lòng nhập tên người nhận ít nhất 2 ký tự.");
+      setError(t.receiverError);
       return false;
     }
 
     if (phone.length < 8) {
-      setError("Vui lòng nhập số điện thoại hợp lệ.");
+      setError(t.phoneError);
       return false;
     }
 
     if (address.length < 5) {
-      setError("Vui lòng nhập địa chỉ chi tiết ít nhất 5 ký tự.");
+      setError(t.addressError);
       return false;
     }
 
@@ -133,32 +209,32 @@ export default function AddressBookSection() {
 
       if (editingId) {
         await updateMyAddress(editingId, payload);
-        setMessage("Đã cập nhật địa chỉ.");
+        setMessage(t.updated);
       } else {
         await createMyAddress(payload);
-        setMessage("Đã thêm địa chỉ mới.");
+        setMessage(t.added);
       }
 
       resetForm();
       await loadAddresses();
     } catch (err) {
-      setError(err?.message || "Không thể lưu địa chỉ.");
+      setError(err?.message || t.saveError);
     } finally {
       setSaving(false);
     }
   }
 
   async function removeAddress(id) {
-    if (!window.confirm("Xóa địa chỉ này?")) return;
+    if (!window.confirm(t.deleteConfirm)) return;
 
     try {
       setMessage("");
       setError("");
       await deleteMyAddress(id);
       await loadAddresses();
-      setMessage("Đã xóa địa chỉ.");
+      setMessage(t.deleted);
     } catch (err) {
-      setError(err?.message || "Không thể xóa địa chỉ.");
+      setError(err?.message || t.deleteError);
     }
   }
 
@@ -168,9 +244,9 @@ export default function AddressBookSection() {
       setError("");
       await setDefaultMyAddress(id);
       await loadAddresses();
-      setMessage("Đã đặt làm địa chỉ mặc định.");
+      setMessage(t.defaultSet);
     } catch (err) {
-      setError(err?.message || "Không thể đặt địa chỉ mặc định.");
+      setError(err?.message || t.defaultError);
     }
   }
 
@@ -181,9 +257,9 @@ export default function AddressBookSection() {
           <MapPin size={20} />
         </span>
         <div>
-          <h2 className="text-xl font-black text-slate-950">Sổ địa chỉ giao hàng</h2>
+          <h2 className="text-xl font-black text-slate-950">{t.title}</h2>
           <p className="mt-1 text-sm font-semibold text-slate-500">
-            Quản lý nhiều địa chỉ và chọn địa chỉ mặc định cho checkout.
+            {t.desc}
           </p>
         </div>
       </div>
@@ -201,14 +277,14 @@ export default function AddressBookSection() {
       )}
 
       <div className="mt-5 grid gap-4 md:grid-cols-2">
-        <AddressInput label="Tên địa chỉ" value={form.label} onChange={(value) => patch("label", value)} placeholder="Nhà riêng / Công ty" />
-        <AddressInput label="Người nhận" value={form.receiver} onChange={(value) => patch("receiver", value)} />
-        <AddressInput label="Số điện thoại" value={form.phone} onChange={(value) => patch("phone", value)} />
-        <AddressInput label="Tỉnh / Thành phố" value={form.city} onChange={(value) => patch("city", value)} />
-        <AddressInput label="Quận / Huyện" value={form.district} onChange={(value) => patch("district", value)} />
-        <AddressInput label="Phường / Xã" value={form.ward} onChange={(value) => patch("ward", value)} />
-        <AddressInput label="Địa chỉ chi tiết" value={form.address} onChange={(value) => patch("address", value)} />
-        <AddressInput label="Mã bưu điện" value={form.postalCode} onChange={(value) => patch("postalCode", value)} />
+        <AddressInput label={t.addressName} value={form.label} onChange={(value) => patch("label", value)} placeholder={t.addressNamePlaceholder} />
+        <AddressInput label={t.receiver} value={form.receiver} onChange={(value) => patch("receiver", value)} />
+        <AddressInput label={t.phone} value={form.phone} onChange={(value) => patch("phone", value)} />
+        <AddressInput label={t.city} value={form.city} onChange={(value) => patch("city", value)} />
+        <AddressInput label={t.district} value={form.district} onChange={(value) => patch("district", value)} />
+        <AddressInput label={t.ward} value={form.ward} onChange={(value) => patch("ward", value)} />
+        <AddressInput label={t.detail} value={form.address} onChange={(value) => patch("address", value)} />
+        <AddressInput label={t.postalCode} value={form.postalCode} onChange={(value) => patch("postalCode", value)} />
       </div>
 
       <label className="mt-4 flex items-center gap-2 text-sm font-black text-slate-700">
@@ -217,7 +293,7 @@ export default function AddressBookSection() {
           checked={form.isDefault}
           onChange={(event) => patch("isDefault", event.target.checked)}
         />
-        Đặt làm địa chỉ mặc định
+        {t.setDefault}
       </label>
 
       <div className="mt-5 flex flex-wrap justify-end gap-3">
@@ -227,7 +303,7 @@ export default function AddressBookSection() {
             onClick={resetForm}
             className="rounded-2xl border border-slate-200 px-5 py-3 text-sm font-black text-slate-600 hover:bg-slate-50"
           >
-            Hủy sửa
+            {t.cancelEdit}
           </button>
         )}
 
@@ -238,7 +314,7 @@ export default function AddressBookSection() {
           className="inline-flex items-center gap-2 rounded-2xl bg-blue-700 px-5 py-3 text-sm font-black text-white hover:bg-blue-800 disabled:opacity-60"
         >
           {saving ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
-          {editingId ? "Cập nhật địa chỉ" : "Thêm địa chỉ"}
+          {editingId ? t.updateAddress : t.addAddress}
         </button>
       </div>
 
@@ -249,7 +325,7 @@ export default function AddressBookSection() {
           </div>
         ) : addresses.length === 0 ? (
           <div className="rounded-2xl bg-slate-50 p-5 text-center text-sm font-bold text-slate-500">
-            Chưa có địa chỉ nào.
+            {t.empty}
           </div>
         ) : (
           <div className="grid gap-3">
@@ -261,7 +337,7 @@ export default function AddressBookSection() {
                       <h3 className="font-black text-slate-950">{item.label}</h3>
                       {item.isDefault && (
                         <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-black text-amber-700">
-                          Mặc định
+                          {t.default}
                         </span>
                       )}
                     </div>
@@ -282,7 +358,7 @@ export default function AddressBookSection() {
                         className="inline-flex items-center gap-1 rounded-xl bg-amber-50 px-3 py-2 text-xs font-black text-amber-700 hover:bg-amber-100"
                       >
                         <Star size={14} />
-                        Mặc định
+                        {t.default}
                       </button>
                     )}
 
@@ -292,7 +368,7 @@ export default function AddressBookSection() {
                       className="inline-flex items-center gap-1 rounded-xl bg-white px-3 py-2 text-xs font-black text-blue-700 hover:bg-blue-50"
                     >
                       <Pencil size={14} />
-                      Sửa
+                      {t.edit}
                     </button>
 
                     <button
@@ -301,7 +377,7 @@ export default function AddressBookSection() {
                       className="inline-flex items-center gap-1 rounded-xl bg-red-50 px-3 py-2 text-xs font-black text-red-600 hover:bg-red-100"
                     >
                       <Trash2 size={14} />
-                      Xóa
+                      {t.delete}
                     </button>
                   </div>
                 </div>

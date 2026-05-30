@@ -1,9 +1,29 @@
 import { z } from "zod";
 import { prisma } from "../config/prisma.js";
 
+function normalizeVietnamPhone(value = "") {
+  const raw = String(value || "").replace(/[\s.\-()]/g, "").trim();
+
+  if (raw.startsWith("+84")) return `0${raw.slice(3)}`;
+  if (raw.startsWith("84")) return `0${raw.slice(2)}`;
+
+  return raw.replace(/[^0-9]/g, "");
+}
+
+function isValidVietnamPhone(value = "") {
+  const phone = normalizeVietnamPhone(value);
+
+  // Mobile VN: 03/05/07/08/09 + 8 digits. Landline VN: 02 + 9-10 digits.
+  return /^0(3|5|7|8|9)\d{8}$/.test(phone) || /^02\d{9,10}$/.test(phone);
+}
+
 const createOrderSchema = z.object({
   customerName: z.string().min(2).max(120),
-  customerPhone: z.string().min(8).max(20),
+  customerPhone: z
+    .string()
+    .min(8)
+    .max(20)
+    .refine(isValidVietnamPhone, "Số điện thoại Việt Nam không hợp lệ."),
   customerEmail: z.string().email().optional().or(z.literal("")),
   customerAddress: z.string().min(5).max(255),
   shippingFee: z.number().int().min(0).default(0),
@@ -183,6 +203,7 @@ async function restoreOrderStockOnce(tx, order, { actorId = null, reason = "", n
 export async function createOrder(req, res, next) {
   try {
     const body = createOrderSchema.parse(req.body);
+    const customerPhone = normalizeVietnamPhone(body.customerPhone);
 
     const products = await prisma.product.findMany({
       where: {
@@ -249,7 +270,7 @@ export async function createOrder(req, res, next) {
           orderNo: generateOrderNo(),
           customerId: req.user?.id || null,
           customerName: body.customerName,
-          customerPhone: body.customerPhone,
+          customerPhone,
           customerEmail: body.customerEmail || req.user?.email || null,
           customerAddress: body.customerAddress,
           paymentStatus: getInitialPaymentStatus(body.paymentMethod),
@@ -661,7 +682,7 @@ export async function updateOrderPayment(req, res, next) {
     if (!canUpdatePaymentStatus(currentOrder)) {
       return res.status(409).json({
         success: false,
-        message: "Không thể cập nhật thanh toán cho đơn đã hủy hoặc đã hoàn tiền.",
+        message: "Không thể cập nhật vận chuyển cho đơn đã hủy hoặc đã hoàn tiền.",
       });
     }
 
@@ -760,7 +781,7 @@ export async function updateOrderShipping(req, res, next) {
     if (!canUpdatePaymentStatus(currentOrder)) {
       return res.status(409).json({
         success: false,
-        message: "Không thể cập nhật thanh toán cho đơn đã hủy hoặc đã hoàn tiền.",
+        message: "Không thể cập nhật vận chuyển cho đơn đã hủy hoặc đã hoàn tiền.",
       });
     }
 
