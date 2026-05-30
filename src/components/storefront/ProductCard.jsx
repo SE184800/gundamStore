@@ -349,8 +349,14 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
 
                   <button
                     data-cart-managed="true"
-                    onClick={addCart}
-                    className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-2xl bg-blue-700 px-6 py-4 text-sm font-black text-white shadow-lg shadow-blue-100 transition hover:bg-blue-800"
+                    onClick={isOutOfStock ? undefined : addCart}
+                    disabled={isOutOfStock}
+                    aria-disabled={isOutOfStock}
+                    className={`flex min-h-12 flex-1 items-center justify-center gap-2 rounded-2xl px-6 py-4 text-sm font-black shadow-lg transition ${
+                      isOutOfStock
+                        ? "cursor-not-allowed bg-slate-200 text-slate-500 shadow-none"
+                        : "bg-blue-700 text-white shadow-blue-100 hover:bg-blue-800"
+                    }`}
                   >
                     <ShoppingCart size={18} />
                     {isOutOfStock ? outOfStockLabel : t("product.addToCart")}
