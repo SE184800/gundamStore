@@ -11,6 +11,7 @@ import {
 } from "../../components/admin/AdminField";
 import { useCms, useLang } from "../../store/CmsStore";
 import { fileToBase64 } from "../../utils/mediaUpload";
+import { normalizeSafeCtaUrl } from "../../utils/urlSafety";
 
 const emptyBanner = {
   id: "",
@@ -74,17 +75,21 @@ export default function AdminCMSBanners() {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    const base64 = await fileToBase64(file);
-    const isVideo = file.type.startsWith("video/");
+    try {
+      const base64 = await fileToBase64(file, { mediaKind: "banner" });
+      const isVideo = file.type.startsWith("video/");
 
-    setDraft((prev) => ({
-      ...prev,
-      mediaType: isVideo ? "video" : file.type.includes("gif") ? "gif" : "image",
-      imageUrl: isVideo ? prev.imageUrl : base64,
-      videoUrl: isVideo ? base64 : "",
-    }));
-
-    event.target.value = "";
+      setDraft((prev) => ({
+        ...prev,
+        mediaType: isVideo ? "video" : file.type.includes("gif") ? "gif" : "image",
+        imageUrl: isVideo ? prev.imageUrl : base64,
+        videoUrl: isVideo ? base64 : "",
+      }));
+    } catch (error) {
+      window.alert(error?.message || "Invalid banner media file.");
+    } finally {
+      event.target.value = "";
+    }
   }
 
   function createBanner() {
@@ -105,8 +110,20 @@ export default function AdminCMSBanners() {
   }
 
   function saveBanner() {
+    const cta = normalizeSafeCtaUrl(draft.ctaUrl, { fallback: "/shop" });
+
+    if (!cta.ok) {
+      window.alert(
+        lang === "en"
+          ? "CTA URL is not allowed. Use an internal path such as /shop or an allowlisted HTTPS domain."
+          : "CTA URL không hợp lệ. Chỉ dùng đường dẫn nội bộ như /shop hoặc domain HTTPS trong allowlist."
+      );
+      return;
+    }
+
     actions.saveBanner({
       ...draft,
+      ctaUrl: cta.value,
       id: draft.id || `banner-${Date.now()}`,
       priority: Number(draft.priority || 1),
     });
@@ -270,12 +287,12 @@ export default function AdminCMSBanners() {
           <div className="rounded-md border border-dashed border-slate-300 bg-slate-50 p-4">
             <div className="mb-2 text-sm font-black">Upload media</div>
             <div className="mb-2 text-xs font-semibold text-slate-500">
-              Hero desktop khuyến nghị 1600 x 700 px. GIF dùng như ảnh. Video khuyến nghị MP4/WebM dưới 10MB cho demo.
+              Hero desktop khuyến nghị 1600 x 700 px. Ảnh JPG/PNG/WEBP/GIF tối đa 2MB. Video MP4/WebM/OGG tối đa 10MB.
             </div>
             <label className="inline-flex cursor-pointer items-center gap-2 rounded-md bg-blue-700 px-4 py-2 text-sm font-black text-white">
               <UploadCloud size={16} />
               Upload image / gif / video
-              <input type="file" accept="image/*,video/*" className="hidden" onChange={uploadMedia} />
+              <input type="file" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/ogg" className="hidden" onChange={uploadMedia} />
             </label>
           </div>
 

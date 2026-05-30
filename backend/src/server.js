@@ -36,7 +36,19 @@ const allowedCorsOrigins = [
 
 function isAllowedCodespacesOrigin(origin = "") {
   if (env.isProduction) return false;
-  return /^https:\/\/[a-z0-9-]+-(5173|5174)\.app\.github\.dev$/i.test(origin);
+
+  try {
+    const url = new URL(origin);
+
+    // GitHub Codespaces forwarded ports can be 5173, 5174, 51713, 4800, etc.
+    // In development only, allow any https://<codespace>-<port>.app.github.dev origin.
+    return (
+      url.protocol === "https:" &&
+      /^[a-z0-9-]+-\d+\.app\.github\.dev$/i.test(url.hostname)
+    );
+  } catch {
+    return false;
+  }
 }
 
 app.use(
