@@ -4,7 +4,7 @@ const BACKEND_PRODUCTS_CACHE_KEY = "gundam-backend-products-cache";
 export function getInventory() {
   try {
     const cms = JSON.parse(localStorage.getItem(CMS_KEY) || "{}");
-    return cms.inventory || [];
+    return Array.isArray(cms.inventory) ? cms.inventory : [];
   } catch {
     return [];
   }
@@ -12,7 +12,8 @@ export function getInventory() {
 
 export function saveInventory(inventory) {
   const cms = JSON.parse(localStorage.getItem(CMS_KEY) || "{}");
-  localStorage.setItem(CMS_KEY, JSON.stringify({ ...cms, inventory }));
+  localStorage.setItem(CMS_KEY, JSON.stringify({ ...cms, inventory: Array.isArray(inventory) ? inventory : [] }));
+  window.dispatchEvent(new Event("gundam-inventory-updated"));
 }
 
 function getBackendProductStock(productId = "") {
@@ -34,8 +35,8 @@ function getBackendProductStock(productId = "") {
 
     return {
       productId: product.id,
-      available: Number(product.stock || 0),
-      onHand: Number(product.stock || 0),
+      available: Math.max(0, Number(product.stock || 0)),
+      onHand: Math.max(0, Number(product.stock || 0)),
       reserved: 0,
       incoming: 0,
       source: "backend",
@@ -45,73 +46,107 @@ function getBackendProductStock(productId = "") {
   }
 }
 
+function getItemIdentity(item = {}) {
+  return item.backendProductId || item.productId || item.id || item.slug || item.sku || "";
+}
+
 export function getStock(productId) {
   const backendStock = getBackendProductStock(productId);
   if (backendStock) return backendStock;
 
+  const key = String(productId || "");
   const inventory = getInventory();
-  const item = inventory.find((x) => x.productId === productId || x.id === productId);
+  const item = inventory.find((x) => {
+    const itemKey = String(x.backendProductId || x.productId || x.id || x.slug || x.sku || "");
+    return itemKey && itemKey === key;
+  });
 
   return {
     productId,
-    available: Number(item?.available ?? item?.stock ?? item?.onHand ?? 0),
-    onHand: Number(item?.onHand ?? item?.available ?? item?.stock ?? 0),
-    reserved: Number(item?.reserved ?? 0),
-    incoming: Number(item?.incoming ?? 0),
+    available: Math.max(0, Number(item?.available ?? item?.stock ?? item?.onHand ?? 0)),
+    onHand: Math.max(0, Number(item?.onHand ?? item?.available ?? item?.stock ?? 0)),
+    reserved: Math.max(0, Number(item?.reserved ?? 0)),
+    incoming: Math.max(0, Number(item?.incoming ?? 0)),
     source: item ? "local" : "missing",
   };
 }
 
 export function reduceStock(items = []) {
   const inventory = getInventory();
-  const next = [...inventory];
+  let changed = false;
+
+  const next = inventory.map((row) => ({ ...row }));
 
   items.forEach((item) => {
-    const index = next.findIndex((x) => x.productId === item.id || x.id === item.id);
-    const qty = Number(item.quantity) || 1;
+    const itemId = getItemIdentity(item);
+    if (!itemId) return;
 
-    if (index >= 0) {
-      const current = next[index];
-      next[index] = {
-        ...current,
-        productId: current.productId || item.id,
-        available: Math.max(0, Number(current.available ?? current.stock ?? 99) - qty),
-        sold: Number(current.sold || 0) + qty,
-      };
-    } else {
-      next.push({
-        productId: item.id,
-        available: Math.max(0, 99 - qty),
-        reserved: 0,
-        sold: qty,
-      });
+    const qty = Math.max(1, Number(item.quantity) || 1);
+    const index = next.findIndex((x) => {
+      const rowId = getItemIdentity(x);
+      return rowId && rowId === itemId;
+    });
+
+    // Important: never create fake inventory with default 99.
+    // If inventory/product is missing, skip stock mutation and let checkout/backend validation block invalid orders.
+    if (index < 0) {
+      console.warn("reduceStock skipped because inventory record was not found", itemId);
+      return;
     }
+
+    const current = next[index];
+    const available = Math.max(0, Number(current.available ?? current.stock ?? current.onHand ?? 0));
+    const sold = Math.max(0, Number(current.sold || 0));
+
+    next[index] = {
+      ...current,
+      productId: current.productId || item.productId || item.id,
+      available: Math.max(0, available - qty),
+      onHand: Math.max(0, Number(current.onHand ?? available) - qty),
+      sold: sold + qty,
+    };
+
+    changed = true;
   });
 
-  saveInventory(next);
+  if (changed) saveInventory(next);
 }
 
 export function restoreStock(items = []) {
   const inventory = getInventory();
-  const next = [...inventory];
+  let changed = false;
+
+  const next = inventory.map((row) => ({ ...row }));
 
   items.forEach((item) => {
-    const index = next.findIndex((x) => x.productId === item.id || x.id === item.id);
-    const qty = Number(item.quantity) || 1;
+    const itemId = getItemIdentity(item);
+    if (!itemId) return;
 
-    if (index >= 0) {
-      const current = next[index];
-      next[index] = {
-        ...current,
-        available: Number(current.available ?? current.stock ?? 0) + qty,
-        sold: Math.max(0, Number(current.sold || 0) - qty),
-      };
+    const index = next.findIndex((x) => {
+      const rowId = getItemIdentity(x);
+      return rowId && rowId === itemId;
+    });
+
+    if (index < 0) {
+      console.warn("restoreStock skipped because inventory record was not found", itemId);
+      return;
     }
+
+    const qty = Math.max(1, Number(item.quantity) || 1);
+    const current = next[index];
+
+    next[index] = {
+      ...current,
+      available: Math.max(0, Number(current.available ?? current.stock ?? 0)) + qty,
+      onHand: Math.max(0, Number(current.onHand ?? current.available ?? current.stock ?? 0)) + qty,
+      sold: Math.max(0, Number(current.sold || 0) - qty),
+    };
+
+    changed = true;
   });
 
-  saveInventory(next);
+  if (changed) saveInventory(next);
 }
-
 
 const INVENTORY_LOG_KEY = "gundam-inventory-logs";
 
