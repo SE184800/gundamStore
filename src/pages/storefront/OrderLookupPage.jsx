@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+
 import { LockKeyhole, PackageSearch, Search, ShieldCheck } from "lucide-react";
 import { lookupPublicOrderFromApi } from "../../services/OrderService";
 import {
@@ -44,6 +44,10 @@ function getCopy(lang) {
     total: lang === "en" ? "Total" : "Tổng tiền",
     status: lang === "en" ? "Status" : "Trạng thái",
     viewDetail: lang === "en" ? "View detail" : "Xem chi tiết",
+    hideDetail: lang === "en" ? "Hide detail" : "Ẩn chi tiết",
+    items: lang === "en" ? "Items" : "Sản phẩm",
+    quantity: lang === "en" ? "Qty" : "SL",
+    address: lang === "en" ? "Address" : "Địa chỉ",
   };
 }
 
@@ -57,6 +61,16 @@ export default function OrderLookupPage() {
   const [error, setError] = useState("");
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [showDetail, setShowDetail] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code") || "";
+    const phoneParam = params.get("phone") || "";
+
+    if (code) setOrderCode(code);
+    if (phoneParam) setPhone(phoneParam);
+  }, []);
 
   async function lookupOrder() {
     const code = orderCode.trim();
@@ -78,6 +92,7 @@ export default function OrderLookupPage() {
       });
 
       setOrder(result);
+      setShowDetail(false);
     } catch (err) {
       if (err?.status === 404) {
         setError(t.notFound);
@@ -195,14 +210,40 @@ export default function OrderLookupPage() {
                     <div className="text-sm font-bold text-slate-500">{t.total}</div>
                     <div className="text-2xl font-black text-red-500">{money(order.total)}</div>
 
-                    <Link
-                      to={`/orders/${order.id}`}
+                    <button
+                      type="button"
+                      onClick={() => setShowDetail((value) => !value)}
                       className="mt-4 inline-block rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white"
                     >
-                      {t.viewDetail}
-                    </Link>
+                      {showDetail ? t.hideDetail : t.viewDetail}
+                    </button>
                   </div>
                 </div>
+
+                {showDetail && (
+                  <div className="mt-5 rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                    <div className="grid gap-3 text-sm font-semibold text-slate-600 md:grid-cols-2">
+                      <div>
+                        <b>{t.address}:</b> {order.customer?.address || "-"}
+                      </div>
+                      <div>
+                        <b>{t.order}:</b> {order.orderCode || order.id}
+                      </div>
+                    </div>
+
+                    <div className="mt-4 text-sm font-black text-slate-950">{t.items}</div>
+                    <div className="mt-2 divide-y divide-slate-200 rounded-2xl bg-white">
+                      {(order.items || []).map((item) => (
+                        <div key={item.id || item.sku || item.name} className="flex items-center justify-between gap-3 p-3 text-sm">
+                          <div className="font-bold text-slate-700">{item.productName || item.name || item.sku}</div>
+                          <div className="shrink-0 font-black text-slate-950">
+                            {t.quantity}: {item.quantity || item.qty || 1}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
