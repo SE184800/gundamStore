@@ -85,7 +85,10 @@ export default function MyOrdersPage() {
         setOrders(items);
       } catch (err) {
         if (!alive) return;
-        setError(err?.message || "Không thể tải đơn hàng.");
+        setError(
+          err?.message ||
+            (lang === "en" ? "Unable to load your orders." : "Không thể tải đơn hàng.")
+        );
       } finally {
         if (alive) setLoading(false);
       }

@@ -74,7 +74,13 @@ export default function CartPage() {
   const t = getCopy(lang);
 
   const [cart, setCart] = useState([]);
-  const [voucherCode, setVoucherCode] = useState("");
+  const [voucherCode, setVoucherCode] = useState(() => {
+    try {
+      return localStorage.getItem("gundam-saved-voucher") || "";
+    } catch {
+      return "";
+    }
+  });
   const [shippingMethod, setShippingMethod] = useState("FAST");
 
   useEffect(() => {
@@ -349,7 +355,14 @@ export default function CartPage() {
 
                 <input
                   value={voucherCode}
-                  onChange={(e) => setVoucherCode(e.target.value)}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setVoucherCode(value);
+                    try {
+                      if (value.trim()) localStorage.setItem("gundam-saved-voucher", value.trim().toUpperCase());
+                      else localStorage.removeItem("gundam-saved-voucher");
+                    } catch {}
+                  }}
                   placeholder="GUNDAM10 / FREESHIP / VIP50"
                   className="mt-3 w-full rounded-2xl border border-blue-100 bg-white px-4 py-3 text-sm outline-none"
                 />

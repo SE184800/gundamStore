@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ChevronRight,
   Filter,
@@ -352,6 +352,12 @@ export default function ShopPage() {
   const [sort, setSort] = useState("popular");
   const [view, setView] = useState("grid");
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const keyword = params.get("q") || params.get("search") || "";
+    if (keyword) setQuery(keyword.slice(0, 80));
+  }, []);
 
   const activeCategories = useMemo(() => {
     return [...(state.categories || [])]
