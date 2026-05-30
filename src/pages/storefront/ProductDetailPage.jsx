@@ -30,7 +30,7 @@ import {
 import PageShell from "../../components/common/PageShell";
 import { useCms } from "../../store/CmsStore";
 import { translateStaticText } from "../../i18n";
-import { saveCheckoutDraft } from "../../services/CartService";
+import { addProductToCart, forceCartBadgeSync, saveBuyNowDraft, saveCheckoutDraft, validateCartStock } from "../../services/CartService";
 import { isWishlistSaved, toggleWishlist } from "../../services/WishlistService";
 import { isCompareSaved, toggleCompare } from "../../services/CompareService";
 import { registerRestockAlert } from "../../services/RestockAlertService";
@@ -297,6 +297,40 @@ function ProductInfo({ product, lang, actions, onPreorder }) {
   const [alertForm, setAlertForm] = useState({ name: "", phone: "", note: "" });
   const [alertMessage, setAlertMessage] = useState("");
   const [alertError, setAlertError] = useState("");
+  const navigate = useNavigate();
+
+  function showCartError(result) {
+    const available = Number(result?.available || 0);
+    alert(
+      lang === "en"
+        ? `Only ${available} item(s) available.`
+        : `Sản phẩm này chỉ còn ${available} sản phẩm trong kho.`
+    );
+  }
+
+  function handleAddToCart() {
+    const validation = validateCartStock(product, qty);
+    if (!validation.ok) {
+      showCartError(validation);
+      return;
+    }
+
+    addProductToCart(product, qty);
+    forceCartBadgeSync();
+    actions?.track?.("add_to_cart", { productId: product.id, qty });
+  }
+
+  function handleBuyNow() {
+    const result = saveBuyNowDraft(product, qty, { shippingMethod: "FAST" });
+    if (!result.ok) {
+      showCartError(result);
+      return;
+    }
+
+    forceCartBadgeSync();
+    actions?.track?.("buy_now", { productId: product.id, qty });
+    navigate("/checkout");
+  }
 
   useEffect(() => {
     setWishlistSaved(isWishlistSaved(product.id));
@@ -395,14 +429,14 @@ function ProductInfo({ product, lang, actions, onPreorder }) {
         ) : (
           <>
             <button
-              onClick={() => actions.addToCart(product.id, qty)}
+              onClick={handleAddToCart}
               className="rounded-2xl bg-blue-700 px-5 py-3 text-sm font-black text-white shadow-lg shadow-blue-200 hover:bg-blue-800"
             >
               <ShoppingCart className="mr-2 inline" size={17} />
               {t.addToCart}
             </button>
             <button
-              onClick={() => actions.addToCart(product.id, qty)}
+              onClick={handleBuyNow}
               className="rounded-2xl bg-slate-950 px-5 py-3 text-sm font-black text-white shadow-lg shadow-slate-200 hover:bg-slate-800"
             >
               <Zap className="mr-2 inline" size={17} />

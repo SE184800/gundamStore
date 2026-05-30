@@ -1,4 +1,5 @@
-const CMS_KEY = "gundam-cms-state";
+const CMS_KEY = "gundam_store_vn_v2_cms";
+const BACKEND_PRODUCTS_CACHE_KEY = "gundam-backend-products-cache";
 
 export function getInventory() {
   try {

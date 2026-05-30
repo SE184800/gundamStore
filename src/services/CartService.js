@@ -1,4 +1,5 @@
 import { normalizeCartItem, normalizeItems, normalizeText, resolveName } from "./PricingService";
+import { getStock } from "./InventoryService";
 
 const CART_KEY = "gundam-cart-final";
 const CHECKOUT_KEY = "gundam-checkout-draft";
@@ -110,7 +111,45 @@ export function saveCart(cart, products = []) {
   return fixed;
 }
 
+
+export function validateCartStock(product, quantity = 1, products = []) {
+  const backendProductId = resolveBackendProductId(product);
+  const item = normalizeCartItem(
+    {
+      ...product,
+      id: product?.id || product?.slug || backendProductId,
+      backendProductId,
+      productId: backendProductId || product?.productId || product?.id || product?.slug,
+      sku: product?.sku || "",
+      slug: product?.slug || "",
+      quantity: Number(quantity) || 1,
+      selected: true,
+    },
+    product
+  );
+
+  const cart = getCart(products);
+  const found = cart.find((row) => sameItem(row, item));
+  const currentQty = Number(found?.quantity || 0);
+  const requestQty = Math.max(1, Number(quantity) || 1);
+  const stock = getStock(item.backendProductId || item.productId || item.id || product?.id);
+  const available = Number(stock?.available ?? product?.stock ?? 0);
+
+  if (available <= 0) {
+    return { ok: false, reason: "OUT_OF_STOCK", available, currentQty, requestQty, item };
+  }
+
+  if (currentQty + requestQty > available) {
+    return { ok: false, reason: "EXCEED_STOCK", available, currentQty, requestQty, item };
+  }
+
+  return { ok: true, available, currentQty, requestQty, item };
+}
+
 export function addProductToCart(product, quantity = 1, products = []) {
+  const validation = validateCartStock(product, quantity, products);
+  if (!validation.ok) return getCart(products);
+
   const cart = getCart(products);
   const backendProductId = resolveBackendProductId(product);
 
@@ -163,6 +202,55 @@ export function clearCartItems(itemIds = []) {
         !itemIds.includes(item.backendProductId)
     )
   );
+}
+
+
+export function buildCheckoutDraftFromItems(items = [], options = {}, products = []) {
+  const normalized = normalizeItems(items, products).map((item) => ({
+    ...item,
+    id: item.id || item.productId || item.backendProductId,
+    productId: item.productId || item.id || item.backendProductId,
+    quantity: Math.max(1, Number(item.quantity) || 1),
+    selected: item.selected !== false,
+  }));
+
+  const subtotal = normalized.reduce(
+    (sum, item) => sum + (Number(item.price) || 0) * (Number(item.quantity) || 1),
+    0
+  );
+
+  const shippingFee = Number(options.shippingFee || 0);
+  const discount = Number(options.discount || 0);
+  const shippingDiscount = Number(options.shippingDiscount || 0);
+
+  return {
+    orderType: options.orderType || "normal",
+    items: normalized,
+    subtotal,
+    shippingFee,
+    discount,
+    shippingDiscount,
+    voucherCode: options.voucherCode || "",
+    total: Math.max(0, subtotal + shippingFee - discount - shippingDiscount),
+    shippingMethod: options.shippingMethod || "FAST",
+    preorder: options.preorder || null,
+  };
+}
+
+export function saveBuyNowDraft(product, quantity = 1, options = {}, products = []) {
+  const validation = validateCartStock(product, quantity, products);
+  if (!validation.ok) return validation;
+
+  addProductToCart(product, quantity, products);
+
+  const draft = buildCheckoutDraftFromItems(
+    [{ ...validation.item, quantity: Math.max(1, Number(quantity) || 1), selected: true }],
+    options,
+    products
+  );
+
+  saveCheckoutDraft(draft);
+  return { ok: true, draft, available: validation.available };
 }
 
 export function saveCheckoutDraft(draft) {
