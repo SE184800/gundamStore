@@ -19,6 +19,7 @@ import {
 import PageShell from "../../components/common/PageShell";
 import { useCms } from "../../store/CmsStore";
 import { translateStaticText } from "../../i18n";
+import { getSafeHref } from "../../utils/urlSafety";
 import ProductCard from "../../components/storefront/ProductCard";
 import {
   enrichProductsWithBackendIds,
@@ -180,6 +181,10 @@ function text(value, lang, fallback = "") {
   if (!value) return translateStaticText(fallback, lang);
   if (typeof value === "string") return translateStaticText(value, lang);
   return value[lang] || value.vi || value.en || translateStaticText(fallback, lang);
+}
+
+function bannerHref(banner = {}) {
+  return getSafeHref(banner.ctaUrl || banner.link || "/shop", "/shop");
 }
 
 function productName(product, lang) {
@@ -527,7 +532,7 @@ function HeroV3Bento({ banners, lang, actions, settings }) {
         onMouseLeave={() => setPaused(false)}
       >
         <a
-          href={activeBanner.ctaUrl || activeBanner.link || "/shop"}
+          href={bannerHref(activeBanner)}
           onClick={() => actions?.track?.("banner_click", { meta: { bannerId: activeBanner.id || "hero-v3" } })}
           className="group relative h-[360px] overflow-hidden rounded-[24px] border border-slate-800 bg-slate-950 shadow-[0_24px_80px_rgba(15,23,42,0.18)] sm:h-[420px] sm:rounded-[30px]"
           style={{ backgroundColor: campaignBg }}
@@ -611,7 +616,7 @@ function HeroV3Bento({ banners, lang, actions, settings }) {
           {[sideOne, sideTwo].map((banner, index) => (
             <a
               key={`${banner.id}-${index}`}
-              href={banner.ctaUrl || banner.link || "/shop"}
+              href={bannerHref(banner)}
               className="group relative h-[203px] overflow-hidden rounded-[26px] border border-slate-200 bg-slate-950 shadow-lg"
             >
               {renderMedia(
@@ -836,7 +841,7 @@ function HeroV2Classic({ banners, lang, actions }) {
             {activeBanner.showCta !== false && (
               <div className={activeBanner.showCta === false ? "hidden" : "mt-6"}>
                 <a
-                  href={activeBanner.ctaUrl || activeBanner.link || "/shop"}
+                  href={bannerHref(activeBanner)}
                   onClick={() => actions?.track?.("banner_click", { meta: { bannerId: activeBanner.id || "hero" } })}
                   className="inline-flex rounded-2xl bg-gradient-to-r from-blue-700 to-cyan-500 px-9 py-4 text-sm font-black uppercase tracking-wide text-white shadow-lg shadow-blue-200 transition hover:-translate-y-1 hover:brightness-110"
                 >
@@ -891,7 +896,7 @@ function HeroV2Classic({ banners, lang, actions }) {
           </div>
 
           <a
-            href={activeBanner.ctaUrl || activeBanner.link || "/shop"}
+            href={bannerHref(activeBanner)}
             className="group relative flex h-[420px] cursor-pointer items-center justify-center overflow-hidden p-5 lg:p-6"
           >
             <div className="absolute inset-6 rounded-[30px] bg-gradient-to-br from-blue-500/20 via-cyan-400/20 to-white/10 blur-2xl" />

@@ -139,10 +139,15 @@ export function AdminImageUploader({
     const file = event.target.files?.[0];
     if (!file) return;
 
-    const base64 = await fileToBase64(file);
-    setPreview(base64);
-    onChange?.(base64);
-    event.target.value = "";
+    try {
+      const base64 = await fileToBase64(file, { mediaKind: "image" });
+      setPreview(base64);
+      onChange?.(base64);
+    } catch (error) {
+      window.alert(error?.message || "Invalid image file.");
+    } finally {
+      event.target.value = "";
+    }
   }
 
   function remove() {
@@ -203,10 +208,17 @@ export function AdminMultiImageUploader({
     const files = Array.from(event.target.files || []);
     if (!files.length) return;
 
-    const base64List = await Promise.all(files.map((file) => fileToBase64(file)));
-    const next = Array.from(new Set([...images, ...base64List]));
-    onChange?.(next);
-    event.target.value = "";
+    try {
+      const base64List = await Promise.all(
+        files.map((file) => fileToBase64(file, { mediaKind: "image" }))
+      );
+      const next = Array.from(new Set([...images, ...base64List]));
+      onChange?.(next);
+    } catch (error) {
+      window.alert(error?.message || "Invalid gallery image file.");
+    } finally {
+      event.target.value = "";
+    }
   }
 
   function remove(index) {
@@ -283,10 +295,15 @@ export function AdminVideoUploader({
     const file = event.target.files?.[0];
     if (!file) return;
 
-    const base64 = await fileToBase64(file);
-    setPreview(base64);
-    onChange?.(base64);
-    event.target.value = "";
+    try {
+      const base64 = await fileToBase64(file, { mediaKind: "video" });
+      setPreview(base64);
+      onChange?.(base64);
+    } catch (error) {
+      window.alert(error?.message || "Invalid video file.");
+    } finally {
+      event.target.value = "";
+    }
   }
 
   function remove() {
