@@ -129,6 +129,15 @@ function isTerminalStatus(status) {
   return [ORDER_STATUS.CANCELLED, ORDER_STATUS.REFUNDED, ORDER_STATUS.COMPLETED].includes(status);
 }
 
+function escapePrintHtml(value = "") {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
 export default function AdminOrders() {
   const [lang] = useLang();
   const t = getCopy(lang);
@@ -400,27 +409,49 @@ export default function AdminOrders() {
   }
 
   function printPickList(order) {
+    const orderCode = escapePrintHtml(order.orderCode || order.id || "");
+    const customerName = escapePrintHtml(order.customer?.name || "");
+    const customerPhone = escapePrintHtml(order.customer?.phone || "");
+    const customerAddress = escapePrintHtml(order.customer?.address || "");
+    const pickTitle = escapePrintHtml(lang === "en" ? "Pick List" : "Phiếu soạn hàng");
+    const orderLabel = escapePrintHtml(lang === "en" ? "Order" : "Đơn");
+    const customerLabel = escapePrintHtml(lang === "en" ? "Customer" : "Khách");
+    const addressLabel = escapePrintHtml(lang === "en" ? "Address" : "Địa chỉ");
+    const qtyLabel = escapePrintHtml(lang === "en" ? "Qty" : "SL");
+    const totalLabel = escapePrintHtml(lang === "en" ? "Total" : "Tổng");
+    const safeTotal = escapePrintHtml(formatCurrency(order.total || 0));
+
+    const itemsHtml = (order.items || [])
+      .map((item) => {
+        const itemName = escapePrintHtml(item.name || "");
+        const qty = Number(item.quantity || 1);
+        return `<p>□ ${itemName} - ${qtyLabel}: ${qty}</p>`;
+      })
+      .join("");
+
     const html = `
       <html>
-        <head><title>Pick List ${order.orderCode || order.id}</title></head>
+        <head>
+          <title>${pickTitle} ${orderCode}</title>
+          <meta charset="utf-8" />
+        </head>
         <body style="font-family: Arial; padding: 24px;">
-          <h2>${lang === "en" ? "Pick List" : "Phiếu soạn hàng"}</h2>
-          <p><b>${lang === "en" ? "Order" : "Đơn"}:</b> ${order.orderCode || order.id}</p>
-          <p><b>${lang === "en" ? "Customer" : "Khách"}:</b> ${order.customer?.name || ""} - ${order.customer?.phone || ""}</p>
-          <p><b>${lang === "en" ? "Address" : "Địa chỉ"}:</b> ${order.customer?.address || ""}</p>
+          <h2>${pickTitle}</h2>
+          <p><b>${orderLabel}:</b> ${orderCode}</p>
+          <p><b>${customerLabel}:</b> ${customerName} - ${customerPhone}</p>
+          <p><b>${addressLabel}:</b> ${customerAddress}</p>
           <hr/>
-          ${(order.items || [])
-            .map((item) => `<p>□ ${item.name || ""} - ${lang === "en" ? "Qty" : "SL"}: ${Number(item.quantity || 1)}</p>`)
-            .join("")}
+          ${itemsHtml}
           <hr/>
-          <p><b>${lang === "en" ? "Total" : "Tổng"}:</b> ${formatCurrency(order.total || 0)}</p>
+          <p><b>${totalLabel}:</b> ${safeTotal}</p>
         </body>
       </html>
     `;
 
-    const win = window.open("", "_blank");
+    const win = window.open("", "_blank", "noopener,noreferrer");
     if (!win) return;
 
+    win.document.open();
     win.document.write(html);
     win.document.close();
     win.print();

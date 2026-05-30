@@ -72,6 +72,31 @@ function canUpdatePaymentStatus(order) {
 const CUSTOMER_CANCEL_ALLOWED_STATUSES = new Set(["PLACED", "CONFIRMED"]);
 const ADMIN_CANCEL_ALLOWED_STATUSES = new Set(["PLACED", "CONFIRMED", "PACKING"]);
 
+const ADMIN_ALLOWED_STATUS_TRANSITIONS = {
+  PLACED: new Set(["CONFIRMED", "CANCELLED"]),
+  CONFIRMED: new Set(["PACKING", "CANCELLED"]),
+  PACKING: new Set(["SHIPPING", "CANCELLED"]),
+  SHIPPING: new Set(["DELIVERED"]),
+  DELIVERED: new Set(["COMPLETED", "REFUNDED"]),
+  COMPLETED: new Set(["REFUNDED"]),
+  CANCELLED: new Set([]),
+  REFUNDED: new Set([]),
+};
+
+function canAdminTransitionOrderStatus(fromStatus = "", toStatus = "") {
+  if (!fromStatus || !toStatus) return false;
+  if (fromStatus === toStatus) return true;
+  return ADMIN_ALLOWED_STATUS_TRANSITIONS[fromStatus]?.has(toStatus) || false;
+}
+
+function getOrderTransitionConflictMessage(fromStatus = "", toStatus = "") {
+  if (["CANCELLED", "REFUNDED"].includes(fromStatus)) {
+    return "Đơn hàng đã ở trạng thái cuối nên không thể chuyển trạng thái.";
+  }
+
+  return `Không thể chuyển trạng thái đơn từ ${fromStatus} sang ${toStatus}.`;
+}
+
 function cleanCancelText(value = "", max = 500) {
   return String(value || "")
     .replace(/[<>]/g, "")
@@ -534,10 +559,10 @@ export async function updateOrderStatus(req, res, next) {
       });
     }
 
-    if (currentOrder.status === "CANCELLED" && body.status !== "CANCELLED") {
+    if (!canAdminTransitionOrderStatus(currentOrder.status, body.status)) {
       return res.status(409).json({
         success: false,
-        message: "Đơn hàng đã hủy nên không thể chuyển lại trạng thái khác.",
+        message: getOrderTransitionConflictMessage(currentOrder.status, body.status),
       });
     }
 

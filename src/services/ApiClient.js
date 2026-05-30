@@ -20,11 +20,7 @@ export function getStoredAdminToken() {
 
 export function getStoredAccountToken() {
   try {
-    const accountToken = localStorage.getItem(ACCOUNT_TOKEN_KEY) || "";
-    if (accountToken) return accountToken;
-
-    // Dev/UAT fallback: allow admin session to test account APIs.
-    return getStoredAdminToken();
+    return localStorage.getItem(ACCOUNT_TOKEN_KEY) || "";
   } catch {
     return "";
   }
