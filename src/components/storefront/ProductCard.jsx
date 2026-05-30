@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { Eye, Heart, Minus, Plus, ShoppingCart, Star, X, Zap } from "lucide-react";
 import { formatCurrency } from "../../utils/format";
 import { resolveText, useI18n } from "../../i18n";
-import { addProductToCart, forceCartBadgeSync } from "../../services/CartService";
+import { addProductToCart, forceCartBadgeSync, saveBuyNowDraft, validateCartStock } from "../../services/CartService";
 import { addMyWishlistItem, hasAccountToken } from "../../services/AccountApiService";
 
 function getImage(product) {
@@ -42,9 +42,24 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
   const detailUrl = getProductUrl(product);
   const isPreorder = String(product?.status || "").toLowerCase().includes("pre");
 
+  function showCartError(result) {
+    const available = Number(result?.available || 0);
+    alert(
+      lang === "en"
+        ? `Only ${available} item(s) available.`
+        : `Sản phẩm này chỉ còn ${available} sản phẩm trong kho.`
+    );
+  }
+
   function addCart(e) {
     e?.preventDefault?.();
     e?.stopPropagation?.();
+
+    const validation = validateCartStock(product, qty);
+    if (!validation.ok) {
+      showCartError(validation);
+      return false;
+    }
 
     if (onAddToCart) {
       onAddToCart(product, qty);
@@ -55,14 +70,27 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
     forceCartBadgeSync();
 
     actions?.track?.("add_to_cart", { productId: product?.id, qty });
+    return true;
   }
 
   function buyNow(e) {
     e?.preventDefault?.();
     e?.stopPropagation?.();
 
-    addCart(e);
-    window.location.href = isPreorder ? detailUrl : "/checkout";
+    if (isPreorder) {
+      window.location.href = detailUrl;
+      return;
+    }
+
+    const result = saveBuyNowDraft(product, qty, { shippingMethod: "FAST" });
+    if (!result.ok) {
+      showCartError(result);
+      return;
+    }
+
+    forceCartBadgeSync();
+    actions?.track?.("buy_now", { productId: product?.id, qty });
+    window.location.href = "/checkout";
   }
 
   async function addWishlist(e) {

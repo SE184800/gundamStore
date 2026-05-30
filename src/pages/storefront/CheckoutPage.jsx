@@ -8,6 +8,7 @@ import {
 } from "../../services/CartService";
 import { applyVoucher } from "../../services/VoucherService";
 import { createOrder } from "../../services/OrderService";
+import { getStock } from "../../services/InventoryService";
 import {
   buildCreateOrderPayload,
   createStorefrontOrderApi,
@@ -272,9 +273,30 @@ export default function CheckoutPage() {
     return nextErrors.length === 0;
   }
 
+  function validateDraftStock() {
+    if (isPreorder) return true;
+
+    const invalidItem = (draft.items || []).find((item) => {
+      const stock = getStock(item.backendProductId || item.productId || item.id);
+      return (Number(item.quantity) || 1) > Number(stock?.available || 0);
+    });
+
+    if (!invalidItem) return true;
+
+    const stock = getStock(invalidItem.backendProductId || invalidItem.productId || invalidItem.id);
+    setErrors([
+      lang === "en"
+        ? `${getItemName(invalidItem, lang)} only has ${Number(stock?.available || 0)} item(s) available.`
+        : `${getItemName(invalidItem, lang)} chỉ còn ${Number(stock?.available || 0)} sản phẩm trong kho.`,
+    ]);
+
+    return false;
+  }
+
   async function submitOrder() {
     if (placingOrder) return;
     if (!validateCustomer()) return;
+    if (!validateDraftStock()) return;
 
     setPlacingOrder(true);
     setApiNotice("");
