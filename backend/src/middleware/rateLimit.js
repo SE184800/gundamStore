@@ -1,13 +1,20 @@
 const buckets = new Map();
 
 function getClientKey(req, keyPrefix) {
-  const forwardedFor = String(req.headers["x-forwarded-for"] || "")
-    .split(",")[0]
-    .trim();
-
-  const ip = forwardedFor || req.ip || req.socket?.remoteAddress || "unknown";
-
+  // Express req.ip respects app.set("trust proxy", ...).
+  // Do not parse x-forwarded-for manually unless the app explicitly trusts proxy hops.
+  const ip = req.ip || req.socket?.remoteAddress || "unknown";
   return `${keyPrefix}:${ip}`;
+}
+
+function cleanupExpiredBuckets(now = Date.now()) {
+  if (buckets.size < 5000) return;
+
+  for (const [key, value] of buckets.entries()) {
+    if (!value || value.resetAt <= now) {
+      buckets.delete(key);
+    }
+  }
 }
 
 export function createRateLimit({
@@ -21,6 +28,8 @@ export function createRateLimit({
     const key = getClientKey(req, keyPrefix);
     const current = buckets.get(key);
 
+    cleanupExpiredBuckets(now);
+
     if (!current || current.resetAt <= now) {
       buckets.set(key, {
         count: 1,
@@ -31,6 +40,10 @@ export function createRateLimit({
     }
 
     current.count += 1;
+
+    res.setHeader("X-RateLimit-Limit", String(max));
+    res.setHeader("X-RateLimit-Remaining", String(Math.max(0, max - current.count)));
+    res.setHeader("X-RateLimit-Reset", String(Math.ceil(current.resetAt / 1000)));
 
     if (current.count > max) {
       const retryAfter = Math.ceil((current.resetAt - now) / 1000);
