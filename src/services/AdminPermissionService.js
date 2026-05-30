@@ -48,6 +48,7 @@ const ROLE_PERMISSIONS = {
 export const ADMIN_ROUTE_PERMISSIONS = {
   "/admin": ADMIN_PERMISSIONS.VIEW_DASHBOARD,
   "/admin/reports": ADMIN_PERMISSIONS.VIEW_REPORTS,
+  "/admin/analytics": ADMIN_PERMISSIONS.VIEW_ANALYTICS,
 
   "/admin/cms": ADMIN_PERMISSIONS.MANAGE_CMS,
   "/admin/cms/pages": ADMIN_PERMISSIONS.MANAGE_CMS,
@@ -67,29 +68,59 @@ export const ADMIN_ROUTE_PERMISSIONS = {
   "/admin/suppliers": ADMIN_PERMISSIONS.MANAGE_PRODUCTS,
   "/admin/product-groups": ADMIN_PERMISSIONS.MANAGE_PRODUCTS,
   "/admin/product-group-mapping": ADMIN_PERMISSIONS.MANAGE_PRODUCTS,
-  "/admin/pricing-inventory": ADMIN_PERMISSIONS.MANAGE_PRICING_INVENTORY,
-  "/admin/promotions": ADMIN_PERMISSIONS.MANAGE_PROMOTIONS,
   "/admin/categories": ADMIN_PERMISSIONS.MANAGE_PRODUCTS,
   "/admin/product-category-mapping": ADMIN_PERMISSIONS.MANAGE_PRODUCTS,
   "/admin/product-display-mapping": ADMIN_PERMISSIONS.MANAGE_PRODUCTS,
 
+  "/admin/pricing-inventory": ADMIN_PERMISSIONS.MANAGE_PRICING_INVENTORY,
+  "/admin/pricing": ADMIN_PERMISSIONS.MANAGE_PRICING_INVENTORY,
+  "/admin/inventory": ADMIN_PERMISSIONS.MANAGE_PRICING_INVENTORY,
+  "/admin/inventory/receipts": ADMIN_PERMISSIONS.MANAGE_PRICING_INVENTORY,
+  "/admin/inventory/adjustments": ADMIN_PERMISSIONS.MANAGE_PRICING_INVENTORY,
+  "/admin/inventory/stock-count": ADMIN_PERMISSIONS.MANAGE_PRICING_INVENTORY,
+  "/admin/inventory/transactions": ADMIN_PERMISSIONS.MANAGE_PRICING_INVENTORY,
+
+  "/admin/promotions": ADMIN_PERMISSIONS.MANAGE_PROMOTIONS,
+
   "/admin/orders": ADMIN_PERMISSIONS.MANAGE_ORDERS,
   "/admin/restock-alerts": ADMIN_PERMISSIONS.MANAGE_ORDERS,
+
   "/admin/chats": ADMIN_PERMISSIONS.MANAGE_CUSTOMER_SERVICE,
   "/admin/reviews": ADMIN_PERMISSIONS.MANAGE_CUSTOMER_SERVICE,
-  "/admin/community-gallery": ADMIN_PERMISSIONS.MANAGE_COMMUNITY,
   "/admin/complaints": ADMIN_PERMISSIONS.MANAGE_CUSTOMER_SERVICE,
-  "/admin/analytics": ADMIN_PERMISSIONS.VIEW_ANALYTICS,
+  "/admin/communication": ADMIN_PERMISSIONS.MANAGE_CUSTOMER_SERVICE,
+
+  "/admin/community-gallery": ADMIN_PERMISSIONS.MANAGE_COMMUNITY,
+
   "/admin/settings": ADMIN_PERMISSIONS.MANAGE_SETTINGS,
   "/admin/qa-helper": ADMIN_PERMISSIONS.MANAGE_QA_HELPER,
 };
+
+function cleanAdminPath(pathname = "") {
+  const clean = String(pathname || "").split("?")[0].replace(/\/+$/, "");
+  return clean || "/admin";
+}
+
+function resolveRoutePermission(pathname = "") {
+  const cleanPath = cleanAdminPath(pathname);
+
+  if (ADMIN_ROUTE_PERMISSIONS[cleanPath]) {
+    return ADMIN_ROUTE_PERMISSIONS[cleanPath];
+  }
+
+  const matchedPrefix = Object.keys(ADMIN_ROUTE_PERMISSIONS)
+    .filter((path) => cleanPath.startsWith(`${path}/`))
+    .sort((a, b) => b.length - a.length)[0];
+
+  return matchedPrefix ? ADMIN_ROUTE_PERMISSIONS[matchedPrefix] : null;
+}
 
 export function getRolePermissions(role = "") {
   return ROLE_PERMISSIONS[role] || [];
 }
 
 export function hasPermission(permission) {
-  if (!permission) return true;
+  if (!permission) return false;
 
   const current = getCurrentAdmin();
   if (!current) return false;
@@ -98,9 +129,7 @@ export function hasPermission(permission) {
 }
 
 export function canAccessAdminPath(pathname = "") {
-  const cleanPath = String(pathname || "").replace(/\/$/, "") || "/admin";
-  const permission = ADMIN_ROUTE_PERMISSIONS[cleanPath];
-
+  const permission = resolveRoutePermission(pathname);
   return hasPermission(permission);
 }
 
