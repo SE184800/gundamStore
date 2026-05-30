@@ -78,6 +78,7 @@ const copy = {
     voucher2: "Freeship theo điều kiện khu vực",
     voucher3: "Giảm 10% khi mua kèm phụ kiện builder",
     collectVoucher: "Lưu voucher",
+    voucherSaved: "Đã lưu voucher",
     deliveryTitle: "Giao hàng dự kiến",
     deliveryTo: "Giao đến",
     deliveryLocation: "TP.HCM, Quận 1",
@@ -155,6 +156,7 @@ const copy = {
     voucher2: "Conditional free shipping by area",
     voucher3: "10% off builder accessories bundle",
     collectVoucher: "Collect voucher",
+    voucherSaved: "Voucher saved",
     deliveryTitle: "Estimated delivery",
     deliveryTo: "Deliver to",
     deliveryLocation: "District 1, Ho Chi Minh City",
@@ -526,15 +528,47 @@ function ProductInfo({ product, lang, actions, onPreorder }) {
 
 function MarketplaceExtras({ lang }) {
   const t = copy[lang];
+  const [savedVoucher, setSavedVoucher] = useState("");
+
+  const vouchers = [
+    { label: t.voucher1, code: "VIP50" },
+    { label: t.voucher2, code: "FREESHIP" },
+    { label: t.voucher3, code: "GUNDAM10" },
+  ];
+
+  function collectVoucher(code) {
+    try {
+      localStorage.setItem("gundam-saved-voucher", code);
+      setSavedVoucher(code);
+    } catch {
+      setSavedVoucher(code);
+    }
+  }
 
   return (
     <div className="mt-5 grid gap-3">
       <div className="rounded-3xl border border-amber-100 bg-amber-50 p-4">
-        <div className="mb-3 flex items-center gap-2 text-sm font-black text-amber-800"><CreditCard size={18} />{t.voucherTitle}</div>
-        {[t.voucher1, t.voucher2, t.voucher3].map((voucher) => (
-          <div key={voucher} className="mb-2 flex items-center justify-between gap-3 rounded-2xl bg-white p-3 text-xs font-bold text-slate-700 shadow-sm">
-            <span>{voucher}</span>
-            <button className="shrink-0 rounded-xl bg-amber-500 px-3 py-1.5 text-[11px] font-black text-white hover:bg-amber-600">{t.collectVoucher}</button>
+        <div className="mb-3 flex items-center gap-2 text-sm font-black text-amber-800">
+          <CreditCard size={18} />
+          {t.voucherTitle}
+        </div>
+
+        {savedVoucher && (
+          <div className="mb-3 rounded-2xl bg-emerald-50 p-3 text-xs font-black text-emerald-700">
+            {t.voucherSaved}: {savedVoucher}
+          </div>
+        )}
+
+        {vouchers.map((voucher) => (
+          <div key={voucher.code} className="mb-2 flex items-center justify-between gap-3 rounded-2xl bg-white p-3 text-xs font-bold text-slate-700 shadow-sm">
+            <span>{voucher.label}</span>
+            <button
+              type="button"
+              onClick={() => collectVoucher(voucher.code)}
+              className="shrink-0 rounded-xl bg-amber-500 px-3 py-1.5 text-[11px] font-black text-white hover:bg-amber-600"
+            >
+              {savedVoucher === voucher.code ? t.voucherSaved : t.collectVoucher}
+            </button>
           </div>
         ))}
       </div>
@@ -563,6 +597,7 @@ function MarketplaceExtras({ lang }) {
     </div>
   );
 }
+
 
 function ShopInfoCard({ lang }) {
   const t = copy[lang];
