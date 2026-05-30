@@ -99,6 +99,7 @@ const text = {
 const DEFAULT_GRADES = ["HG", "RG", "MG", "MGEX", "PG", "SD", "FM", "RE/100"];
 const DEFAULT_SCALES = ["1/144", "1/100", "1/60", "SD"];
 const DEFAULT_SERIES = ["SEED", "UC", "WFM", "IBO", "Wing", "00", "Build", "G Gundam"];
+const PAGE_SIZE = 12;
 
 function getProductName(product, lang) {
   if (typeof product.name === "string") return product.name;
@@ -352,6 +353,7 @@ export default function ShopPage() {
   const [sort, setSort] = useState("popular");
   const [view, setView] = useState("grid");
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -471,6 +473,14 @@ export default function ShopPage() {
     lang,
     state.productCategoryMappings,
   ]);
+
+  const visibleProducts = useMemo(() => {
+    return products.slice(0, visibleCount);
+  }, [products, visibleCount]);
+
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [query, filters, sort]);
 
   function reset() {
     setQuery("");
@@ -651,7 +661,7 @@ export default function ShopPage() {
 
           {products.length > 0 ? (
             <div className={view === "grid" ? "grid gap-3 sm:grid-cols-2 xl:grid-cols-3 sm:gap-4" : "space-y-4"}>
-              {products.map((product) => (
+              {visibleProducts.map((product) => (
                 <ProductCard key={product.id} product={product} view={view} lang={lang} actions={actions} />
               ))}
             </div>
@@ -667,11 +677,17 @@ export default function ShopPage() {
             </div>
           )}
 
-          <div className="flex items-center justify-center rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
-            <button className="rounded-2xl bg-blue-700 px-5 py-3 text-sm font-black text-white shadow-lg shadow-blue-100 hover:bg-blue-800">
-              {t.loadMore}
-            </button>
-          </div>
+          {visibleCount < products.length && (
+            <div className="flex items-center justify-center rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+              <button
+                type="button"
+                onClick={() => setVisibleCount((count) => Math.min(count + PAGE_SIZE, products.length))}
+                className="rounded-2xl bg-blue-700 px-5 py-3 text-sm font-black text-white shadow-lg shadow-blue-100 hover:bg-blue-800"
+              >
+                {t.loadMore}
+              </button>
+            </div>
+          )}
         </div>
       </section>
 

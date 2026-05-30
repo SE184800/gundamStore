@@ -13,6 +13,10 @@ import {
   buildCreateOrderPayload,
   createStorefrontOrderApi,
 } from "../../services/StorefrontOrderApiService";
+import {
+  mapBackendOrderForStorefront,
+  saveOrderSuccessSnapshot,
+} from "../../services/StorefrontOrderLookupApiService";
 import StorefrontShell from "../../components/storefront/StorefrontShell";
 import { getMyAccount, getMyAddresses, hasAccountToken } from "../../services/AccountApiService";
 import {
@@ -70,6 +74,14 @@ function getCopy(lang) {
       lang === "en"
         ? "Backend order API failed, saved as local demo order."
         : "Backend order API lỗi, đã lưu đơn local demo.",
+    preorderDeposit: lang === "en" ? "Pre-order deposit" : "Thông tin cọc pre-order",
+    preorderFullAmount: lang === "en" ? "Full amount" : "Tổng giá trị đơn",
+    preorderDepositNow: lang === "en" ? "Deposit now" : "Cọc hôm nay",
+    preorderRemaining: lang === "en" ? "Remaining" : "Còn lại",
+    preorderShippingHint:
+      lang === "en"
+        ? "Shipping fee will be confirmed when the item arrives."
+        : "Phí vận chuyển sẽ được xác nhận khi hàng về.",
   };
 }
 
@@ -321,11 +333,14 @@ export default function CheckoutPage() {
         });
 
         const apiOrder = await createStorefrontOrderApi(apiPayload);
+        const mappedOrder = mapBackendOrderForStorefront(apiOrder);
+
+        saveOrderSuccessSnapshot(mappedOrder, cleanCustomer);
 
         clearCartItems(draft.items.map((item) => item.id));
         clearCheckoutDraft();
 
-        navigate(`/order-success/${apiOrder.id}`);
+        navigate(`/order-success/${mappedOrder.orderCode || mappedOrder.id}`);
         return;
       }
 
@@ -347,10 +362,12 @@ export default function CheckoutPage() {
         shippingMethod: customer.shippingMethod,
       });
 
+      saveOrderSuccessSnapshot(order, cleanCustomer);
+
       clearCartItems(draft.items.map((item) => item.id));
       clearCheckoutDraft();
 
-      navigate(`/order-success/${order.id}`);
+      navigate(`/order-success/${order.orderCode || order.id}`);
     } catch (error) {
       console.error("Create order API failed", error);
 
@@ -385,10 +402,12 @@ export default function CheckoutPage() {
         shippingMethod: customer.shippingMethod,
       });
 
+      saveOrderSuccessSnapshot(order, cleanCustomer);
+
       clearCartItems(draft.items.map((item) => item.id));
       clearCheckoutDraft();
 
-      navigate(`/order-success/${order.id}`);
+      navigate(`/order-success/${order.orderCode || order.id}`);
     } finally {
       setPlacingOrder(false);
     }
@@ -410,24 +429,24 @@ export default function CheckoutPage() {
           {isPreorder && (
             <div className="mt-5 rounded-3xl border border-amber-100 bg-amber-50 p-5">
               <div className="text-sm font-black uppercase tracking-[0.2em] text-amber-700">
-                Pre-order deposit
+                {t.preorderDeposit}
               </div>
               <div className="mt-2 grid gap-3 text-sm font-semibold text-amber-900 md:grid-cols-3">
                 <div>
-                  <span className="block text-amber-700">Full amount</span>
+                  <span className="block text-amber-700">{t.preorderFullAmount}</span>
                   <b>{money(draft.preorder?.fullAmount || draft.subtotal)}</b>
                 </div>
                 <div>
-                  <span className="block text-amber-700">Deposit now</span>
+                  <span className="block text-amber-700">{t.preorderDepositNow}</span>
                   <b className="text-red-600">{money(draft.preorder?.depositAmount || pricing.total)}</b>
                 </div>
                 <div>
-                  <span className="block text-amber-700">Remaining</span>
+                  <span className="block text-amber-700">{t.preorderRemaining}</span>
                   <b>{money(draft.preorder?.remainingAmount || 0)}</b>
                 </div>
               </div>
               <p className="mt-3 text-xs font-bold leading-5 text-amber-700">
-                ETA: {draft.preorder?.eta || "-"} · Shipping fee will be confirmed when the item arrives.
+                ETA: {draft.preorder?.eta || "-"} · {t.preorderShippingHint}
               </p>
             </div>
           )}

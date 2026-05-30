@@ -2,7 +2,10 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { CheckCircle2, PackageSearch, Search } from "lucide-react";
 import { getOrderById } from "../../services/OrderService";
-import { getStorefrontOrderByIdFromApi } from "../../services/StorefrontOrderLookupApiService";
+import {
+  getOrderSuccessSnapshot,
+  getStorefrontOrderByIdFromApi,
+} from "../../services/StorefrontOrderLookupApiService";
 import StorefrontShell from "../../components/storefront/StorefrontShell";
 import { useLang } from "../../store/CmsStore";
 
@@ -39,22 +42,31 @@ export default function OrderSuccessPage() {
   const [lang] = useLang();
   const t = getCopy(lang);
 
-  const [backendOrder, setBackendOrder] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const successSnapshot = getOrderSuccessSnapshot(id);
+  const [backendOrder, setBackendOrder] = useState(successSnapshot?.order || null);
+  const [loading, setLoading] = useState(Boolean(successSnapshot?.lookup?.phone || successSnapshot?.lookup?.email));
   const [apiError, setApiError] = useState("");
 
   const localOrder = getOrderById(id);
-  const order = backendOrder || localOrder;
+  const order = backendOrder || successSnapshot?.order || localOrder;
   const source = backendOrder ? "backend" : localOrder ? "local" : "";
   const publicCode = order?.orderCode || order?.orderNo || order?.code || order?.id || id;
 
   useEffect(() => {
     let alive = true;
+    const lookup = successSnapshot?.lookup || {};
+
+    if (!lookup.phone && !lookup.email) {
+      setLoading(false);
+      return () => {
+        alive = false;
+      };
+    }
 
     setLoading(true);
     setApiError("");
 
-    getStorefrontOrderByIdFromApi(id)
+    getStorefrontOrderByIdFromApi(id, lookup)
       .then((item) => {
         if (!alive) return;
         setBackendOrder(item);
@@ -62,7 +74,7 @@ export default function OrderSuccessPage() {
       })
       .catch((error) => {
         if (!alive) return;
-        setBackendOrder(null);
+        // Keep the session snapshot visible; do not hide success page just because public lookup failed.
         setApiError(error?.message || "Backend order lookup failed.");
       })
       .finally(() => {
@@ -135,7 +147,7 @@ export default function OrderSuccessPage() {
 
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
             <Link
-              to={`/orders/${publicCode}`}
+              to={`/order-lookup?code=${encodeURIComponent(publicCode)}${successSnapshot?.lookup?.phone ? `&phone=${encodeURIComponent(successSnapshot.lookup.phone)}` : ""}`}
               className="rounded-2xl bg-blue-600 px-6 py-4 font-black text-white"
             >
               <PackageSearch size={18} className="mr-2 inline" />
