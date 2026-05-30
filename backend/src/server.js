@@ -21,6 +21,7 @@ import restockAlertRoutes from "./routes/restockAlertRoutes.js";
 
 const app = express();
 
+app.set("trust proxy", env.trustProxyHops);
 app.use(helmet());
 
 const allowedCorsOrigins = [

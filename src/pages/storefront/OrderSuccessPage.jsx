@@ -18,9 +18,9 @@ function getCopy(lang) {
       lang === "en"
         ? "Thank you for shopping at Gundam Store VN."
         : "Cảm ơn bạn đã đặt hàng tại Gundam Store VN.",
-    checking: lang === "en" ? "Checking backend order..." : "Đang kiểm tra đơn backend...",
-    backendOrder: lang === "en" ? "PostgreSQL Order" : "Đơn PostgreSQL",
-    localOrder: lang === "en" ? "Local Demo Order" : "Đơn demo local",
+    checking: lang === "en" ? "Updating order status..." : "Đang cập nhật trạng thái đơn...",
+    backendOrder: lang === "en" ? "Order recorded" : "Đơn hàng đã ghi nhận",
+    localOrder: lang === "en" ? "Order recorded" : "Đơn hàng đã ghi nhận",
     notFound: lang === "en" ? "Order not found" : "Không tìm thấy đơn",
     publicCode: lang === "en" ? "Public lookup code" : "Mã tra cứu đơn",
     internalId: lang === "en" ? "Internal order ID" : "Mã đơn nội bộ",
@@ -49,7 +49,7 @@ export default function OrderSuccessPage() {
 
   const localOrder = getOrderById(id);
   const order = backendOrder || successSnapshot?.order || localOrder;
-  const source = backendOrder ? "backend" : localOrder ? "local" : "";
+  const source = backendOrder ? "synced" : localOrder ? "recorded" : "";
   const publicCode = order?.orderCode || order?.orderNo || order?.code || order?.id || id;
 
   useEffect(() => {
@@ -75,7 +75,7 @@ export default function OrderSuccessPage() {
       .catch((error) => {
         if (!alive) return;
         // Keep the session snapshot visible; do not hide success page just because public lookup failed.
-        setApiError(error?.message || "Backend order lookup failed.");
+        setApiError(error?.message || (lang === "en" ? "Unable to update order status." : "Chưa thể cập nhật trạng thái đơn."));
       })
       .finally(() => {
         if (!alive) return;
@@ -100,16 +100,16 @@ export default function OrderSuccessPage() {
           <div className="mt-5">
             <span
               className={`rounded-full px-3 py-2 text-xs font-black ${
-                source === "backend"
+                source === "synced"
                   ? "bg-emerald-50 text-emerald-700"
                   : "bg-amber-50 text-amber-700"
               }`}
             >
               {loading
                 ? t.checking
-                : source === "backend"
+                : source === "synced"
                   ? t.backendOrder
-                  : source === "local"
+                  : source === "recorded"
                     ? t.localOrder
                     : apiError || t.notFound}
             </span>
