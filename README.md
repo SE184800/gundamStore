@@ -98,6 +98,16 @@ Smoke test:
 - README and admin screens do not show technical wording to business users.
 
 
+
+## Responsive UX/UI audit
+
+Before release, use `RESPONSIVE_UX_AUDIT.md` together with `UAT_RUNTIME_EVIDENCE.md` to verify mobile storefront, laptop admin, VI/EN, floating support and runtime click-through evidence.
+
+Device strategy:
+- Storefront is mobile-first.
+- Admin is laptop-first.
+- Admin mobile is quick-view only unless full mobile CRUD is approved.
+
 ## Runtime evidence
 
 Before release, use `UAT_RUNTIME_EVIDENCE.md` to run public runtime smoke, production hardening smoke, and capture browser click-through evidence.

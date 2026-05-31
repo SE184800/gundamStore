@@ -393,7 +393,7 @@ export default function Header() {
                 onClick={() => setMobileOpen(false)}
                 className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-center text-xs font-black text-slate-700 shadow-sm"
               >
-                Sign In
+                {t("header.signIn")}
               </a>
               <a
                 href="/register"

@@ -276,12 +276,18 @@ export async function getStorefrontProductsFromApi() {
     token: "",
   });
 
-  if (!data?.success || !Array.isArray(data.products)) {
-    throw new Error("Backend did not return valid products.");
+  const products = Array.isArray(data?.products)
+    ? data.products
+    : Array.isArray(data?.data)
+      ? data.data
+      : [];
+
+  if (!data?.success || !Array.isArray(products)) {
+    throw new Error("Storefront product sync skipped.");
   }
 
-  cacheBackendProducts(data.products);
-  return data.products;
+  cacheBackendProducts(products);
+  return products;
 }
 
 export async function getStorefrontProductByKeyFromApi(key = "") {

@@ -66,7 +66,7 @@ export default function FloatingChat() {
     <>
       {/* Khối hiển thị Hộp thoại Chat gộp */}
       {open && (
-        <div className="fixed bottom-[250px] right-5 z-50 w-[320px] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl transition-all duration-200">
+        <div className="mobile-chat-panel fixed bottom-[250px] right-5 z-50 w-[320px] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl transition-all duration-200">
           {/* Header hộp chat - Đã bọc i18n */}
           <div className="bg-blue-700 px-4 pt-3 pb-2 text-white">
             <div className="flex items-center justify-between mb-2">
@@ -153,7 +153,7 @@ export default function FloatingChat() {
           onClick={(e) => handleNavigation(e, ZALO_URL, "https://zalo.me/")}
           target="_blank"
           rel="noreferrer"
-          className="group flex items-center rounded-full bg-cyan-600 p-2 text-white opacity-55 shadow-xl transition-all duration-300 hover:rounded-2xl hover:opacity-100 hover:shadow-2xl"
+          className={`${open ? "flex" : "hidden"} group items-center rounded-full bg-cyan-600 p-2 text-white opacity-90 shadow-xl transition-all duration-300 hover:rounded-2xl hover:opacity-100 hover:shadow-2xl sm:flex sm:opacity-55`}
         >
           <span className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-white">
             <img src={ZALO_LOGO} alt="Zalo" className="h-full w-full object-cover" />
@@ -170,7 +170,7 @@ export default function FloatingChat() {
           onClick={(e) => handleNavigation(e, FACEBOOK_URL, "https://www.facebook.com/")}
           target="_blank"
           rel="noreferrer"
-          className="group flex items-center rounded-full bg-indigo-600 p-2 text-white opacity-55 shadow-xl transition-all duration-300 hover:rounded-2xl hover:opacity-100 hover:shadow-2xl"
+          className={`${open ? "flex" : "hidden"} group items-center rounded-full bg-indigo-600 p-2 text-white opacity-90 shadow-xl transition-all duration-300 hover:rounded-2xl hover:opacity-100 hover:shadow-2xl sm:flex sm:opacity-55`}
         >
           <span className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-white p-1">
             <img src={MESSENGER_LOGO} alt="Messenger" className="h-full w-full object-contain" />

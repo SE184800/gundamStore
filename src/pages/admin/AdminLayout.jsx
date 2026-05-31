@@ -238,7 +238,7 @@ export default function AdminLayout() {
   const pageTitle = getPageTitle(location.pathname, t);
 
   return (
-    <div className="min-h-screen bg-slate-100 text-slate-900">
+    <div className="admin-layout-shell min-h-screen bg-slate-100 text-slate-900">
       <AdminDomTranslator lang={lang} />
       <div className="grid min-h-screen lg:grid-cols-[268px_1fr]">
         <aside className="hidden border-r border-slate-200 bg-white lg:block">
@@ -303,7 +303,7 @@ export default function AdminLayout() {
 </nav>
         </aside>
 
-        <main className="min-w-0">
+        <main className="admin-main min-w-0">
           <header className="sticky top-0 z-30 border-b border-slate-200 bg-white">
             <div className="flex min-h-16 items-center justify-between gap-4 px-4 lg:px-6">
               <div>
@@ -349,7 +349,7 @@ export default function AdminLayout() {
             </div>
           </header>
 
-          <div className="p-4 lg:p-6">
+          <div className="admin-content p-4 lg:p-6">
             <Outlet />
           </div>
         </main>

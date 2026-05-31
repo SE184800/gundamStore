@@ -507,7 +507,7 @@ export default function ShopPage() {
 
   return (
     <PageShell>
-      <section className="mx-auto max-w-[1440px] px-4 py-5 lg:px-8">
+      <section className="shop-mobile-shell mx-auto max-w-[1440px] px-4 py-5 lg:px-8">
         <div className="mb-4 flex flex-wrap items-center gap-2 text-sm font-bold text-slate-500">
           <span>{t.home}</span>
           <ChevronRight size={16} />
@@ -660,7 +660,7 @@ export default function ShopPage() {
           </div>
 
           {products.length > 0 ? (
-            <div className={view === "grid" ? "grid gap-3 sm:grid-cols-2 xl:grid-cols-3 sm:gap-4" : "space-y-4"}>
+            <div className={view === "grid" ? "shop-mobile-grid grid gap-3 sm:grid-cols-2 xl:grid-cols-3 sm:gap-4" : "shop-mobile-list space-y-4"}>
               {visibleProducts.map((product) => (
                 <ProductCard key={product.id} product={product} view={view} lang={lang} actions={actions} />
               ))}
@@ -692,7 +692,7 @@ export default function ShopPage() {
       </section>
 
       {mobileFilterOpen && (
-        <div className="fixed inset-0 z-[9999] bg-slate-950/60 p-0 backdrop-blur-sm lg:hidden">
+        <div className="mobile-filter-drawer fixed inset-0 z-[9999] bg-slate-950/60 p-0 backdrop-blur-sm lg:hidden">
           <div className="ml-auto h-full w-full max-w-md overflow-y-auto rounded-none bg-white p-5 shadow-2xl sm:rounded-l-3xl">
             <div className="mb-4 flex items-center justify-between">
               <div className="text-lg font-black text-slate-950">{t.mobileFilters}</div>
@@ -719,7 +719,7 @@ export default function ShopPage() {
 
             <button
               onClick={() => setMobileFilterOpen(false)}
-              className="mt-4 w-full rounded-2xl bg-blue-700 px-5 py-3 text-sm font-black text-white"
+              className="mobile-filter-apply mt-4 w-full rounded-2xl bg-blue-700 px-5 py-3 text-sm font-black text-white"
             >
               {t.apply}
             </button>
