@@ -103,14 +103,22 @@ app.use(errorHandler);
 async function start() {
   try {
     await prisma.$connect();
-    console.log("💾 Kết nối Neon PostgreSQL Database thành công!");
 
     const REAL_PORT = env.port;
 
     app.listen(REAL_PORT, "0.0.0.0", () => {
+      if (env.isProduction) {
+        console.log("Gundam Store API started");
+        console.log(`Environment: ${env.nodeEnv}`);
+        console.log(`Port: ${REAL_PORT}`);
+        return;
+      }
+
       console.log("======================================================");
-      console.log(`🚀 GUNDAM STORE BE RUNNING AT: http://localhost:${REAL_PORT}`);
-      console.log(`👉 Test API Đăng nhập tại: http://localhost:${REAL_PORT}/api/auth/login`);
+      console.log("Gundam Store API started");
+      console.log(`Environment: ${env.nodeEnv}`);
+      console.log(`Local API: http://localhost:${REAL_PORT}`);
+      console.log(`Login API: http://localhost:${REAL_PORT}/api/auth/login`);
       console.log("======================================================");
     });
   } catch (err) {
