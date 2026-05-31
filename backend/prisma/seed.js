@@ -45,31 +45,64 @@ async function main() {
     });
   }
 
+  const seedMode =
+    process.env.SEED_MODE || (process.env.NODE_ENV === "production" ? "production" : "demo");
+  const isProductionSeed = seedMode === "production";
   const allowDemoSeed =
-    process.env.NODE_ENV !== "production" || process.env.ALLOW_DEMO_SEED === "true";
+    seedMode === "demo" &&
+    (process.env.NODE_ENV !== "production" || process.env.ALLOW_DEMO_SEED === "true");
 
-  const seedAdminEmail = process.env.SEED_ADMIN_EMAIL || "admin@gundam.local";
-  const seedAdminPassword = process.env.SEED_ADMIN_PASSWORD || "";
+  const requiredProductionAdminFields = [
+    ["SEED_ADMIN_EMAIL", process.env.SEED_ADMIN_EMAIL],
+    ["SEED_ADMIN_PASSWORD", process.env.SEED_ADMIN_PASSWORD],
+    ["SEED_ADMIN_NAME", process.env.SEED_ADMIN_NAME],
+  ];
 
-  if (allowDemoSeed) {
-    if (!seedAdminPassword && process.env.NODE_ENV === "production") {
-      throw new Error("SEED_ADMIN_PASSWORD is required when ALLOW_DEMO_SEED=true in production.");
+  if (isProductionSeed) {
+    const missing = requiredProductionAdminFields
+      .filter(([, value]) => !String(value || "").trim())
+      .map(([key]) => key);
+
+    if (missing.length) {
+      throw new Error(
+        `Production seed requires explicit admin values: ${missing.join(", ")}. Do not use demo defaults in production.`
+      );
     }
+
+    await prisma.user.upsert({
+      where: { email: process.env.SEED_ADMIN_EMAIL },
+      update: {
+        name: process.env.SEED_ADMIN_NAME,
+        roleId: adminRole.id,
+      },
+      create: {
+        name: process.env.SEED_ADMIN_NAME,
+        email: process.env.SEED_ADMIN_EMAIL,
+        passwordHash: await hashPassword(process.env.SEED_ADMIN_PASSWORD),
+        roleId: adminRole.id,
+      },
+    });
+
+    console.log(`Production admin ensured: ${process.env.SEED_ADMIN_EMAIL}`);
+  } else if (allowDemoSeed) {
+    const seedAdminEmail = process.env.SEED_ADMIN_EMAIL || "admin@gundam.local";
+    const seedAdminPassword = process.env.SEED_ADMIN_PASSWORD || "change-me-dev-password";
+    const seedAdminName = process.env.SEED_ADMIN_NAME || "Admin Preview";
 
     await prisma.user.upsert({
       where: { email: seedAdminEmail },
       update: {},
       create: {
-        name: process.env.SEED_ADMIN_NAME || "Admin Demo",
+        name: seedAdminName,
         email: seedAdminEmail,
-        passwordHash: await hashPassword(seedAdminPassword || "admin123"),
+        passwordHash: await hashPassword(seedAdminPassword),
         roleId: adminRole.id,
       },
     });
 
-    console.log(`Seed admin ensured: ${seedAdminEmail}`);
+    console.log(`Development admin ensured: ${seedAdminEmail}`);
   } else {
-    console.log("Demo admin seed skipped. Set ALLOW_DEMO_SEED=true to enable explicitly.");
+    console.log("Admin seed skipped. Use SEED_MODE=production with explicit admin env values for production.");
   }
 
   const products = [
