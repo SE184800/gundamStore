@@ -811,16 +811,7 @@ export async function updateOrderShipping(req, res, next) {
       });
     }
 
-    const cleanReference = cleanPaymentText(body.reference || "", 120);
     const cleanNote = cleanPaymentText(body.note || "", 500);
-    const paymentAmount = body.amount ?? currentOrder.total;
-
-    if (paymentAmount > currentOrder.total) {
-      return res.status(400).json({
-        success: false,
-        message: "Số tiền thanh toán không được lớn hơn tổng giá trị đơn hàng.",
-      });
-    }
 
     const order = await prisma.$transaction(async (tx) => {
       const existingShipment = await tx.shipment.findFirst({
@@ -859,7 +850,7 @@ export async function updateOrderShipping(req, res, next) {
           entityId: currentOrder.id,
           metadata: {
             ...shipmentData,
-            note: body.note || "",
+            note: cleanNote,
           },
         },
       });
