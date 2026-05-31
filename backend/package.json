@@ -22,7 +22,9 @@
     "smoke:admin-order-operation": "node scripts/smokeAdminOrderOperation.mjs",
     "check:env": "node scripts/checkProductionEnv.mjs",
     "prisma:migrate:deploy": "prisma migrate deploy",
-    "smoke:readiness": "node scripts/smokeProductionReadiness.mjs"
+    "smoke:readiness": "node scripts/smokeProductionReadiness.mjs",
+    "seed:demo": "SEED_MODE=demo ALLOW_DEMO_SEED=true node prisma/seed.js",
+    "seed:production": "SEED_MODE=production node prisma/seed.js"
   },
   "dependencies": {
     "@prisma/client": "^6.0.0",

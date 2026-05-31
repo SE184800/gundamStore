@@ -29,7 +29,7 @@ const suppliers = [
     phone: "",
     email: "",
     address: "Japan / Vietnam distributor",
-    note: "Demo supplier for authentic Bandai products.",
+    note: "Official supplier for authentic Bandai products.",
   },
 ];
 
