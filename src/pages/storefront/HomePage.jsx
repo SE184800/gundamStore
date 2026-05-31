@@ -1085,7 +1085,7 @@ function ProductSection({ section, products, displayMappings, lang, actions, bad
       </div>
 
       {sectionProducts.length ? (
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="home-mobile-product-grid grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {sectionProducts.map((product) => (
             <ProductCard key={product.id} product={product} lang={lang} actions={actions} />
           ))}
@@ -1153,7 +1153,7 @@ export default function HomePage() {
         if (!alive) return;
         setBackendProducts([]);
         setProductApiReady(false);
-        setProductApiError(error?.message || "Cannot load backend products.");
+        setProductApiError(error?.message || "Storefront product sync skipped.");
       });
 
     return () => {
