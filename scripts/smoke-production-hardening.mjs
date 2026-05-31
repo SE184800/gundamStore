@@ -1,6 +1,16 @@
-const BACKEND_URL = process.env.BACKEND_URL || "http://127.0.0.1:4800";
-const ADMIN_EMAIL = process.env.SMOKE_ADMIN_EMAIL || process.env.ADMIN_EMAIL || "admin@gundam.local";
-const ADMIN_PASSWORD = process.env.SMOKE_ADMIN_PASSWORD || process.env.ADMIN_PASSWORD || "admin123";
+function requiredEnv(name) {
+  const value = process.env[name];
+
+  if (!value || !String(value).trim()) {
+    throw new Error(`${name} is required for production hardening smoke.`);
+  }
+
+  return String(value).trim();
+}
+
+const BACKEND_URL = requiredEnv("BACKEND_URL").replace(/\/$/, "");
+const ADMIN_EMAIL = requiredEnv("SMOKE_ADMIN_EMAIL");
+const ADMIN_PASSWORD = requiredEnv("SMOKE_ADMIN_PASSWORD");
 
 const results = [];
 
@@ -204,7 +214,7 @@ async function run() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          name: "Admin Demo",
+          name: "Smoke Admin User",
           phone: "0901234567",
           gender: "Nam",
           city: "Hồ Chí Minh",
@@ -288,9 +298,14 @@ async function run() {
 
 
   const failed = results.filter((item) => !item.ok);
+  const passed = results.length - failed.length;
 
   console.log("======================================");
-  console.log(`Result: ${results.length - failed.length}/${results.length} passed`);
+  console.log("Production Hardening Smoke Summary");
+  for (const item of results) {
+    console.log(`${item.name}: ${item.ok ? "PASS" : "FAIL"}${item.detail ? ` - ${item.detail}` : ""}`);
+  }
+  console.log(`Result: ${passed}/${results.length} passed`);
   console.log("======================================");
 
   if (failed.length > 0) {
@@ -298,4 +313,7 @@ async function run() {
   }
 }
 
-run();
+run().catch((error) => {
+  console.error("❌ Production hardening smoke failed:", error.message || error);
+  process.exit(1);
+});

@@ -97,6 +97,11 @@ Smoke test:
 - Shipping update handles carrier, tracking code, method, status, fee, and note only.
 - README and admin screens do not show technical wording to business users.
 
+
+## Runtime evidence
+
+Before release, use `UAT_RUNTIME_EVIDENCE.md` to run public runtime smoke, production hardening smoke, and capture browser click-through evidence.
+
 ## Backup and rollback
 
 - Export database backup before release.
