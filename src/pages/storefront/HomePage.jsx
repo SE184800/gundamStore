@@ -551,7 +551,7 @@ function HeroV3Bento({ banners, lang, actions, settings }) {
             {activeBanner.showEyebrow !== false && (
               <div className={`${activeBanner.showEyebrow === false ? "hidden" : "mb-4 flex"} flex-wrap gap-2`}>
                 <span className="rounded-full bg-red-600 px-4 py-2 text-xs font-black uppercase tracking-wide text-white shadow-lg">
-                  New Arrival
+                  {lang === "vi" ? "Hàng mới" : "New Arrival"}
                 </span>
                 <span className="rounded-full bg-blue-700 px-4 py-2 text-xs font-black uppercase tracking-wide text-white shadow-lg">
                   {lang === "vi" ? "Chính hãng Bandai" : "Authentic Bandai"}
@@ -575,7 +575,10 @@ function HeroV3Bento({ banners, lang, actions, settings }) {
 
             {activeBanner.showChips !== false && (
               <div className={`${activeBanner.showChips === false ? "hidden" : "mt-6 flex"} flex-wrap gap-3 text-white`}>
-                {["Chính hãng", "Giao nhanh", "Đóng gói chống sốc"].map((item) => (
+                {(lang === "vi"
+                  ? ["Chính hãng", "Giao nhanh", "Đóng gói chống sốc"]
+                  : ["Authentic", "Fast shipping", "Shock-proof packing"]
+                ).map((item) => (
                   <span key={item} className="rounded-2xl bg-white/10 px-4 py-3 text-xs font-black backdrop-blur">
                     {item}
                   </span>
@@ -830,7 +833,10 @@ function HeroV2Classic({ banners, lang, actions }) {
 
             {activeBanner.showChips !== false && (
               <div className={`${activeBanner.showChips === false ? "hidden" : "mt-5 flex"} flex-wrap gap-2`}>
-                {["Chính hãng", "Giao nhanh", "Bọc chống sốc"].map((item) => (
+                {(lang === "vi"
+                  ? ["Chính hãng", "Giao nhanh", "Bọc chống sốc"]
+                  : ["Authentic", "Fast shipping", "Shock-proof packing"]
+                ).map((item) => (
                   <span key={item} className="rounded-full border border-blue-100 bg-white/80 px-3 py-1.5 text-xs font-black text-slate-700 shadow-sm">
                     {item}
                   </span>
