@@ -139,7 +139,7 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
 
   return (
     <>
-      <article className="group overflow-hidden rounded-[22px] border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:border-blue-200 hover:shadow-xl sm:rounded-[24px]">
+      <article className="product-card-mobile group overflow-hidden rounded-[22px] border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:border-blue-200 hover:shadow-xl sm:rounded-[24px]">
         <a href={detailUrl} className="block">
           <div className="relative aspect-square overflow-hidden bg-slate-100">
             {badge && (
@@ -278,8 +278,8 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
 
       {quickOpen &&
         createPortal(
-          <div className="fixed inset-0 z-[999999] flex items-end justify-center bg-slate-950/70 p-0 backdrop-blur-md sm:items-start sm:p-4 sm:pt-6">
-            <div className="relative grid max-h-[92vh] w-full max-w-[920px] overflow-hidden rounded-t-[28px] bg-white shadow-[0_50px_160px_rgba(0,0,0,0.35)] sm:rounded-[28px] lg:grid-cols-[0.9fr_1.1fr]">
+          <div className="mobile-quickview-backdrop fixed inset-0 z-[999999] flex items-end justify-center bg-slate-950/70 p-0 backdrop-blur-md sm:items-start sm:p-4 sm:pt-6">
+            <div className="mobile-quickview-panel relative grid max-h-[92vh] w-full max-w-[920px] overflow-hidden rounded-t-[28px] bg-white shadow-[0_50px_160px_rgba(0,0,0,0.35)] sm:rounded-[28px] lg:grid-cols-[0.9fr_1.1fr]">
               <button
                 onClick={() => setQuickOpen(false)}
                 className="absolute right-4 top-4 z-20 flex h-11 w-11 items-center justify-center rounded-full bg-slate-900/80 text-white shadow-lg transition hover:bg-red-600"
@@ -332,7 +332,7 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
                   {stock > 0 ? `✓ ${t("product.stockReady")}: ${stock}` : t("product.preorderContact")}
                 </div>
 
-                <div className="mt-6 grid gap-3 sm:flex sm:items-center">
+                <div className="mobile-quickview-actions mt-6 grid gap-3 sm:flex sm:items-center">
                   <div className="flex items-center rounded-xl border border-slate-200">
                     <button onClick={() => setQty(Math.max(1, qty - 1))} className="p-3">
                       <Minus size={16} />

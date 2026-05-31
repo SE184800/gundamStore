@@ -326,3 +326,256 @@ body {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/* Full Responsive UX/UI Audit - Phase 2 storefront mobile */
+@media (max-width: 640px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+
+  button,
+  a {
+    touch-action: manipulation;
+  }
+
+  .shop-mobile-shell {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+
+  .shop-mobile-shell h1 {
+    font-size: clamp(1.75rem, 8vw, 2.5rem) !important;
+    line-height: 1.05 !important;
+  }
+
+  .shop-mobile-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 14px !important;
+  }
+
+  .shop-mobile-list {
+    display: grid !important;
+    gap: 14px !important;
+  }
+
+  .mobile-filter-drawer > div {
+    width: 100% !important;
+    max-width: none !important;
+    border-radius: 24px 24px 0 0 !important;
+    margin-top: 10vh !important;
+    height: 90vh !important;
+    padding-bottom: calc(90px + env(safe-area-inset-bottom)) !important;
+  }
+
+  .mobile-filter-apply {
+    position: sticky;
+    bottom: calc(12px + env(safe-area-inset-bottom));
+    z-index: 5;
+    min-height: 52px;
+    box-shadow: 0 16px 40px rgba(37, 99, 235, 0.28);
+  }
+
+  .product-card-mobile {
+    border-radius: 22px !important;
+  }
+
+  .product-card-mobile h3 {
+    min-height: auto !important;
+  }
+
+  .product-card-mobile [data-cart-managed="true"] {
+    min-height: 46px !important;
+  }
+
+  .mobile-quickview-backdrop {
+    align-items: flex-end !important;
+  }
+
+  .mobile-quickview-panel {
+    max-height: 92vh !important;
+    border-radius: 28px 28px 0 0 !important;
+    overflow-y: auto !important;
+  }
+
+  .mobile-quickview-panel img {
+    max-height: 30vh !important;
+    object-fit: contain !important;
+  }
+
+  .mobile-quickview-actions {
+    grid-template-columns: 1fr !important;
+  }
+
+  .mobile-quickview-actions > * {
+    width: 100% !important;
+    justify-content: center !important;
+    min-height: 48px !important;
+  }
+
+  /* Commerce pages: product detail, cart, checkout, order success, lookup, account */
+  main form,
+  main article,
+  main section,
+  main aside {
+    min-width: 0;
+  }
+
+  main .rounded-\[28px\],
+  main .rounded-\[32px\],
+  main .rounded-3xl {
+    border-radius: 22px;
+  }
+
+  main .grid {
+    min-width: 0;
+  }
+
+  main table {
+    min-width: 720px;
+  }
+
+  main [class*="overflow-hidden"] {
+    max-width: 100%;
+  }
+
+  main [class*="text-4xl"],
+  main [class*="text-5xl"],
+  main [class*="text-6xl"] {
+    line-height: 1.05 !important;
+  }
+
+  main [class*="px-8"] {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  main [class*="py-8"] {
+    padding-top: 20px;
+    padding-bottom: 20px;
+  }
+
+  main [class*="gap-6"] {
+    gap: 16px;
+  }
+
+  /* Keep primary CTAs visible and away from support FAB */
+  main a[href="/checkout"],
+  main button[type="submit"],
+  main [data-cart-managed="true"] {
+    min-height: 46px;
+  }
+
+  /* Order success / lookup readability */
+  main code,
+  main pre,
+  main [class*="tracking"] {
+    overflow-wrap: anywhere;
+  }
+
+  /* Account/sidebar pages stack cleanly */
+  main aside + section,
+  main section + aside {
+    min-width: 0;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 1024px) {
+  .shop-mobile-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .mobile-quickview-panel {
+    max-height: 90vh;
+  }
+}
+
+/* Full Responsive UX/UI Audit - Phase 3 admin laptop-first */
+.admin-layout-shell {
+  overflow-x: hidden;
+}
+
+.admin-main {
+  min-width: 0;
+}
+
+.admin-content {
+  min-width: 0;
+}
+
+.admin-content table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.admin-content input,
+.admin-content select,
+.admin-content textarea {
+  max-width: 100%;
+}
+
+.admin-content img,
+.admin-content video {
+  max-width: 100%;
+  height: auto;
+}
+
+@media (min-width: 1024px) {
+  .admin-content {
+    max-width: calc(100vw - 268px);
+  }
+
+  .admin-content table {
+    min-width: 920px;
+  }
+
+  .admin-content [class*="overflow-x-auto"],
+  .admin-content [class*="overflow-auto"] {
+    scrollbar-gutter: stable;
+  }
+}
+
+@media (max-width: 1023px) {
+  /* Admin mobile scope: quick view only, not full CRUD optimized */
+  .admin-layout-shell {
+    background: #f8fafc;
+  }
+
+  .admin-layout-shell aside {
+    display: none !important;
+  }
+
+  .admin-main header {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+  }
+
+  .admin-main header > div {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+
+  .admin-content {
+    padding: 12px !important;
+  }
+
+  .admin-content table {
+    min-width: 820px;
+  }
+
+  .admin-content [class*="grid-cols-4"],
+  .admin-content [class*="grid-cols-5"],
+  .admin-content [class*="grid-cols-6"] {
+    grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
+  }
+
+  .admin-content [class*="rounded-3xl"],
+  .admin-content [class*="rounded-[28px]"],
+  .admin-content [class*="rounded-[32px]"] {
+    border-radius: 22px !important;
+  }
+}
