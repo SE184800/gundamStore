@@ -48,9 +48,49 @@ function productInclude() {
       include: { promotion: true },
       orderBy: { createdAt: "desc" },
     },
+    prices: {
+      where: { active: true },
+      orderBy: [{ startDate: "desc" }, { createdAt: "desc" }],
+      take: 20,
+    },
   };
 }
 
+
+
+function isSellingPriceActive(priceRow, now = new Date()) {
+  if (!priceRow?.active) return false;
+
+  const start = new Date(priceRow.startDate);
+  const end = priceRow.endDate ? new Date(priceRow.endDate) : null;
+
+  return start <= now && (!end || now <= end);
+}
+
+function decorateProductWithEffectiveSellingPrice(product, now = new Date()) {
+  const activePrice = (product.prices || [])
+    .filter((row) => isSellingPriceActive(row, now))
+    .sort((a, b) => {
+      const startDiff = new Date(b.startDate).getTime() - new Date(a.startDate).getTime();
+      if (startDiff !== 0) return startDiff;
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    })[0];
+
+  if (!activePrice) return product;
+
+  return {
+    ...product,
+    price: Number(activePrice.price || product.price || 0),
+    oldPrice: Number(activePrice.oldPrice || 0),
+    activeSellingPrice: {
+      id: activePrice.id,
+      price: activePrice.price,
+      oldPrice: activePrice.oldPrice,
+      startDate: activePrice.startDate,
+      endDate: activePrice.endDate,
+    },
+  };
+}
 
 function isPromotionActive(promotion, now = new Date()) {
   if (!promotion?.active) return false;
@@ -91,10 +131,12 @@ function calculatePromotionPrice(product, promotion) {
 }
 
 function decorateProductWithPromotion(product) {
-  const promotions = (product.promotionProducts || [])
+  const productWithPrice = decorateProductWithEffectiveSellingPrice(product);
+
+  const promotions = (productWithPrice.promotionProducts || [])
     .map((item) => item.promotion)
     .filter((promotion) => isPromotionActive(promotion))
-    .map((promotion) => calculatePromotionPrice(product, promotion))
+    .map((promotion) => calculatePromotionPrice(productWithPrice, promotion))
     .sort((a, b) => {
       if (b.priority !== a.priority) return b.priority - a.priority;
       return b.discountAmount - a.discountAmount;
@@ -104,18 +146,18 @@ function decorateProductWithPromotion(product) {
 
   if (!activePromotion) {
     return {
-      ...product,
+      ...productWithPrice,
       activePromotion: null,
-      effectivePrice: Number(product.price || 0),
-      compareAtPrice: Number(product.oldPrice || 0),
+      effectivePrice: Number(productWithPrice.price || 0),
+      compareAtPrice: Number(productWithPrice.oldPrice || 0),
     };
   }
 
   return {
-    ...product,
+    ...productWithPrice,
     activePromotion,
     effectivePrice: activePromotion.effectivePrice,
-    compareAtPrice: Number(product.price || 0),
+    compareAtPrice: Number(productWithPrice.price || 0),
   };
 }
 

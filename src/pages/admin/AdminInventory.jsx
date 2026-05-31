@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { RefreshCcw, Save, Search } from "lucide-react";
 import AdminPageHeader from "../../components/admin/AdminPageHeader";
-import { AdminTextarea, AdminTextField } from "../../components/admin/AdminField";
+import { AdminTextField } from "../../components/admin/AdminField";
 import AdminDrawer from "../../components/admin/AdminDrawer";
 import { formatCurrency } from "../../utils/format";
 import { logoutAdmin } from "../../services/AdminAuthService";
@@ -19,6 +19,14 @@ const emptyAdjust = {
   delta: 0,
   reason: "",
 };
+
+const INVENTORY_REASON_OPTIONS = [
+  "Nhập kho bổ sung",
+  "Xuất kho lỗi/hỏng",
+  "Kiểm kê lệch",
+  "Điều chỉnh sau hoàn hàng",
+  "Khác",
+];
 
 function logTypeLabel(type) {
   if (type === "IMPORT") return "Nhập kho";
@@ -109,7 +117,7 @@ export default function AdminInventory() {
       sku: product.sku,
       currentStock,
       delta: mode === "export" ? -1 : 1,
-      reason: mode === "export" ? "Xuất kho thủ công" : "Nhập kho thủ công",
+      reason: "",
     });
 
     setDrawerOpen(true);
@@ -121,6 +129,11 @@ export default function AdminInventory() {
 
   async function saveAdjust() {
     try {
+      if (!String(adjust.reason || "").trim()) {
+        alert("Vui lòng chọn lý do điều chỉnh tồn kho.");
+        return;
+      }
+
       await adjustAdminProductInventoryApi(adjust.productId, {
         delta: Number(adjust.delta || 0),
         reason: adjust.reason,
@@ -170,7 +183,7 @@ export default function AdminInventory() {
       </section>
 
       <section className="mb-4 rounded-3xl border border-emerald-100 bg-emerald-50 p-4 text-sm font-bold text-emerald-800">
-        PostgreSQL Inventory · {loading ? "Loading..." : `${products.length} products · ${logs.length} logs`}
+        Dữ liệu tồn kho hệ thống · {loading ? "Loading..." : `${products.length} products · ${logs.length} logs`}
       </section>
 
       {apiError && (
@@ -322,12 +335,19 @@ export default function AdminInventory() {
             onChange={(value) => patch("delta", value)}
           />
 
-          <AdminTextarea
-            label="Lý do điều chỉnh"
-            rows={4}
-            value={adjust.reason}
-            onChange={(value) => patch("reason", value)}
-          />
+          <label className="block">
+            <span className="text-sm font-black text-slate-700">Lý do điều chỉnh</span>
+            <select
+              value={adjust.reason}
+              onChange={(event) => patch("reason", event.target.value)}
+              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+            >
+              <option value="">Chọn lý do điều chỉnh</option>
+              {INVENTORY_REASON_OPTIONS.map((item) => (
+                <option key={item} value={item}>{item}</option>
+              ))}
+            </select>
+          </label>
         </div>
       </AdminDrawer>
     </>
