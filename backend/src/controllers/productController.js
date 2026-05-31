@@ -721,6 +721,13 @@ export async function adjustAdminProductInventory(req, res, next) {
       });
     }
 
+    if (!reason) {
+      return res.status(400).json({
+        success: false,
+        message: "Inventory adjustment reason is required.",
+      });
+    }
+
     const result = await prisma.$transaction(async (tx) => {
       const product = await tx.product.findUnique({
         where: { id: productId },
@@ -757,7 +764,7 @@ export async function adjustAdminProductInventory(req, res, next) {
           quantity: Math.abs(Math.round(delta)),
           beforeStock,
           afterStock,
-          reason: reason || (delta > 0 ? "Manual stock import" : "Manual stock export"),
+          reason,
           refType,
           refId: req.user?.id || null,
         },
