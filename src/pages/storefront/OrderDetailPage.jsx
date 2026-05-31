@@ -318,7 +318,7 @@ export default function OrderDetailPage() {
       .catch((error) => {
         if (!alive) return;
         setBackendOrder(null);
-        setBackendError(error?.message || "Backend order lookup failed.");
+        setBackendError(error?.message || "Unable to refresh order status.");
       })
       .finally(() => {
         if (!alive) return;
@@ -467,7 +467,7 @@ export default function OrderDetailPage() {
                         : "bg-amber-50 text-amber-700"
                     }`}
                   >
-                    {isBackendOrder ? "PostgreSQL Order" : backendError ? "Local Demo Order" : "Local Demo Order"}
+                    {"Order recorded"}
                   </span>
                 </div>
                 <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-slate-500">

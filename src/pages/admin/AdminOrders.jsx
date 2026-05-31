@@ -75,10 +75,10 @@ function getCopy(lang) {
     pickList: lang === "en" ? "Product pick list" : "Pick list sản phẩm",
     qtyToPick: lang === "en" ? "Qty to pick" : "SL cần soạn",
     orderTotal: lang === "en" ? "Order total" : "Tổng đơn",
-    backendOrders: lang === "en" ? "PostgreSQL Orders" : "Đơn PostgreSQL",
+    backendOrders: lang === "en" ? "System order data" : "Dữ liệu đơn hàng hệ thống",
     backendDesc:
       lang === "en"
-        ? "Admin Orders is reading and updating PostgreSQL backend data only."
+        ? "Admin Orders is reading and updating system order data."
         : "Admin Orders đang đọc và cập nhật trực tiếp từ PostgreSQL backend.",
     backendLoading: lang === "en" ? "Loading backend orders..." : "Đang tải đơn backend...",
     backendError:
@@ -755,7 +755,7 @@ export default function AdminOrders() {
                   {selectedOrder.orderCode || selectedOrder.id}
                 </h2>
                 <div className="mt-2 inline-flex rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-black text-emerald-700">
-                  PostgreSQL Order
+                  System order
                 </div>
                 <p className="mt-1 text-sm text-slate-500">
                   {selectedOrder.createdAt

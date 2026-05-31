@@ -1,55 +1,110 @@
-# Gundam Store VN V2 — CMS-linked + Landing Page Builder
+# Gundam Store VN
 
-Bản này là frontend React/Vite chạy được ngay, có **Storefront + Admin CMS liên kết bằng localStorage**.
+Ung dung thuong mai dien tu Gundam Store gom storefront, admin portal, backend API va database.
 
-## Chạy local hoặc GitHub Codespaces
+## Architecture overview
 
-```bash
-npm install
-npm run dev
-```
+- Frontend: React/Vite storefront + admin portal.
+- Backend: Node.js/Express API.
+- Database: PostgreSQL managed by Prisma.
+- Auth/RBAC: JWT-based admin/account authentication with role/permission checks.
+- Core modules: product catalog, pricing, inventory, orders, wishlist, restock alerts, banner/CMS.
 
-Mở preview:
+## Local / Codespaces setup
 
-```txt
-http://localhost:5173
-```
+Run install and validation:
 
-## Route chính
+- npm install
+- npm run backend:check
+- npm run build
 
-### Storefront
+Run backend:
 
-- `/`
-- `/shop`
-- `/product/:slug`
-- `/cart`
-- `/checkout`
-- `/order-success/:orderId`
+- npm run backend:dev
 
-### Admin/CMS
+Run frontend:
 
-- `/admin`
-- `/admin/home-builder`
-- `/admin/banners`
-- `/admin/products`
-- `/admin/orders`
-- `/admin/chats`
-- `/admin/reviews`
-- `/admin/complaints`
-- `/admin/analytics`
-- `/admin/settings`
+- npm run dev -- --host 0.0.0.0
 
-## CMS đã liên kết với Storefront
+## Production environment
 
-- Admin thêm/sửa/xóa sản phẩm → Storefront cập nhật.
-- Admin thêm/sửa/tắt banner → Trang chủ cập nhật.
-- Admin Home Builder bật/tắt/đổi thứ tự section → Trang chủ render lại.
-- Chatbox trên storefront gửi tin nhắn → Admin Chats nhận hội thoại.
-- Checkout tạo đơn → Admin Orders có đơn mới.
-- Admin duyệt review → Product Detail hiển thị review đã duyệt.
-- Analytics tracking được lưu trong localStorage.
-- Admin Settings có export/import/reset dữ liệu.
+Frontend variables:
 
-## Lưu ý
+- VITE_API_URL=
+- VITE_BASE_URL=
+- VITE_ENABLE_LEGACY_AUTOTRANSLATE=false
 
-Bản này dùng `localStorage`, phù hợp demo/dev nhanh. Khi triển khai thật cần nâng cấp backend + database + storage ảnh + auth phân quyền.
+Backend variables:
+
+- NODE_ENV=production
+- PORT=4800
+- DATABASE_URL=
+- DIRECT_URL=
+- JWT_SECRET=
+- FRONTEND_ORIGIN=
+- CORS_ORIGINS=
+- TRUST_PROXY_HOPS=1
+- RATE_LIMIT_STORE=memory
+
+## Database
+
+Validate schema:
+
+- npm run backend:check
+
+For sandbox drift-only environments:
+
+- cd backend
+- npx prisma db push
+- cd ..
+
+For production, use reviewed migrations and backup the database before applying schema changes. Do not run prisma migrate reset on shared or production databases.
+
+## Main routes
+
+Storefront:
+
+- /
+- /shop
+- /product/:slug
+- /cart
+- /checkout
+- /order-success/:orderId
+- /order-lookup
+- /favorites
+
+Admin:
+
+- /admin
+- /admin/orders
+- /admin/products
+- /admin/inventory
+- /admin/pricing
+- /admin/restock-alerts
+- /admin/cms/banners
+
+## Handover checklist
+
+Before customer handover:
+
+- npm run backend:check
+- npm run build
+
+Smoke test:
+
+- Pricing effective date is reflected on storefront, cart, and checkout.
+- Admin adjusts inventory with required reason.
+- Shipping update handles carrier, tracking code, method, status, fee, and note only.
+- README and admin screens do not show technical wording to business users.
+
+## Backup and rollback
+
+- Export database backup before release.
+- Tag the release commit.
+- Record environment variables and schema version.
+- Roll back by redeploying the previous tag and restoring database backup if the schema change is not backward-compatible.
+
+## Known limitations
+
+- Current application-level rate limiting uses in-memory storage. For multi-instance production, add Redis-backed rate limiting, API Gateway/WAF, or CDN-level protection.
+- File/media storage should be backed by object storage for production-scale uploads.

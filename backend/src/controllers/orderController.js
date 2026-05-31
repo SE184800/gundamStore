@@ -84,6 +84,35 @@ function cleanPaymentText(value = "", max = 500) {
     .slice(0, max);
 }
 
+
+function isSellingPriceActive(priceRow, now = new Date()) {
+  if (!priceRow?.active) return false;
+
+  const start = new Date(priceRow.startDate);
+  const end = priceRow.endDate ? new Date(priceRow.endDate) : null;
+
+  return start <= now && (!end || now <= end);
+}
+
+function resolveCurrentSellingPrice(product, now = new Date()) {
+  const activePrice = (product.prices || [])
+    .filter((row) => isSellingPriceActive(row, now))
+    .sort((a, b) => {
+      const startDiff = new Date(b.startDate).getTime() - new Date(a.startDate).getTime();
+      if (startDiff !== 0) return startDiff;
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    })[0];
+
+  if (!activePrice) return product;
+
+  return {
+    ...product,
+    price: Number(activePrice.price || product.price || 0),
+    oldPrice: Number(activePrice.oldPrice || 0),
+    activeSellingPriceId: activePrice.id,
+  };
+}
+
 function canUpdatePaymentStatus(order) {
   if (!order) return false;
   return !["CANCELLED", "REFUNDED"].includes(order.status);
@@ -209,6 +238,13 @@ export async function createOrder(req, res, next) {
       where: {
         active: true,
       },
+      include: {
+        prices: {
+          where: { active: true },
+          orderBy: [{ startDate: "desc" }, { createdAt: "desc" }],
+          take: 20,
+        },
+      },
     });
 
     const resolvedItems = body.items.map((item) => {
@@ -216,7 +252,7 @@ export async function createOrder(req, res, next) {
 
       return {
         ...item,
-        product,
+        product: product ? resolveCurrentSellingPrice(product) : null,
       };
     });
 
@@ -268,7 +304,6 @@ export async function createOrder(req, res, next) {
       const created = await tx.order.create({
         data: {
           orderNo: generateOrderNo(),
-          customerId: req.user?.id || null,
           customerName: body.customerName,
           customerPhone,
           customerEmail: body.customerEmail || req.user?.email || null,
@@ -686,16 +721,7 @@ export async function updateOrderPayment(req, res, next) {
       });
     }
 
-    const cleanReference = cleanPaymentText(body.reference || "", 120);
     const cleanNote = cleanPaymentText(body.note || "", 500);
-    const paymentAmount = body.amount ?? currentOrder.total;
-
-    if (paymentAmount > currentOrder.total) {
-      return res.status(400).json({
-        success: false,
-        message: "Số tiền thanh toán không được lớn hơn tổng giá trị đơn hàng.",
-      });
-    }
 
     const order = await prisma.$transaction(async (tx) => {
       await tx.order.update({

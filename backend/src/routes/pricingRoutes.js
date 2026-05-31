@@ -4,6 +4,7 @@ import {
   deactivateProductSellingPrice,
   listPricingProducts,
   listProductPrices,
+  recomputeEffectiveProductPrices,
   updateProductSellingPrice,
 } from "../controllers/pricingController.js";
 import { requireAuth, requirePermission } from "../middleware/auth.js";
@@ -15,6 +16,7 @@ const requireProductUpdate = [requireAuth, requirePermission("products:update")]
 
 router.get("/products", ...requireProductRead, listPricingProducts);
 router.get("/prices", ...requireProductRead, listProductPrices);
+router.post("/prices/recompute-effective", ...requireProductUpdate, recomputeEffectiveProductPrices);
 router.post("/products/:productId/prices", ...requireProductUpdate, createProductSellingPrice);
 router.patch("/prices/:priceId", ...requireProductUpdate, updateProductSellingPrice);
 router.delete("/prices/:priceId", ...requireProductUpdate, deactivateProductSellingPrice);
