@@ -25,6 +25,7 @@ import {
   getStorefrontProductsFromApi,
 } from "../../services/StorefrontProductApiService";
 import { getStorefrontHomeBannersFromApi } from "../../services/BannerApiService";
+import { getSafeHref } from "../../utils/urlSafety";
 
 
 const copy = {
@@ -454,6 +455,10 @@ function BannerMedia({ banner, lang, className = "" }) {
   );
 }
 
+function bannerHref(banner = {}) {
+  return getSafeHref(banner.ctaUrl || banner.link || banner.href || "/shop", "/shop");
+}
+
 function ImageFirstLinkBanner({ banner, lang, actions, className = "", mediaClassName = "" }) {
   return (
     <a
@@ -467,6 +472,180 @@ function ImageFirstLinkBanner({ banner, lang, actions, className = "", mediaClas
     </a>
   );
 }
+
+
+function Hero({ banners, lang, actions, heroSettings }) {
+  const settings = {
+    layout: "v2",
+    autoplay: true,
+    interval: 4500,
+    maxBanners: 5,
+    ...(heroSettings || {}),
+  };
+
+  const safeBanners = getHeroBanners(banners, settings);
+
+  if (settings.layout === "v3") {
+    return <HeroV3Bento banners={safeBanners} lang={lang} actions={actions} settings={settings} />;
+  }
+
+  return <HeroV2Classic banners={safeBanners} lang={lang} actions={actions} settings={settings} />;
+}
+
+function HeroV3Bento({ banners, lang, actions, settings }) {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [paused, setPaused] = useState(false);
+
+  const safeBanners = banners.length ? banners : getHeroBanners([], settings);
+  const activeBanner = safeBanners[activeIndex] || safeBanners[0];
+  const sideBanners = safeBanners.filter((_, index) => index !== activeIndex).slice(0, 2);
+  const interval = Number(settings.interval || 4500);
+
+  function goToBanner(index) {
+    setActiveIndex((index + safeBanners.length) % safeBanners.length);
+  }
+
+  useEffect(() => {
+    if (!settings.autoplay || safeBanners.length <= 1 || paused) return;
+
+    const timer = setInterval(() => {
+      setActiveIndex((current) => (current + 1) % safeBanners.length);
+    }, interval);
+
+    return () => clearInterval(timer);
+  }, [settings.autoplay, safeBanners.length, paused, interval]);
+
+  return (
+    <section className="image-first-hero mx-auto max-w-[1440px] px-3 pt-3 sm:px-4 sm:pt-4 lg:px-8">
+      <div
+        className="grid gap-3 lg:grid-cols-[1.75fr_0.95fr]"
+        onMouseEnter={() => setPaused(true)}
+        onMouseLeave={() => setPaused(false)}
+      >
+        <ImageFirstLinkBanner
+          banner={activeBanner}
+          lang={lang}
+          actions={actions}
+          className="h-[320px] rounded-[24px] border border-slate-200 shadow-[0_24px_80px_rgba(15,23,42,0.12)] sm:h-[420px] sm:rounded-[30px]"
+          mediaClassName="transition duration-700 hover:scale-[1.01]"
+        />
+
+        {sideBanners.length > 0 && (
+          <div className="hidden gap-3 lg:grid">
+            {sideBanners.map((banner, index) => (
+              <ImageFirstLinkBanner
+                key={`${banner.id || "side"}-${index}`}
+                banner={banner}
+                lang={lang}
+                actions={actions}
+                className="h-[203px] rounded-[26px] border border-slate-200 shadow-lg"
+                mediaClassName="transition duration-500 hover:scale-[1.02]"
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {safeBanners.length > 1 && (
+        <div className="mt-4 flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => goToBanner(activeIndex - 1)}
+            className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white text-2xl font-black text-blue-700 shadow-md transition hover:bg-blue-700 hover:text-white md:flex"
+            aria-label="Previous banner"
+          >
+            ‹
+          </button>
+
+          <div className="image-first-hero-thumbs mobile-hide-scrollbar flex flex-1 gap-3 overflow-x-auto pb-1 md:grid md:grid-cols-5">
+            {safeBanners.map((banner, index) => (
+              <button
+                key={banner.id || index}
+                type="button"
+                onClick={() => goToBanner(index)}
+                className={`image-first-thumb relative h-[86px] min-w-[148px] overflow-hidden rounded-2xl border text-left shadow-sm transition ${
+                  activeIndex === index
+                    ? "border-blue-600 ring-4 ring-blue-100"
+                    : "border-slate-200 hover:border-blue-300"
+                }`}
+                aria-label={`Banner ${index + 1}`}
+              >
+                <BannerMedia banner={banner} lang={lang} className="block h-full w-full" />
+              </button>
+            ))}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => goToBanner(activeIndex + 1)}
+            className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white text-2xl font-black text-blue-700 shadow-md transition hover:bg-blue-700 hover:text-white md:flex"
+            aria-label="Next banner"
+          >
+            ›
+          </button>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function HeroV2Classic({ banners, lang, actions, settings }) {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [paused, setPaused] = useState(false);
+
+  const safeBanners = banners.length ? banners : getHeroBanners([], settings);
+  const activeBanner = safeBanners[activeIndex] || safeBanners[0];
+  const interval = Number(settings.interval || 4500);
+
+  function goToBanner(index) {
+    setActiveIndex((index + safeBanners.length) % safeBanners.length);
+  }
+
+  useEffect(() => {
+    if (!settings.autoplay || safeBanners.length <= 1 || paused) return;
+
+    const timer = setInterval(() => {
+      setActiveIndex((current) => (current + 1) % safeBanners.length);
+    }, interval);
+
+    return () => clearInterval(timer);
+  }, [settings.autoplay, safeBanners.length, paused, interval]);
+
+  return (
+    <section className="image-first-hero mx-auto max-w-[1440px] px-4 pt-4 lg:px-8">
+      <div
+        className="mobile-no-overflow relative overflow-hidden rounded-[24px] border border-blue-100 bg-white shadow-[0_20px_70px_rgba(37,99,235,0.12)] sm:rounded-[34px]"
+        onMouseEnter={() => setPaused(true)}
+        onMouseLeave={() => setPaused(false)}
+      >
+        <ImageFirstLinkBanner
+          banner={activeBanner}
+          lang={lang}
+          actions={actions}
+          className="h-[320px] w-full sm:h-[420px] lg:h-[460px]"
+          mediaClassName="transition duration-700 hover:scale-[1.01]"
+        />
+
+        {safeBanners.length > 1 && (
+          <div className="absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2 rounded-full border border-white/70 bg-white/80 px-4 py-2 shadow-xl backdrop-blur">
+            {safeBanners.map((item, index) => (
+              <button
+                key={item.id || index}
+                type="button"
+                onClick={() => goToBanner(index)}
+                className={`h-2.5 rounded-full transition ${
+                  activeIndex === index ? "w-12 bg-blue-700" : "w-2.5 bg-slate-300 hover:bg-blue-400"
+                }`}
+                aria-label={`Banner ${index + 1}`}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
 
 function TrustStrip({ lang }) {
   const t = copy[lang];
@@ -664,7 +843,7 @@ export default function HomePage() {
         if (!alive) return;
         setBackendProducts([]);
         setProductApiReady(false);
-        setProductApiError(error?.message || "Cannot load backend products.");
+        setProductApiError(error?.message || "Storefront product sync skipped.");
       });
 
     return () => {
