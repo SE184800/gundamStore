@@ -72,7 +72,7 @@ function normalizeSafeCtaUrl(rawValue, { fallback = "/shop", rejectUnsafe = fals
 }
 
 function hasMainMedia(input = {}) {
-  return Boolean(cleanText(input.mainImage || input.imageUrl || ""));
+  return Boolean(cleanText(input.mainImage || input.imageUrl || input.videoUrl || ""));
 }
 
 function toPublicBanner(row = {}) {
@@ -115,12 +115,13 @@ function normalizeBannerInput(body = {}, { current = null } = {}) {
 
   const mainImage = cleanText(merged.mainImage || merged.imageUrl || "", 1_000_000);
   const imageUrl = cleanText(merged.imageUrl || mainImage, 1_000_000);
+  const videoUrl = cleanText(merged.videoUrl || "", 1_000_000);
   const cta = normalizeSafeCtaUrl(merged.ctaUrl || "/shop", {
     fallback: "/shop",
     rejectUnsafe: true,
   });
 
-  if (!hasMainMedia({ mainImage, imageUrl })) {
+  if (!hasMainMedia({ mainImage, imageUrl, videoUrl })) {
     return {
       ok: false,
       message: "Main image or imageUrl is required for banner.",
@@ -156,7 +157,7 @@ function normalizeBannerInput(body = {}, { current = null } = {}) {
       mobileImage: cleanText(merged.mobileImage || "", 1_000_000) || null,
       tabletImage: cleanText(merged.tabletImage || "", 1_000_000) || null,
       desktopImage: cleanText(merged.desktopImage || "", 1_000_000) || null,
-      videoUrl: cleanText(merged.videoUrl || "", 1_000_000) || null,
+      videoUrl: videoUrl || null,
       ctaUrl: cta.value,
       status,
       active: merged.active !== false,

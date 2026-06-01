@@ -16,8 +16,9 @@ publicBannerRouter.get("/home", listStorefrontHomeBanners);
 
 adminBannerRouter.get("/", listAdminBanners);
 adminBannerRouter.post("/", createAdminBanner);
-adminBannerRouter.patch("/:id", updateAdminBanner);
-adminBannerRouter.delete("/:id", deleteAdminBanner);
 
 adminBannerRouter.get("/settings/hero", getAdminHeroSettings);
 adminBannerRouter.patch("/settings/hero", updateAdminHeroSettings);
+
+adminBannerRouter.patch("/:id", updateAdminBanner);
+adminBannerRouter.delete("/:id", deleteAdminBanner);
