@@ -92,7 +92,7 @@ export function CmsProvider({ children }) {
         }));
       })
       .catch((error) => {
-        console.warn("CMS product PostgreSQL sync skipped", error);
+        console.warn("Storefront product sync skipped", error);
       });
 
     return () => {

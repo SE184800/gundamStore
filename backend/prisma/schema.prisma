@@ -308,6 +308,7 @@ model Product {
   prices                ProductPrice[]
   promotionProducts     PromotionProduct[]
   wishlistItems        WishlistItem[]
+  restockAlerts        RestockAlert[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -557,6 +558,30 @@ model PromotionProduct {
   updatedAt DateTime @updatedAt
 
   @@unique([promotionId, productId])
+}
+
+
+model RestockAlert {
+  id          String   @id @default(cuid())
+  productId   String
+  productName String
+  productSlug String?
+  sku         String?
+  grade       String?
+  scale       String?
+  name        String
+  phone       String
+  note        String?
+  status      String   @default("PENDING")
+  notifiedAt  DateTime?
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, createdAt])
+  @@index([productId, phone, status])
 }
 
 

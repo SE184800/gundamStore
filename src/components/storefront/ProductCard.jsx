@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { Eye, Heart, Minus, Plus, ShoppingCart, Star, X, Zap } from "lucide-react";
 import { formatCurrency } from "../../utils/format";
 import { resolveText, useI18n } from "../../i18n";
-import { addProductToCart, forceCartBadgeSync } from "../../services/CartService";
+import { addProductToCart, forceCartBadgeSync, saveBuyNowDraft, validateCartStock } from "../../services/CartService";
 import { addMyWishlistItem, hasAccountToken } from "../../services/AccountApiService";
 
 function getImage(product) {
@@ -38,13 +38,43 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
   const image = getImage(product);
   const price = product?.price || 0;
   const oldPrice = product?.oldPrice || product?.originalPrice;
-  const stock = product?.stock ?? 0;
+  const stock = Number(product?.stock ?? 0);
   const detailUrl = getProductUrl(product);
   const isPreorder = String(product?.status || "").toLowerCase().includes("pre");
+  const isOutOfStock = !isPreorder && stock <= 0;
+  const maxQty = isPreorder ? 99 : Math.max(1, stock);
+  const outOfStockLabel = lang === "en" ? "Out of stock" : "Hết hàng";
+  const wishlistCopy = {
+    loginRequired: lang === "en" ? "Please sign in to save wishlist." : "Vui lòng đăng nhập để lưu yêu thích.",
+    saved: lang === "en" ? "Saved to wishlist." : "Đã lưu vào yêu thích.",
+    failed: lang === "en" ? "Unable to save wishlist." : "Không thể lưu yêu thích.",
+    titleSaved: lang === "en" ? "Saved to wishlist" : "Đã lưu yêu thích",
+    titleSave: lang === "en" ? "Save to wishlist" : "Lưu yêu thích",
+  };
+
+  function showCartError(result) {
+    const available = Number(result?.available || 0);
+    alert(
+      lang === "en"
+        ? `Only ${available} item(s) available.`
+        : `Sản phẩm này chỉ còn ${available} sản phẩm trong kho.`
+    );
+  }
 
   function addCart(e) {
     e?.preventDefault?.();
     e?.stopPropagation?.();
+
+    if (isOutOfStock) {
+      alert(outOfStockLabel);
+      return false;
+    }
+
+    const validation = validateCartStock(product, qty);
+    if (!validation.ok) {
+      showCartError(validation);
+      return false;
+    }
 
     if (onAddToCart) {
       onAddToCart(product, qty);
@@ -55,14 +85,32 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
     forceCartBadgeSync();
 
     actions?.track?.("add_to_cart", { productId: product?.id, qty });
+    return true;
   }
 
   function buyNow(e) {
     e?.preventDefault?.();
     e?.stopPropagation?.();
 
-    addCart(e);
-    window.location.href = isPreorder ? detailUrl : "/checkout";
+    if (isOutOfStock) {
+      alert(outOfStockLabel);
+      return;
+    }
+
+    if (isPreorder) {
+      window.location.href = detailUrl;
+      return;
+    }
+
+    const result = saveBuyNowDraft(product, qty, { shippingMethod: "FAST" });
+    if (!result.ok) {
+      showCartError(result);
+      return;
+    }
+
+    forceCartBadgeSync();
+    actions?.track?.("buy_now", { productId: product?.id, qty });
+    window.location.href = "/checkout";
   }
 
   async function addWishlist(e) {
@@ -72,7 +120,7 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
     setWishlistMessage("");
 
     if (!hasAccountToken()) {
-      setWishlistMessage("Vui lòng đăng nhập để lưu yêu thích.");
+      setWishlistMessage(wishlistCopy.loginRequired);
       return;
     }
 
@@ -80,10 +128,10 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
       setWishlistSaving(true);
       await addMyWishlistItem(product);
       setWishlistSaved(true);
-      setWishlistMessage("Đã lưu vào yêu thích.");
+      setWishlistMessage(wishlistCopy.saved);
       actions?.track?.("add_to_wishlist", { productId: product?.id });
     } catch (err) {
-      setWishlistMessage(err?.message || "Không thể lưu yêu thích.");
+      setWishlistMessage(err?.message || wishlistCopy.failed);
     } finally {
       setWishlistSaving(false);
     }
@@ -91,7 +139,7 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
 
   return (
     <>
-      <article className="group overflow-hidden rounded-[22px] border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:border-blue-200 hover:shadow-xl sm:rounded-[24px]">
+      <article className="product-card-mobile group overflow-hidden rounded-[22px] border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:border-blue-200 hover:shadow-xl sm:rounded-[24px]">
         <a href={detailUrl} className="block">
           <div className="relative aspect-square overflow-hidden bg-slate-100">
             {badge && (
@@ -105,7 +153,7 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
               data-wishlist-card-button="true"
               onClick={addWishlist}
               disabled={wishlistSaving}
-              title={wishlistSaved ? "Đã lưu yêu thích" : "Lưu yêu thích"}
+              title={wishlistSaved ? wishlistCopy.titleSaved : wishlistCopy.titleSave}
               className={`absolute right-3 top-3 z-10 flex h-10 w-10 items-center justify-center rounded-full border bg-white/90 shadow-lg backdrop-blur transition hover:scale-110 ${
                 wishlistSaved
                   ? "border-red-100 text-red-600"
@@ -147,7 +195,7 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
 
           <div className="mb-3 flex items-center justify-between text-sm">
             <span className="font-semibold text-slate-500">{product?.scale || "1/144"}</span>
-            <span className="font-black text-blue-700">{isPreorder ? t("product.preorder") : resolveText(product?.status || t("product.inStock"), lang)}</span>
+            <span className="font-black text-blue-700">{isOutOfStock ? outOfStockLabel : isPreorder ? t("product.preorder") : resolveText(product?.status || t("product.inStock"), lang)}</span>
           </div>
 
           <div className="mb-4 flex items-end justify-between">
@@ -194,6 +242,14 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
               <Zap size={16} />
               {t("product.preorder")}
             </button>
+          ) : isOutOfStock ? (
+            <button
+              type="button"
+              disabled
+              className="flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-2xl bg-slate-200 px-4 py-3 text-sm font-black uppercase tracking-wide text-slate-500"
+            >
+              {outOfStockLabel}
+            </button>
           ) : (
             <div className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-2">
               <button
@@ -222,8 +278,8 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
 
       {quickOpen &&
         createPortal(
-          <div className="fixed inset-0 z-[999999] flex items-end justify-center bg-slate-950/70 p-0 backdrop-blur-md sm:items-start sm:p-4 sm:pt-6">
-            <div className="relative grid max-h-[92vh] w-full max-w-[920px] overflow-hidden rounded-t-[28px] bg-white shadow-[0_50px_160px_rgba(0,0,0,0.35)] sm:rounded-[28px] lg:grid-cols-[0.9fr_1.1fr]">
+          <div className="mobile-quickview-backdrop fixed inset-0 z-[999999] flex items-end justify-center bg-slate-950/70 p-0 backdrop-blur-md sm:items-start sm:p-4 sm:pt-6">
+            <div className="mobile-quickview-panel relative grid max-h-[92vh] w-full max-w-[920px] overflow-hidden rounded-t-[28px] bg-white shadow-[0_50px_160px_rgba(0,0,0,0.35)] sm:rounded-[28px] lg:grid-cols-[0.9fr_1.1fr]">
               <button
                 onClick={() => setQuickOpen(false)}
                 className="absolute right-4 top-4 z-20 flex h-11 w-11 items-center justify-center rounded-full bg-slate-900/80 text-white shadow-lg transition hover:bg-red-600"
@@ -276,24 +332,34 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
                   {stock > 0 ? `✓ ${t("product.stockReady")}: ${stock}` : t("product.preorderContact")}
                 </div>
 
-                <div className="mt-6 grid gap-3 sm:flex sm:items-center">
+                <div className="mobile-quickview-actions mt-6 grid gap-3 sm:flex sm:items-center">
                   <div className="flex items-center rounded-xl border border-slate-200">
                     <button onClick={() => setQty(Math.max(1, qty - 1))} className="p-3">
                       <Minus size={16} />
                     </button>
                     <span className="px-5 font-black">{qty}</span>
-                    <button onClick={() => setQty(qty + 1)} className="p-3">
+                    <button
+                      onClick={() => setQty((value) => Math.min(maxQty, value + 1))}
+                      disabled={!isPreorder && qty >= maxQty}
+                      className={`p-3 ${!isPreorder && qty >= maxQty ? "cursor-not-allowed opacity-40" : ""}`}
+                    >
                       <Plus size={16} />
                     </button>
                   </div>
 
                   <button
                     data-cart-managed="true"
-                    onClick={addCart}
-                    className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-2xl bg-blue-700 px-6 py-4 text-sm font-black text-white shadow-lg shadow-blue-100 transition hover:bg-blue-800"
+                    onClick={isOutOfStock ? undefined : addCart}
+                    disabled={isOutOfStock}
+                    aria-disabled={isOutOfStock}
+                    className={`flex min-h-12 flex-1 items-center justify-center gap-2 rounded-2xl px-6 py-4 text-sm font-black shadow-lg transition ${
+                      isOutOfStock
+                        ? "cursor-not-allowed bg-slate-200 text-slate-500 shadow-none"
+                        : "bg-blue-700 text-white shadow-blue-100 hover:bg-blue-800"
+                    }`}
                   >
                     <ShoppingCart size={18} />
-                    {t("product.addToCart")}
+                    {isOutOfStock ? outOfStockLabel : t("product.addToCart")}
                   </button>
 
                   <a
@@ -307,7 +373,7 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
                     type="button"
                     onClick={addWishlist}
                     disabled={wishlistSaving}
-                    title={wishlistSaved ? "Đã lưu yêu thích" : "Lưu yêu thích"}
+                    title={wishlistSaved ? wishlistCopy.titleSaved : wishlistCopy.titleSave}
                     className={`rounded-2xl border p-4 transition ${
                       wishlistSaved
                         ? "border-red-100 bg-red-50 text-red-600"

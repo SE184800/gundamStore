@@ -1,9 +1,29 @@
 import { z } from "zod";
 import { prisma } from "../config/prisma.js";
 
+function normalizeVietnamPhone(value = "") {
+  const raw = String(value || "").replace(/[\s.\-()]/g, "").trim();
+
+  if (raw.startsWith("+84")) return `0${raw.slice(3)}`;
+  if (raw.startsWith("84")) return `0${raw.slice(2)}`;
+
+  return raw.replace(/[^0-9]/g, "");
+}
+
+function isValidVietnamPhone(value = "") {
+  const phone = normalizeVietnamPhone(value);
+
+  // Mobile VN: 03/05/07/08/09 + 8 digits. Landline VN: 02 + 9-10 digits.
+  return /^0(3|5|7|8|9)\d{8}$/.test(phone) || /^02\d{9,10}$/.test(phone);
+}
+
 const createOrderSchema = z.object({
   customerName: z.string().min(2).max(120),
-  customerPhone: z.string().min(8).max(20),
+  customerPhone: z
+    .string()
+    .min(8)
+    .max(20)
+    .refine(isValidVietnamPhone, "Số điện thoại Việt Nam không hợp lệ."),
   customerEmail: z.string().email().optional().or(z.literal("")),
   customerAddress: z.string().min(5).max(255),
   shippingFee: z.number().int().min(0).default(0),
@@ -64,6 +84,35 @@ function cleanPaymentText(value = "", max = 500) {
     .slice(0, max);
 }
 
+
+function isSellingPriceActive(priceRow, now = new Date()) {
+  if (!priceRow?.active) return false;
+
+  const start = new Date(priceRow.startDate);
+  const end = priceRow.endDate ? new Date(priceRow.endDate) : null;
+
+  return start <= now && (!end || now <= end);
+}
+
+function resolveCurrentSellingPrice(product, now = new Date()) {
+  const activePrice = (product.prices || [])
+    .filter((row) => isSellingPriceActive(row, now))
+    .sort((a, b) => {
+      const startDiff = new Date(b.startDate).getTime() - new Date(a.startDate).getTime();
+      if (startDiff !== 0) return startDiff;
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    })[0];
+
+  if (!activePrice) return product;
+
+  return {
+    ...product,
+    price: Number(activePrice.price || product.price || 0),
+    oldPrice: Number(activePrice.oldPrice || 0),
+    activeSellingPriceId: activePrice.id,
+  };
+}
+
 function canUpdatePaymentStatus(order) {
   if (!order) return false;
   return !["CANCELLED", "REFUNDED"].includes(order.status);
@@ -71,6 +120,31 @@ function canUpdatePaymentStatus(order) {
 
 const CUSTOMER_CANCEL_ALLOWED_STATUSES = new Set(["PLACED", "CONFIRMED"]);
 const ADMIN_CANCEL_ALLOWED_STATUSES = new Set(["PLACED", "CONFIRMED", "PACKING"]);
+
+const ADMIN_ALLOWED_STATUS_TRANSITIONS = {
+  PLACED: new Set(["CONFIRMED", "CANCELLED"]),
+  CONFIRMED: new Set(["PACKING", "CANCELLED"]),
+  PACKING: new Set(["SHIPPING", "CANCELLED"]),
+  SHIPPING: new Set(["DELIVERED"]),
+  DELIVERED: new Set(["COMPLETED", "REFUNDED"]),
+  COMPLETED: new Set(["REFUNDED"]),
+  CANCELLED: new Set([]),
+  REFUNDED: new Set([]),
+};
+
+function canAdminTransitionOrderStatus(fromStatus = "", toStatus = "") {
+  if (!fromStatus || !toStatus) return false;
+  if (fromStatus === toStatus) return true;
+  return ADMIN_ALLOWED_STATUS_TRANSITIONS[fromStatus]?.has(toStatus) || false;
+}
+
+function getOrderTransitionConflictMessage(fromStatus = "", toStatus = "") {
+  if (["CANCELLED", "REFUNDED"].includes(fromStatus)) {
+    return "Đơn hàng đã ở trạng thái cuối nên không thể chuyển trạng thái.";
+  }
+
+  return `Không thể chuyển trạng thái đơn từ ${fromStatus} sang ${toStatus}.`;
+}
 
 function cleanCancelText(value = "", max = 500) {
   return String(value || "")
@@ -158,10 +232,18 @@ async function restoreOrderStockOnce(tx, order, { actorId = null, reason = "", n
 export async function createOrder(req, res, next) {
   try {
     const body = createOrderSchema.parse(req.body);
+    const customerPhone = normalizeVietnamPhone(body.customerPhone);
 
     const products = await prisma.product.findMany({
       where: {
         active: true,
+      },
+      include: {
+        prices: {
+          where: { active: true },
+          orderBy: [{ startDate: "desc" }, { createdAt: "desc" }],
+          take: 20,
+        },
       },
     });
 
@@ -170,7 +252,7 @@ export async function createOrder(req, res, next) {
 
       return {
         ...item,
-        product,
+        product: product ? resolveCurrentSellingPrice(product) : null,
       };
     });
 
@@ -222,9 +304,8 @@ export async function createOrder(req, res, next) {
       const created = await tx.order.create({
         data: {
           orderNo: generateOrderNo(),
-          customerId: req.user?.id || null,
           customerName: body.customerName,
-          customerPhone: body.customerPhone,
+          customerPhone,
           customerEmail: body.customerEmail || req.user?.email || null,
           customerAddress: body.customerAddress,
           paymentStatus: getInitialPaymentStatus(body.paymentMethod),
@@ -534,10 +615,10 @@ export async function updateOrderStatus(req, res, next) {
       });
     }
 
-    if (currentOrder.status === "CANCELLED" && body.status !== "CANCELLED") {
+    if (!canAdminTransitionOrderStatus(currentOrder.status, body.status)) {
       return res.status(409).json({
         success: false,
-        message: "Đơn hàng đã hủy nên không thể chuyển lại trạng thái khác.",
+        message: getOrderTransitionConflictMessage(currentOrder.status, body.status),
       });
     }
 
@@ -636,20 +717,11 @@ export async function updateOrderPayment(req, res, next) {
     if (!canUpdatePaymentStatus(currentOrder)) {
       return res.status(409).json({
         success: false,
-        message: "Không thể cập nhật thanh toán cho đơn đã hủy hoặc đã hoàn tiền.",
+        message: "Không thể cập nhật vận chuyển cho đơn đã hủy hoặc đã hoàn tiền.",
       });
     }
 
-    const cleanReference = cleanPaymentText(body.reference || "", 120);
     const cleanNote = cleanPaymentText(body.note || "", 500);
-    const paymentAmount = body.amount ?? currentOrder.total;
-
-    if (paymentAmount > currentOrder.total) {
-      return res.status(400).json({
-        success: false,
-        message: "Số tiền thanh toán không được lớn hơn tổng giá trị đơn hàng.",
-      });
-    }
 
     const order = await prisma.$transaction(async (tx) => {
       await tx.order.update({
@@ -735,20 +807,11 @@ export async function updateOrderShipping(req, res, next) {
     if (!canUpdatePaymentStatus(currentOrder)) {
       return res.status(409).json({
         success: false,
-        message: "Không thể cập nhật thanh toán cho đơn đã hủy hoặc đã hoàn tiền.",
+        message: "Không thể cập nhật vận chuyển cho đơn đã hủy hoặc đã hoàn tiền.",
       });
     }
 
-    const cleanReference = cleanPaymentText(body.reference || "", 120);
     const cleanNote = cleanPaymentText(body.note || "", 500);
-    const paymentAmount = body.amount ?? currentOrder.total;
-
-    if (paymentAmount > currentOrder.total) {
-      return res.status(400).json({
-        success: false,
-        message: "Số tiền thanh toán không được lớn hơn tổng giá trị đơn hàng.",
-      });
-    }
 
     const order = await prisma.$transaction(async (tx) => {
       const existingShipment = await tx.shipment.findFirst({
@@ -787,7 +850,7 @@ export async function updateOrderShipping(req, res, next) {
           entityId: currentOrder.id,
           metadata: {
             ...shipmentData,
-            note: body.note || "",
+            note: cleanNote,
           },
         },
       });

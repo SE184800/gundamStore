@@ -20,20 +20,86 @@ import PageShell from "../../components/common/PageShell";
 import { useCms, useLang } from "../../store/CmsStore";
 import {
   clearMyWishlistApi,
+  getMyAccount,
   getMyWishlist,
   hasAccountToken,
   removeMyWishlistItem,
 } from "../../services/AccountApiService";
 
-const menuItems = [
-  { label: "Thông tin cá nhân", href: "/profile", icon: User },
-  { label: "Đơn hàng của tôi", href: "/orders", icon: Package },
-  { label: "Địa chỉ của tôi", href: "/profile#address", icon: MapPin },
-  { label: "Phương thức thanh toán", href: "/profile#payment", icon: CreditCard },
-  { label: "Danh sách yêu thích", href: "/favorites", icon: Heart, active: true },
-  { label: "Thông báo của tôi", href: "/profile#notification", icon: Bell },
-  { label: "Đổi mật khẩu", href: "/profile#password", icon: Lock },
-];
+function getCopy(lang) {
+  return {
+    title: lang === "en" ? "My wishlist" : "Danh sách yêu thích",
+    subtitle:
+      lang === "en"
+        ? "Manage the products you saved for later."
+        : "Quản lý các sản phẩm bạn đã lưu để xem lại sau.",
+    accountTitle: lang === "en" ? "My account" : "Tài khoản của tôi",
+    customer: lang === "en" ? "Customer" : "Khách hàng",
+    noEmail: lang === "en" ? "Email not updated" : "Chưa cập nhật email",
+    savedCount: lang === "en" ? "saved products" : "sản phẩm yêu thích",
+    loginTitle: lang === "en" ? "Please sign in" : "Vui lòng đăng nhập",
+    loginDesc:
+      lang === "en"
+        ? "Sign in to view and sync your wishlist."
+        : "Đăng nhập để xem và đồng bộ danh sách yêu thích.",
+    login: lang === "en" ? "Sign in" : "Đăng nhập",
+    search: lang === "en" ? "Search wishlist..." : "Tìm sản phẩm yêu thích...",
+    empty: lang === "en" ? "No wishlist items yet." : "Chưa có sản phẩm yêu thích.",
+    loadError:
+      lang === "en"
+        ? "Unable to load wishlist."
+        : "Không thể tải danh sách yêu thích.",
+    removeSuccess:
+      lang === "en"
+        ? "Removed from wishlist."
+        : "Đã xóa sản phẩm khỏi danh sách yêu thích.",
+    removeError:
+      lang === "en"
+        ? "Unable to remove wishlist item."
+        : "Không thể xóa sản phẩm yêu thích.",
+    clearSuccess:
+      lang === "en"
+        ? "Wishlist cleared."
+        : "Đã xóa toàn bộ danh sách yêu thích.",
+    clearError:
+      lang === "en"
+        ? "Unable to clear wishlist."
+        : "Không thể xóa danh sách yêu thích.",
+    addCart:
+      lang === "en" ? "Added to cart." : "Đã thêm sản phẩm vào giỏ hàng.",
+    inStock: lang === "en" ? "In stock" : "Còn hàng",
+    outOfStock: lang === "en" ? "Out of stock" : "Hết hàng",
+    addToCart: lang === "en" ? "Add to cart" : "Thêm vào giỏ",
+    viewDetail: lang === "en" ? "View detail" : "Xem chi tiết",
+    remove: lang === "en" ? "Remove" : "Xóa khỏi yêu thích",
+    clearAll: lang === "en" ? "Clear all" : "Xóa tất cả",
+    logout: lang === "en" ? "Sign out" : "Đăng xuất",
+    syncNoteTitle: lang === "en" ? "Wishlist sync" : "Đồng bộ yêu thích",
+    syncNote:
+      lang === "en"
+        ? "Your wishlist is saved to your account and available after signing in."
+        : "Danh sách yêu thích được lưu theo tài khoản và có thể xem lại sau khi đăng nhập.",
+    profile: lang === "en" ? "Personal information" : "Thông tin cá nhân",
+    orders: lang === "en" ? "My orders" : "Đơn hàng của tôi",
+    addresses: lang === "en" ? "My addresses" : "Địa chỉ của tôi",
+    payments: lang === "en" ? "Payment methods" : "Phương thức thanh toán",
+    wishlist: lang === "en" ? "Wishlist" : "Danh sách yêu thích",
+    notifications: lang === "en" ? "Notifications" : "Thông báo của tôi",
+    password: lang === "en" ? "Change password" : "Đổi mật khẩu",
+  };
+}
+
+function getMenuItems(t) {
+  return [
+    { label: t.profile, href: "/profile", icon: User },
+    { label: t.orders, href: "/orders", icon: Package },
+    { label: t.addresses, href: "/profile#address", icon: MapPin },
+    { label: t.payments, href: "/profile#payment", icon: CreditCard },
+    { label: t.wishlist, href: "/favorites", icon: Heart, active: true },
+    { label: t.notifications, href: "/profile#notification", icon: Bell },
+    { label: t.password, href: "/profile#password", icon: Lock },
+  ];
+}
 
 function formatCurrency(value = 0) {
   return new Intl.NumberFormat("vi-VN").format(Number(value) || 0) + " ₫";
@@ -70,11 +136,13 @@ function getProductName(product, lang) {
     : product.nameVi || product.nameEn || "Sản phẩm Gundam";
 }
 
-function AccountSidebar({ user, wishlistCount, onLogout }) {
+function AccountSidebar({ user, wishlistCount, onLogout, t }) {
+  const menuItems = getMenuItems(t);
+
   return (
     <aside className="space-y-4">
       <section className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 className="text-lg font-black text-slate-950">Tài khoản của tôi</h2>
+        <h2 className="text-lg font-black text-slate-950">{t.accountTitle}</h2>
 
         <div className="mt-5 flex items-center gap-3">
           <span className="flex h-14 w-14 items-center justify-center rounded-full bg-blue-700 text-white">
@@ -82,15 +150,15 @@ function AccountSidebar({ user, wishlistCount, onLogout }) {
           </span>
 
           <div className="min-w-0">
-            <div className="truncate font-black text-slate-950">{user?.name || "Admin Demo"}</div>
+            <div className="truncate font-black text-slate-950">{user?.name || t.customer}</div>
             <div className="mt-1 truncate text-sm font-semibold text-slate-500">
-              {user?.email || "admin@demo.com"}
+              {user?.email || t.noEmail}
             </div>
           </div>
         </div>
 
         <div className="mt-4 rounded-2xl bg-blue-50 px-4 py-3 text-sm font-black text-blue-700">
-          {wishlistCount} sản phẩm yêu thích
+          {wishlistCount} {t.savedCount}
         </div>
 
         <div className="mt-5 border-t border-slate-100 pt-3">
@@ -119,22 +187,22 @@ function AccountSidebar({ user, wishlistCount, onLogout }) {
             className="mt-2 flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm font-black text-red-600 hover:bg-red-50"
           >
             <LogOut size={18} />
-            Đăng xuất
+            {t.logout}
           </button>
         </div>
       </section>
 
       <section className="rounded-[28px] border border-blue-100 bg-blue-50 p-5 shadow-sm">
-        <div className="font-black text-slate-950">Wishlist lưu trên backend</div>
+        <div className="font-black text-slate-950">{t.syncNoteTitle}</div>
         <p className="mt-2 text-sm font-semibold leading-6 text-slate-500">
-          Danh sách yêu thích hiện đã đồng bộ qua API /api/account/wishlist.
+          {t.syncNote}
         </p>
       </section>
     </aside>
   );
 }
 
-function ProductRow({ product, lang, removing, onRemove, onAddToCart }) {
+function ProductRow({ product, lang, t, removing, onRemove, onAddToCart }) {
   const name = getProductName(product, lang);
   const stock = Number(product.stock || 0);
 
@@ -169,7 +237,7 @@ function ProductRow({ product, lang, removing, onRemove, onAddToCart }) {
               stock > 0 ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"
             }`}
           >
-            {stock > 0 ? "Còn hàng" : "Hết hàng"}
+            {stock > 0 ? t.inStock : t.outOfStock}
           </span>
         </div>
 
@@ -198,7 +266,7 @@ function ProductRow({ product, lang, removing, onRemove, onAddToCart }) {
           }`}
         >
           <ShoppingCart size={17} />
-          Thêm vào giỏ
+          {t.addToCart}
         </button>
 
         <Link
@@ -206,7 +274,7 @@ function ProductRow({ product, lang, removing, onRemove, onAddToCart }) {
           className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 hover:border-blue-200 hover:text-blue-700"
         >
           <Eye size={17} />
-          Xem chi tiết
+          {t.viewDetail}
         </Link>
 
         <button
@@ -220,7 +288,7 @@ function ProductRow({ product, lang, removing, onRemove, onAddToCart }) {
           }`}
         >
           {removing ? <Loader2 size={17} className="animate-spin" /> : <Trash2 size={17} />}
-          Xóa khỏi yêu thích
+          {t.remove}
         </button>
       </div>
     </article>
@@ -228,21 +296,18 @@ function ProductRow({ product, lang, removing, onRemove, onAddToCart }) {
 }
 
 export default function WishlistPage() {
-  const { state, actions } = useCms();
+  const { actions } = useCms();
   const [lang] = useLang();
+  const t = getCopy(lang);
 
   const [query, setQuery] = useState("");
   const [wishlistItems, setWishlistItems] = useState([]);
+  const [account, setAccount] = useState(null);
   const [loading, setLoading] = useState(true);
   const [removingId, setRemovingId] = useState("");
   const [clearing, setClearing] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
-
-  const user = state.user || {
-    name: "Admin Demo",
-    email: "admin@demo.com",
-  };
 
   const hasToken = useMemo(() => hasAccountToken(), []);
 
@@ -273,17 +338,22 @@ export default function WishlistPage() {
   async function loadWishlist() {
     if (!hasToken) {
       setLoading(false);
-      setError("Bạn cần đăng nhập để xem danh sách yêu thích.");
+      setError(t.loginDesc);
       return;
     }
 
     try {
       setLoading(true);
       setError("");
-      const items = await getMyWishlist();
+      const [accountData, items] = await Promise.all([
+        getMyAccount().catch(() => null),
+        getMyWishlist(),
+      ]);
+
+      setAccount(accountData);
       setWishlistItems(Array.isArray(items) ? items : []);
     } catch (err) {
-      setError(err?.message || "Không thể tải danh sách yêu thích.");
+      setError(err?.message || t.loadError);
     } finally {
       setLoading(false);
     }
@@ -292,7 +362,7 @@ export default function WishlistPage() {
   useEffect(() => {
     loadWishlist();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [hasToken, lang]);
 
   async function remove(productId) {
     try {
@@ -309,9 +379,9 @@ export default function WishlistPage() {
         })
       );
 
-      setMessage("Đã xóa sản phẩm khỏi danh sách yêu thích.");
+      setMessage(t.removeSuccess);
     } catch (err) {
-      setError(err?.message || "Không thể xóa sản phẩm yêu thích.");
+      setError(err?.message || t.removeError);
     } finally {
       setRemovingId("");
     }
@@ -326,9 +396,9 @@ export default function WishlistPage() {
       await clearMyWishlistApi();
 
       setWishlistItems([]);
-      setMessage("Đã xóa toàn bộ danh sách yêu thích.");
+      setMessage(t.clearSuccess);
     } catch (err) {
-      setError(err?.message || "Không thể xóa danh sách yêu thích.");
+      setError(err?.message || t.clearError);
     } finally {
       setClearing(false);
     }
@@ -336,13 +406,12 @@ export default function WishlistPage() {
 
   function addToCart(product) {
     actions.addToCart(product.backendProductId || product.productId || product.id, 1);
-    setMessage("Đã thêm sản phẩm vào giỏ hàng.");
+    setMessage(t.addCart);
   }
 
   function logout() {
     actions.logout?.();
-    localStorage.removeItem("gundam-admin-token");
-    localStorage.removeItem("gundam-admin-auth");
+    localStorage.removeItem("gundam_token");
     window.location.href = "/";
   }
 
@@ -350,72 +419,48 @@ export default function WishlistPage() {
     <PageShell>
       <main className="min-h-screen bg-gradient-to-b from-white via-blue-50/40 to-slate-100">
         <div className="mx-auto max-w-[1440px] px-4 py-8 lg:px-8">
-          <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
-            <AccountSidebar user={user} wishlistCount={wishlistItems.length} onLogout={logout} />
+          {!hasToken ? (
+            <section className="mx-auto max-w-xl rounded-[28px] border border-slate-200 bg-white p-8 text-center shadow-sm">
+              <Heart className="mx-auto text-blue-700" size={42} />
+              <h1 className="mt-4 text-2xl font-black text-slate-950">{t.loginTitle}</h1>
+              <p className="mt-2 text-sm font-semibold leading-6 text-slate-500">{t.loginDesc}</p>
+              <Link
+                to="/login"
+                className="mt-5 inline-flex rounded-2xl bg-blue-700 px-5 py-3 text-sm font-black text-white hover:bg-blue-800"
+              >
+                {t.login}
+              </Link>
+            </section>
+          ) : (
+            <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
+              <AccountSidebar user={account} wishlistCount={wishlistItems.length} onLogout={logout} t={t} />
 
-            <section>
-              <div className="text-sm font-bold text-slate-500">
-                <Link to="/" className="hover:text-blue-700">Trang chủ</Link>
-                <span className="mx-2">›</span>
-                <span className="text-slate-900">Danh sách yêu thích</span>
-              </div>
-
-              <div className="mt-5 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-                <div>
-                  <div className="flex items-center gap-3">
-                    <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-700 text-white shadow-lg shadow-blue-100">
-                      <Heart size={24} fill="currentColor" />
-                    </span>
-
-                    <h1 className="text-3xl font-black text-slate-950 md:text-4xl">
-                      Danh sách yêu thích
-                    </h1>
+              <section className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="flex flex-col gap-4 border-b border-slate-100 pb-5 md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <h1 className="text-2xl font-black text-slate-950">{t.title}</h1>
+                    <p className="mt-1 text-sm font-semibold text-slate-500">{t.subtitle}</p>
                   </div>
 
-                  <p className="mt-2 text-sm font-semibold text-slate-500">
-                    Danh sách này được lưu trên backend theo tài khoản đăng nhập.
-                  </p>
+                  <button
+                    type="button"
+                    onClick={clearAll}
+                    disabled={clearing || wishlistItems.length === 0}
+                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-red-100 bg-white px-4 text-sm font-black text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {clearing ? <Loader2 size={17} className="animate-spin" /> : <Trash2 size={17} />}
+                    {t.clearAll}
+                  </button>
                 </div>
 
-                <Link
-                  to="/shop"
-                  className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-blue-100 bg-white px-5 text-sm font-black text-blue-700 shadow-sm hover:bg-blue-700 hover:text-white"
-                >
-                  Tiếp tục mua sắm
-                </Link>
-              </div>
-
-              <section className="mt-6 rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm">
-                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                  <div className="text-lg font-black text-slate-950">
-                    Tất cả sản phẩm ({products.length})
-                  </div>
-
-                  <div className="flex flex-col gap-3 sm:flex-row">
-                    <div className="flex min-h-11 min-w-[260px] items-center rounded-2xl border border-slate-200 bg-slate-50 px-4">
-                      <Search size={18} className="text-blue-700" />
-                      <input
-                        value={query}
-                        onChange={(event) => setQuery(event.target.value)}
-                        placeholder="Tìm trong danh sách yêu thích..."
-                        className="w-full bg-transparent px-3 text-sm font-bold outline-none placeholder:text-slate-400"
-                      />
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={clearAll}
-                      disabled={clearing || wishlistItems.length === 0}
-                      className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border px-4 text-sm font-black ${
-                        clearing || wishlistItems.length === 0
-                          ? "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400"
-                          : "border-red-100 bg-red-50 text-red-600 hover:bg-red-100"
-                      }`}
-                    >
-                      {clearing ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
-                      Xóa tất cả
-                    </button>
-                  </div>
+                <div className="mt-5 flex items-center rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                  <Search size={18} className="text-slate-400" />
+                  <input
+                    value={query}
+                    onChange={(event) => setQuery(event.target.value)}
+                    placeholder={t.search}
+                    className="ml-3 w-full bg-transparent text-sm font-bold outline-none"
+                  />
                 </div>
 
                 {error && (
@@ -432,33 +477,22 @@ export default function WishlistPage() {
                 )}
 
                 {loading ? (
-                  <div className="mt-5 flex min-h-[260px] items-center justify-center rounded-[24px] bg-slate-50">
-                    <Loader2 className="animate-spin text-blue-700" size={34} />
+                  <div className="flex min-h-[260px] items-center justify-center">
+                    <Loader2 className="animate-spin text-blue-700" size={36} />
                   </div>
                 ) : products.length === 0 ? (
-                  <div className="mt-5 rounded-[24px] border border-dashed border-slate-300 bg-slate-50 p-10 text-center">
+                  <div className="py-16 text-center">
                     <Heart className="mx-auto text-slate-300" size={48} />
-                    <div className="mt-4 text-xl font-black text-slate-600">
-                      Chưa có sản phẩm yêu thích
-                    </div>
-                    <p className="mx-auto mt-2 max-w-md text-sm font-semibold leading-6 text-slate-500">
-                      Hãy thêm sản phẩm vào wishlist để hệ thống lưu theo tài khoản.
-                    </p>
-
-                    <Link
-                      to="/shop"
-                      className="mt-5 inline-flex min-h-11 items-center justify-center rounded-2xl bg-blue-700 px-5 text-sm font-black text-white"
-                    >
-                      Khám phá sản phẩm
-                    </Link>
+                    <div className="mt-4 text-lg font-black text-slate-600">{t.empty}</div>
                   </div>
                 ) : (
-                  <div className="mt-3">
+                  <div className="mt-2">
                     {products.map((product) => (
                       <ProductRow
                         key={product.id}
                         product={product}
                         lang={lang}
+                        t={t}
                         removing={removingId === product.id}
                         onRemove={() => remove(product.id)}
                         onAddToCart={() => addToCart(product)}
@@ -467,8 +501,8 @@ export default function WishlistPage() {
                   </div>
                 )}
               </section>
-            </section>
-          </div>
+            </div>
+          )}
         </div>
       </main>
     </PageShell>

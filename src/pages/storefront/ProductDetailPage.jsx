@@ -30,8 +30,13 @@ import {
 import PageShell from "../../components/common/PageShell";
 import { useCms } from "../../store/CmsStore";
 import { translateStaticText } from "../../i18n";
-import { saveCheckoutDraft } from "../../services/CartService";
-import { isWishlistSaved, toggleWishlist } from "../../services/WishlistService";
+import { addProductToCart, forceCartBadgeSync, saveBuyNowDraft, saveCheckoutDraft, validateCartStock } from "../../services/CartService";
+import {
+  addMyWishlistItem,
+  getMyWishlist,
+  hasAccountToken,
+  removeMyWishlistItem,
+} from "../../services/AccountApiService";
 import { isCompareSaved, toggleCompare } from "../../services/CompareService";
 import { registerRestockAlert } from "../../services/RestockAlertService";
 import {
@@ -47,6 +52,7 @@ const copy = {
     home: "Trang chủ",
     shop: "Trang bán hàng",
     inStock: "Hàng sẵn",
+    outOfStock: "Hết hàng",
     preorder: "Pre-order",
     authentic: "Bandai chính hãng",
     sold: "đã bán",
@@ -58,9 +64,15 @@ const copy = {
     stock: "Tồn kho",
     quantity: "Số lượng",
     addToCart: "Thêm vào giỏ",
+    soldOut: "Hết hàng",
     buyNow: "Đặt hàng ngay",
     preorderNow: "Đặt trước ngay",
     favorite: "Yêu thích",
+    saved: "Đã lưu",
+    wishlistLogin: "Vui lòng đăng nhập để lưu yêu thích.",
+    wishlistSaved: "Đã lưu vào yêu thích.",
+    wishlistRemoved: "Đã xóa khỏi yêu thích.",
+    wishlistError: "Không thể cập nhật yêu thích.",
     share: "Chia sẻ",
     compare: "So sánh",
     compared: "Đã thêm so sánh",
@@ -78,6 +90,7 @@ const copy = {
     voucher2: "Freeship theo điều kiện khu vực",
     voucher3: "Giảm 10% khi mua kèm phụ kiện builder",
     collectVoucher: "Lưu voucher",
+    voucherSaved: "Đã lưu voucher",
     deliveryTitle: "Giao hàng dự kiến",
     deliveryTo: "Giao đến",
     deliveryLocation: "TP.HCM, Quận 1",
@@ -124,6 +137,7 @@ const copy = {
     home: "Home",
     shop: "Shop",
     inStock: "In stock",
+    outOfStock: "Out of stock",
     preorder: "Pre-order",
     authentic: "Authentic Bandai",
     sold: "sold",
@@ -135,9 +149,15 @@ const copy = {
     stock: "Stock",
     quantity: "Quantity",
     addToCart: "Add to cart",
+    soldOut: "Out of stock",
     buyNow: "Buy now",
     preorderNow: "Pre-order now",
     favorite: "Wishlist",
+    saved: "Saved",
+    wishlistLogin: "Please sign in to save wishlist.",
+    wishlistSaved: "Saved to wishlist.",
+    wishlistRemoved: "Removed from wishlist.",
+    wishlistError: "Unable to update wishlist.",
     share: "Share",
     compare: "Compare",
     compared: "Compared",
@@ -155,6 +175,7 @@ const copy = {
     voucher2: "Conditional free shipping by area",
     voucher3: "10% off builder accessories bundle",
     collectVoucher: "Collect voucher",
+    voucherSaved: "Voucher saved",
     deliveryTitle: "Estimated delivery",
     deliveryTo: "Deliver to",
     deliveryLocation: "District 1, Ho Chi Minh City",
@@ -275,12 +296,26 @@ function GundamVisual({ tone = "blue", imageUrl, large = false }) {
   );
 }
 
-function QuantitySelector({ qty, setQty }) {
+function QuantitySelector({ qty, setQty, maxQty = 99, disabled = false }) {
   return (
-    <div className="inline-flex items-center overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <button onClick={() => setQty(Math.max(1, qty - 1))} className="p-3 hover:bg-slate-50"><Minus size={16} /></button>
+    <div className={`inline-flex items-center overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm ${disabled ? "opacity-50" : ""}`}>
+      <button
+        type="button"
+        disabled={disabled || qty <= 1}
+        onClick={() => setQty(Math.max(1, qty - 1))}
+        className="p-3 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        <Minus size={16} />
+      </button>
       <div className="w-12 text-center text-sm font-black">{qty}</div>
-      <button onClick={() => setQty(qty + 1)} className="p-3 hover:bg-slate-50"><Plus size={16} /></button>
+      <button
+        type="button"
+        disabled={disabled || qty >= maxQty}
+        onClick={() => setQty((value) => Math.min(maxQty, value + 1))}
+        className="p-3 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        <Plus size={16} />
+      </button>
     </div>
   );
 }
@@ -289,23 +324,128 @@ function ProductInfo({ product, lang, actions, onPreorder }) {
   const t = copy[lang];
   const [qty, setQty] = useState(1);
   const preorder = isPreorder(product);
+  const stock = Number(product.stock || 0);
+  const isOutOfStock = !preorder && stock <= 0;
+  const maxQty = preorder ? 99 : Math.max(1, stock);
   const price = Number(product.price || 0);
   const oldPrice = Number(product.oldPrice || 0);
   const save = oldPrice > price ? oldPrice - price : 0;
   const [wishlistSaved, setWishlistSaved] = useState(false);
+  const [wishlistBusy, setWishlistBusy] = useState(false);
+  const [wishlistMessage, setWishlistMessage] = useState("");
   const [compareSaved, setCompareSaved] = useState(false);
   const [alertForm, setAlertForm] = useState({ name: "", phone: "", note: "" });
   const [alertMessage, setAlertMessage] = useState("");
   const [alertError, setAlertError] = useState("");
+  const navigate = useNavigate();
+
+  function showCartError(result) {
+    const available = Number(result?.available || 0);
+    alert(
+      lang === "en"
+        ? `Only ${available} item(s) available.`
+        : `Sản phẩm này chỉ còn ${available} sản phẩm trong kho.`
+    );
+  }
+
+  function handleAddToCart() {
+    if (isOutOfStock) return;
+
+    const validation = validateCartStock(product, qty);
+    if (!validation.ok) {
+      showCartError(validation);
+      return;
+    }
+
+    addProductToCart(product, qty);
+    forceCartBadgeSync();
+    actions?.track?.("add_to_cart", { productId: product.id, qty });
+  }
+
+  function handleBuyNow() {
+    if (isOutOfStock) return;
+
+    const result = saveBuyNowDraft(product, qty, { shippingMethod: "FAST" });
+    if (!result.ok) {
+      showCartError(result);
+      return;
+    }
+
+    forceCartBadgeSync();
+    actions?.track?.("buy_now", { productId: product.id, qty });
+    navigate("/checkout");
+  }
 
   useEffect(() => {
-    setWishlistSaved(isWishlistSaved(product.id));
-    setCompareSaved(isCompareSaved(product.id));
-  }, [product.id]);
+    let alive = true;
 
-  function handleWishlist() {
-    const next = toggleWishlist(product.id);
-    setWishlistSaved(next.includes(product.id));
+    async function loadWishlistState() {
+      setCompareSaved(isCompareSaved(product.id));
+
+      if (!hasAccountToken()) {
+        setWishlistSaved(false);
+        return;
+      }
+
+      try {
+        const items = await getMyWishlist();
+        if (!alive) return;
+
+        const productKeys = new Set([
+          product.id,
+          product.backendProductId,
+          product.productId,
+          product.sku,
+          product.slug,
+        ].filter(Boolean).map(String));
+
+        const saved = (items || []).some((item) => {
+          const savedProduct = item.product || item;
+          return [
+            item.productId,
+            savedProduct.id,
+            savedProduct.sku,
+            savedProduct.slug,
+          ].filter(Boolean).some((value) => productKeys.has(String(value)));
+        });
+
+        setWishlistSaved(saved);
+      } catch {
+        if (alive) setWishlistSaved(false);
+      }
+    }
+
+    loadWishlistState();
+
+    return () => {
+      alive = false;
+    };
+  }, [product.id, product.backendProductId, product.productId, product.sku, product.slug]);
+
+  async function handleWishlist() {
+    if (!hasAccountToken()) {
+      setWishlistMessage(t.wishlistLogin);
+      return;
+    }
+
+    try {
+      setWishlistBusy(true);
+      setWishlistMessage("");
+
+      if (wishlistSaved) {
+        await removeMyWishlistItem(product.backendProductId || product.productId || product.id);
+        setWishlistSaved(false);
+        setWishlistMessage(t.wishlistRemoved);
+      } else {
+        await addMyWishlistItem(product);
+        setWishlistSaved(true);
+        setWishlistMessage(t.wishlistSaved);
+      }
+    } catch (error) {
+      setWishlistMessage(error?.message || t.wishlistError);
+    } finally {
+      setWishlistBusy(false);
+    }
   }
 
   function handleCompare() {
@@ -317,13 +457,13 @@ function ProductInfo({ product, lang, actions, onPreorder }) {
     setAlertForm((prev) => ({ ...prev, [field]: value }));
   }
 
-  function submitRestockAlert(event) {
+  async function submitRestockAlert(event) {
     event.preventDefault();
     setAlertMessage("");
     setAlertError("");
 
     try {
-      registerRestockAlert(product, alertForm);
+      await registerRestockAlert(product, alertForm);
       setAlertMessage(t.notifySuccess);
       setAlertForm({ name: "", phone: "", note: "" });
     } catch (error) {
@@ -334,8 +474,8 @@ function ProductInfo({ product, lang, actions, onPreorder }) {
   return (
     <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm lg:p-6">
       <div className="flex flex-wrap gap-2">
-        <span className={`rounded-xl px-3 py-1 text-xs font-black text-white ${preorder ? "bg-violet-600" : "bg-emerald-600"}`}>
-          {preorder ? t.preorder : t.inStock}
+        <span className={`rounded-xl px-3 py-1 text-xs font-black text-white ${preorder ? "bg-violet-600" : isOutOfStock ? "bg-slate-500" : "bg-emerald-600"}`}>
+          {preorder ? t.preorder : isOutOfStock ? t.outOfStock : t.inStock}
         </span>
         <span className="rounded-xl border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-black text-blue-700">{t.authentic}</span>
         {isSale(product) && <span className="rounded-xl bg-red-100 px-3 py-1 text-xs font-black text-red-700">SALE</span>}
@@ -372,8 +512,12 @@ function ProductInfo({ product, lang, actions, onPreorder }) {
           <p className="mt-3 text-xs leading-5 text-violet-800/80">{t.preorderNote}</p>
         </div>
       ) : (
-        <div className="mt-5 flex items-center gap-2 rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-sm font-black text-emerald-700">
-          <CheckCircle2 size={18} /> {t.stock}: {product.stock ?? 0}
+        <div className={`mt-5 flex items-center gap-2 rounded-2xl border p-4 text-sm font-black ${
+          isOutOfStock
+            ? "border-slate-200 bg-slate-50 text-slate-600"
+            : "border-emerald-100 bg-emerald-50 text-emerald-700"
+        }`}>
+          <CheckCircle2 size={18} /> {isOutOfStock ? t.outOfStock : `${t.stock}: ${stock}`}
         </div>
       )}
 
@@ -381,7 +525,7 @@ function ProductInfo({ product, lang, actions, onPreorder }) {
 
       <div className="mt-5">
         <div className="mb-2 text-xs font-black uppercase text-slate-500">{t.quantity}</div>
-        <QuantitySelector qty={qty} setQty={setQty} />
+        <QuantitySelector qty={qty} setQty={setQty} maxQty={maxQty} disabled={isOutOfStock} />
       </div>
 
       <div className="mt-5 grid gap-3 sm:grid-cols-2">
@@ -395,18 +539,28 @@ function ProductInfo({ product, lang, actions, onPreorder }) {
         ) : (
           <>
             <button
-              onClick={() => actions.addToCart(product.id, qty)}
-              className="rounded-2xl bg-blue-700 px-5 py-3 text-sm font-black text-white shadow-lg shadow-blue-200 hover:bg-blue-800"
+              onClick={handleAddToCart}
+              disabled={isOutOfStock}
+              className={`rounded-2xl px-5 py-3 text-sm font-black shadow-lg ${
+                isOutOfStock
+                  ? "cursor-not-allowed bg-slate-200 text-slate-500 shadow-none"
+                  : "bg-blue-700 text-white shadow-blue-200 hover:bg-blue-800"
+              }`}
             >
               <ShoppingCart className="mr-2 inline" size={17} />
-              {t.addToCart}
+              {isOutOfStock ? t.soldOut : t.addToCart}
             </button>
             <button
-              onClick={() => actions.addToCart(product.id, qty)}
-              className="rounded-2xl bg-slate-950 px-5 py-3 text-sm font-black text-white shadow-lg shadow-slate-200 hover:bg-slate-800"
+              onClick={handleBuyNow}
+              disabled={isOutOfStock}
+              className={`rounded-2xl px-5 py-3 text-sm font-black shadow-lg ${
+                isOutOfStock
+                  ? "cursor-not-allowed bg-slate-200 text-slate-500 shadow-none"
+                  : "bg-slate-950 text-white shadow-slate-200 hover:bg-slate-800"
+              }`}
             >
               <Zap className="mr-2 inline" size={17} />
-              {t.buyNow}
+              {isOutOfStock ? t.soldOut : t.buyNow}
             </button>
           </>
         )}
@@ -465,15 +619,22 @@ function ProductInfo({ product, lang, actions, onPreorder }) {
       <div className="mt-4 grid grid-cols-2 gap-3">
         <button
           onClick={handleWishlist}
-          className={`rounded-2xl border px-4 py-3 text-sm font-black shadow-sm ${
+          disabled={wishlistBusy}
+          className={`rounded-2xl border px-4 py-3 text-sm font-black shadow-sm disabled:cursor-not-allowed disabled:opacity-60 ${
             wishlistSaved
               ? "border-pink-200 bg-pink-50 text-pink-700"
               : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
           }`}
         >
           <Heart className="mr-2 inline" size={16} fill={wishlistSaved ? "currentColor" : "none"} />
-          {wishlistSaved ? (lang === "en" ? "Saved" : "Đã lưu") : t.favorite}
+          {wishlistSaved ? t.saved : t.favorite}
         </button>
+
+        {wishlistMessage && (
+          <div className="rounded-2xl bg-blue-50 px-4 py-3 text-sm font-black text-blue-700 sm:col-span-2">
+            {wishlistMessage}
+          </div>
+        )}
         <button
           onClick={handleCompare}
           className={`rounded-2xl border px-4 py-3 text-sm font-black shadow-sm ${
@@ -492,15 +653,47 @@ function ProductInfo({ product, lang, actions, onPreorder }) {
 
 function MarketplaceExtras({ lang }) {
   const t = copy[lang];
+  const [savedVoucher, setSavedVoucher] = useState("");
+
+  const vouchers = [
+    { label: t.voucher1, code: "VIP50" },
+    { label: t.voucher2, code: "FREESHIP" },
+    { label: t.voucher3, code: "GUNDAM10" },
+  ];
+
+  function collectVoucher(code) {
+    try {
+      localStorage.setItem("gundam-saved-voucher", code);
+      setSavedVoucher(code);
+    } catch {
+      setSavedVoucher(code);
+    }
+  }
 
   return (
     <div className="mt-5 grid gap-3">
       <div className="rounded-3xl border border-amber-100 bg-amber-50 p-4">
-        <div className="mb-3 flex items-center gap-2 text-sm font-black text-amber-800"><CreditCard size={18} />{t.voucherTitle}</div>
-        {[t.voucher1, t.voucher2, t.voucher3].map((voucher) => (
-          <div key={voucher} className="mb-2 flex items-center justify-between gap-3 rounded-2xl bg-white p-3 text-xs font-bold text-slate-700 shadow-sm">
-            <span>{voucher}</span>
-            <button className="shrink-0 rounded-xl bg-amber-500 px-3 py-1.5 text-[11px] font-black text-white hover:bg-amber-600">{t.collectVoucher}</button>
+        <div className="mb-3 flex items-center gap-2 text-sm font-black text-amber-800">
+          <CreditCard size={18} />
+          {t.voucherTitle}
+        </div>
+
+        {savedVoucher && (
+          <div className="mb-3 rounded-2xl bg-emerald-50 p-3 text-xs font-black text-emerald-700">
+            {t.voucherSaved}: {savedVoucher}
+          </div>
+        )}
+
+        {vouchers.map((voucher) => (
+          <div key={voucher.code} className="mb-2 flex items-center justify-between gap-3 rounded-2xl bg-white p-3 text-xs font-bold text-slate-700 shadow-sm">
+            <span>{voucher.label}</span>
+            <button
+              type="button"
+              onClick={() => collectVoucher(voucher.code)}
+              className="shrink-0 rounded-xl bg-amber-500 px-3 py-1.5 text-[11px] font-black text-white hover:bg-amber-600"
+            >
+              {savedVoucher === voucher.code ? t.voucherSaved : t.collectVoucher}
+            </button>
           </div>
         ))}
       </div>
@@ -529,6 +722,7 @@ function MarketplaceExtras({ lang }) {
     </div>
   );
 }
+
 
 function ShopInfoCard({ lang }) {
   const t = copy[lang];

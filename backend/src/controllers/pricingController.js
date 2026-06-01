@@ -43,6 +43,47 @@ function productInclude() {
   };
 }
 
+async function findEffectivePriceRow(tx, productId, now = new Date()) {
+  return tx.productPrice.findFirst({
+    where: {
+      productId,
+      active: true,
+      startDate: {
+        lte: now,
+      },
+      OR: [
+        { endDate: null },
+        { endDate: { gte: now } },
+      ],
+    },
+    orderBy: [
+      { startDate: "desc" },
+      { createdAt: "desc" },
+    ],
+  });
+}
+
+async function syncProductCurrentPrice(tx, productId) {
+  const effective = await findEffectivePriceRow(tx, productId);
+
+  if (!effective) {
+    return tx.product.findUnique({
+      where: { id: productId },
+      include: productInclude(),
+    });
+  }
+
+  return tx.product.update({
+    where: { id: productId },
+    data: {
+      price: effective.price,
+      oldPrice: effective.oldPrice,
+    },
+    include: productInclude(),
+  });
+}
+
+
 export async function listPricingProducts(req, res, next) {
   try {
     const products = await prisma.product.findMany({
@@ -135,18 +176,7 @@ export async function createProductSellingPrice(req, res, next) {
         },
       });
 
-      let updatedProduct = product;
-
-      if (isEffective(priceRow)) {
-        updatedProduct = await tx.product.update({
-          where: { id: productId },
-          data: {
-            price: approvedPrice,
-            oldPrice,
-          },
-          include: productInclude(),
-        });
-      }
+      const updatedProduct = await syncProductCurrentPrice(tx, productId);
 
       return {
         product: updatedProduct,
@@ -202,18 +232,7 @@ export async function updateProductSellingPrice(req, res, next) {
         include: { product: true },
       });
 
-      let updatedProduct = row.product;
-
-      if (isEffective(row)) {
-        updatedProduct = await tx.product.update({
-          where: { id: row.productId },
-          data: {
-            price: approvedPrice,
-            oldPrice,
-          },
-          include: productInclude(),
-        });
-      }
+      const updatedProduct = await syncProductCurrentPrice(tx, row.productId);
 
       return {
         product: updatedProduct,
@@ -230,18 +249,55 @@ export async function updateProductSellingPrice(req, res, next) {
   }
 }
 
-export async function deactivateProductSellingPrice(req, res, next) {
+export async function recomputeEffectiveProductPrices(req, res, next) {
   try {
-    const priceId = String(req.params.priceId || "").trim();
+    const result = await prisma.$transaction(async (tx) => {
+      const products = await tx.product.findMany({
+        select: { id: true },
+        take: 1000,
+      });
 
-    const price = await prisma.productPrice.update({
-      where: { id: priceId },
-      data: { active: false },
+      const synced = [];
+
+      for (const product of products) {
+        const updatedProduct = await syncProductCurrentPrice(tx, product.id);
+        if (updatedProduct) synced.push(updatedProduct.id);
+      }
+
+      return synced;
     });
 
     res.json({
       success: true,
-      price,
+      syncedCount: result.length,
+      productIds: result,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function deactivateProductSellingPrice(req, res, next) {
+  try {
+    const priceId = String(req.params.priceId || "").trim();
+
+    const result = await prisma.$transaction(async (tx) => {
+      const price = await tx.productPrice.update({
+        where: { id: priceId },
+        data: { active: false },
+      });
+
+      const product = await syncProductCurrentPrice(tx, price.productId);
+
+      return {
+        price,
+        product,
+      };
+    });
+
+    res.json({
+      success: true,
+      ...result,
     });
   } catch (err) {
     next(err);

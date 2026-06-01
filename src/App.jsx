@@ -164,7 +164,7 @@ export default function App() {
             <Route path="news" element={<AdminNews />} />
             <Route path="events" element={<AdminEvents />} />
             <Route path="home-builder" element={<AdminHomeBuilder />} />
-            <Route path="banners" element={<AdminBanners />} />
+            <Route path="banners" element={<Navigate to="/admin/cms/banners" replace />} />
 
             {/* Catalog & Logistics */}
             <Route path="products" element={<AdminProducts />} />

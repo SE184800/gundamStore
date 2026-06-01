@@ -1,112 +1,61 @@
-const RESTOCK_ALERT_KEY = "gundam-restock-alerts";
+import { apiRequest, getStoredAdminToken } from "./ApiClient";
 
-function readRows() {
-  try {
-    const parsed = JSON.parse(localStorage.getItem(RESTOCK_ALERT_KEY) || "[]");
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
+function getProductPayload(product = {}) {
+  return {
+    productId: product.backendProductId || product.productId || product.id || "",
+    sku: product.sku || "",
+    slug: product.slug || "",
+  };
+}
+
+export async function registerRestockAlert(product, payload = {}) {
+  const data = await apiRequest("/api/restock-alerts", {
+    method: "POST",
+    token: "",
+    body: JSON.stringify({
+      ...getProductPayload(product),
+      name: payload.name || "",
+      phone: payload.phone || "",
+      note: payload.note || "",
+    }),
+  });
+
+  if (!data?.success) {
+    throw new Error(data?.message || "Unable to register restock alert.");
   }
+
+  return data.alert;
 }
 
-function writeRows(rows) {
-  localStorage.setItem(RESTOCK_ALERT_KEY, JSON.stringify(Array.isArray(rows) ? rows : []));
+export async function getRestockAlerts(status = "all") {
+  const query = status && status !== "all" ? `?status=${encodeURIComponent(status)}` : "";
+  const data = await apiRequest(`/api/restock-alerts/admin${query}`, {
+    token: getStoredAdminToken(),
+  });
+
+  return data.alerts || [];
 }
 
-function sanitize(value = "", max = 255) {
-  return String(value || "")
-    .replace(/[<>]/g, "")
-    .replace(/\s+/g, " ")
-    .trim()
-    .slice(0, max);
-}
-
-function normalizePhone(value = "") {
-  return String(value || "").replace(/[^\d+]/g, "").trim();
-}
-
-export function getRestockAlerts(productId = "") {
-  const rows = readRows();
-  if (!productId) return rows;
-  return rows.filter((row) => row.productId === productId);
-}
-
-export function getRestockAlertSummary() {
-  const rows = readRows();
-
+export function getRestockAlertSummary(rows = []) {
   return {
     total: rows.length,
-    pending: rows.filter((row) => row.status === "Pending").length,
-    notified: rows.filter((row) => row.status === "Notified").length,
+    pending: rows.filter((row) => row.status === "PENDING").length,
+    notified: rows.filter((row) => row.status === "NOTIFIED").length,
   };
 }
 
-export function registerRestockAlert(product, payload = {}) {
-  if (!product?.id) {
-    throw new Error("Product not found.");
-  }
+export async function markRestockAlertNotified(id) {
+  const data = await apiRequest(`/api/restock-alerts/admin/${encodeURIComponent(id)}/notified`, {
+    method: "PATCH",
+    token: getStoredAdminToken(),
+  });
 
-  const name = sanitize(payload.name, 80);
-  const phone = normalizePhone(payload.phone);
-  const note = sanitize(payload.note, 300);
-
-  if (!name || name.length < 2) {
-    throw new Error("Vui lòng nhập họ tên hợp lệ.");
-  }
-
-  if (!/^(0|\+84)(3|5|7|8|9)\d{8}$/.test(phone)) {
-    throw new Error("Số điện thoại không hợp lệ.");
-  }
-
-  const rows = readRows();
-  const duplicated = rows.some(
-    (row) => row.productId === product.id && row.phone === phone && row.status === "Pending"
-  );
-
-  if (duplicated) {
-    throw new Error("Số điện thoại này đã đăng ký báo hàng cho sản phẩm.");
-  }
-
-  const productName =
-    typeof product.name === "string"
-      ? product.name
-      : product.name?.vi || product.name?.en || product.title || product.id;
-
-  const row = {
-    id: `ALT-${Date.now()}`,
-    productId: product.id,
-    productName,
-    productSlug: product.slug || product.id,
-    grade: product.grade || "",
-    scale: product.scale || "",
-    name,
-    phone,
-    note,
-    status: "Pending",
-    createdAt: new Date().toISOString(),
-  };
-
-  writeRows([row, ...rows]);
-  return row;
+  return data.alert;
 }
 
-export function markRestockAlertNotified(id) {
-  const rows = readRows().map((row) =>
-    row.id === id
-      ? {
-          ...row,
-          status: "Notified",
-          notifiedAt: new Date().toISOString(),
-        }
-      : row
-  );
-
-  writeRows(rows);
-  return rows;
-}
-
-export function deleteRestockAlert(id) {
-  const rows = readRows().filter((row) => row.id !== id);
-  writeRows(rows);
-  return rows;
+export async function deleteRestockAlert(id) {
+  return apiRequest(`/api/restock-alerts/admin/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+    token: getStoredAdminToken(),
+  });
 }

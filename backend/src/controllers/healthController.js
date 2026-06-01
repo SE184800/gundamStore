@@ -16,18 +16,11 @@ export async function readinessCheck(req, res) {
   try {
     await prisma.$connect();
 
-    const userCount = await prisma.user.count();
-
     return res.json({
       success: true,
       status: "ready",
       service: "gundam-store-backend",
       database: "connected",
-      checks: {
-        prisma: "ok",
-        userTable: "ok",
-        userCount,
-      },
       timestamp: new Date().toISOString(),
     });
   } catch (error) {

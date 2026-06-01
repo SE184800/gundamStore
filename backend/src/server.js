@@ -17,9 +17,11 @@ import productRoutes from "./routes/productRoutes.js";
 import inventoryRoutes from "./routes/inventoryRoutes.js";
 import pricingRoutes from "./routes/pricingRoutes.js";
 import promotionRoutes from "./routes/promotionRoutes.js";
+import restockAlertRoutes from "./routes/restockAlertRoutes.js";
 
 const app = express();
 
+app.set("trust proxy", env.trustProxyHops);
 app.use(helmet());
 
 const allowedCorsOrigins = [
@@ -36,7 +38,19 @@ const allowedCorsOrigins = [
 
 function isAllowedCodespacesOrigin(origin = "") {
   if (env.isProduction) return false;
-  return /^https:\/\/[a-z0-9-]+-(5173|5174)\.app\.github\.dev$/i.test(origin);
+
+  try {
+    const url = new URL(origin);
+
+    // GitHub Codespaces forwarded ports can be 5173, 5174, 51713, 4800, etc.
+    // In development only, allow any https://<codespace>-<port>.app.github.dev origin.
+    return (
+      url.protocol === "https:" &&
+      /^[a-z0-9-]+-\d+\.app\.github\.dev$/i.test(url.hostname)
+    );
+  } catch {
+    return false;
+  }
 }
 
 app.use(
@@ -75,6 +89,7 @@ app.use("/api/products", productRoutes);
 app.use("/api/inventory", inventoryRoutes);
 app.use("/api/pricing", pricingRoutes);
 app.use("/api/promotions", promotionRoutes);
+app.use("/api/restock-alerts", restockAlertRoutes);
 
 app.use((req, res) => {
   res.status(404).json({
@@ -88,14 +103,22 @@ app.use(errorHandler);
 async function start() {
   try {
     await prisma.$connect();
-    console.log("💾 Kết nối Neon PostgreSQL Database thành công!");
 
     const REAL_PORT = env.port;
 
     app.listen(REAL_PORT, "0.0.0.0", () => {
+      if (env.isProduction) {
+        console.log("Gundam Store API started");
+        console.log(`Environment: ${env.nodeEnv}`);
+        console.log(`Port: ${REAL_PORT}`);
+        return;
+      }
+
       console.log("======================================================");
-      console.log(`🚀 GUNDAM STORE BE RUNNING AT: http://localhost:${REAL_PORT}`);
-      console.log(`👉 Test API Đăng nhập tại: http://localhost:${REAL_PORT}/api/auth/login`);
+      console.log("Gundam Store API started");
+      console.log(`Environment: ${env.nodeEnv}`);
+      console.log(`Local API: http://localhost:${REAL_PORT}`);
+      console.log(`Login API: http://localhost:${REAL_PORT}/api/auth/login`);
       console.log("======================================================");
     });
   } catch (err) {

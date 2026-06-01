@@ -20,7 +20,7 @@ import {
   canCustomerRequestReturn,
 } from "../constants/orderConfig";
 
-const CMS_KEY = "gundam-cms-state";
+const CMS_KEY = "gundam_store_vn_v2_cms";
 
 export {
   ORDER_TYPE,

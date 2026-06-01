@@ -10,6 +10,14 @@ function parsePort(value, fallback = 4800) {
   return Number.isInteger(port) && port > 0 ? port : fallback;
 }
 
+function parseTrustProxy(value = "") {
+  if (value === "true") return 1;
+  if (value === "false") return false;
+
+  const parsed = Number(value || 0);
+  return Number.isInteger(parsed) && parsed >= 0 ? parsed : 0;
+}
+
 function parseOrigins(value = "") {
   return String(value || "")
     .split(",")
@@ -63,4 +71,6 @@ export const env = {
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || "1d",
   frontendOrigin,
   corsOrigins,
+  trustProxyHops: parseTrustProxy(process.env.TRUST_PROXY_HOPS || (isProduction ? "1" : "0")),
+  rateLimitStore: process.env.RATE_LIMIT_STORE || "memory",
 };
