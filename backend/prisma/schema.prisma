@@ -583,3 +583,43 @@ model RestockAlert {
   @@index([status, createdAt])
   @@index([productId, phone, status])
 }
+
+
+model Banner {
+  id            String  @id @default(cuid())
+  titleInternal String
+  altText       String?
+  placement     String  @default("Homepage Hero")
+  mediaType     String  @default("image")
+
+  mainImage    String
+  imageUrl     String?
+  mobileImage  String?
+  tabletImage  String?
+  desktopImage String?
+  videoUrl     String?
+
+  ctaUrl   String  @default("/shop")
+  status   String  @default("Draft")
+  active   Boolean @default(true)
+  priority Int     @default(1)
+  fitMode  String  @default("cover")
+
+  legacyText Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([placement, status, active, priority])
+}
+
+model HeroSetting {
+  id         String  @id
+  layout     String  @default("v2")
+  autoplay   Boolean @default(true)
+  interval   Int     @default(4500)
+  maxBanners Int     @default(5)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

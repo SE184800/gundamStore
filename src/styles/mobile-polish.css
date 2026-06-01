@@ -204,378 +204,114 @@ body {
   }
 }
 
-/* Runtime responsive UX pass - storefront mobile first */
+/* Image-first storefront banner/category final enforcement */
+.image-first-banner-link {
+  width: 100%;
+  max-width: 100%;
+}
+
+.image-first-banner-link img,
+.image-first-banner-link video {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+}
+
+.image-first-category-wrap,
+.image-first-category-grid {
+  max-width: 100%;
+}
+
+.image-first-thumb img,
+.image-first-thumb video {
+  display: block;
+}
+
 @media (max-width: 640px) {
-  body {
-    padding-bottom: calc(76px + env(safe-area-inset-bottom));
+  .image-first-hero .image-first-banner-link img,
+  .image-first-hero .image-first-banner-link video {
+    min-height: 220px;
+    max-height: 420px;
   }
 
-  /* Hero V2/V3 mobile containment */
-  .mobile-hero-fit,
-  .mobile-no-overflow {
-    max-width: calc(100vw - 20px) !important;
-  }
-
-  .mobile-hero-fit a.group,
-  .mobile-no-overflow {
-    border-radius: 22px !important;
-  }
-
-  .mobile-hero-fit a.group {
-    height: auto !important;
-    min-height: 420px !important;
-  }
-
-  .mobile-hero-fit a.group > .relative.z-10 {
-    max-width: none !important;
-    justify-content: flex-end !important;
-    padding: 18px !important;
-    padding-bottom: 58px !important;
-    background: linear-gradient(180deg, rgba(15,23,42,0.18), rgba(15,23,42,0.78));
-  }
-
-  .mobile-hero-fit h1,
-  .mobile-no-overflow h1 {
-    font-size: clamp(2rem, 10vw, 3.1rem) !important;
-    line-height: 0.98 !important;
-    letter-spacing: -0.04em !important;
-    max-width: 100% !important;
-  }
-
-  .mobile-hero-fit p,
-  .mobile-no-overflow p {
-    max-width: 100% !important;
-  }
-
-  .mobile-hero-fit [class*="mt-6 flex"],
-  .mobile-hero-fit [class*="mt-7 flex"],
-  .mobile-no-overflow [class*="mt-5 flex"],
-  .mobile-no-overflow [class*="mt-6"] {
-    margin-top: 14px !important;
-  }
-
-  .mobile-hero-fit span,
-  .mobile-no-overflow span {
-    max-width: 100%;
-  }
-
-  /* Hero V2 grid: stack text over media instead of squeezing desktop grid */
-  .mobile-no-overflow .relative.z-10.grid {
-    display: block !important;
-    min-height: auto !important;
-  }
-
-  .mobile-no-overflow .relative.z-10.grid > div:first-child {
-    position: relative;
-    z-index: 2;
-    padding: 18px !important;
-  }
-
-  .mobile-no-overflow .relative.z-10.grid > div:last-child {
-    min-height: 210px;
-  }
-
-  /* Hero thumbnails / campaign cards */
-  .mobile-hero-fit .grid.flex-1 {
+  .image-first-hero-thumbs {
     display: flex !important;
     overflow-x: auto !important;
-    gap: 10px !important;
-    padding-bottom: 8px !important;
     scroll-snap-type: x mandatory;
   }
 
-  .mobile-hero-fit .grid.flex-1 > button {
-    min-width: 148px !important;
-    height: 86px !important;
+  .image-first-thumb {
     scroll-snap-align: start;
   }
 
-  /* Product sections */
-  .home-mobile-product-grid,
-  .mobile-product-grid {
-    grid-template-columns: minmax(0, 1fr) !important;
-  }
-
-  section {
-    scroll-margin-top: 84px;
-  }
-
-  /* Floating support must not cover primary CTAs */
-  .mobile-floating-compact {
-    right: 12px !important;
-    bottom: calc(14px + env(safe-area-inset-bottom)) !important;
-  }
-
-  .mobile-floating-compact > a:not(:first-child),
-  .mobile-floating-compact > button:not(:first-child) {
-    transform-origin: bottom right;
-  }
-
-  .mobile-chat-panel {
-    bottom: calc(92px + env(safe-area-inset-bottom)) !important;
-    max-height: min(72vh, 520px) !important;
-  }
-}
-
-@media (min-width: 641px) and (max-width: 1024px) {
-  .mobile-hero-fit a.group {
-    min-height: 420px;
-  }
-
-  .mobile-product-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-/* Full Responsive UX/UI Audit - Phase 2 storefront mobile */
-@media (max-width: 640px) {
-  input,
-  select,
-  textarea {
-    font-size: 16px !important;
-  }
-
-  button,
-  a {
-    touch-action: manipulation;
-  }
-
-  .shop-mobile-shell {
-    padding-left: 12px !important;
-    padding-right: 12px !important;
-  }
-
-  .shop-mobile-shell h1 {
-    font-size: clamp(1.75rem, 8vw, 2.5rem) !important;
-    line-height: 1.05 !important;
-  }
-
-  .shop-mobile-grid {
-    grid-template-columns: minmax(0, 1fr) !important;
-    gap: 14px !important;
-  }
-
-  .shop-mobile-list {
-    display: grid !important;
-    gap: 14px !important;
-  }
-
-  .mobile-filter-drawer > div {
-    width: 100% !important;
-    max-width: none !important;
-    border-radius: 24px 24px 0 0 !important;
-    margin-top: 10vh !important;
-    height: 90vh !important;
-    padding-bottom: calc(90px + env(safe-area-inset-bottom)) !important;
-  }
-
-  .mobile-filter-apply {
-    position: sticky;
-    bottom: calc(12px + env(safe-area-inset-bottom));
-    z-index: 5;
-    min-height: 52px;
-    box-shadow: 0 16px 40px rgba(37, 99, 235, 0.28);
-  }
-
-  .product-card-mobile {
-    border-radius: 22px !important;
-  }
-
-  .product-card-mobile h3 {
-    min-height: auto !important;
-  }
-
-  .product-card-mobile [data-cart-managed="true"] {
-    min-height: 46px !important;
-  }
-
-  .mobile-quickview-backdrop {
-    align-items: flex-end !important;
-  }
-
-  .mobile-quickview-panel {
-    max-height: 92vh !important;
-    border-radius: 28px 28px 0 0 !important;
-    overflow-y: auto !important;
-  }
-
-  .mobile-quickview-panel img {
-    max-height: 30vh !important;
-    object-fit: contain !important;
-  }
-
-  .mobile-quickview-actions {
-    grid-template-columns: 1fr !important;
-  }
-
-  .mobile-quickview-actions > * {
-    width: 100% !important;
-    justify-content: center !important;
-    min-height: 48px !important;
-  }
-
-  /* Commerce pages: product detail, cart, checkout, order success, lookup, account */
-  main form,
-  main article,
-  main section,
-  main aside {
-    min-width: 0;
-  }
-
-  main .rounded-\[28px\],
-  main .rounded-\[32px\],
-  main .rounded-3xl {
-    border-radius: 22px;
-  }
-
-  main .grid {
-    min-width: 0;
-  }
-
-  main table {
-    min-width: 720px;
-  }
-
-  main [class*="overflow-hidden"] {
-    max-width: 100%;
-  }
-
-  main [class*="text-4xl"],
-  main [class*="text-5xl"],
-  main [class*="text-6xl"] {
-    line-height: 1.05 !important;
-  }
-
-  main [class*="px-8"] {
-    padding-left: 16px;
-    padding-right: 16px;
-  }
-
-  main [class*="py-8"] {
-    padding-top: 20px;
-    padding-bottom: 20px;
-  }
-
-  main [class*="gap-6"] {
-    gap: 16px;
-  }
-
-  /* Keep primary CTAs visible and away from support FAB */
-  main a[href="/checkout"],
-  main button[type="submit"],
-  main [data-cart-managed="true"] {
-    min-height: 46px;
-  }
-
-  /* Order success / lookup readability */
-  main code,
-  main pre,
-  main [class*="tracking"] {
-    overflow-wrap: anywhere;
-  }
-
-  /* Account/sidebar pages stack cleanly */
-  main aside + section,
-  main section + aside {
-    min-width: 0;
-  }
-}
-
-@media (min-width: 641px) and (max-width: 1024px) {
-  .shop-mobile-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  }
-
-  .mobile-quickview-panel {
-    max-height: 90vh;
-  }
-}
-
-/* Full Responsive UX/UI Audit - Phase 3 admin laptop-first */
-.admin-layout-shell {
-  overflow-x: hidden;
-}
-
-.admin-main {
-  min-width: 0;
-}
-
-.admin-content {
-  min-width: 0;
-}
-
-.admin-content table {
-  border-collapse: separate;
-  border-spacing: 0;
-}
-
-.admin-content input,
-.admin-content select,
-.admin-content textarea {
-  max-width: 100%;
-}
-
-.admin-content img,
-.admin-content video {
-  max-width: 100%;
-  height: auto;
-}
-
-@media (min-width: 1024px) {
-  .admin-content {
-    max-width: calc(100vw - 268px);
-  }
-
-  .admin-content table {
-    min-width: 920px;
-  }
-
-  .admin-content [class*="overflow-x-auto"],
-  .admin-content [class*="overflow-auto"] {
-    scrollbar-gutter: stable;
-  }
-}
-
-@media (max-width: 1023px) {
-  /* Admin mobile scope: quick view only, not full CRUD optimized */
-  .admin-layout-shell {
-    background: #f8fafc;
-  }
-
-  .admin-layout-shell aside {
-    display: none !important;
-  }
-
-  .admin-main header {
-    position: sticky;
-    top: 0;
-    z-index: 40;
-  }
-
-  .admin-main header > div {
-    flex-wrap: wrap;
-    align-items: flex-start;
-    padding-top: 10px;
-    padding-bottom: 10px;
-  }
-
-  .admin-content {
+  .image-first-category-wrap {
     padding: 12px !important;
   }
 
-  .admin-content table {
-    min-width: 820px;
+  .image-first-category-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 1024px) {
+  .image-first-category-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+}
+
+/* E2E backend banner CMS - image-first storefront enforcement */
+.image-first-banner-link {
+  width: 100%;
+  max-width: 100%;
+}
+
+.image-first-banner-link img,
+.image-first-banner-link video {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+}
+
+.image-first-category-wrap,
+.image-first-category-grid {
+  max-width: 100%;
+}
+
+.image-first-thumb img,
+.image-first-thumb video {
+  display: block;
+}
+
+@media (max-width: 640px) {
+  .image-first-hero .image-first-banner-link img,
+  .image-first-hero .image-first-banner-link video {
+    min-height: 220px;
+    max-height: 420px;
   }
 
-  .admin-content [class*="grid-cols-4"],
-  .admin-content [class*="grid-cols-5"],
-  .admin-content [class*="grid-cols-6"] {
-    grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
+  .image-first-hero-thumbs {
+    display: flex !important;
+    overflow-x: auto !important;
+    scroll-snap-type: x mandatory;
   }
 
-  .admin-content [class*="rounded-3xl"],
-  .admin-content [class*="rounded-[28px]"],
-  .admin-content [class*="rounded-[32px]"] {
-    border-radius: 22px !important;
+  .image-first-thumb {
+    scroll-snap-align: start;
+  }
+
+  .image-first-category-wrap {
+    padding: 12px !important;
+  }
+
+  .image-first-category-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 1024px) {
+  .image-first-category-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
   }
 }
