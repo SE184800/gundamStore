@@ -203,3 +203,59 @@ body {
     max-width: none !important;
   }
 }
+
+/* Image-first storefront banner/category final enforcement */
+.image-first-banner-link {
+  width: 100%;
+  max-width: 100%;
+}
+
+.image-first-banner-link img,
+.image-first-banner-link video {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+}
+
+.image-first-category-wrap,
+.image-first-category-grid {
+  max-width: 100%;
+}
+
+.image-first-thumb img,
+.image-first-thumb video {
+  display: block;
+}
+
+@media (max-width: 640px) {
+  .image-first-hero .image-first-banner-link img,
+  .image-first-hero .image-first-banner-link video {
+    min-height: 220px;
+    max-height: 420px;
+  }
+
+  .image-first-hero-thumbs {
+    display: flex !important;
+    overflow-x: auto !important;
+    scroll-snap-type: x mandatory;
+  }
+
+  .image-first-thumb {
+    scroll-snap-align: start;
+  }
+
+  .image-first-category-wrap {
+    padding: 12px !important;
+  }
+
+  .image-first-category-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 1024px) {
+  .image-first-category-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+}
