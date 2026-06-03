@@ -431,6 +431,23 @@ function sanitizeCategoryInput(body = {}) {
   };
 }
 
+
+export async function listStorefrontProductCategories(req, res, next) {
+  try {
+    const categories = await prisma.productCategory.findMany({
+      where: { active: true },
+      orderBy: [{ sortOrder: "asc" }, { nameVi: "asc" }],
+    });
+
+    res.json({
+      success: true,
+      categories,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function listAdminProductCategories(req, res, next) {
   try {
     const categories = await prisma.productCategory.findMany({

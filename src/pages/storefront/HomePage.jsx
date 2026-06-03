@@ -22,8 +22,8 @@ import { translateStaticText } from "../../i18n";
 import { getSafeHref } from "../../utils/urlSafety";
 import ProductCard from "../../components/storefront/ProductCard";
 import {
-  enrichProductsWithBackendIds,
-  getStorefrontProductsFromApi,
+  getStorefrontCategoriesFromApi,
+  getStorefrontProductsForStorefront,
 } from "../../services/StorefrontProductApiService";
 
 
@@ -364,6 +364,130 @@ function GundamVisual({ tone = "blue", imageUrl, large = false }) {
 }
 
 
+function isLiveHomepageBanner(banner = {}) {
+  const isActive = banner.active !== false;
+  const status = String(banner.status || "Live").toLowerCase();
+  const placement = String(banner.placement || banner.position || "Homepage Hero").toLowerCase();
+
+  return (
+    isActive &&
+    !status.includes("draft") &&
+    !status.includes("inactive") &&
+    (placement.includes("home") || placement.includes("hero"))
+  );
+}
+
+function getBannerBaseImage(banner = {}) {
+  return (
+    banner.mainImage ||
+    banner.imageUrl ||
+    banner.mediaUrl ||
+    banner.image ||
+    banner.desktopImage ||
+    "/images/banners/banner-1.jpg"
+  );
+}
+
+function getBannerVideoUrl(banner = {}) {
+  return banner.videoUrl || (String(banner.mediaType || "").toLowerCase().includes("video") ? banner.mediaUrl : "");
+}
+
+function isBannerVideo(banner = {}) {
+  const videoUrl = getBannerVideoUrl(banner);
+  const type = String(banner.mediaType || banner.type || "").toLowerCase();
+  return Boolean(videoUrl) || type.includes("video");
+}
+
+function bannerAlt(banner = {}, lang = "vi") {
+  return (
+    banner.altText ||
+    banner.titleInternal ||
+    banner.name ||
+    text(banner.title, lang, "Gundam campaign banner")
+  );
+}
+
+function bannerFitClass(banner = {}) {
+  return banner.fitMode === "contain" ? "object-contain" : "object-cover";
+}
+
+function getHeroBanners(banners = [], settings = {}) {
+  const maxBanners = Number(settings.maxBanners || 5);
+  const activeBanners = (Array.isArray(banners) ? banners : [])
+    .filter(isLiveHomepageBanner)
+    .sort((a, b) => Number(a.priority || 99) - Number(b.priority || 99))
+    .slice(0, maxBanners);
+
+  return activeBanners.length
+    ? activeBanners
+    : [
+        {
+          id: "fallback-hero",
+          titleInternal: "Gundam hero banner",
+          altText: "Gundam Store banner",
+          imageUrl: "/images/banners/banner-1.jpg",
+          ctaUrl: "/shop",
+          active: true,
+          status: "Live",
+          priority: 1,
+          fitMode: "cover",
+        },
+      ];
+}
+
+function BannerMedia({ banner, lang, className = "", imageClassName = "" }) {
+  const videoUrl = getBannerVideoUrl(banner);
+  const baseImage = getBannerBaseImage(banner);
+  const fitClass = bannerFitClass(banner);
+  const backgroundColor = banner.backgroundColor || banner.bgColor || "#f8fafc";
+
+  if (isBannerVideo(banner)) {
+    return (
+      <video
+        src={videoUrl || baseImage}
+        className={`${fitClass} ${className}`}
+        style={{ backgroundColor }}
+        autoPlay
+        muted
+        loop
+        playsInline
+      />
+    );
+  }
+
+  const mobileSrc = banner.mobileImage || baseImage;
+  const tabletSrc = banner.tabletImage || baseImage;
+  const desktopSrc = banner.desktopImage || baseImage;
+
+  return (
+    <picture>
+      <source media="(max-width: 640px)" srcSet={mobileSrc} />
+      <source media="(max-width: 1024px)" srcSet={tabletSrc} />
+      <source media="(min-width: 1025px)" srcSet={desktopSrc} />
+      <img
+        src={desktopSrc || baseImage}
+        alt={bannerAlt(banner, lang)}
+        className={`${fitClass} ${className} ${imageClassName}`}
+        style={{ backgroundColor }}
+      />
+    </picture>
+  );
+}
+
+function ImageOnlyBannerLink({ banner, lang, actions, className = "", mediaClassName = "" }) {
+  return (
+    <a
+      href={bannerHref(banner)}
+      aria-label={bannerAlt(banner, lang)}
+      title={bannerAlt(banner, lang)}
+      onClick={() => actions?.track?.("banner_click", { meta: { bannerId: banner.id || "hero" } })}
+      className={`image-first-banner-link block overflow-hidden bg-slate-50 ${className}`}
+    >
+      <BannerMedia banner={banner} lang={lang} className={`h-full w-full ${mediaClassName}`} />
+    </a>
+  );
+}
+
 function Hero({ banners, lang, actions, heroSettings }) {
   const settings = {
     layout: "v2",
@@ -373,11 +497,12 @@ function Hero({ banners, lang, actions, heroSettings }) {
     ...(heroSettings || {}),
   };
 
+  const safeBanners = getHeroBanners(banners, settings);
+
   if (settings.layout === "v3") {
     return (
-
       <HeroV3Bento
-        banners={banners}
+        banners={safeBanners}
         lang={lang}
         actions={actions}
         settings={settings}
@@ -387,74 +512,23 @@ function Hero({ banners, lang, actions, heroSettings }) {
 
   return (
     <HeroV2Classic
-      banners={banners}
+      banners={safeBanners}
       lang={lang}
       actions={actions}
+      settings={settings}
     />
   );
 }
 
 function HeroV3Bento({ banners, lang, actions, settings }) {
-  const t = copy[lang];
   const [activeIndex, setActiveIndex] = useState(0);
   const [paused, setPaused] = useState(false);
 
-  const cmsBanners = Array.isArray(banners) ? banners : [];
-  const maxBanners = Number(settings.maxBanners || 5);
-  const interval = Number(settings.interval || 4500);
-
-  const activeBanners = cmsBanners
-    .filter((banner) => {
-      const isActive = banner.active !== false;
-      const status = String(banner.status || "Live").toLowerCase();
-      const placement = String(banner.placement || banner.position || "Homepage Hero").toLowerCase();
-
-      return (
-        isActive &&
-        !status.includes("draft") &&
-        !status.includes("inactive") &&
-        (placement.includes("home") || placement.includes("hero"))
-      );
-    })
-    .sort((a, b) => Number(a.priority || 99) - Number(b.priority || 99))
-    .slice(0, maxBanners);
-
-  const safeBanners = activeBanners.length
-    ? activeBanners
-    : [
-        {
-          id: "fallback-bento-1",
-          heading: { vi: "RG Hi-ν Gundam", en: "RG Hi-ν Gundam" },
-          title: { vi: "Huyền thoại trở lại", en: "Legend returns" },
-          subtitle: { vi: "Hàng chính hãng Bandai, số lượng có hạn.", en: "Authentic Bandai, limited stock." },
-          imageUrl: "/images/banners/banner-1.jpg",
-          ctaText: { vi: "Mua ngay", en: "Shop now" },
-          ctaUrl: "/shop",
-          backgroundColor: "#07111f",
-          active: true,
-          status: "Live",
-          priority: 1,
-        },
-      ];
-
+  const safeBanners = banners.length ? banners : getHeroBanners([], settings);
   const activeBanner = safeBanners[activeIndex] || safeBanners[0];
-  const heroTextStyles = getHeroTextStyles(activeBanner);
   const sideOne = safeBanners[(activeIndex + 1) % safeBanners.length] || activeBanner;
   const sideTwo = safeBanners[(activeIndex + 2) % safeBanners.length] || activeBanner;
-
-  const getUrl = (banner) =>
-    banner.videoUrl ||
-    banner.mediaUrl ||
-    banner.imageUrl ||
-    banner.image ||
-    banner.desktopImage ||
-    "/images/banners/banner-1.jpg";
-
-  const isVideo = (banner) => {
-    const url = getUrl(banner);
-    const type = String(banner.mediaType || banner.type || "").toLowerCase();
-    return type.includes("video") || String(url).match(/\.(mp4|webm|ogg)$/i);
-  };
+  const interval = Number(settings.interval || 4500);
 
   const goToBanner = (index) => {
     const nextIndex = (index + safeBanners.length) % safeBanners.length;
@@ -471,220 +545,71 @@ function HeroV3Bento({ banners, lang, actions, settings }) {
     return () => clearInterval(timer);
   }, [settings.autoplay, safeBanners.length, paused, interval]);
 
-  const renderMedia = (banner, className) => {
-    const url = getUrl(banner);
-
-    if (isVideo(banner)) {
-      return (
-        <video
-          src={url}
-          className={className}
-          autoPlay
-          muted
-          loop
-          playsInline
-        />
-      );
-    }
-
-    return (
-      <img
-        src={url}
-        alt={text(banner.title, lang, "Gundam banner")}
-        className={className}
-      />
-    );
-  };
-
-  const campaignBg = activeBanner.backgroundColor || activeBanner.bgColor || "#07111f";
-
-  const fontFamily =
-    activeBanner.fontFamily === "serif"
-      ? "Georgia, serif"
-      : activeBanner.fontFamily === "mono"
-      ? "ui-monospace, SFMono-Regular, Menlo, monospace"
-      : "system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif";
-
-  const headingStyle = {
-    color: activeBanner.headingColor || undefined,
-    fontSize: activeBanner.headingSize ? Number(activeBanner.headingSize) : undefined,
-    fontFamily,
-  };
-
-  const titleStyle = {
-    color: activeBanner.titleColor || undefined,
-    fontSize: activeBanner.titleSize ? Number(activeBanner.titleSize) : undefined,
-    fontFamily,
-  };
-
-  const subtitleStyle = {
-    color: activeBanner.subtitleColor || undefined,
-    fontSize: activeBanner.subtitleSize ? Number(activeBanner.subtitleSize) : undefined,
-    fontFamily,
-  };
-
-
   return (
-    <section className="mobile-hero-fit mx-auto max-w-[1440px] px-3 pt-3 sm:px-4 sm:pt-4 lg:px-8">
+    <section className="image-first-hero mobile-hero-fit mx-auto max-w-[1440px] px-3 pt-3 sm:px-4 sm:pt-4 lg:px-8">
       <div
         className="grid gap-3 lg:grid-cols-[1.75fr_0.95fr]"
         onMouseEnter={() => setPaused(true)}
         onMouseLeave={() => setPaused(false)}
       >
-        <a
-          href={bannerHref(activeBanner)}
-          onClick={() => actions?.track?.("banner_click", { meta: { bannerId: activeBanner.id || "hero-v3" } })}
-          className="group relative h-[360px] overflow-hidden rounded-[24px] border border-slate-800 bg-slate-950 shadow-[0_24px_80px_rgba(15,23,42,0.18)] sm:h-[420px] sm:rounded-[30px]"
-          style={{ backgroundColor: campaignBg }}
-        >
-          <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/70 to-transparent" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_50%,rgba(59,130,246,0.28),transparent_42%)]" />
+        <ImageOnlyBannerLink
+          banner={activeBanner}
+          lang={lang}
+          actions={actions}
+          className="h-[320px] rounded-[24px] border border-slate-200 shadow-[0_24px_80px_rgba(15,23,42,0.12)] sm:h-[420px] sm:rounded-[30px]"
+          mediaClassName="transition duration-700 hover:scale-[1.01]"
+        />
 
-          {renderMedia(
-            activeBanner,
-            "absolute inset-0 h-full w-full object-cover opacity-80 transition duration-700 group-hover:scale-[1.03]"
-          )}
-
-          <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/70 to-transparent" />
-
-          <div className="relative z-10 flex h-full max-w-[560px] flex-col justify-center p-5 sm:p-7 md:p-10">
-            {activeBanner.showEyebrow !== false && (
-              <div className={`${activeBanner.showEyebrow === false ? "hidden" : "mb-4 flex"} flex-wrap gap-2`}>
-                <span className="rounded-full bg-red-600 px-4 py-2 text-xs font-black uppercase tracking-wide text-white shadow-lg">
-                  {lang === "vi" ? "Hàng mới" : "New Arrival"}
-                </span>
-                <span className="rounded-full bg-blue-700 px-4 py-2 text-xs font-black uppercase tracking-wide text-white shadow-lg">
-                  {lang === "vi" ? "Chính hãng Bandai" : "Authentic Bandai"}
-                </span>
-              </div>
-            )}
-
-            {activeBanner.showHeading !== false && (
-              <h1 className="line-clamp-2 text-3xl font-black leading-[0.94] tracking-tight text-white sm:text-5xl md:text-7xl" style={heroTextStyles.heading}>
-                {text(activeBanner.heading, lang, t.heroTitle)}
-              </h1>
-            )}
-
-            <p className="mt-4 line-clamp-2 text-base font-black text-white sm:text-xl md:text-2xl"style={heroTextStyles.title}>
-              {text(activeBanner.title, lang, t.heroSub)}
-            </p>
-
-            <p className="mt-3 line-clamp-3 max-w-[460px] text-sm font-semibold leading-7 text-white/80"style={heroTextStyles.subtitle}>
-              {text(activeBanner.subtitle, lang, "Hàng chính hãng Bandai, số lượng có hạn.")}
-            </p>
-
-            {activeBanner.showChips !== false && (
-              <div className={`${activeBanner.showChips === false ? "hidden" : "mt-6 flex"} flex-wrap gap-3 text-white`}>
-                {(lang === "vi"
-                  ? ["Chính hãng", "Giao nhanh", "Đóng gói chống sốc"]
-                  : ["Authentic", "Fast shipping", "Shock-proof packing"]
-                ).map((item) => (
-                  <span key={item} className="rounded-2xl bg-white/10 px-4 py-3 text-xs font-black backdrop-blur">
-                    {item}
-                  </span>
-                ))}
-              </div>
-            )}
-
-            {activeBanner.showCta !== false && (
-              <div className={`${activeBanner.showCta === false ? "hidden" : "mt-7 flex"} flex-wrap gap-3`}>
-                <span className="rounded-2xl bg-blue-700 px-5 py-3 text-xs font-black uppercase tracking-wide text-white shadow-xl shadow-blue-900/30 transition group-hover:bg-blue-600 sm:px-8 sm:py-4 sm:text-sm">
-                  {text(activeBanner.ctaText, lang, t.buyNow)}
-                </span>
-                <span className="rounded-2xl border border-white/30 bg-white/10 px-5 py-3 text-xs font-black uppercase tracking-wide text-white backdrop-blur sm:px-7 sm:py-4 sm:text-sm">
-                  {lang === "vi" ? "Xem chi tiết" : "View details"}
-                </span>
-              </div>
-            )}
-          </div>
-
-          <div className="absolute bottom-5 left-1/2 z-20 flex -translate-x-1/2 gap-2">
-            {safeBanners.map((item, index) => (
-              <button
-                key={item.id || index}
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  goToBanner(index);
-                }}
-                className={`h-2.5 rounded-full transition ${
-                  activeIndex === index ? "w-12 bg-blue-500" : "w-9 bg-white/30 hover:bg-white/60"
-                }`}
+        {safeBanners.length > 1 && (
+          <div className="hidden gap-3 lg:grid">
+            {[sideOne, sideTwo].map((banner, index) => (
+              <ImageOnlyBannerLink
+                key={`${banner.id || "side"}-${index}`}
+                banner={banner}
+                lang={lang}
+                actions={actions}
+                className="h-[203px] rounded-[26px] border border-slate-200 shadow-lg"
+                mediaClassName="transition duration-500 hover:scale-[1.02]"
               />
             ))}
           </div>
-        </a>
-
-        <div className="hidden gap-3 lg:grid">
-          {[sideOne, sideTwo].map((banner, index) => (
-            <a
-              key={`${banner.id}-${index}`}
-              href={bannerHref(banner)}
-              className="group relative h-[203px] overflow-hidden rounded-[26px] border border-slate-200 bg-slate-950 shadow-lg"
-            >
-              {renderMedia(
-                banner,
-                "absolute inset-0 h-full w-full object-cover opacity-80 transition duration-500 group-hover:scale-105"
-              )}
-              <div className="absolute inset-0 bg-gradient-to-r from-slate-950/85 via-slate-950/35 to-transparent" />
-              <div className="relative z-10 flex h-full max-w-[290px] flex-col justify-center p-6 text-white">
-                <span className={`mb-3 w-fit rounded-full px-3 py-1 text-xs font-black uppercase ${
-                  index === 0 ? "bg-emerald-500" : "bg-amber-500 text-slate-950"
-                }`}>
-                  {index === 0 ? "Pre-order" : "Flash Sale"}
-                </span>
-                <h3 className="text-2xl font-black leading-tight">
-                  {text(banner.title, lang, "Campaign")}
-                </h3>
-                <p className="mt-2 line-clamp-2 text-sm font-semibold text-white/80">
-                  {text(banner.subtitle, lang, "Ưu đãi nổi bật hôm nay.")}
-                </p>
-              </div>
-            </a>
-          ))}
-        </div>
+        )}
       </div>
 
       {safeBanners.length > 1 && (
         <div className="mt-4 flex items-center gap-3">
           <button
+            type="button"
             onClick={() => goToBanner(activeIndex - 1)}
             className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white text-2xl font-black text-blue-700 shadow-md transition hover:bg-blue-700 hover:text-white md:flex"
+            aria-label="Previous banner"
           >
             ‹
           </button>
 
-          <div className="grid flex-1 grid-cols-2 gap-3 md:grid-cols-5">
+          <div className="image-first-hero-thumbs mobile-hide-scrollbar grid flex-1 grid-cols-2 gap-3 overflow-x-auto md:grid-cols-5">
             {safeBanners.map((banner, index) => (
               <button
                 key={banner.id || index}
+                type="button"
                 onClick={() => goToBanner(index)}
-                className={`group relative h-[98px] overflow-hidden rounded-2xl border text-left shadow-sm transition ${
+                className={`image-first-thumb relative h-[86px] min-w-[148px] overflow-hidden rounded-2xl border text-left shadow-sm transition ${
                   activeIndex === index
                     ? "border-blue-600 ring-4 ring-blue-100"
                     : "border-slate-200 hover:border-blue-300"
                 }`}
+                aria-label={`Banner ${index + 1}`}
               >
-                {renderMedia(
-                  banner,
-                  "absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-110"
-                )}
-                <div className="absolute inset-0 bg-gradient-to-r from-slate-950/80 to-slate-950/10" />
-                <div className="relative z-10 flex h-full flex-col justify-end p-3 text-white">
-                  <span className="text-xs font-black text-white/70">
-                    {String(index + 1).padStart(2, "0")}
-                  </span>
-                  <span className="line-clamp-1 text-sm font-black">
-                    {text(banner.title, lang, `Banner ${index + 1}`)}
-                  </span>
-                </div>
+                <BannerMedia banner={banner} lang={lang} className="h-full w-full" />
               </button>
             ))}
           </div>
 
           <button
+            type="button"
             onClick={() => goToBanner(activeIndex + 1)}
             className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white text-2xl font-black text-blue-700 shadow-md transition hover:bg-blue-700 hover:text-white md:flex"
+            aria-label="Next banner"
           >
             ›
           </button>
@@ -694,285 +619,63 @@ function HeroV3Bento({ banners, lang, actions, settings }) {
   );
 }
 
-function HeroV2Classic({ banners, lang, actions }) {
-  const t = copy[lang];
+function HeroV2Classic({ banners, lang, actions, settings }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [paused, setPaused] = useState(false);
 
-  const cmsBanners = Array.isArray(banners) ? banners : [];
-
-  const activeBanners = cmsBanners
-    .filter((banner) => {
-      const isActive = banner.active !== false;
-      const status = String(banner.status || "Live").toLowerCase();
-      const placement = String(banner.placement || banner.position || "Homepage Hero").toLowerCase();
-
-      return (
-        isActive &&
-        !status.includes("draft") &&
-        !status.includes("inactive") &&
-        (placement.includes("home") || placement.includes("hero"))
-      );
-    })
-    .sort((a, b) => Number(a.priority || 99) - Number(b.priority || 99))
-    .slice(0, 5);
-
-  const safeBanners = activeBanners.length
-    ? activeBanners
-    : [
-        {
-          id: "fallback-hero",
-          title: { vi: "RG Hi-ν Gundam", en: "RG Hi-ν Gundam" },
-          heading: { vi: "GUNDAM / GUNPLA", en: "GUNDAM / GUNPLA" },
-          subtitle: { vi: "Hàng chính hãng Bandai.", en: "Authentic Bandai." },
-          imageUrl: "/images/banners/banner-1.jpg",
-          backgroundColor: "#ffffff",
-          mediaType: "image",
-          active: true,
-          ctaText: { vi: "Mua ngay", en: "Shop now" },
-          ctaUrl: "/shop",
-        },
-      ];
-
-  useEffect(() => {
-    if (safeBanners.length <= 1 || paused) return;
-
-    const timer = setInterval(() => {
-      setActiveIndex((current) => (current + 1) % safeBanners.length);
-    }, 4500);
-
-    return () => clearInterval(timer);
-  }, [safeBanners.length, paused]);
+  const safeBanners = banners.length ? banners : getHeroBanners([], settings);
+  const activeBanner = safeBanners[activeIndex] || safeBanners[0];
+  const interval = Number(settings.interval || 4500);
 
   const goToBanner = (index) => {
     const nextIndex = (index + safeBanners.length) % safeBanners.length;
     setActiveIndex(nextIndex);
   };
 
-  const activeBanner = safeBanners[activeIndex] || safeBanners[0];
-  const heroTextStyles = getHeroTextStyles(activeBanner);
+  useEffect(() => {
+    if (!settings.autoplay || safeBanners.length <= 1 || paused) return;
 
-  const bannerUrl =
-    activeBanner.videoUrl ||
-    activeBanner.mediaUrl ||
-    activeBanner.imageUrl ||
-    activeBanner.image ||
-    activeBanner.desktopImage ||
-    "/images/banners/banner-1.jpg";
+    const timer = setInterval(() => {
+      setActiveIndex((current) => (current + 1) % safeBanners.length);
+    }, interval);
 
-  const mediaType = String(
-    activeBanner.mediaType ||
-    activeBanner.type ||
-    (String(bannerUrl).match(/\.(mp4|webm|ogg)$/i) ? "video" : "image")
-  ).toLowerCase();
-
-  const heroBg = activeBanner.backgroundColor || activeBanner.bgColor || "#ffffff";
-
-  const fontFamily =
-    activeBanner.fontFamily === "serif"
-      ? "Georgia, serif"
-      : activeBanner.fontFamily === "mono"
-      ? "ui-monospace, SFMono-Regular, Menlo, monospace"
-      : "system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif";
-
-  const headingStyle = {
-    color: activeBanner.headingColor || undefined,
-    fontSize: activeBanner.headingSize ? Number(activeBanner.headingSize) : undefined,
-    fontFamily,
-  };
-
-  const titleStyle = {
-    color: activeBanner.titleColor || undefined,
-    fontSize: activeBanner.titleSize ? Number(activeBanner.titleSize) : undefined,
-    fontFamily,
-  };
-
-  const subtitleStyle = {
-    color: activeBanner.subtitleColor || undefined,
-    fontSize: activeBanner.subtitleSize ? Number(activeBanner.subtitleSize) : undefined,
-    fontFamily,
-  };
-
+    return () => clearInterval(timer);
+  }, [settings.autoplay, safeBanners.length, paused, interval]);
 
   return (
-    <section className="mx-auto max-w-[1440px] px-4 pt-4 lg:px-8">
+    <section className="image-first-hero mx-auto max-w-[1440px] px-4 pt-4 lg:px-8">
       <div
-        className="mobile-no-overflow relative overflow-hidden rounded-[24px] border border-blue-100 shadow-[0_20px_70px_rgba(37,99,235,0.12)] sm:rounded-[34px] sm:shadow-[0_30px_110px_rgba(37,99,235,0.16)]"
-        style={{ backgroundColor: heroBg }}
+        className="mobile-no-overflow relative overflow-hidden rounded-[24px] border border-blue-100 bg-white shadow-[0_20px_70px_rgba(37,99,235,0.12)] sm:rounded-[34px] sm:shadow-[0_30px_110px_rgba(37,99,235,0.16)]"
         onMouseEnter={() => setPaused(true)}
         onMouseLeave={() => setPaused(false)}
       >
-        <div
-          className="absolute inset-0 opacity-70"
-          style={{
-            backgroundImage:
-              "linear-gradient(rgba(37,99,235,0.045) 1px, transparent 1px), linear-gradient(90deg, rgba(37,99,235,0.045) 1px, transparent 1px)",
-            backgroundSize: "38px 38px",
-          }}
+        <ImageOnlyBannerLink
+          banner={activeBanner}
+          lang={lang}
+          actions={actions}
+          className="h-[320px] w-full sm:h-[420px] lg:h-[460px]"
+          mediaClassName="transition duration-700 hover:scale-[1.01]"
         />
 
-        <div className="relative z-10 grid min-h-[340px] overflow-hidden sm:min-h-[360px] lg:h-[420px] lg:grid-cols-[0.68fr_1.32fr]">
-          <div className="flex flex-col justify-center p-5 sm:p-7 md:p-9 lg:p-10">
-            {activeBanner.showEyebrow !== false && (
-              <div className={`${activeBanner.showEyebrow === false ? "hidden" : "mb-4 inline-flex"} w-fit rounded-full border border-blue-200 bg-white/80 px-4 py-2 text-[11px] font-black uppercase tracking-[0.28em] text-blue-700 shadow-sm backdrop-blur`}>
-                {t.eyebrow}
-              </div>
-            )}
-
-            <h1 className="line-clamp-2 max-w-[500px] text-3xl font-black leading-[0.94] tracking-tight text-slate-950 sm:text-5xl md:text-6xl" style={heroTextStyles.heading}>
-              {text(activeBanner.heading, lang, t.heroTitle)}
-            </h1>
-
-            <p className="mt-4 line-clamp-2 max-w-[460px] text-lg font-black leading-snug text-slate-800 md:text-2xl"style={heroTextStyles.title}>
-              {text(activeBanner.title, lang, t.heroSub)}
-            </p>
-
-            <p className="mt-3 line-clamp-3 max-w-[440px] text-sm font-semibold leading-7 text-slate-600"style={heroTextStyles.subtitle}>
-              {text(activeBanner.subtitle, lang, "Hàng chính hãng Bandai.")}
-            </p>
-
-            {activeBanner.showChips !== false && (
-              <div className={`${activeBanner.showChips === false ? "hidden" : "mt-5 flex"} flex-wrap gap-2`}>
-                {(lang === "vi"
-                  ? ["Chính hãng", "Giao nhanh", "Bọc chống sốc"]
-                  : ["Authentic", "Fast shipping", "Shock-proof packing"]
-                ).map((item) => (
-                  <span key={item} className="rounded-full border border-blue-100 bg-white/80 px-3 py-1.5 text-xs font-black text-slate-700 shadow-sm">
-                    {item}
-                  </span>
-                ))}
-              </div>
-            )}
-
-            {activeBanner.showCta !== false && (
-              <div className={activeBanner.showCta === false ? "hidden" : "mt-6"}>
-                <a
-                  href={bannerHref(activeBanner)}
-                  onClick={() => actions?.track?.("banner_click", { meta: { bannerId: activeBanner.id || "hero" } })}
-                  className="inline-flex rounded-2xl bg-gradient-to-r from-blue-700 to-cyan-500 px-9 py-4 text-sm font-black uppercase tracking-wide text-white shadow-lg shadow-blue-200 transition hover:-translate-y-1 hover:brightness-110"
-                >
-                  {text(activeBanner.ctaText, lang, t.buyNow)}
-                </a>
-              </div>
-            )}
-
-            {safeBanners.length > 1 && (
-              <div className="mt-6 hidden items-center gap-3">
-                <button
-                  onClick={() => goToBanner(activeIndex - 1)}
-                  className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-xl font-black text-slate-700 shadow-sm transition hover:bg-blue-700 hover:text-white"
-                  aria-label="Previous banner"
-                >
-                  ‹
-                </button>
-
-                <div className="flex items-center gap-2">
-                  {safeBanners.map((item, index) => (
-                    <button
-                      key={item.id || index}
-                      onClick={() => goToBanner(index)}
-                      className={`relative h-2.5 overflow-hidden rounded-full transition ${
-                        activeIndex === index ? "w-12 bg-blue-100" : "w-2.5 bg-slate-300 hover:bg-slate-400"
-                      }`}
-                      aria-label={`Banner ${index + 1}`}
-                    >
-                      {activeIndex === index && (
-                        <span
-                          key={activeIndex}
-                          className="absolute left-0 top-0 h-full rounded-full bg-blue-700"
-                          style={{
-                            width: paused ? "100%" : "100%",
-                            animation: paused ? "none" : "heroProgress 4.5s linear forwards",
-                          }}
-                        />
-                      )}
-                    </button>
-                  ))}
-                </div>
-
-                <button
-                  onClick={() => goToBanner(activeIndex + 1)}
-                  className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-xl font-black text-slate-700 shadow-sm transition hover:bg-blue-700 hover:text-white"
-                  aria-label="Next banner"
-                >
-                  ›
-                </button>
-              </div>
-            )}
-          </div>
-
-          <a
-            href={bannerHref(activeBanner)}
-            className="group relative flex h-[420px] cursor-pointer items-center justify-center overflow-hidden p-5 lg:p-6"
-          >
-            <div className="absolute inset-6 rounded-[30px] bg-gradient-to-br from-blue-500/20 via-cyan-400/20 to-white/10 blur-2xl" />
-            <div className="absolute left-8 top-8 z-20 rounded-2xl bg-white/90 px-4 py-3 shadow-xl backdrop-blur">
-              <div className="text-[10px] font-black uppercase tracking-[0.22em] text-red-500">Campaign</div>
-              <div className="mt-1 text-sm font-black text-slate-950">Hot arrival</div>
-            </div>
-
-            {mediaType.includes("video") ? (
-              <video
-                src={bannerUrl}
-                className="relative z-10 h-[270px] w-full max-w-[860px] rounded-[22px] object-cover shadow-2xl transition duration-500 group-hover:scale-[1.015] md:h-[300px]"
-                autoPlay
-                muted
-                loop
-                playsInline
-              />
-            ) : (
-              <img
-                src={bannerUrl}
-                alt={text(activeBanner.title, lang, "Gundam banner")}
-                className="relative z-10 h-[270px] w-full max-w-[860px] rounded-[22px] object-cover shadow-2xl transition duration-500 group-hover:scale-[1.015] md:h-[300px]"
-              />
-            )}
-          </a>
-        </div>
         {safeBanners.length > 1 && (
-          <>
-            <button
-              type="button"
-              onClick={() => goToBanner(activeIndex - 1)}
-              className="absolute left-4 top-1/2 z-30 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-white/70 bg-white/80 text-3xl font-black text-slate-700 shadow-xl backdrop-blur transition hover:scale-110 hover:bg-blue-700 hover:text-white"
-              aria-label="Previous banner"
-            >
-              ‹
-            </button>
-
-            <button
-              type="button"
-              onClick={() => goToBanner(activeIndex + 1)}
-              className="absolute right-4 top-1/2 z-30 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-white/70 bg-white/80 text-3xl font-black text-slate-700 shadow-xl backdrop-blur transition hover:scale-110 hover:bg-blue-700 hover:text-white"
-              aria-label="Next banner"
-            >
-              ›
-            </button>
-
-            <div className="absolute bottom-5 left-1/2 z-30 flex -translate-x-1/2 items-center gap-2 rounded-full border border-white/70 bg-white/80 px-4 py-2 shadow-xl backdrop-blur">
-              {safeBanners.map((item, index) => (
-                <button
-                  key={item.id || index}
-                  type="button"
-                  onClick={() => goToBanner(index)}
-                  className={`h-2.5 rounded-full transition ${
-                    activeIndex === index
-                      ? "w-12 bg-blue-700"
-                      : "w-2.5 bg-slate-300 hover:bg-blue-400"
-                  }`}
-                  aria-label={`Banner ${index + 1}`}
-                />
-              ))}
-            </div>
-          </>
+          <div className="absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2 rounded-full border border-white/70 bg-white/80 px-4 py-2 shadow-xl backdrop-blur">
+            {safeBanners.map((item, index) => (
+              <button
+                key={item.id || index}
+                type="button"
+                onClick={() => goToBanner(index)}
+                className={`h-2.5 rounded-full transition ${
+                  activeIndex === index ? "w-12 bg-blue-700" : "w-2.5 bg-slate-300 hover:bg-blue-400"
+                }`}
+                aria-label={`Banner ${index + 1}`}
+              />
+            ))}
+          </div>
         )}
-
       </div>
     </section>
   );
 }
-
-
 
 function TrustStrip({ lang }) {
   const t = copy[lang];
@@ -1004,13 +707,14 @@ function TrustStrip({ lang }) {
 }
 
 function CategorySidebar({ categories, lang }) {
-  const list = categories.length ? categories : fallbackCategories;
+  const list = categories || [];
 
   const getCategoryImage = (category, index) => {
     return (
       category.icon ||
       category.imageUrl ||
       category.image ||
+      category.mainImage ||
       [
         "/images/products/aerial.jpg",
         "/images/products/hi-nu.jpg",
@@ -1020,48 +724,34 @@ function CategorySidebar({ categories, lang }) {
     );
   };
 
-  return (
-    <aside className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="mb-4">
-        <div className="text-xs font-black uppercase tracking-[0.22em] text-blue-700">
-          Category
-        </div>
-        <h3 className="mt-1 text-xl font-black text-slate-950">
-          {lang === "vi" ? "Dòng sản phẩm" : "Product lines"}
-        </h3>
-        <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">
-          {lang === "vi"
-            ? "Ảnh danh mục nên upload dạng vuông 512 x 512 px."
-            : "Category image should be square 512 x 512 px."}
-        </p>
-      </div>
+  const getCategoryHref = (category) => {
+    const fallback = `/shop?category=${encodeURIComponent(category.id || category.slug || category.code || "")}`;
+    return getSafeHref(category.ctaUrl || fallback, fallback);
+  };
 
-      <div className="grid grid-cols-2 gap-3">
+  return (
+    <aside className="image-first-category-wrap rounded-[28px] border border-slate-200 bg-white p-3 shadow-sm sm:p-4">
+      <div className="image-first-category-grid grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-2">
         {list.map((category, index) => {
           const fullName = text(category.name, lang, category.label || category.code || "Category");
-          const shortCode = category.code || category.shortName || fullName;
           const image = getCategoryImage(category, index);
-          const href = `/shop?category=${category.id || category.slug || category.code || ""}`;
+          const href = getCategoryHref(category);
 
           return (
             <a
               key={category.id || category.code || fullName}
               href={href}
-              title={fullName}
-              className="group overflow-hidden rounded-2xl border border-slate-200 bg-white transition hover:-translate-y-1 hover:border-blue-300 hover:shadow-xl"
+              title={category.titleInternal || fullName}
+              aria-label={category.altText || fullName}
+              className="group block overflow-hidden rounded-2xl border border-slate-200 bg-white transition hover:-translate-y-1 hover:border-blue-300 hover:shadow-xl"
             >
               <div className="aspect-square w-full overflow-hidden bg-gradient-to-br from-slate-100 to-blue-50">
                 <img
                   src={image}
-                  alt={shortCode}
-                  className="h-full w-full object-cover transition duration-500 group-hover:scale-110"
+                  alt={category.altText || fullName}
+                  className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                  loading="lazy"
                 />
-              </div>
-
-              <div className="p-3 text-center">
-                <div className="text-lg font-black leading-tight text-slate-950 group-hover:text-blue-700">
-                  {shortCode}
-                </div>
               </div>
             </a>
           );
@@ -1073,7 +763,10 @@ function CategorySidebar({ categories, lang }) {
 
 function ProductSection({ section, products, displayMappings, lang, actions, badge }) {
   const t = copy[lang];
-  const sectionProducts = getSectionProducts(products, section, displayMappings);
+  const mappedProducts = getSectionProducts(products, section, displayMappings);
+  const sectionProducts = mappedProducts.length
+    ? mappedProducts
+    : (products || []).slice(0, Number(section.limit || 8));
   const title = text(section.title, lang, t.newArrivals);
 
   return (
@@ -1123,10 +816,47 @@ function LoyaltyBubble({ lang }) {
   );
 }
 
+
+function deriveCategoriesFromProducts(products = []) {
+  const map = new Map();
+
+  for (const product of products || []) {
+    const category = product.category || {};
+    const id = product.categoryId || category.id || category.slug || category.code;
+    if (!id || map.has(id)) continue;
+
+    map.set(id, {
+      id,
+      backendCategoryId: category.id || id,
+      code: category.code || id,
+      slug: category.slug || id,
+      name: {
+        vi: category.nameVi || category.name?.vi || category.name || category.code || "Danh mục",
+        en: category.nameEn || category.name?.en || category.nameVi || category.name || category.code || "Category",
+      },
+      label: category.nameVi || category.nameEn || category.code || id,
+      active: category.active !== false,
+      sortOrder: Number(category.sortOrder || 0),
+      sort: Number(category.sortOrder || 0),
+      source: "backend-derived",
+    });
+  }
+
+  return Array.from(map.values())
+    .filter((item) => item.active !== false)
+    .sort((a, b) => Number(a.sortOrder || 0) - Number(b.sortOrder || 0) || String(a.label || "").localeCompare(String(b.label || "")));
+}
+
 export default function HomePage() {
   const [backendProducts, setBackendProducts] = useState([]);
+  const [backendCategories, setBackendCategories] = useState([]);
   const [productApiReady, setProductApiReady] = useState(false);
   const [productApiError, setProductApiError] = useState("");
+  const [catalogDebug, setCatalogDebug] = useState({
+    products: 0,
+    categories: 0,
+    error: "",
+  });
   const { state, actions } = useCms();
   const lang = state.settings?.lang || "vi";
   const banners = useMemo(() => {
@@ -1138,35 +868,65 @@ export default function HomePage() {
   }, [state.banners]);
 
   const sections = useMemo(() => mergeCmsSections(state.homeSections), [state.homeSections]);
-  const localProducts = state.products || [];
-  const enrichedProducts = useMemo(
-    () => enrichProductsWithBackendIds(localProducts, backendProducts),
-    [localProducts, backendProducts]
-  );
-  const products = enrichedProducts;
+  const products = backendProducts;
+
 
   useEffect(() => {
     let alive = true;
 
-    getStorefrontProductsFromApi()
-      .then((items) => {
-        if (!alive) return;
-        setBackendProducts(items);
-        setProductApiReady(true);
-        setProductApiError("");
-      })
-      .catch((error) => {
-        if (!alive) return;
-        setBackendProducts([]);
-        setProductApiReady(false);
-        setProductApiError(error?.message || "Storefront product sync skipped.");
+    Promise.allSettled([
+      getStorefrontProductsForStorefront(),
+      getStorefrontCategoriesFromApi(),
+    ]).then(([productsResult, categoriesResult]) => {
+      if (!alive) return;
+
+      const products =
+        productsResult.status === "fulfilled" && Array.isArray(productsResult.value)
+          ? productsResult.value
+          : [];
+
+      const categoriesFromApi =
+        categoriesResult.status === "fulfilled" && Array.isArray(categoriesResult.value)
+          ? categoriesResult.value
+          : [];
+
+      const derivedCategories = categoriesFromApi.length
+        ? categoriesFromApi
+        : deriveCategoriesFromProducts(products);
+
+      setBackendProducts(products);
+      setBackendCategories(derivedCategories);
+
+      const error =
+        productsResult.status === "rejected"
+          ? productsResult.reason?.message || "Product API failed"
+          : categoriesResult.status === "rejected"
+            ? categoriesResult.reason?.message || "Category API failed"
+            : "";
+
+      setCatalogDebug({
+        products: products.length,
+        categories: derivedCategories.length,
+        error,
       });
+
+      console.info("[DB-SOT homepage catalog]", {
+        products: products.length,
+        categories: derivedCategories.length,
+        error,
+      });
+    });
 
     return () => {
       alive = false;
     };
   }, []);
-  const categories = state.categories || [];
+
+  const categories = useMemo(() => {
+    return backendCategories.length
+      ? backendCategories
+      : deriveCategoriesFromProducts(backendProducts);
+  }, [backendCategories, backendProducts]);
 
   useEffect(() => {
     actions.track("page_view", { page: "/" });
@@ -1192,7 +952,12 @@ export default function HomePage() {
         <TrustStrip lang={lang} />
 
         <main className="mx-auto grid max-w-[1200px] gap-4 px-4 pb-8 lg:grid-cols-[190px_1fr]">
-          <CategorySidebar categories={categories.length ? categories : fallbackCategories} lang={lang} />
+          {catalogDebug.error && (
+                    <div className="mb-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-black text-amber-800">
+                      DB catalog debug: products={catalogDebug.products}, categories={catalogDebug.categories}, error={catalogDebug.error}
+                    </div>
+                  )}
+                  <CategorySidebar categories={categories} lang={lang} />
 
           <div className="space-y-4">
             {sections.map((section, index) => (

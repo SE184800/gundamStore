@@ -163,6 +163,9 @@ model ProductCategory {
   nameVi      String
   nameEn      String?
   description String?
+  imageUrl    String?
+  icon        String?
+  altText     String?
   active      Boolean @default(true)
   sortOrder   Int     @default(0)
 

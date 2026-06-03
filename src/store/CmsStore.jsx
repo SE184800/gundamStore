@@ -24,7 +24,7 @@ import {
 const STORAGE_KEY = "gundam_store_vn_v2_cms";
 
 const initialState = {
-  products: seedProducts,
+  products: [],
   banners: seedBanners,
   news: seedNews,
   events: seedEvents,
@@ -36,9 +36,9 @@ const initialState = {
     maxBanners: 5,
   },
   homeSections: seedHomeSections,
-  categories: seedCategories,
-  productCategoryMappings: seedProductCategoryMappings,
-  productDisplayMappings: seedProductDisplayMappings,
+  categories: [],
+  productCategoryMappings: [],
+  productDisplayMappings: [],
   reviews: seedReviews,
   orders: seedOrders,
   tickets: seedTickets,
@@ -59,11 +59,22 @@ const initialState = {
   ],
 };
 
+function stripMasterDataFromLocalState(parsed = {}) {
+  const next = { ...(parsed || {}) };
+
+  delete next.products;
+  delete next.categories;
+  delete next.productCategoryMappings;
+  delete next.productDisplayMappings;
+
+  return next;
+}
+
 function safeRead() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return initialState;
-    const parsed = JSON.parse(raw);
+    const parsed = stripMasterDataFromLocalState(JSON.parse(raw));
     return { ...initialState, ...parsed };
   } catch {
     return initialState;
@@ -80,24 +91,11 @@ export function CmsProvider({ children }) {
   const [state, setState] = useState(() => safeRead());
 
   useEffect(() => {
-    let alive = true;
-
-    getStorefrontProductsFromApi()
-      .then((backendProducts) => {
-        if (!alive) return;
-
-        setState((prev) => ({
-          ...prev,
-          products: enrichProductsWithBackendIds(prev.products || [], backendProducts || []),
-        }));
-      })
-      .catch((error) => {
-        console.warn("Storefront product sync skipped", error);
-      });
-
-    return () => {
-      alive = false;
-    };
+    try {
+      localStorage.removeItem("gundam-backend-products-cache");
+    } catch {
+      // ignore storage cleanup
+    }
   }, []);
 
   useEffect(() => {
