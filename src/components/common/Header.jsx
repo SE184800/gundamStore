@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import HeaderCart from "../layout/HeaderCart";
 import { useState, useEffect, useRef } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useI18n } from "../../i18n";
 import Logo from "./Logo";
 import { useCms } from "../../store/CmsStore";
@@ -37,8 +37,11 @@ export default function Header() {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [displayLang, setDisplayLang] = useState(() => lang || "vi");
   const location = useLocation();
+  const navigate = useNavigate();
   const { state, actions } = useCms();
   const menuRef = useRef(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const isAdminUser = ["admin", "owner", "staff"].includes(String(state.user?.role || "").toLowerCase());
   const navItems = [
     {
       label: t("common.home"),
@@ -101,11 +104,15 @@ export default function Header() {
         { label: t("header.returnPolicy"), href: "/return-policy", desc: t("header.returnPolicyDesc") },
       ],
     },
-    {
-      label: t("common.admin"),
-      href: "/admin",
-      icon: User,
-    },
+    ...(isAdminUser
+      ? [
+          {
+            label: t("common.admin"),
+            href: "/admin",
+            icon: User,
+          },
+        ]
+      : []),
   ];
   useEffect(() => {
     function handleClickOutside(event) {
@@ -119,6 +126,18 @@ export default function Header() {
   useEffect(() => {
     setDisplayLang(lang);
   }, [lang]);
+
+  function submitHeaderSearch(event) {
+    event.preventDefault();
+    const keyword = searchTerm.trim().slice(0, 80);
+    if (!keyword) {
+      navigate("/shop");
+      return;
+    }
+    navigate(`/shop?q=${encodeURIComponent(keyword)}`);
+    setMobileOpen(false);
+  }
+
   return (
     <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 shadow-sm backdrop-blur">
       <div className="mx-auto flex h-[64px] max-w-[1440px] items-center gap-3 px-4 lg:px-8">
@@ -126,13 +145,19 @@ export default function Header() {
           <Logo className="h-12 w-auto object-contain" />
         </a>
 
-        <div className="mx-auto hidden w-full max-w-[620px] items-center rounded-2xl border border-slate-200 bg-white px-3 py-2 shadow-sm transition focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-100 md:flex">
+        <form
+          onSubmit={submitHeaderSearch}
+          className="mx-auto hidden w-full max-w-[620px] items-center rounded-2xl border border-slate-200 bg-white px-3 py-2 shadow-sm transition focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-100 md:flex"
+        >
           <Search size={21} className="text-blue-600" />
           <input
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
             className="w-full bg-transparent px-3 text-sm font-semibold outline-none placeholder:text-slate-400"
             placeholder={t("common.searchPlaceholder")}
+            aria-label={t("common.searchPlaceholder")}
           />
-        </div>
+        </form>
 
         <div className="ml-auto hidden items-center gap-1.5 md:flex">
           <div className="group relative flex h-11 items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3.5 text-sm font-semibold text-slate-700 shadow-sm transition-all hover:bg-slate-100 hover:border-slate-300 cursor-pointer">
@@ -348,13 +373,19 @@ export default function Header() {
               ))}
             </div>
 
-            <div className="mb-4 flex items-center rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3">
+            <form
+              onSubmit={submitHeaderSearch}
+              className="mb-4 flex items-center rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3"
+            >
               <Search size={18} className="text-blue-600" />
               <input
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
                 className="w-full bg-transparent px-3 text-sm font-semibold outline-none placeholder:text-slate-400"
                 placeholder={t("common.searchPlaceholder")}
+                aria-label={t("common.searchPlaceholder")}
               />
-            </div>
+            </form>
 
             <div className="mb-5 grid grid-cols-2 gap-2">
               <a
@@ -362,14 +393,14 @@ export default function Header() {
                 onClick={() => setMobileOpen(false)}
                 className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-center text-xs font-black text-slate-700 shadow-sm"
               >
-                Sign In
+                {t("header.signIn")}
               </a>
               <a
-                href="/admin/login"
+                href="/register"
                 onClick={() => setMobileOpen(false)}
                 className="rounded-2xl bg-blue-700 px-4 py-3 text-center text-xs font-black text-white shadow-sm"
               >
-                Admin
+                {t("header.signUp")}
               </a>
             </div>
 

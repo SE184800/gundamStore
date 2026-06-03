@@ -18,6 +18,7 @@ const PreOrderPage = lazy(() => import("./pages/storefront/PreOrderPage"));
 const BuildGuidePage = lazy(() => import("./pages/storefront/BuildGuidePage"));
 const CommunityGalleryPage = lazy(() => import("./pages/storefront/CommunityGalleryPage"));
 const OrderLookupPage = lazy(() => import("./pages/storefront/OrderLookupPage"));
+const AccountProfilePage = lazy(() => import("./pages/storefront/AccountProfilePage"));
 const MyOrdersPage = lazy(() => import("./pages/storefront/MyOrdersPage"));
 const OrderDetailPage = lazy(() => import("./pages/storefront/OrderDetailPage"));
 const WishlistPage = lazy(() => import("./pages/storefront/WishlistPage"));
@@ -117,9 +118,13 @@ export default function App() {
           <Route path="/build-guide" element={<BuildGuidePage />} />
           <Route path="/community-gallery" element={<CommunityGalleryPage />} />
           <Route path="/order-lookup" element={<OrderLookupPage />} />
+          <Route path="/profile" element={<AccountProfilePage />} />
+          <Route path="/account" element={<AccountProfilePage />} />
+          <Route path="/account/profile" element={<AccountProfilePage />} />
           <Route path="/orders" element={<MyOrdersPage />} />
           <Route path="/orders/:id" element={<OrderDetailPage />} />
           <Route path="/wishlist" element={<WishlistPage />} />
+          <Route path="/favorites" element={<WishlistPage />} />
           <Route path="/compare" element={<ComparePage />} />
           <Route path="/faq" element={<FAQPage />} />
           <Route path="/return-policy" element={<ReturnPolicyPage />} />
@@ -159,7 +164,7 @@ export default function App() {
             <Route path="news" element={<AdminNews />} />
             <Route path="events" element={<AdminEvents />} />
             <Route path="home-builder" element={<AdminHomeBuilder />} />
-            <Route path="banners" element={<AdminBanners />} />
+            <Route path="banners" element={<Navigate to="/admin/cms/banners" replace />} />
 
             {/* Catalog & Logistics */}
             <Route path="products" element={<AdminProducts />} />

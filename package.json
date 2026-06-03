@@ -10,7 +10,11 @@
     "backend:dev": "npm --prefix backend run dev",
     "backend:check": "npm --prefix backend run check",
     "backend:seed": "npm --prefix backend run seed",
-    "check:final": "bash scripts/check-final-mvp.sh"
+    "check:final": "bash scripts/check-final-mvp.sh",
+    "smoke:hardening": "node scripts/smoke-production-hardening.mjs",
+    "smoke:uat": "node scripts/smoke-uat-public.mjs",
+    "backend:seed:demo": "npm --prefix backend run seed:demo",
+    "backend:seed:production": "npm --prefix backend run seed:production"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^4.3.4",

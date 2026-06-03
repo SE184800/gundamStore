@@ -1,7 +1,7 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+
 import { LockKeyhole, PackageSearch, Search, ShieldCheck } from "lucide-react";
-import { findOrderForSecureLookup } from "../../services/OrderService";
+import { lookupPublicOrderFromApi } from "../../services/OrderService";
 import {
   getOrderStatusLabel,
   getOrderStatusToneClass,
@@ -44,6 +44,10 @@ function getCopy(lang) {
     total: lang === "en" ? "Total" : "Tổng tiền",
     status: lang === "en" ? "Status" : "Trạng thái",
     viewDetail: lang === "en" ? "View detail" : "Xem chi tiết",
+    hideDetail: lang === "en" ? "Hide detail" : "Ẩn chi tiết",
+    items: lang === "en" ? "Items" : "Sản phẩm",
+    quantity: lang === "en" ? "Qty" : "SL",
+    address: lang === "en" ? "Address" : "Địa chỉ",
   };
 }
 
@@ -56,8 +60,19 @@ export default function OrderLookupPage() {
   const [searched, setSearched] = useState(false);
   const [error, setError] = useState("");
   const [order, setOrder] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [showDetail, setShowDetail] = useState(false);
 
-  function lookupOrder() {
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code") || "";
+    const phoneParam = params.get("phone") || "";
+
+    if (code) setOrderCode(code);
+    if (phoneParam) setPhone(phoneParam);
+  }, []);
+
+  async function lookupOrder() {
     const code = orderCode.trim();
     const inputPhone = phone.trim();
 
@@ -70,14 +85,25 @@ export default function OrderLookupPage() {
       return;
     }
 
-    const result = findOrderForSecureLookup(code, inputPhone);
+    try {
+      setLoading(true);
+      const result = await lookupPublicOrderFromApi(code, {
+        phone: inputPhone,
+      });
 
-    if (!result) {
-      setError(t.notFound);
-      return;
+      setOrder(result);
+      setShowDetail(false);
+    } catch (err) {
+      if (err?.status === 404) {
+        setError(t.notFound);
+      } else if (err?.status === 429) {
+        setError(err?.message || "Bạn thao tác quá nhanh. Vui lòng thử lại sau.");
+      } else {
+        setError(err?.message || t.notFound);
+      }
+    } finally {
+      setLoading(false);
     }
-
-    setOrder(result);
   }
 
   return (
@@ -130,11 +156,17 @@ export default function OrderLookupPage() {
               </label>
 
               <button
+                type="button"
+                disabled={loading}
                 onClick={lookupOrder}
-                className="rounded-2xl bg-blue-600 px-6 py-3 font-black text-white shadow-lg hover:bg-blue-700"
+                className={`rounded-2xl px-6 py-3 font-black text-white shadow-lg ${
+                  loading
+                    ? "cursor-not-allowed bg-slate-400"
+                    : "bg-blue-600 hover:bg-blue-700"
+                }`}
               >
                 <Search size={18} className="mr-2 inline" />
-                {t.lookup}
+                {loading ? (lang === "en" ? "Checking..." : "Đang tra cứu...") : t.lookup}
               </button>
             </div>
 
@@ -178,14 +210,40 @@ export default function OrderLookupPage() {
                     <div className="text-sm font-bold text-slate-500">{t.total}</div>
                     <div className="text-2xl font-black text-red-500">{money(order.total)}</div>
 
-                    <Link
-                      to={`/orders/${order.id}`}
+                    <button
+                      type="button"
+                      onClick={() => setShowDetail((value) => !value)}
                       className="mt-4 inline-block rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white"
                     >
-                      {t.viewDetail}
-                    </Link>
+                      {showDetail ? t.hideDetail : t.viewDetail}
+                    </button>
                   </div>
                 </div>
+
+                {showDetail && (
+                  <div className="mt-5 rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                    <div className="grid gap-3 text-sm font-semibold text-slate-600 md:grid-cols-2">
+                      <div>
+                        <b>{t.address}:</b> {order.customer?.address || "-"}
+                      </div>
+                      <div>
+                        <b>{t.order}:</b> {order.orderCode || order.id}
+                      </div>
+                    </div>
+
+                    <div className="mt-4 text-sm font-black text-slate-950">{t.items}</div>
+                    <div className="mt-2 divide-y divide-slate-200 rounded-2xl bg-white">
+                      {(order.items || []).map((item) => (
+                        <div key={item.id || item.sku || item.name} className="flex items-center justify-between gap-3 p-3 text-sm">
+                          <div className="font-bold text-slate-700">{item.productName || item.name || item.sku}</div>
+                          <div className="shrink-0 font-black text-slate-950">
+                            {t.quantity}: {item.quantity || item.qty || 1}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 

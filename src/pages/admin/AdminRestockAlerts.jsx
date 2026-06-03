@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { BellRing, CheckCircle2, Trash2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { BellRing, CheckCircle2, Loader2, Trash2 } from "lucide-react";
 import AdminPageHeader from "../../components/admin/AdminPageHeader";
 import AdminStatusBadge from "../../components/admin/AdminStatusBadge";
 import {
@@ -11,27 +11,53 @@ import {
 
 export default function AdminRestockAlerts() {
   const [status, setStatus] = useState("all");
-  const [version, setVersion] = useState(0);
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [actionId, setActionId] = useState("");
+  const [error, setError] = useState("");
 
-  const summary = useMemo(() => getRestockAlertSummary(), [version]);
-  const rows = useMemo(() => {
-    const allRows = getRestockAlerts();
-    if (status === "all") return allRows;
-    return allRows.filter((row) => row.status === status);
-  }, [status, version]);
+  const summary = useMemo(() => getRestockAlertSummary(rows), [rows]);
 
-  function refresh() {
-    setVersion((value) => value + 1);
+  async function loadRows(nextStatus = status) {
+    try {
+      setLoading(true);
+      setError("");
+      const data = await getRestockAlerts(nextStatus);
+      setRows(Array.isArray(data) ? data : []);
+    } catch (err) {
+      setError(err?.message || "Unable to load restock alerts.");
+    } finally {
+      setLoading(false);
+    }
   }
 
-  function notify(id) {
-    markRestockAlertNotified(id);
-    refresh();
+  useEffect(() => {
+    loadRows(status);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status]);
+
+  async function notify(id) {
+    try {
+      setActionId(id);
+      await markRestockAlertNotified(id);
+      await loadRows(status);
+    } catch (err) {
+      setError(err?.message || "Unable to mark notified.");
+    } finally {
+      setActionId("");
+    }
   }
 
-  function remove(id) {
-    deleteRestockAlert(id);
-    refresh();
+  async function remove(id) {
+    try {
+      setActionId(id);
+      await deleteRestockAlert(id);
+      await loadRows(status);
+    } catch (err) {
+      setError(err?.message || "Unable to delete alert.");
+    } finally {
+      setActionId("");
+    }
   }
 
   return (
@@ -42,6 +68,12 @@ export default function AdminRestockAlerts() {
         desc="Danh sách khách đăng ký báo khi hàng về, restock hoặc mở pre-order."
       />
 
+      {error && (
+        <div className="mb-4 rounded-2xl bg-red-50 px-4 py-3 text-sm font-black text-red-600">
+          {error}
+        </div>
+      )}
+
       <section className="mb-6 grid gap-4 md:grid-cols-3">
         <Summary label="Total alerts" value={summary.total} />
         <Summary label="Pending" value={summary.pending} tone="text-amber-600" />
@@ -50,15 +82,19 @@ export default function AdminRestockAlerts() {
 
       <section className="mb-6 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
         <div className="flex gap-2 overflow-x-auto">
-          {["all", "Pending", "Notified"].map((item) => (
+          {[
+            { key: "all", label: "All" },
+            { key: "PENDING", label: "Pending" },
+            { key: "NOTIFIED", label: "Notified" },
+          ].map((item) => (
             <button
-              key={item}
-              onClick={() => setStatus(item)}
+              key={item.key}
+              onClick={() => setStatus(item.key)}
               className={`rounded-2xl px-4 py-2 text-sm font-black ${
-                status === item ? "bg-blue-700 text-white" : "bg-slate-100 text-slate-600"
+                status === item.key ? "bg-blue-700 text-white" : "bg-slate-100 text-slate-600"
               }`}
             >
-              {item}
+              {item.label}
             </button>
           ))}
         </div>
@@ -81,7 +117,13 @@ export default function AdminRestockAlerts() {
               </tr>
             </thead>
             <tbody>
-              {rows.length === 0 ? (
+              {loading ? (
+                <tr>
+                  <td colSpan="9" className="px-4 py-10 text-center font-bold text-slate-400">
+                    <Loader2 className="mx-auto animate-spin" />
+                  </td>
+                </tr>
+              ) : rows.length === 0 ? (
                 <tr>
                   <td colSpan="9" className="px-4 py-10 text-center font-bold text-slate-400">
                     No alerts yet.
@@ -91,7 +133,7 @@ export default function AdminRestockAlerts() {
                 rows.map((item) => (
                   <tr key={item.id} className="border-t hover:bg-slate-50">
                     <td className="px-4 py-3 font-black">
-                      <a href={`/product/${item.productSlug}`} className="text-blue-700 hover:underline">
+                      <a href={`/product/${item.productSlug || item.productId}`} className="text-blue-700 hover:underline">
                         {item.productName}
                       </a>
                     </td>
@@ -103,11 +145,19 @@ export default function AdminRestockAlerts() {
                     <td className="px-4 py-3"><AdminStatusBadge>{item.status}</AdminStatusBadge></td>
                     <td className="px-4 py-3">{item.createdAt ? new Date(item.createdAt).toLocaleString("vi-VN") : "-"}</td>
                     <td className="px-4 py-3">
-                      <button onClick={() => notify(item.id)} className="mr-2 rounded-xl bg-green-50 px-3 py-2 text-xs font-black text-green-700">
+                      <button
+                        onClick={() => notify(item.id)}
+                        disabled={actionId === item.id || item.status === "NOTIFIED"}
+                        className="mr-2 rounded-xl bg-green-50 px-3 py-2 text-xs font-black text-green-700 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
                         <CheckCircle2 size={15} className="mr-1 inline" />
                         Notified
                       </button>
-                      <button onClick={() => remove(item.id)} className="rounded-xl bg-red-50 px-3 py-2 text-xs font-black text-red-700">
+                      <button
+                        onClick={() => remove(item.id)}
+                        disabled={actionId === item.id}
+                        className="rounded-xl bg-red-50 px-3 py-2 text-xs font-black text-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
                         <Trash2 size={15} className="mr-1 inline" />
                         Delete
                       </button>

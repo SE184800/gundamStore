@@ -4,11 +4,17 @@ import { MapPin, Truck, CreditCard, ShieldCheck, AlertCircle } from "lucide-reac
 import { getCheckoutDraft, clearCheckoutDraft, clearCartItems } from "../../services/CartService";
 import { applyVoucher } from "../../services/VoucherService";
 import { createOrder } from "../../services/OrderService";
+import { getStock } from "../../services/InventoryService";
 import {
   buildCreateOrderPayload,
   createStorefrontOrderApi,
 } from "../../services/StorefrontOrderApiService";
+import {
+  mapBackendOrderForStorefront,
+  saveOrderSuccessSnapshot,
+} from "../../services/StorefrontOrderLookupApiService";
 import StorefrontShell from "../../components/storefront/StorefrontShell";
+import { getMyAccount, getMyAddresses, hasAccountToken } from "../../services/AccountApiService";
 import {
   ORDER_TYPE,
   PAYMENT_METHODS,
@@ -30,6 +36,9 @@ function getCopy(lang) {
     noDraft: lang === "en" ? "No checkout data found" : "Không có dữ liệu checkout",
     backCart: lang === "en" ? "Back to cart" : "Quay lại giỏ hàng",
     addressTitle: lang === "en" ? "Shipping address" : "Địa chỉ nhận hàng",
+    savedAddresses: lang === "en" ? "Saved addresses" : "Địa chỉ đã lưu",
+    chooseSavedAddress: lang === "en" ? "Choose saved address" : "Chọn địa chỉ đã lưu",
+    defaultAddress: lang === "en" ? "Default" : "Mặc định",
     name: lang === "en" ? "Recipient name" : "Họ tên người nhận",
     phone: lang === "en" ? "Phone number" : "Số điện thoại",
     province: lang === "en" ? "Province / City" : "Tỉnh / Thành phố",
@@ -64,6 +73,14 @@ function getCopy(lang) {
       lang === "en"
         ? "Backend order API failed, saved as local demo order."
         : "Backend order API lỗi, đã lưu đơn local demo.",
+    preorderDeposit: lang === "en" ? "Pre-order deposit" : "Thông tin cọc pre-order",
+    preorderFullAmount: lang === "en" ? "Full amount" : "Tổng giá trị đơn",
+    preorderDepositNow: lang === "en" ? "Deposit now" : "Cọc hôm nay",
+    preorderRemaining: lang === "en" ? "Remaining" : "Còn lại",
+    preorderShippingHint:
+      lang === "en"
+        ? "Shipping fee will be confirmed when the item arrives."
+        : "Phí vận chuyển sẽ được xác nhận khi hàng về.",
   };
 }
 
@@ -148,6 +165,8 @@ export default function CheckoutPage() {
   };
 
   useEffect(() => {
+    let alive = true;
+
     const checkoutDraft = getCheckoutDraft();
     setDraft(checkoutDraft);
 
@@ -157,6 +176,51 @@ export default function CheckoutPage() {
         shippingMethod: checkoutDraft.shippingMethod,
       }));
     }
+
+    if (hasAccountToken()) {
+      Promise.all([
+        getMyAccount(),
+        getMyAddresses().catch(() => []),
+      ])
+        .then(([account, addresses]) => {
+          if (!alive) return;
+
+          const profile = account?.profile || {};
+          const items = Array.isArray(addresses) ? addresses : [];
+          const defaultAddress = items.find((item) => item.isDefault) || items[0] || null;
+
+          setSavedAddresses(items);
+
+          if (defaultAddress) {
+            setSelectedAddressId(defaultAddress.id);
+            setCustomer((prev) => ({
+              ...prev,
+              name: prev.name || defaultAddress.receiver || account?.name || "",
+              email: prev.email || account?.email || "",
+              phone: prev.phone || defaultAddress.phone || profile.phone || "",
+              address: prev.address || defaultAddress.address || profile.address || "",
+              province: prev.province || defaultAddress.city || profile.city || "Hồ Chí Minh",
+            }));
+            return;
+          }
+
+          setCustomer((prev) => ({
+            ...prev,
+            name: prev.name || account?.name || "",
+            email: prev.email || account?.email || "",
+            phone: prev.phone || profile.phone || "",
+            address: prev.address || profile.address || "",
+            province: prev.province || profile.city || "Hồ Chí Minh",
+          }));
+        })
+        .catch((error) => {
+          console.warn("Checkout account prefill skipped", error);
+        });
+    }
+
+    return () => {
+      alive = false;
+    };
   }, []);
 
   const selectedShipping = getShippingMethod(customer.shippingMethod);
@@ -244,11 +308,14 @@ export default function CheckoutPage() {
         });
 
         const apiOrder = await createStorefrontOrderApi(apiPayload);
+        const mappedOrder = mapBackendOrderForStorefront(apiOrder);
+
+        saveOrderSuccessSnapshot(mappedOrder, cleanCustomer);
 
         clearCartItems(draft.items.map((item) => item.id));
         clearCheckoutDraft();
 
-        navigate(`/order-success/${apiOrder.id}`);
+        navigate(`/order-success/${mappedOrder.orderCode || mappedOrder.id}`);
         return;
       }
       const order = createOrder({
@@ -269,10 +336,12 @@ export default function CheckoutPage() {
         shippingMethod: customer.shippingMethod,
       });
 
+      saveOrderSuccessSnapshot(order, cleanCustomer);
+
       clearCartItems(draft.items.map((item) => item.id));
       clearCheckoutDraft();
 
-      navigate(`/order-success/${order.id}`);
+      navigate(`/order-success/${order.orderCode || order.id}`);
     } catch (error) {
       console.error("Create order API failed", error);
 
@@ -307,10 +376,12 @@ export default function CheckoutPage() {
         shippingMethod: customer.shippingMethod,
       });
 
+      saveOrderSuccessSnapshot(order, cleanCustomer);
+
       clearCartItems(draft.items.map((item) => item.id));
       clearCheckoutDraft();
 
-      navigate(`/order-success/${order.id}`);
+      navigate(`/order-success/${order.orderCode || order.id}`);
     } finally {
       setPlacingOrder(false);
     }

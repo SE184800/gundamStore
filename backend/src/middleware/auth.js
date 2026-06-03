@@ -11,7 +11,7 @@ export async function requireAuth(req, res, next) {
       return res.status(401).json({ success: false, message: "Unauthorized" });
     }
 
-    const payload = jwt.verify(token, env.JWT_SECRET);
+    const payload = jwt.verify(token, env.jwtSecret);
 
     const user = await prisma.user.findUnique({
       where: { id: payload.sub },
@@ -32,6 +32,42 @@ export async function requireAuth(req, res, next) {
 
     req.user = user;
     next();
+  } catch {
+    return res.status(401).json({ success: false, message: "Unauthorized" });
+  }
+}
+
+
+export async function optionalAuth(req, res, next) {
+  try {
+    const header = req.headers.authorization || "";
+    const token = header.startsWith("Bearer ") ? header.slice(7) : "";
+
+    if (!token) {
+      return next();
+    }
+
+    const payload = jwt.verify(token, env.jwtSecret);
+
+    const user = await prisma.user.findUnique({
+      where: { id: payload.sub },
+      include: {
+        role: {
+          include: {
+            permissions: {
+              include: { permission: true },
+            },
+          },
+        },
+      },
+    });
+
+    if (!user || !user.active) {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+
+    req.user = user;
+    return next();
   } catch {
     return res.status(401).json({ success: false, message: "Unauthorized" });
   }

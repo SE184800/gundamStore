@@ -3,21 +3,74 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const nodeEnv = process.env.NODE_ENV || "development";
-const jwtSecret = process.env.JWT_SECRET || "";
+const isProduction = nodeEnv === "production";
 
-if (nodeEnv === "production" && jwtSecret.length < 32) {
+function parsePort(value, fallback = 4800) {
+  const port = Number(value || fallback);
+  return Number.isInteger(port) && port > 0 ? port : fallback;
+}
+
+function parseTrustProxy(value = "") {
+  if (value === "true") return 1;
+  if (value === "false") return false;
+
+  const parsed = Number(value || 0);
+  return Number.isInteger(parsed) && parsed >= 0 ? parsed : 0;
+}
+
+function parseOrigins(value = "") {
+  return String(value || "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+const jwtSecret = process.env.JWT_SECRET || "";
+const frontendOrigin = process.env.FRONTEND_ORIGIN || (isProduction ? "" : "http://localhost:5173");
+const databaseUrl = process.env.DATABASE_URL || "";
+const directUrl = process.env.DIRECT_URL || "";
+
+if (isProduction && jwtSecret.length < 32) {
   throw new Error("JWT_SECRET is required and must be at least 32 characters in production.");
 }
 
-if (nodeEnv !== "production" && jwtSecret.length < 16) {
+if (isProduction && !databaseUrl) {
+  throw new Error("DATABASE_URL is required in production.");
+}
+
+if (isProduction && !directUrl) {
+  throw new Error("DIRECT_URL is required in production because Prisma schema uses directUrl.");
+}
+
+if (isProduction && !frontendOrigin) {
+  throw new Error("FRONTEND_ORIGIN is required in production.");
+}
+
+if (isProduction && /^http:\/\/localhost/i.test(frontendOrigin)) {
+  throw new Error("FRONTEND_ORIGIN must not be localhost in production.");
+}
+
+if (!isProduction && jwtSecret.length < 16) {
   console.warn("⚠️  Using weak/default JWT_SECRET for development only.");
 }
 
+const corsOrigins = Array.from(
+  new Set([
+    frontendOrigin,
+    ...parseOrigins(process.env.CORS_ORIGINS || ""),
+  ].filter(Boolean))
+);
+
 export const env = {
-  port: Number(process.env.PORT || 4000),
+  port: parsePort(process.env.PORT, 4800),
   nodeEnv,
-  databaseUrl: process.env.DATABASE_URL,
-  jwtSecret: jwtSecret || "change-this-in-real-env",
+  isProduction,
+  databaseUrl,
+  directUrl,
+  jwtSecret: jwtSecret || "local-dev-secret-change-me",
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || "1d",
-  frontendOrigin: process.env.FRONTEND_ORIGIN || "http://localhost:5173",
+  frontendOrigin,
+  corsOrigins,
+  trustProxyHops: parseTrustProxy(process.env.TRUST_PROXY_HOPS || (isProduction ? "1" : "0")),
+  rateLimitStore: process.env.RATE_LIMIT_STORE || "memory",
 };

@@ -1,3 +1,4 @@
+import { apiRequest } from "./ApiClient";
 import { normalizeItems, calcSubtotal } from "./PricingService";
 import { reduceStock, restoreStock, logOrderStockReservation, logOrderStockRestore } from "./InventoryService";
 import {
@@ -19,7 +20,7 @@ import {
   canCustomerRequestReturn,
 } from "../constants/orderConfig";
 
-const CMS_KEY = "gundam-cms-state";
+const CMS_KEY = "gundam_store_vn_v2_cms";
 
 export {
   ORDER_TYPE,
@@ -322,6 +323,59 @@ export function updateOrderAdminNote(orderId, adminNote = "") {
 
   saveOrders(orders);
   return orders;
+}
+
+function mapBackendOrderForStorefront(order = {}) {
+  return {
+    ...order,
+    id: order.orderNo || order.id,
+    backendOrderId: order.id,
+    orderCode: order.orderNo || order.orderCode || order.id,
+    customer: {
+      name: order.customerName || "",
+      phone: order.customerPhone || "",
+      email: order.customerEmail || "",
+      address: order.customerAddress || "",
+    },
+    items: Array.isArray(order.items)
+      ? order.items.map((item) => ({
+          ...item,
+          qty: item.quantity,
+          quantity: item.quantity,
+          productName: item.name,
+        }))
+      : [],
+    total: Number(order.total || 0),
+    subtotal: Number(order.subtotal || 0),
+    shippingFee: Number(order.shippingFee || 0),
+    discount: Number(order.discount || 0),
+  };
+}
+
+export async function lookupPublicOrderFromApi(orderCode = "", { phone = "", email = "" } = {}) {
+  const cleanCode = String(orderCode || "").trim();
+
+  if (!cleanCode) {
+    throw new Error("Order code is required.");
+  }
+
+  const params = new URLSearchParams();
+
+  if (phone) params.set("phone", String(phone).trim());
+  if (email) params.set("email", String(email).trim());
+
+  const queryString = params.toString();
+  const path = `/api/orders/public/${encodeURIComponent(cleanCode)}${queryString ? `?${queryString}` : ""}`;
+
+  const data = await apiRequest(path, {
+    token: "",
+  });
+
+  if (!data?.success || !data.order) {
+    throw new Error(data?.message || "Order not found.");
+  }
+
+  return mapBackendOrderForStorefront(data.order);
 }
 
 

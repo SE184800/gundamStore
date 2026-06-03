@@ -1,4 +1,5 @@
-import { apiRequest } from "./ApiClient";
+import { apiRequest, getStoredAccountToken } from "./ApiClient";
+import { mapBackendOrderForStorefront } from "./StorefrontOrderLookupApiService";
 
 const PRODUCT_ALIASES = {
   "prod-hg-aerial": {
@@ -133,6 +134,15 @@ function normalizeSlug(item = {}) {
   return alias.slug || item.slug || "";
 }
 
+function normalizePaymentMethod(method = "COD") {
+  const value = String(method || "COD").trim().toUpperCase();
+
+  if (value === "BANK") return "BANK_TRANSFER";
+  if (value === "MOMO") return "WALLET";
+
+  return ["COD", "BANK_TRANSFER", "CARD", "WALLET"].includes(value) ? value : "COD";
+}
+
 export function buildCreateOrderPayload({
   customer,
   draft,
@@ -145,6 +155,8 @@ export function buildCreateOrderPayload({
     customerAddress: [customer.address, customer.province].filter(Boolean).join(", "),
     shippingFee: Number(pricing.shippingFee) || 0,
     discount: Number(pricing.discount || 0) + Number(pricing.shippingDiscount || 0),
+    paymentMethod: normalizePaymentMethod(customer.paymentMethod),
+    paymentReference: customer.paymentReference || "",
     note: customer.note || "",
     items: (draft.items || []).map((item) => ({
       productId: normalizeProductId(item),
@@ -159,7 +171,7 @@ export async function createStorefrontOrderApi(payload) {
   const data = await apiRequest("/api/orders", {
     method: "POST",
     body: JSON.stringify(payload),
-    token: "",
+    token: getStoredAccountToken(),
   });
 
   if (!data?.success || !data.order) {
@@ -167,4 +179,57 @@ export async function createStorefrontOrderApi(payload) {
   }
 
   return data.order;
+}
+
+
+export async function getMyStorefrontOrdersApi() {
+  const data = await apiRequest("/api/orders/my", {
+    token: getStoredAccountToken(),
+  });
+
+  return Array.isArray(data?.orders)
+    ? data.orders.map(mapBackendOrderForStorefront)
+    : [];
+}
+
+export async function getMyStorefrontOrderByIdApi(id = "") {
+  const cleanId = String(id || "").trim();
+
+  if (!cleanId) {
+    throw new Error("Order id is required.");
+  }
+
+  const data = await apiRequest(`/api/orders/my/${encodeURIComponent(cleanId)}`, {
+    token: getStoredAccountToken(),
+  });
+
+  if (!data?.success || !data.order) {
+    throw new Error(data?.message || "Order not found.");
+  }
+
+  return mapBackendOrderForStorefront(data.order);
+}
+
+
+export async function cancelMyStorefrontOrderApi(id = "", payload = {}) {
+  const cleanId = String(id || "").trim();
+
+  if (!cleanId) {
+    throw new Error("Order id is required.");
+  }
+
+  const data = await apiRequest(`/api/orders/my/${encodeURIComponent(cleanId)}/cancel`, {
+    method: "PATCH",
+    token: getStoredAccountToken(),
+    body: JSON.stringify({
+      reason: payload.reason || "",
+      note: payload.note || "",
+    }),
+  });
+
+  if (!data?.success || !data.order) {
+    throw new Error(data?.message || "Cannot cancel order.");
+  }
+
+  return mapBackendOrderForStorefront(data.order);
 }

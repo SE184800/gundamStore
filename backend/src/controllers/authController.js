@@ -69,7 +69,7 @@ export async function login(req, res, next) {
         sub: user.id,
         role: user.role.code,
       },
-      env.jwtSecret || "gundam_secret_key_fallback", // 🌟 Gọi đúng jwtSecret và thêm phòng hờ
+      env.jwtSecret,
       { expiresIn: env.jwtExpiresIn || "1d" }
     );
 
@@ -144,7 +144,7 @@ export async function register(req, res, next) {
         sub: newUser.id,
         role: defaultRole.code,
       },
-      env.jwtSecret || "gundam_secret_key_fallback",
+      env.jwtSecret,
       { expiresIn: env.jwtExpiresIn || "1d" }
     );
 

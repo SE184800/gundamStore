@@ -33,7 +33,7 @@ import {
 } from "../../constants/orderConfig";
 import { getCart, saveCart } from "../../services/CartService";
 import StorefrontShell from "../../components/storefront/StorefrontShell";
-import { getStorefrontOrderByIdFromApi } from "../../services/StorefrontOrderLookupApiService";
+import { cancelMyStorefrontOrderApi, getMyStorefrontOrderByIdApi } from "../../services/StorefrontOrderApiService";
 import { useLang } from "../../store/CmsStore";
 
 const money = (n) => (Number(n) || 0).toLocaleString("vi-VN") + "đ";
@@ -309,7 +309,7 @@ export default function OrderDetailPage() {
     setBackendLoading(true);
     setBackendError("");
 
-    getStorefrontOrderByIdFromApi(id)
+    getMyStorefrontOrderByIdApi(id)
       .then((item) => {
         if (!alive) return;
         setBackendOrder(item);
@@ -318,7 +318,7 @@ export default function OrderDetailPage() {
       .catch((error) => {
         if (!alive) return;
         setBackendOrder(null);
-        setBackendError(error?.message || "Backend order lookup failed.");
+        setBackendError(error?.message || "Unable to refresh order status.");
       })
       .finally(() => {
         if (!alive) return;
@@ -330,8 +330,8 @@ export default function OrderDetailPage() {
     };
   }, [id, refreshKey]);
 
-  const order = backendOrder || localOrder;
-  const isBackendOrder = order?.source === "backend";
+  const order = backendOrder;
+  const isBackendOrder = true;
 
   if (backendLoading && !order) {
     return (
@@ -361,7 +361,7 @@ export default function OrderDetailPage() {
   }
 
   const currentIndex = PUBLIC_STEPS.indexOf(order.status);
-  const directCancel = !isBackendOrder && canCustomerCancelDirect(order.status);
+  const directCancel = canCustomerCancelDirect(order.status);
   const cancelRequest = !isBackendOrder && canCustomerRequestCancel(order.status);
   const returnRequest = !isBackendOrder && canCustomerRequestReturn(order.status);
   const balanceRequestEligible =
@@ -406,9 +406,18 @@ export default function OrderDetailPage() {
     }
   }
 
-  function submitRequest(type, reason, note) {
+  async function submitRequest(type, reason, note) {
     try {
       if (type === "cancelDirect") {
+        if (isBackendOrder) {
+          const updated = await cancelMyStorefrontOrderApi(order.id, { reason, note });
+          setBackendOrder(updated);
+          alert(t.cancelledSuccess);
+          setModalType(null);
+          setRefreshKey((value) => value + 1);
+          return;
+        }
+
         cancelOrderDirectly(order.id, reason, note);
         alert(t.cancelledSuccess);
         navigate("/orders");
@@ -435,7 +444,7 @@ export default function OrderDetailPage() {
     <StorefrontShell>
       <main className="min-h-screen bg-[#F5F7FB] px-4 py-6 md:px-6 md:py-8">
         <div className="mx-auto max-w-7xl">
-          <Link to="/order-lookup" className="font-black text-blue-600">
+          <Link to="/orders" className="font-black text-blue-600">
             ← {t.back}
           </Link>
 
@@ -458,7 +467,7 @@ export default function OrderDetailPage() {
                         : "bg-amber-50 text-amber-700"
                     }`}
                   >
-                    {isBackendOrder ? "PostgreSQL Order" : backendError ? "Local Demo Order" : "Local Demo Order"}
+                    {"Order recorded"}
                   </span>
                 </div>
                 <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-slate-500">

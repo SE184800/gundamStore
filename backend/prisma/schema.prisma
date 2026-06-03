@@ -60,8 +60,69 @@ model User {
   role         Role       @relation(fields: [roleId], references: [id])
   auditLogs    AuditLog[]
 
+  profile       UserProfile?
+  addresses     UserAddress[]
+  wishlistItems WishlistItem[]
+  orders        Order[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+}
+
+model UserProfile {
+  id         String    @id @default(cuid())
+  userId     String    @unique
+  phone      String?
+  birthday   DateTime?
+  gender     String?
+  avatarUrl  String?
+  note       String?
+  city       String?
+  district   String?
+  ward       String?
+  address    String?
+  postalCode String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model UserAddress {
+  id          String  @id @default(cuid())
+  userId      String
+  label       String  @default("Nhà riêng")
+  receiver    String
+  phone       String
+  address     String
+  city        String?
+  district    String?
+  ward        String?
+  postalCode  String?
+  isDefault   Boolean @default(false)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, isDefault])
+}
+
+model WishlistItem {
+  id        String @id @default(cuid())
+  userId    String
+  productId String
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, productId])
+  @@index([userId, createdAt])
 }
 
 model Role {
@@ -246,6 +307,8 @@ model Product {
   inventoryLogs         InventoryLog[]
   prices                ProductPrice[]
   promotionProducts     PromotionProduct[]
+  wishlistItems        WishlistItem[]
+  restockAlerts        RestockAlert[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -254,10 +317,13 @@ model Product {
 model Order {
   id              String  @id @default(cuid())
   orderNo         String  @unique
+  customerId      String?
   customerName    String
   customerPhone   String
   customerEmail   String?
   customerAddress String
+
+  customer User? @relation(fields: [customerId], references: [id], onDelete: SetNull)
 
   status        OrderStatus   @default(PLACED)
   paymentStatus PaymentStatus @default(UNPAID)
@@ -268,6 +334,13 @@ model Order {
   total       Int @default(0)
 
   note      String?
+
+  cancelledAt     DateTime?
+  cancelReason    String?
+  cancelNote      String?
+  cancelledById   String?
+  stockRestoredAt DateTime?
+
   items     OrderItem[]
   payments  Payment[]
   shipments Shipment[]
@@ -275,6 +348,9 @@ model Order {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([customerId, createdAt])
+  @@index([status, stockRestoredAt])
 }
 
 model OrderItem {
@@ -482,4 +558,68 @@ model PromotionProduct {
   updatedAt DateTime @updatedAt
 
   @@unique([promotionId, productId])
+}
+
+
+model RestockAlert {
+  id          String   @id @default(cuid())
+  productId   String
+  productName String
+  productSlug String?
+  sku         String?
+  grade       String?
+  scale       String?
+  name        String
+  phone       String
+  note        String?
+  status      String   @default("PENDING")
+  notifiedAt  DateTime?
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, createdAt])
+  @@index([productId, phone, status])
+}
+
+
+model Banner {
+  id            String  @id @default(cuid())
+  titleInternal String
+  altText       String?
+  placement     String  @default("Homepage Hero")
+  mediaType     String  @default("image")
+
+  mainImage    String
+  imageUrl     String?
+  mobileImage  String?
+  tabletImage  String?
+  desktopImage String?
+  videoUrl     String?
+
+  ctaUrl   String  @default("/shop")
+  status   String  @default("Draft")
+  active   Boolean @default(true)
+  priority Int     @default(1)
+  fitMode  String  @default("cover")
+
+  legacyText Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([placement, status, active, priority])
+}
+
+model HeroSetting {
+  id         String  @id
+  layout     String  @default("v2")
+  autoplay   Boolean @default(true)
+  interval   Int     @default(4500)
+  maxBanners Int     @default(5)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

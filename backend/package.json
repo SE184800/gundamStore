@@ -12,7 +12,19 @@
     "prisma:studio": "prisma studio",
     "seed": "node prisma/seed.js",
     "seed:catalog": "node prisma/seedCatalog.js",
-    "smoke:admin": "node scripts/smokeAdminApis.js"
+    "smoke:admin": "node scripts/smokeAdminApis.js",
+    "smoke:stock-race": "node scripts/smokeStockRace.mjs",
+    "seed:customer": "node scripts/seedCustomerAccount.mjs",
+    "smoke:customer-order": "node scripts/smokeCustomerOrderFlow.mjs",
+    "smoke:cancel-restore": "node scripts/smokeCancelOrderRestoreStock.mjs",
+    "smoke:address-book": "node scripts/smokeAddressBook.mjs",
+    "smoke:payment-workflow": "node scripts/smokePaymentWorkflow.mjs",
+    "smoke:admin-order-operation": "node scripts/smokeAdminOrderOperation.mjs",
+    "check:env": "node scripts/checkProductionEnv.mjs",
+    "prisma:migrate:deploy": "prisma migrate deploy",
+    "smoke:readiness": "node scripts/smokeProductionReadiness.mjs",
+    "seed:demo": "SEED_MODE=demo ALLOW_DEMO_SEED=true node prisma/seed.js",
+    "seed:production": "SEED_MODE=production node prisma/seed.js"
   },
   "dependencies": {
     "@prisma/client": "^6.0.0",

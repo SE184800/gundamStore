@@ -1,4 +1,5 @@
 import { authService } from "../services/AuthService";
+import { clearStoredAccountToken, setStoredAccountToken } from "../services/ApiClient";
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 import {
   enrichProductsWithBackendIds,
@@ -91,7 +92,7 @@ export function CmsProvider({ children }) {
         }));
       })
       .catch((error) => {
-        console.warn("CMS product PostgreSQL sync skipped", error);
+        console.warn("Storefront product sync skipped", error);
       });
 
     return () => {
@@ -139,7 +140,7 @@ export function CmsProvider({ children }) {
 
         if (res.success && res.token) {
           // 1. Lưu token vào LocalStorage để các request sau tự lấy sử dụng
-          localStorage.setItem("gundam_token", res.token);
+          setStoredAccountToken(res.token);
 
           // 2. 🛠️ ĐÃ FIX: Đổi từ 'set' của Zustand sang 'setState' chuẩn của Context
           setState((prev) => ({ ...prev, user: res.user }));
@@ -161,7 +162,7 @@ export function CmsProvider({ children }) {
     },
     // 🛠️ ĐÃ CẬP NHẬT: Hàm logout chuẩn cú pháp React Context API
     logout: () => {
-      localStorage.removeItem("gundam_token");
+      clearStoredAccountToken();
       // 🛠️ ĐÃ FIX: Đổi từ 'set' sang 'setState' để tránh sập ứng dụng khi bấm Đăng xuất
       setState((prev) => ({ ...prev, user: null }));
     },

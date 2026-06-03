@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: gundam-store-backend-uat
+    runtime: node
+    rootDir: backend
+    plan: free
+    buildCommand: npm ci && npm run prisma:generate
+    startCommand: npm start
+    healthCheckPath: /health/ready
+    autoDeploy: false
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 4800
+      - key: JWT_EXPIRES_IN
+        value: 1d
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: FRONTEND_ORIGIN
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false

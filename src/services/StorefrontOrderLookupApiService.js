@@ -5,6 +5,8 @@ import {
   PAYMENT_STATUS,
 } from "../constants/orderConfig";
 
+const ORDER_SUCCESS_SESSION_KEY = "gundam-last-order-success";
+
 const API_TO_UI_STATUS = {
   PLACED: ORDER_STATUS.PLACED,
   CONFIRMED: ORDER_STATUS.CONFIRMED,
@@ -23,13 +25,49 @@ const API_TO_UI_PAYMENT_STATUS = {
   REFUNDED: PAYMENT_STATUS.REFUNDED,
 };
 
+function cleanContact(value = "") {
+  return String(value || "").trim();
+}
+
+function getOrderKeys(order = {}) {
+  return Array.from(
+    new Set(
+      [
+        order.id,
+        order.orderCode,
+        order.orderNo,
+        order.backendOrderId,
+      ]
+        .map((item) => String(item || "").trim())
+        .filter(Boolean)
+    )
+  );
+}
+
+function readSuccessStore() {
+  try {
+    return JSON.parse(sessionStorage.getItem(ORDER_SUCCESS_SESSION_KEY) || "{}");
+  } catch {
+    return {};
+  }
+}
+
+function writeSuccessStore(store = {}) {
+  try {
+    sessionStorage.setItem(ORDER_SUCCESS_SESSION_KEY, JSON.stringify(store || {}));
+  } catch {
+    // sessionStorage can be unavailable in strict browser modes.
+  }
+}
+
 export function mapBackendOrderForStorefront(order = {}) {
   const shipment = Array.isArray(order.shipments) ? order.shipments[0] : null;
   const payment = Array.isArray(order.payments) ? order.payments[0] : null;
 
   return {
     id: order.id,
-    orderCode: order.orderNo || order.id,
+    backendOrderId: order.id,
+    orderCode: order.orderNo || order.orderCode || order.id,
     orderNo: order.orderNo || "",
     orderType: ORDER_TYPE.NORMAL,
 
@@ -37,10 +75,10 @@ export function mapBackendOrderForStorefront(order = {}) {
     updatedAt: order.updatedAt,
 
     customer: {
-      name: order.customerName || "",
-      phone: order.customerPhone || "",
-      email: order.customerEmail || "",
-      address: order.customerAddress || "",
+      name: order.customerName || order.customer?.name || "",
+      phone: order.customerPhone || order.customer?.phone || "",
+      email: order.customerEmail || order.customer?.email || "",
+      address: order.customerAddress || order.customer?.address || "",
       province: "",
       note: order.note || "",
     },
@@ -64,10 +102,10 @@ export function mapBackendOrderForStorefront(order = {}) {
     total: Number(order.total) || 0,
 
     voucherCode: "",
-    paymentMethod: payment?.method || "COD",
+    paymentMethod: payment?.method || order.paymentMethod || "COD",
     paymentStatus:
-      API_TO_UI_PAYMENT_STATUS[order.paymentStatus] || PAYMENT_STATUS.UNPAID,
-    shippingMethod: shipment?.shippingMethod || "FAST",
+      API_TO_UI_PAYMENT_STATUS[order.paymentStatus] || order.paymentStatus || PAYMENT_STATUS.UNPAID,
+    shippingMethod: shipment?.shippingMethod || order.shippingMethod || "FAST",
 
     shippingInfo: {
       carrier: shipment?.carrier || "",
@@ -77,29 +115,74 @@ export function mapBackendOrderForStorefront(order = {}) {
       note: shipment?.note || "",
     },
 
-    status: API_TO_UI_STATUS[order.status] || ORDER_STATUS.PLACED,
+    status: API_TO_UI_STATUS[order.status] || order.status || ORDER_STATUS.PLACED,
 
     timeline: [
       {
-        status: API_TO_UI_STATUS[order.status] || ORDER_STATUS.PLACED,
+        status: API_TO_UI_STATUS[order.status] || order.status || ORDER_STATUS.PLACED,
         time: order.updatedAt || order.createdAt,
         title: "Đồng bộ từ PostgreSQL",
-        note: `Backend order status: ${order.status}`,
+        note: `Backend order status: ${order.status || ORDER_STATUS.PLACED}`,
       },
     ],
 
-    preorder: null,
+    preorder: order.preorder || null,
     cancelRequest: null,
     returnRequest: null,
     adminNote: order.note || "",
 
-    source: "backend",
-    backendRaw: order,
+    source: order.source || "backend",
+    backendRaw: order.backendRaw || order,
   };
 }
 
-export async function getStorefrontOrderByIdFromApi(id = "") {
-  const data = await apiRequest(`/api/orders/public/${encodeURIComponent(id)}`, {
+export function saveOrderSuccessSnapshot(order = {}, contact = {}) {
+  const mappedOrder = order.source === "backend" || order.backendRaw
+    ? order
+    : {
+        ...order,
+        source: order.source || "local",
+      };
+
+  const lookup = {
+    phone: cleanContact(contact.phone || order.customer?.phone || ""),
+    email: cleanContact(contact.email || order.customer?.email || ""),
+  };
+
+  const record = {
+    order: mappedOrder,
+    lookup,
+    savedAt: new Date().toISOString(),
+  };
+
+  const store = readSuccessStore();
+  getOrderKeys(mappedOrder).forEach((key) => {
+    store[key] = record;
+  });
+
+  writeSuccessStore(store);
+  return record;
+}
+
+export function getOrderSuccessSnapshot(id = "") {
+  const key = String(id || "").trim();
+  if (!key) return null;
+
+  const store = readSuccessStore();
+  return store[key] || null;
+}
+
+function buildPublicOrderPath(id = "", lookup = {}) {
+  const params = new URLSearchParams();
+  if (lookup.phone) params.set("phone", cleanContact(lookup.phone));
+  if (lookup.email) params.set("email", cleanContact(lookup.email));
+
+  const query = params.toString();
+  return `/api/orders/public/${encodeURIComponent(id)}${query ? `?${query}` : ""}`;
+}
+
+export async function getStorefrontOrderByIdFromApi(id = "", lookup = {}) {
+  const data = await apiRequest(buildPublicOrderPath(id, lookup), {
     token: "",
   });
 

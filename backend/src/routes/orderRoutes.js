@@ -2,17 +2,38 @@ import express from "express";
 import {
   createOrder,
   getPublicOrderById,
+  listMyOrders,
+  getMyOrderById,
+  cancelMyOrder,
   listAdminOrders,
   updateOrderStatus,
   updateOrderPayment,
   updateOrderShipping,
 } from "../controllers/orderController.js";
-import { requireAuth, requirePermission } from "../middleware/auth.js";
+import { optionalAuth, requireAuth, requirePermission } from "../middleware/auth.js";
+import { createRateLimit } from "../middleware/rateLimit.js";
 
 const router = express.Router();
 
-router.post("/", createOrder);
-router.get("/public/:id", getPublicOrderById);
+const createOrderRateLimit = createRateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 40,
+  keyPrefix: "create-order",
+  message: "Bạn tạo đơn quá nhanh. Vui lòng thử lại sau.",
+});
+
+const orderLookupRateLimit = createRateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 60,
+  keyPrefix: "order-lookup",
+  message: "Bạn tra cứu đơn hàng quá nhanh. Vui lòng thử lại sau.",
+});
+
+router.post("/", createOrderRateLimit, optionalAuth, createOrder);
+router.get("/my", requireAuth, listMyOrders);
+router.get("/my/:id", requireAuth, getMyOrderById);
+router.patch("/my/:id/cancel", requireAuth, cancelMyOrder);
+router.get("/public/:id", orderLookupRateLimit, getPublicOrderById);
 
 router.get(
   "/admin",
