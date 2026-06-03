@@ -23,6 +23,7 @@
     "react-dom": "^18.3.1",
     "react-leaflet": "^4.2.1",
     "react-router-dom": "^6.28.0",
+    "use-places-autocomplete": "^4.0.1",
     "vite": "^6.0.5",
     "yup": "^1.7.1"
   },

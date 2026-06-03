@@ -1,11 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { MapPin, Truck, CreditCard, ShieldCheck, AlertCircle } from "lucide-react";
-import {
-  getCheckoutDraft,
-  clearCheckoutDraft,
-  clearCartItems,
-} from "../../services/CartService";
+import { getCheckoutDraft, clearCheckoutDraft, clearCartItems } from "../../services/CartService";
 import { applyVoucher } from "../../services/VoucherService";
 import { createOrder } from "../../services/OrderService";
 import {
@@ -21,8 +17,11 @@ import {
   getShippingMethod,
 } from "../../constants/orderConfig";
 import { useLang } from "../../store/CmsStore";
-
+import { Formik, Form } from "formik";
+import * as Yup from "yup";
+import ShippingAddressForm from "./CheckoutPage/ShippingAddress";
 const money = (n) => (Number(n) || 0).toLocaleString("vi-VN") + "đ";
+const phoneRegExp = /^(0|\+84)(3|5|7|8|9)\d{8}$/;
 
 function getCopy(lang) {
   return {
@@ -112,6 +111,42 @@ export default function CheckoutPage() {
     shippingMethod: "FAST",
   });
 
+  const validationSchema = Yup.object().shape({
+    name: Yup.string()
+      .required(t.requiredName)
+      .min(2, t.invalidName)
+      .matches(/^[^[0-9!@#$%^&*(),.?":{}|<>]+$/, lang === "en" ? "Name cannot contain numbers or special characters." : "Họ tên không được chứa số hoặc ký tự đặc biệt."),
+
+    phone: Yup.string()
+      .required(t.requiredPhone)
+      .matches(phoneRegExp, t.invalidPhone),
+
+    email: Yup.string()
+      .email(lang === "en" ? "Invalid email address." : "Địa chỉ email không đúng định dạng.")
+      .nullable(),
+
+    province: Yup.string()
+      .required(lang === "en" ? "Province/City is required." : "Vui lòng nhập Tỉnh/Thành phố."),
+
+    address: Yup.string()
+      .required(t.requiredAddress)
+      .min(8, t.invalidAddress)
+      // Bắt buộc phải có khoảng trắng thể hiện việc nhập đầy đủ tên đường + số nhà
+      .test("has-space", lang === "en" ? "Please enter a valid street address." : "Vui lòng nhập địa chỉ cụ thể (bao gồm cả tên đường và số nhà).", value => /\s/.test(value || "")),
+  });
+
+  // Giá trị khởi tạo cho Formik (Được gán từ state customer cũ của cậu)
+  const initialValues = {
+    name: "",
+    phone: "",
+    email: "",
+    address: "",
+    province: "Hồ Chí Minh",
+    note: "",
+    paymentMethod: "COD",
+    shippingMethod: draft?.shippingMethod || "FAST",
+  };
+
   useEffect(() => {
     const checkoutDraft = getCheckoutDraft();
     setDraft(checkoutDraft);
@@ -183,44 +218,21 @@ export default function CheckoutPage() {
     );
   }
 
-  function validateCustomer() {
-    const nextErrors = [];
-    const name = sanitizeText(customer.name, 80);
-    const phone = normalizePhone(customer.phone);
-    const address = sanitizeText(customer.address, 180);
-    const note = sanitizeText(customer.note, 300);
-
-    if (!name) nextErrors.push(t.requiredName);
-    else if (name.length < 2) nextErrors.push(t.invalidName);
-
-    if (!phone) nextErrors.push(t.requiredPhone);
-    else if (!isValidVietnamPhone(phone)) nextErrors.push(t.invalidPhone);
-
-    if (!address) nextErrors.push(t.requiredAddress);
-    else if (address.length < 8) nextErrors.push(t.invalidAddress);
-
-    if (note.length > 280) nextErrors.push(t.invalidNote);
-
-    setErrors(nextErrors);
-    return nextErrors.length === 0;
-  }
-
-  async function submitOrder() {
+  async function handleFormikSubmit(values) {
     if (placingOrder) return;
-    if (!validateCustomer()) return;
 
     setPlacingOrder(true);
     setApiNotice("");
 
     const cleanCustomer = {
-      name: sanitizeText(customer.name, 80),
-      phone: normalizePhone(customer.phone),
-      email: sanitizeText(customer.email || "", 120),
-      address: sanitizeText(customer.address, 180),
-      province: sanitizeText(customer.province || "Hồ Chí Minh", 80),
-      note: sanitizeText(customer.note, 280),
-      paymentMethod: customer.paymentMethod,
-      shippingMethod: customer.shippingMethod,
+      name: sanitizeText(values.name, 80),
+      phone: normalizePhone(values.phone),
+      email: sanitizeText(values.email || "", 120),
+      address: sanitizeText(values.address, 180),
+      province: sanitizeText(values.province || "Hồ Chí Minh", 80),
+      note: sanitizeText(values.note, 280),
+      paymentMethod: values.paymentMethod,
+      shippingMethod: values.shippingMethod,
     };
 
     try {
@@ -239,7 +251,6 @@ export default function CheckoutPage() {
         navigate(`/order-success/${apiOrder.id}`);
         return;
       }
-
       const order = createOrder({
         orderType: ORDER_TYPE.PREORDER,
         preorder: draft.preorder || null,
@@ -268,9 +279,9 @@ export default function CheckoutPage() {
       if (!isPreorder) {
         setErrors([
           error?.message ||
-            (lang === "en"
-              ? "Cannot create backend order. Please check product mapping or stock."
-              : "Không thể tạo đơn backend. Vui lòng kiểm tra mapping sản phẩm hoặc tồn kho."),
+          (lang === "en"
+            ? "Cannot create backend order. Please check product mapping or stock."
+            : "Không thể tạo đơn backend. Vui lòng kiểm tra mapping sản phẩm hoặc tồn kho."),
         ]);
         setApiNotice("");
         return;
@@ -307,262 +318,268 @@ export default function CheckoutPage() {
 
   return (
     <StorefrontShell>
-      <main className="min-h-screen bg-[#F5F7FB] px-4 py-6 md:px-6 md:py-8">
-        <div className="mx-auto max-w-7xl">
-          <p className="text-sm font-black uppercase tracking-[0.2em] text-blue-600">
-            {t.eyebrow}
-          </p>
-          <h1 className="mt-2 text-3xl font-black text-slate-950 md:text-4xl">
-            {t.title}
-          </h1>
-          <p className="mt-2 text-sm font-semibold text-slate-500">{t.reviewHint}</p>
+      <Formik
+        initialValues={{
+          name: "",
+          phone: "",
+          email: "",
+          address: "",
+          province: "Hồ Chí Minh",
+          note: "",
+          paymentMethod: "COD",
+          shippingMethod: customer.shippingMethod,
+        }}
+        enableReinitialize={true}
+        validationSchema={validationSchema}
+        onSubmit={handleFormikSubmit}
+      >
+        {({ values, setFieldValue, errors, touched }) => {
+          // 🟢 ĐÃ SỬA CÚ PHÁP: Chuyển sang dấu ngoặc nhọn để chứa useEffect hợp lệ
+          const [showErrors, setShowErrors] = useState(false);
 
+          useEffect(() => {
+            const hasErrors = Object.keys(errors).length > 0;
+            const hasTouched = Object.keys(touched).length > 0;
 
-          {isPreorder && (
-            <div className="mt-5 rounded-3xl border border-amber-100 bg-amber-50 p-5">
-              <div className="text-sm font-black uppercase tracking-[0.2em] text-amber-700">
-                Pre-order deposit
-              </div>
-              <div className="mt-2 grid gap-3 text-sm font-semibold text-amber-900 md:grid-cols-3">
-                <div>
-                  <span className="block text-amber-700">Full amount</span>
-                  <b>{money(draft.preorder?.fullAmount || draft.subtotal)}</b>
-                </div>
-                <div>
-                  <span className="block text-amber-700">Deposit now</span>
-                  <b className="text-red-600">{money(draft.preorder?.depositAmount || pricing.total)}</b>
-                </div>
-                <div>
-                  <span className="block text-amber-700">Remaining</span>
-                  <b>{money(draft.preorder?.remainingAmount || 0)}</b>
-                </div>
-              </div>
-              <p className="mt-3 text-xs font-bold leading-5 text-amber-700">
-                ETA: {draft.preorder?.eta || "-"} · Shipping fee will be confirmed when the item arrives.
-              </p>
-            </div>
-          )}
+            if (hasErrors && hasTouched) {
+              setShowErrors(true);
 
-          {errors.length > 0 && (
-            <div className="mt-5 rounded-3xl border border-red-100 bg-red-50 p-4 text-red-700">
-              <div className="flex items-center gap-2 font-black">
-                <AlertCircle size={18} />
-                {t.validationTitle}
-              </div>
-              <ul className="mt-2 list-disc space-y-1 pl-6 text-sm font-semibold">
-                {errors.map((error) => (
-                  <li key={error}>{error}</li>
-                ))}
-              </ul>
-            </div>
-          )}
+              const timer = setTimeout(() => {
+                setShowErrors(false);
+              }, 2000);
 
-          {apiNotice && (
-            <div className="mt-5 rounded-3xl border border-amber-100 bg-amber-50 p-4 text-sm font-black text-amber-700">
-              {apiNotice}
-            </div>
-          )}
+              return () => clearTimeout(timer);
+            } else {
+              setShowErrors(false);
+            }
+          }, [errors, touched]);
 
-          <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_430px]">
-            <section className="space-y-6">
-              <div className="rounded-3xl bg-white p-6 shadow-sm">
-                <h2 className="flex items-center gap-2 text-xl font-black">
-                  <MapPin size={22} /> {t.addressTitle}
-                </h2>
+          return (
+            <Form>
+              <main className="min-h-screen bg-[#F5F7FB] px-4 py-6 md:px-6 md:py-8">
+                <div className="mx-auto max-w-7xl">
+                  <p className="text-sm font-black uppercase tracking-[0.2em] text-blue-600">
+                    {t.eyebrow}
+                  </p>
+                  <h1 className="mt-2 text-3xl font-black text-slate-950 md:text-4xl">
+                    {t.title}
+                  </h1>
+                  <p className="mt-2 text-sm font-semibold text-slate-500">{t.reviewHint}</p>
 
-                <div className="mt-5 grid gap-4 md:grid-cols-2">
-                  <input
-                    value={customer.name}
-                    onChange={(e) => setCustomer({ ...customer, name: e.target.value })}
-                    placeholder={t.name}
-                    className="rounded-2xl border px-4 py-3 outline-none focus:border-blue-500"
-                  />
-
-                  <input
-                    value={customer.phone}
-                    onChange={(e) => setCustomer({ ...customer, phone: e.target.value })}
-                    placeholder={t.phone}
-                    inputMode="tel"
-                    className="rounded-2xl border px-4 py-3 outline-none focus:border-blue-500"
-                  />
-
-                  <input
-                    value={customer.email}
-                    onChange={(e) => setCustomer({ ...customer, email: e.target.value })}
-                    placeholder={t.email}
-                    inputMode="email"
-                    className="rounded-2xl border px-4 py-3 outline-none focus:border-blue-500"
-                  />
-
-                  <input
-                    value={customer.province}
-                    onChange={(e) => setCustomer({ ...customer, province: e.target.value })}
-                    placeholder={t.province}
-                    className="rounded-2xl border px-4 py-3 outline-none focus:border-blue-500"
-                  />
-
-                  <input
-                    value={customer.address}
-                    onChange={(e) => setCustomer({ ...customer, address: e.target.value })}
-                    placeholder={t.address}
-                    className="rounded-2xl border px-4 py-3 outline-none focus:border-blue-500"
-                  />
-                </div>
-              </div>
-
-              <div className="rounded-3xl bg-white p-6 shadow-sm">
-                <h2 className="flex items-center gap-2 text-xl font-black">
-                  <Truck size={22} /> {t.shippingTitle}
-                </h2>
-
-                <div className="mt-5 grid gap-4 md:grid-cols-2">
-                  {SHIPPING_METHODS.map((method) => (
-                    <label
-                      key={method.value}
-                      className={`cursor-pointer rounded-2xl border p-4 hover:border-blue-500 ${
-                        customer.shippingMethod === method.value ? "border-blue-500 ring-2 ring-blue-100" : ""
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="shipping"
-                        checked={customer.shippingMethod === method.value}
-                        onChange={() => setCustomer({ ...customer, shippingMethod: method.value })}
-                        className="mr-2"
-                      />
-                      <b>{getLocalized(method.label, lang)}</b>
-                      <span className="ml-2 font-black text-red-500">{money(method.fee)}</span>
-                      <p className="mt-1 text-sm text-slate-500">
-                        {getLocalized(method.desc, lang)}
-                      </p>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              <div className="rounded-3xl bg-white p-6 shadow-sm">
-                <h2 className="flex items-center gap-2 text-xl font-black">
-                  <CreditCard size={22} /> {t.paymentTitle}
-                </h2>
-
-                <div className="mt-5 grid gap-4 md:grid-cols-3">
-                  {PAYMENT_METHODS.map((method) => (
-                    <label
-                      key={method.value}
-                      className={`cursor-pointer rounded-2xl border p-4 hover:border-blue-500 ${
-                        customer.paymentMethod === method.value ? "border-blue-500 ring-2 ring-blue-100" : ""
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="payment"
-                        checked={customer.paymentMethod === method.value}
-                        onChange={() =>
-                          setCustomer({ ...customer, paymentMethod: method.value })
-                        }
-                        className="mr-2"
-                      />
-                      <b>{getLocalized(method.label, lang)}</b>
-                    </label>
-                  ))}
-                </div>
-
-                <textarea
-                  value={customer.note}
-                  onChange={(e) => setCustomer({ ...customer, note: e.target.value })}
-                  placeholder={t.note}
-                  rows={4}
-                  className="mt-5 w-full rounded-2xl border px-4 py-3 outline-none focus:border-blue-500"
-                />
-              </div>
-            </section>
-
-            <aside className="h-fit rounded-3xl bg-white p-6 shadow-sm lg:sticky lg:top-24">
-              <h2 className="text-xl font-black">{t.summary}</h2>
-
-              <div className="mt-5 max-h-80 space-y-4 overflow-y-auto pr-2">
-                {draft.items.map((item) => {
-                  const itemName = getItemName(item, lang);
-
-                  return (
-                    <div key={item.id} className="flex gap-3">
-                      <img
-                        src={item.image}
-                        alt={itemName}
-                        loading="lazy"
-                        className="h-16 w-16 rounded-2xl bg-slate-100 object-cover"
-                      />
-                      <div className="flex-1">
-                        <div className="font-bold">{itemName}</div>
-                        <div className="mt-1 text-sm text-slate-500">
-                          x{item.quantity || 1}
+                  {isPreorder && (
+                    <div className="mt-5 rounded-3xl border border-amber-100 bg-amber-50 p-5">
+                      <div className="text-sm font-black uppercase tracking-[0.2em] text-amber-700">
+                        Pre-order deposit
+                      </div>
+                      <div className="mt-2 grid gap-3 text-sm font-semibold text-amber-900 md:grid-cols-3">
+                        <div>
+                          <span className="block text-amber-700">Full amount</span>
+                          <b>{money(draft.preorder?.fullAmount || draft.subtotal)}</b>
+                        </div>
+                        <div>
+                          <span className="block text-amber-700">Deposit now</span>
+                          <b className="text-red-600">{money(draft.preorder?.depositAmount || pricing.total)}</b>
+                        </div>
+                        <div>
+                          <span className="block text-amber-700">Remaining</span>
+                          <b>{money(draft.preorder?.remainingAmount || 0)}</b>
                         </div>
                       </div>
-                      <b className="text-red-500">
-                        {money((item.price || 0) * (item.quantity || 1))}
-                      </b>
+                      <p className="mt-3 text-xs font-bold leading-5 text-amber-700">
+                        ETA: {draft.preorder?.eta || "-"} · Shipping fee will be confirmed when the item arrives.
+                      </p>
                     </div>
-                  );
-                })}
-              </div>
+                  )}
 
-              <div className="mt-5 rounded-2xl bg-blue-50 p-4 text-sm font-bold text-blue-700">
-                <ShieldCheck size={16} className="mr-1 inline" />
-                {t.saved}
-              </div>
+                  {/* {showErrors && (
+                    <div className="mt-5 rounded-3xl border border-red-100 bg-red-50 p-4 text-red-700 animate-in fade-in slide-in-from-top-4 duration-300">
+                      <div className="flex items-center gap-2 font-black">
+                        <AlertCircle size={18} />
+                        {t.validationTitle}
+                      </div>
+                      <ul className="mt-2 list-disc space-y-1 pl-6 text-sm font-semibold">
+                        {Object.keys(errors).map(
+                          (key) =>
+                            touched[key] &&
+                            errors[key] && (
+                              <li key={key} className="animate-pulse">
+                                {errors[key]}
+                              </li>
+                            )
+                        )}
+                      </ul>
+                    </div>
+                  )} */}
 
-              <div className="mt-5 space-y-3 text-sm">
-                <div className="flex justify-between">
-                  <span>{t.subtotal}</span>
-                  <b>{money(pricing.subtotal)}</b>
-                </div>
+                  {apiNotice && (
+                    <div className="mt-5 rounded-3xl border border-amber-100 bg-amber-50 p-4 text-sm font-black text-amber-700">
+                      {apiNotice}
+                    </div>
+                  )}
 
-                <div className="flex justify-between">
-                  <span>{t.shippingFee}</span>
-                  <b>{money(pricing.shippingFee)}</b>
-                </div>
+                  <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_430px]">
+                    <section className="space-y-6">
 
-                <div className="flex justify-between text-green-600">
-                  <span>{t.discount}</span>
-                  <b>-{money(pricing.discount)}</b>
-                </div>
+                      <ShippingAddressForm t={t} />
 
-                <div className="flex justify-between text-green-600">
-                  <span>{t.shippingDiscount}</span>
-                  <b>-{money(pricing.shippingDiscount)}</b>
-                </div>
+                      <div className="rounded-3xl bg-white p-6 shadow-sm">
+                        <h2 className="flex items-center gap-2 text-xl font-black">
+                          <Truck size={22} /> {t.shippingTitle}
+                        </h2>
 
-                {pricing.voucherCode && (
-                  <div className="flex justify-between text-blue-600">
-                    <span>{t.voucher}</span>
-                    <b>{pricing.voucherCode}</b>
+                        <div className="mt-5 grid gap-4 md:grid-cols-2">
+                          {SHIPPING_METHODS.map((method) => (
+                            <label
+                              key={method.value}
+                              className={`cursor-pointer rounded-2xl border p-4 hover:border-blue-500 ${values.shippingMethod === method.value ? "border-blue-500 ring-2 ring-blue-100" : ""
+                                }`}
+                            >
+                              <input
+                                type="radio"
+                                name="shippingMethod"
+                                checked={values.shippingMethod === method.value}
+                                onChange={() => {
+                                  setFieldValue("shippingMethod", method.value);
+                                  setCustomer((prev) => ({ ...prev, shippingMethod: method.value }));
+                                }}
+                                className="mr-2"
+                              />
+                              <b>{getLocalized(method.label, lang)}</b>
+                              <span className="ml-2 font-black text-red-500">{money(method.fee)}</span>
+                              <p className="mt-1 text-sm text-slate-500">
+                                {getLocalized(method.desc, lang)}
+                              </p>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="rounded-3xl bg-white p-6 shadow-sm">
+                        <h2 className="flex items-center gap-2 text-xl font-black">
+                          <CreditCard size={22} /> {t.paymentTitle}
+                        </h2>
+
+                        <div className="mt-5 grid gap-4 md:grid-cols-3">
+                          {PAYMENT_METHODS.map((method) => (
+                            <label
+                              key={method.value}
+                              className={`cursor-pointer rounded-2xl border p-4 hover:border-blue-500 ${values.paymentMethod === method.value ? "border-blue-500 ring-2 ring-blue-100" : ""
+                                }`}
+                            >
+                              <input
+                                type="radio"
+                                name="paymentMethod"
+                                checked={values.paymentMethod === method.value}
+                                onChange={() => setFieldValue("paymentMethod", method.value)}
+                                className="mr-2"
+                              />
+                              <b>{getLocalized(method.label, lang)}</b>
+                            </label>
+                          ))}
+                        </div>
+
+                        <textarea
+                          name="note"
+                          value={values.note}
+                          onChange={(e) => setFieldValue("note", e.target.value)}
+                          placeholder={t.note}
+                          rows={4}
+                          className="mt-5 w-full rounded-2xl border px-4 py-3 outline-none focus:border-blue-500"
+                        />
+                      </div>
+                    </section>
+
+                    <aside className="h-fit rounded-3xl bg-white p-6 shadow-sm lg:sticky lg:top-24">
+                      <h2 className="text-xl font-black">{t.summary}</h2>
+
+                      <div className="mt-5 max-h-80 space-y-4 overflow-y-auto pr-2">
+                        {draft.items.map((item) => {
+                          const itemName = getItemName(item, lang);
+
+                          return (
+                            <div key={item.id} className="flex gap-3">
+                              <img
+                                src={item.image}
+                                alt={itemName}
+                                loading="lazy"
+                                className="h-16 w-16 rounded-2xl bg-slate-100 object-cover"
+                              />
+                              <div className="flex-1">
+                                <div className="font-bold">{itemName}</div>
+                                <div className="mt-1 text-sm text-slate-500">
+                                  x{item.quantity || 1}
+                                </div>
+                              </div>
+                              <b className="text-red-500">
+                                {money((item.price || 0) * (item.quantity || 1))}
+                              </b>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      <div className="mt-5 rounded-2xl bg-blue-50 p-4 text-sm font-bold text-blue-700">
+                        <ShieldCheck size={16} className="mr-1 inline" />
+                        {t.saved}
+                      </div>
+
+                      <div className="mt-5 space-y-3 text-sm">
+                        <div className="flex justify-between">
+                          <span>{t.subtotal}</span>
+                          <b>{money(pricing.subtotal)}</b>
+                        </div>
+
+                        <div className="flex justify-between">
+                          <span>{t.shippingFee}</span>
+                          <b>{money(pricing.shippingFee)}</b>
+                        </div>
+
+                        <div className="flex justify-between text-green-600">
+                          <span>{t.discount}</span>
+                          <b>-{money(pricing.discount)}</b>
+                        </div>
+
+                        <div className="flex justify-between text-green-600">
+                          <span>{t.shippingDiscount}</span>
+                          <b>-{money(pricing.shippingDiscount)}</b>
+                        </div>
+
+                        {pricing.voucherCode && (
+                          <div className="flex justify-between text-blue-600">
+                            <span>{t.voucher}</span>
+                            <b>{pricing.voucherCode}</b>
+                          </div>
+                        )}
+
+                        <div className="flex justify-between border-t pt-4 text-xl font-black">
+                          <span>{t.total}</span>
+                          <span className="text-red-500">{money(pricing.total)}</span>
+                        </div>
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={placingOrder}
+                        className="mt-6 w-full rounded-2xl bg-blue-600 py-4 font-black text-white shadow-lg hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {placingOrder ? t.placing : t.placeOrder}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => navigate("/cart")}
+                        className="mt-3 w-full rounded-2xl border py-4 font-black text-slate-700 hover:bg-slate-50"
+                      >
+                        {t.backCart}
+                      </button>
+                    </aside>
                   </div>
-                )}
-
-                <div className="flex justify-between border-t pt-4 text-xl font-black">
-                  <span>{t.total}</span>
-                  <span className="text-red-500">{money(pricing.total)}</span>
                 </div>
-              </div>
-
-              <button
-                onClick={submitOrder}
-                disabled={placingOrder}
-                className="mt-6 w-full rounded-2xl bg-blue-600 py-4 font-black text-white shadow-lg hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {placingOrder ? t.placing : t.placeOrder}
-              </button>
-
-              <button
-                onClick={() => navigate("/cart")}
-                className="mt-3 w-full rounded-2xl border py-4 font-black text-slate-700 hover:bg-slate-50"
-              >
-                {t.backCart}
-              </button>
-            </aside>
-          </div>
-        </div>
-      </main>
+              </main>
+            </Form>
+          );
+        }}
+      </Formik>
     </StorefrontShell>
   );
 }
