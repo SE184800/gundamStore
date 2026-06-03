@@ -18,6 +18,7 @@ import inventoryRoutes from "./routes/inventoryRoutes.js";
 import pricingRoutes from "./routes/pricingRoutes.js";
 import promotionRoutes from "./routes/promotionRoutes.js";
 import restockAlertRoutes from "./routes/restockAlertRoutes.js";
+import { publicBannerRouter, adminBannerRouter } from "./routes/bannerRoutes.js";
 
 const app = express();
 
@@ -68,7 +69,7 @@ app.use(
   })
 );
 
-app.use(express.json({ limit: "1mb" }));
+app.use(express.json({ limit: "16mb" }));
 app.use(morgan(env.isProduction ? "combined" : "dev"));
 
 app.use("/health", healthRoutes);
@@ -90,6 +91,8 @@ app.use("/api/inventory", inventoryRoutes);
 app.use("/api/pricing", pricingRoutes);
 app.use("/api/promotions", promotionRoutes);
 app.use("/api/restock-alerts", restockAlertRoutes);
+app.use("/api/banners", publicBannerRouter);
+app.use("/api/admin/banners", adminBannerRouter);
 
 app.use((req, res) => {
   res.status(404).json({
