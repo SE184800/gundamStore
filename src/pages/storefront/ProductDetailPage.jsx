@@ -40,6 +40,10 @@ import {
 import { isCompareSaved, toggleCompare } from "../../services/CompareService";
 import { registerRestockAlert } from "../../services/RestockAlertService";
 import {
+  getStorefrontProductDetailForStorefront,
+  getStorefrontProductsForStorefront,
+} from "../../services/StorefrontProductApiService";
+import {
   ORDER_TYPE,
   PAYMENT_STATUS,
   PREORDER_STATUS,
@@ -876,11 +880,46 @@ export default function ProductDetailPage() {
   const t = copy[lang];
   const slug = slugFromPath();
 
-  const product = useMemo(() => {
-    return (state.products || []).find((item) => item.slug === slug || item.id === slug) || null;
-  }, [state.products, slug]);
-
+  const [product, setProduct] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(true);
+  const [detailError, setDetailError] = useState("");
+  const [relatedDbProducts, setRelatedDbProducts] = useState([]);
   const [activeImage, setActiveImage] = useState(0);
+
+  useEffect(() => {
+    let alive = true;
+
+    setDetailLoading(true);
+    setDetailError("");
+
+    getStorefrontProductDetailForStorefront(slug)
+      .then((item) => {
+        if (!alive) return;
+        setProduct(item);
+        setActiveImage(0);
+        setDetailError("");
+      })
+      .catch((error) => {
+        if (!alive) return;
+        setProduct(null);
+        setDetailError(error?.message || t.notFound);
+      })
+      .finally(() => {
+        if (alive) setDetailLoading(false);
+      });
+
+    getStorefrontProductsForStorefront()
+      .then((items) => {
+        if (alive) setRelatedDbProducts(items || []);
+      })
+      .catch(() => {
+        if (alive) setRelatedDbProducts([]);
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, [slug, t.notFound]);
 
   function startPreorderCheckout(product, qty = 1) {
     const quantity = Math.max(1, Number(qty) || 1);
@@ -939,11 +978,16 @@ export default function ProductDetailPage() {
 
   const relatedProducts = useMemo(() => {
     if (!product) return [];
-    return (state.products || [])
+    return (relatedDbProducts || [])
       .filter((item) => item.id !== product.id && item.active !== false)
-      .filter((item) => item.grade === product.grade || item.category === product.category || item.brand === product.brand)
+      .filter((item) =>
+        item.grade === product.grade ||
+        item.categoryId === product.categoryId ||
+        item.category?.id === product.category?.id ||
+        item.brand === product.brand
+      )
       .slice(0, 4);
-  }, [state.products, product]);
+  }, [relatedDbProducts, product]);
 
   useEffect(() => {
     if (product) {
@@ -952,7 +996,19 @@ export default function ProductDetailPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product?.id]);
 
-  if (!product) {
+  if (detailLoading) {
+    return (
+      <PageShell>
+        <section className="mx-auto max-w-[960px] px-4 py-16 text-center">
+          <div className="rounded-3xl border border-slate-200 bg-white p-10 text-sm font-black text-slate-500 shadow-sm">
+            Loading product...
+          </div>
+        </section>
+      </PageShell>
+    );
+  }
+
+  if (detailError || !product) {
     return (
       <PageShell>
         <section className="mx-auto max-w-[960px] px-4 py-16 text-center">

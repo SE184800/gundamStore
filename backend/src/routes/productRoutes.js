@@ -20,6 +20,7 @@ import {
   listAdminProducts,
   listAdminSuppliers,
   listStorefrontProducts,
+  listStorefrontProductCategories,
   setAdminProductGroups,
   updateAdminProduct,
   updateAdminProductPrice,
@@ -68,6 +69,7 @@ router.post("/admin", ...requireProductUpdate, createAdminProduct);
 router.patch("/admin/:id", ...requireProductUpdate, updateAdminProduct);
 router.delete("/admin/:id", ...requireProductUpdate, deleteAdminProduct);
 
+router.get("/categories", listStorefrontProductCategories);
 router.get("/", listStorefrontProducts);
 router.get("/:key", getStorefrontProductByKey);
 

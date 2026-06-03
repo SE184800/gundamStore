@@ -19,14 +19,43 @@ import {
 import PageShell from "../../components/common/PageShell";
 import { useCms } from "../../store/CmsStore";
 import { translateStaticText } from "../../i18n";
+import { getSafeHref } from "../../utils/urlSafety";
 import ProductCard from "../../components/storefront/ProductCard";
 import {
-  enrichProductsWithBackendIds,
-  getStorefrontProductsFromApi,
+  getStorefrontCategoriesFromApi,
+  getStorefrontProductsForStorefront,
 } from "../../services/StorefrontProductApiService";
-import { getStorefrontHomeBannersFromApi } from "../../services/BannerApiService";
-import { getSafeHref } from "../../utils/urlSafety";
 
+
+function getHeroTextStyles(banner = {}) {
+  const fontFamily =
+    banner.fontFamily === "serif"
+      ? "Georgia, serif"
+      : banner.fontFamily === "mono"
+      ? "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace"
+      : "system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif";
+
+  return {
+    heading: {
+      display: banner.showHeading === false ? "none" : undefined,
+      color: banner.headingColor || undefined,
+      fontSize: banner.headingSize ? `${Number(banner.headingSize)}px` : undefined,
+      fontFamily,
+    },
+    title: {
+      display: banner.showTitle === false ? "none" : undefined,
+      color: banner.titleColor || undefined,
+      fontSize: banner.titleSize ? `${Number(banner.titleSize)}px` : undefined,
+      fontFamily,
+    },
+    subtitle: {
+      display: banner.showSubtitle === false ? "none" : undefined,
+      color: banner.subtitleColor || undefined,
+      fontSize: banner.subtitleSize ? `${Number(banner.subtitleSize)}px` : undefined,
+      fontFamily,
+    },
+  };
+}
 
 const copy = {
   vi: {
@@ -152,6 +181,10 @@ function text(value, lang, fallback = "") {
   if (!value) return translateStaticText(fallback, lang);
   if (typeof value === "string") return translateStaticText(value, lang);
   return value[lang] || value.vi || value.en || translateStaticText(fallback, lang);
+}
+
+function bannerHref(banner = {}) {
+  return getSafeHref(banner.ctaUrl || banner.link || "/shop", "/shop");
 }
 
 function productName(product, lang) {
@@ -331,19 +364,6 @@ function GundamVisual({ tone = "blue", imageUrl, large = false }) {
 }
 
 
-function hasBannerMedia(banner = {}) {
-  return Boolean(
-    banner.videoUrl ||
-    banner.mainImage ||
-    banner.imageUrl ||
-    banner.mediaUrl ||
-    banner.image ||
-    banner.desktopImage ||
-    banner.mobileImage ||
-    banner.tabletImage
-  );
-}
-
 function isLiveHomepageBanner(banner = {}) {
   const isActive = banner.active !== false;
   const status = String(banner.status || "Live").toLowerCase();
@@ -351,8 +371,8 @@ function isLiveHomepageBanner(banner = {}) {
 
   return (
     isActive &&
-    status === "live" &&
-    hasBannerMedia(banner) &&
+    !status.includes("draft") &&
+    !status.includes("inactive") &&
     (placement.includes("home") || placement.includes("hero"))
   );
 }
@@ -364,8 +384,6 @@ function getBannerBaseImage(banner = {}) {
     banner.mediaUrl ||
     banner.image ||
     banner.desktopImage ||
-    banner.mobileImage ||
-    banner.tabletImage ||
     "/images/banners/banner-1.jpg"
   );
 }
@@ -417,7 +435,8 @@ function getHeroBanners(banners = [], settings = {}) {
       ];
 }
 
-function BannerMedia({ banner, lang, className = "" }) {
+function BannerMedia({ banner, lang, className = "", imageClassName = "" }) {
+  const videoUrl = getBannerVideoUrl(banner);
   const baseImage = getBannerBaseImage(banner);
   const fitClass = bannerFitClass(banner);
   const backgroundColor = banner.backgroundColor || banner.bgColor || "#f8fafc";
@@ -425,7 +444,7 @@ function BannerMedia({ banner, lang, className = "" }) {
   if (isBannerVideo(banner)) {
     return (
       <video
-        src={getBannerVideoUrl(banner) || baseImage}
+        src={videoUrl || baseImage}
         className={`${fitClass} ${className}`}
         style={{ backgroundColor }}
         autoPlay
@@ -448,18 +467,14 @@ function BannerMedia({ banner, lang, className = "" }) {
       <img
         src={desktopSrc || baseImage}
         alt={bannerAlt(banner, lang)}
-        className={`${fitClass} ${className}`}
+        className={`${fitClass} ${className} ${imageClassName}`}
         style={{ backgroundColor }}
       />
     </picture>
   );
 }
 
-function bannerHref(banner = {}) {
-  return getSafeHref(banner.ctaUrl || banner.link || banner.href || "/shop", "/shop");
-}
-
-function ImageFirstLinkBanner({ banner, lang, actions, className = "", mediaClassName = "" }) {
+function ImageOnlyBannerLink({ banner, lang, actions, className = "", mediaClassName = "" }) {
   return (
     <a
       href={bannerHref(banner)}
@@ -468,11 +483,10 @@ function ImageFirstLinkBanner({ banner, lang, actions, className = "", mediaClas
       onClick={() => actions?.track?.("banner_click", { meta: { bannerId: banner.id || "hero" } })}
       className={`image-first-banner-link block overflow-hidden bg-slate-50 ${className}`}
     >
-      <BannerMedia banner={banner} lang={lang} className={`block h-full w-full ${mediaClassName}`} />
+      <BannerMedia banner={banner} lang={lang} className={`h-full w-full ${mediaClassName}`} />
     </a>
   );
 }
-
 
 function Hero({ banners, lang, actions, heroSettings }) {
   const settings = {
@@ -486,10 +500,24 @@ function Hero({ banners, lang, actions, heroSettings }) {
   const safeBanners = getHeroBanners(banners, settings);
 
   if (settings.layout === "v3") {
-    return <HeroV3Bento banners={safeBanners} lang={lang} actions={actions} settings={settings} />;
+    return (
+      <HeroV3Bento
+        banners={safeBanners}
+        lang={lang}
+        actions={actions}
+        settings={settings}
+      />
+    );
   }
 
-  return <HeroV2Classic banners={safeBanners} lang={lang} actions={actions} settings={settings} />;
+  return (
+    <HeroV2Classic
+      banners={safeBanners}
+      lang={lang}
+      actions={actions}
+      settings={settings}
+    />
+  );
 }
 
 function HeroV3Bento({ banners, lang, actions, settings }) {
@@ -498,12 +526,14 @@ function HeroV3Bento({ banners, lang, actions, settings }) {
 
   const safeBanners = banners.length ? banners : getHeroBanners([], settings);
   const activeBanner = safeBanners[activeIndex] || safeBanners[0];
-  const sideBanners = safeBanners.filter((_, index) => index !== activeIndex).slice(0, 2);
+  const sideOne = safeBanners[(activeIndex + 1) % safeBanners.length] || activeBanner;
+  const sideTwo = safeBanners[(activeIndex + 2) % safeBanners.length] || activeBanner;
   const interval = Number(settings.interval || 4500);
 
-  function goToBanner(index) {
-    setActiveIndex((index + safeBanners.length) % safeBanners.length);
-  }
+  const goToBanner = (index) => {
+    const nextIndex = (index + safeBanners.length) % safeBanners.length;
+    setActiveIndex(nextIndex);
+  };
 
   useEffect(() => {
     if (!settings.autoplay || safeBanners.length <= 1 || paused) return;
@@ -516,13 +546,13 @@ function HeroV3Bento({ banners, lang, actions, settings }) {
   }, [settings.autoplay, safeBanners.length, paused, interval]);
 
   return (
-    <section className="image-first-hero mx-auto max-w-[1440px] px-3 pt-3 sm:px-4 sm:pt-4 lg:px-8">
+    <section className="image-first-hero mobile-hero-fit mx-auto max-w-[1440px] px-3 pt-3 sm:px-4 sm:pt-4 lg:px-8">
       <div
         className="grid gap-3 lg:grid-cols-[1.75fr_0.95fr]"
         onMouseEnter={() => setPaused(true)}
         onMouseLeave={() => setPaused(false)}
       >
-        <ImageFirstLinkBanner
+        <ImageOnlyBannerLink
           banner={activeBanner}
           lang={lang}
           actions={actions}
@@ -530,10 +560,10 @@ function HeroV3Bento({ banners, lang, actions, settings }) {
           mediaClassName="transition duration-700 hover:scale-[1.01]"
         />
 
-        {sideBanners.length > 0 && (
+        {safeBanners.length > 1 && (
           <div className="hidden gap-3 lg:grid">
-            {sideBanners.map((banner, index) => (
-              <ImageFirstLinkBanner
+            {[sideOne, sideTwo].map((banner, index) => (
+              <ImageOnlyBannerLink
                 key={`${banner.id || "side"}-${index}`}
                 banner={banner}
                 lang={lang}
@@ -557,7 +587,7 @@ function HeroV3Bento({ banners, lang, actions, settings }) {
             ‹
           </button>
 
-          <div className="image-first-hero-thumbs mobile-hide-scrollbar flex flex-1 gap-3 overflow-x-auto pb-1 md:grid md:grid-cols-5">
+          <div className="image-first-hero-thumbs mobile-hide-scrollbar grid flex-1 grid-cols-2 gap-3 overflow-x-auto md:grid-cols-5">
             {safeBanners.map((banner, index) => (
               <button
                 key={banner.id || index}
@@ -570,7 +600,7 @@ function HeroV3Bento({ banners, lang, actions, settings }) {
                 }`}
                 aria-label={`Banner ${index + 1}`}
               >
-                <BannerMedia banner={banner} lang={lang} className="block h-full w-full" />
+                <BannerMedia banner={banner} lang={lang} className="h-full w-full" />
               </button>
             ))}
           </div>
@@ -597,9 +627,10 @@ function HeroV2Classic({ banners, lang, actions, settings }) {
   const activeBanner = safeBanners[activeIndex] || safeBanners[0];
   const interval = Number(settings.interval || 4500);
 
-  function goToBanner(index) {
-    setActiveIndex((index + safeBanners.length) % safeBanners.length);
-  }
+  const goToBanner = (index) => {
+    const nextIndex = (index + safeBanners.length) % safeBanners.length;
+    setActiveIndex(nextIndex);
+  };
 
   useEffect(() => {
     if (!settings.autoplay || safeBanners.length <= 1 || paused) return;
@@ -614,11 +645,11 @@ function HeroV2Classic({ banners, lang, actions, settings }) {
   return (
     <section className="image-first-hero mx-auto max-w-[1440px] px-4 pt-4 lg:px-8">
       <div
-        className="mobile-no-overflow relative overflow-hidden rounded-[24px] border border-blue-100 bg-white shadow-[0_20px_70px_rgba(37,99,235,0.12)] sm:rounded-[34px]"
+        className="mobile-no-overflow relative overflow-hidden rounded-[24px] border border-blue-100 bg-white shadow-[0_20px_70px_rgba(37,99,235,0.12)] sm:rounded-[34px] sm:shadow-[0_30px_110px_rgba(37,99,235,0.16)]"
         onMouseEnter={() => setPaused(true)}
         onMouseLeave={() => setPaused(false)}
       >
-        <ImageFirstLinkBanner
+        <ImageOnlyBannerLink
           banner={activeBanner}
           lang={lang}
           actions={actions}
@@ -645,7 +676,6 @@ function HeroV2Classic({ banners, lang, actions, settings }) {
     </section>
   );
 }
-
 
 function TrustStrip({ lang }) {
   const t = copy[lang];
@@ -677,9 +707,9 @@ function TrustStrip({ lang }) {
 }
 
 function CategorySidebar({ categories, lang }) {
-  const list = categories.length ? categories : fallbackCategories;
+  const list = categories || [];
 
-  function getCategoryImage(category, index) {
+  const getCategoryImage = (category, index) => {
     return (
       category.icon ||
       category.imageUrl ||
@@ -692,12 +722,12 @@ function CategorySidebar({ categories, lang }) {
         "/images/products/strike-freedom.jpg",
       ][index % 4]
     );
-  }
+  };
 
-  function getCategoryHref(category) {
+  const getCategoryHref = (category) => {
     const fallback = `/shop?category=${encodeURIComponent(category.id || category.slug || category.code || "")}`;
     return getSafeHref(category.ctaUrl || fallback, fallback);
-  }
+  };
 
   return (
     <aside className="image-first-category-wrap rounded-[28px] border border-slate-200 bg-white p-3 shadow-sm sm:p-4">
@@ -733,7 +763,10 @@ function CategorySidebar({ categories, lang }) {
 
 function ProductSection({ section, products, displayMappings, lang, actions, badge }) {
   const t = copy[lang];
-  const sectionProducts = getSectionProducts(products, section, displayMappings);
+  const mappedProducts = getSectionProducts(products, section, displayMappings);
+  const sectionProducts = mappedProducts.length
+    ? mappedProducts
+    : (products || []).slice(0, Number(section.limit || 8));
   const title = text(section.title, lang, t.newArrivals);
 
   return (
@@ -751,7 +784,7 @@ function ProductSection({ section, products, displayMappings, lang, actions, bad
       </div>
 
       {sectionProducts.length ? (
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="home-mobile-product-grid grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {sectionProducts.map((product) => (
             <ProductCard key={product.id} product={product} lang={lang} actions={actions} />
           ))}
@@ -783,11 +816,47 @@ function LoyaltyBubble({ lang }) {
   );
 }
 
+
+function deriveCategoriesFromProducts(products = []) {
+  const map = new Map();
+
+  for (const product of products || []) {
+    const category = product.category || {};
+    const id = product.categoryId || category.id || category.slug || category.code;
+    if (!id || map.has(id)) continue;
+
+    map.set(id, {
+      id,
+      backendCategoryId: category.id || id,
+      code: category.code || id,
+      slug: category.slug || id,
+      name: {
+        vi: category.nameVi || category.name?.vi || category.name || category.code || "Danh mục",
+        en: category.nameEn || category.name?.en || category.nameVi || category.name || category.code || "Category",
+      },
+      label: category.nameVi || category.nameEn || category.code || id,
+      active: category.active !== false,
+      sortOrder: Number(category.sortOrder || 0),
+      sort: Number(category.sortOrder || 0),
+      source: "backend-derived",
+    });
+  }
+
+  return Array.from(map.values())
+    .filter((item) => item.active !== false)
+    .sort((a, b) => Number(a.sortOrder || 0) - Number(b.sortOrder || 0) || String(a.label || "").localeCompare(String(b.label || "")));
+}
+
 export default function HomePage() {
-  const [backendHero, setBackendHero] = useState({ banners: [], heroSettings: null, ready: false });
   const [backendProducts, setBackendProducts] = useState([]);
+  const [backendCategories, setBackendCategories] = useState([]);
   const [productApiReady, setProductApiReady] = useState(false);
   const [productApiError, setProductApiError] = useState("");
+  const [catalogDebug, setCatalogDebug] = useState({
+    products: 0,
+    categories: 0,
+    error: "",
+  });
   const { state, actions } = useCms();
   const lang = state.settings?.lang || "vi";
   const banners = useMemo(() => {
@@ -799,65 +868,65 @@ export default function HomePage() {
   }, [state.banners]);
 
   const sections = useMemo(() => mergeCmsSections(state.homeSections), [state.homeSections]);
-  const localProducts = state.products || [];
-  const enrichedProducts = useMemo(
-    () => enrichProductsWithBackendIds(localProducts, backendProducts),
-    [localProducts, backendProducts]
-  );
-  const products = enrichedProducts;
+  const products = backendProducts;
+
 
   useEffect(() => {
     let alive = true;
 
-    getStorefrontHomeBannersFromApi()
-      .then((payload) => {
-        if (!alive) return;
-        setBackendHero({
-          banners: payload.banners || [],
-          heroSettings: payload.heroSettings || null,
-          ready: true,
-        });
-      })
-      .catch((error) => {
-        if (!alive) return;
-        console.warn("Storefront banner sync skipped", error);
-        setBackendHero({ banners: [], heroSettings: null, ready: false });
+    Promise.allSettled([
+      getStorefrontProductsForStorefront(),
+      getStorefrontCategoriesFromApi(),
+    ]).then(([productsResult, categoriesResult]) => {
+      if (!alive) return;
+
+      const products =
+        productsResult.status === "fulfilled" && Array.isArray(productsResult.value)
+          ? productsResult.value
+          : [];
+
+      const categoriesFromApi =
+        categoriesResult.status === "fulfilled" && Array.isArray(categoriesResult.value)
+          ? categoriesResult.value
+          : [];
+
+      const derivedCategories = categoriesFromApi.length
+        ? categoriesFromApi
+        : deriveCategoriesFromProducts(products);
+
+      setBackendProducts(products);
+      setBackendCategories(derivedCategories);
+
+      const error =
+        productsResult.status === "rejected"
+          ? productsResult.reason?.message || "Product API failed"
+          : categoriesResult.status === "rejected"
+            ? categoriesResult.reason?.message || "Category API failed"
+            : "";
+
+      setCatalogDebug({
+        products: products.length,
+        categories: derivedCategories.length,
+        error,
       });
+
+      console.info("[DB-SOT homepage catalog]", {
+        products: products.length,
+        categories: derivedCategories.length,
+        error,
+      });
+    });
 
     return () => {
       alive = false;
     };
   }, []);
 
-  useEffect(() => {
-    let alive = true;
-
-    getStorefrontProductsFromApi()
-      .then((items) => {
-        if (!alive) return;
-        setBackendProducts(items);
-        setProductApiReady(true);
-        setProductApiError("");
-      })
-      .catch((error) => {
-        if (!alive) return;
-        setBackendProducts([]);
-        setProductApiReady(false);
-        setProductApiError(error?.message || "Storefront product sync skipped.");
-      });
-
-    return () => {
-      alive = false;
-    };
-  }, []);
-  const categories = state.categories || [];
-  const heroBanners = backendHero.banners.length
-    ? backendHero.banners
-    : (state?.publishedHero?.banners || banners);
-  const resolvedHeroSettings =
-    backendHero.heroSettings ||
-    state?.publishedHero?.heroSettings ||
-    state?.heroSettings;
+  const categories = useMemo(() => {
+    return backendCategories.length
+      ? backendCategories
+      : deriveCategoriesFromProducts(backendProducts);
+  }, [backendCategories, backendProducts]);
 
   useEffect(() => {
     actions.track("page_view", { page: "/" });
@@ -879,11 +948,16 @@ export default function HomePage() {
           />
         </div>
 
-        <Hero banners={heroBanners} lang={lang} actions={actions} heroSettings={resolvedHeroSettings} />
+        <Hero banners={(state?.publishedHero?.banners || banners)} lang={lang} actions={actions} heroSettings={(state?.publishedHero?.heroSettings || state?.heroSettings)} />
         <TrustStrip lang={lang} />
 
         <main className="mx-auto grid max-w-[1200px] gap-4 px-4 pb-8 lg:grid-cols-[190px_1fr]">
-          <CategorySidebar categories={categories.length ? categories : fallbackCategories} lang={lang} />
+          {catalogDebug.error && (
+                    <div className="mb-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-black text-amber-800">
+                      DB catalog debug: products={catalogDebug.products}, categories={catalogDebug.categories}, error={catalogDebug.error}
+                    </div>
+                  )}
+                  <CategorySidebar categories={categories} lang={lang} />
 
           <div className="space-y-4">
             {sections.map((section, index) => (
