@@ -182,6 +182,7 @@ export default function App() {
             <Route path="inventory/stock-count" element={<AdminInventoryStockCount />} />
             <Route path="inventory/transactions" element={<AdminInventoryTransactions />} />
             <Route path="promotions" element={<AdminPromotions />} />
+            <Route path="vouchers" element={<AdminVouchers />} />
             <Route path="categories" element={<AdminCategories />} />
             <Route path="product-category-mapping" element={<AdminProductCategoryMapping />} />
             <Route path="product-display-mapping" element={<AdminProductDisplayMapping />} />
