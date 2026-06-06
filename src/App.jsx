@@ -58,6 +58,7 @@ const AdminInventoryStockCount = lazy(() => import("./pages/admin/AdminInventory
 const AdminInventoryAdjustments = lazy(() => import("./pages/admin/AdminInventoryAdjustments"));
 const AdminInventoryTransactions = lazy(() => import("./pages/admin/AdminInventoryTransactions"));
 const AdminPromotions = lazy(() => import("./pages/admin/AdminPromotions"));
+const AdminVouchers = lazy(() => import("./pages/admin/AdminVouchers"));
 const AdminCategories = lazy(() => import("./pages/admin/AdminCategories"));
 const AdminProductCategoryMapping = lazy(() => import("./pages/admin/AdminProductCategoryMapping"));
 const AdminProductDisplayMapping = lazy(() => import("./pages/admin/AdminProductDisplayMapping"));

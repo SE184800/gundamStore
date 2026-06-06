@@ -60,14 +60,14 @@ model User {
   role         Role       @relation(fields: [roleId], references: [id])
   auditLogs    AuditLog[]
 
-  profile       UserProfile?
-  addresses     UserAddress[]
-  wishlistItems WishlistItem[]
-  orders        Order[]
+  profile            UserProfile?
+  addresses          UserAddress[]
+  wishlistItems      WishlistItem[]
+  orders             Order[]
+  voucherRedemptions VoucherRedemption[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
 }
 
 model UserProfile {
@@ -91,17 +91,17 @@ model UserProfile {
 }
 
 model UserAddress {
-  id          String  @id @default(cuid())
-  userId      String
-  label       String  @default("Nhà riêng")
-  receiver    String
-  phone       String
-  address     String
-  city        String?
-  district    String?
-  ward        String?
-  postalCode  String?
-  isDefault   Boolean @default(false)
+  id         String  @id @default(cuid())
+  userId     String
+  label      String  @default("Nhà riêng")
+  receiver   String
+  phone      String
+  address    String
+  city       String?
+  district   String?
+  ward       String?
+  postalCode String?
+  isDefault  Boolean @default(false)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -311,8 +311,8 @@ model Product {
   inventoryLogs         InventoryLog[]
   prices                ProductPrice[]
   promotionProducts     PromotionProduct[]
-  wishlistItems        WishlistItem[]
-  restockAlerts        RestockAlert[]
+  wishlistItems         WishlistItem[]
+  restockAlerts         RestockAlert[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -347,6 +347,57 @@ model ProductVariant {
   @@index([sku, active])
 }
 
+model Voucher {
+  id                    String    @id @default(cuid())
+  code                  String    @unique
+  nameVi                String
+  nameEn                String?
+  description           String?
+  type                  String    @default("PERCENT")
+  value                 Int       @default(0)
+  maxDiscount           Int       @default(0)
+  minOrder              Int       @default(0)
+  usageLimit            Int       @default(0)
+  usageLimitPerCustomer Int       @default(0)
+  usedCount             Int       @default(0)
+  startDate             DateTime
+  endDate               DateTime?
+  active                Boolean   @default(true)
+  stackable             Boolean   @default(false)
+  firstOrderOnly        Boolean   @default(false)
+  productIds            Json?
+  categoryIds           Json?
+  note                  String?
+
+  orders      Order[]
+  redemptions VoucherRedemption[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([code, active, startDate, endDate])
+}
+
+model VoucherRedemption {
+  id               String  @id @default(cuid())
+  voucherId        String
+  orderId          String
+  customerId       String?
+  code             String
+  discount         Int     @default(0)
+  shippingDiscount Int     @default(0)
+
+  voucher  Voucher @relation(fields: [voucherId], references: [id], onDelete: Cascade)
+  order    Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  customer User?   @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([voucherId, customerId])
+  @@index([orderId])
+  @@index([code])
+}
+
 model Order {
   id              String  @id @default(cuid())
   orderNo         String  @unique
@@ -356,17 +407,21 @@ model Order {
   customerEmail   String?
   customerAddress String
 
-  customer User? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  customer User?    @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  voucher  Voucher? @relation(fields: [voucherId], references: [id], onDelete: SetNull)
 
   status        OrderStatus   @default(PLACED)
   paymentStatus PaymentStatus @default(UNPAID)
 
-  subtotal    Int @default(0)
-  shippingFee Int @default(0)
-  discount    Int @default(0)
-  total       Int @default(0)
+  subtotal         Int     @default(0)
+  shippingFee      Int     @default(0)
+  discount         Int     @default(0)
+  shippingDiscount Int     @default(0)
+  voucherCode      String?
+  voucherId        String?
+  total            Int     @default(0)
 
-  note      String?
+  note String?
 
   cancelledAt     DateTime?
   cancelReason    String?
@@ -374,10 +429,11 @@ model Order {
   cancelledById   String?
   stockRestoredAt DateTime?
 
-  items     OrderItem[]
-  payments  Payment[]
-  shipments Shipment[]
-  auditLogs AuditLog[]
+  items              OrderItem[]
+  payments           Payment[]
+  shipments          Shipment[]
+  auditLogs          AuditLog[]
+  voucherRedemptions VoucherRedemption[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -387,20 +443,20 @@ model Order {
 }
 
 model OrderItem {
-  id        String @id @default(cuid())
-  orderId   String
-  productId String
-  variantId String?
-  sku       String
-  variantSku String?
-  name      String
-  variantName String?
+  id             String  @id @default(cuid())
+  orderId        String
+  productId      String
+  variantId      String?
+  sku            String
+  variantSku     String?
+  name           String
+  variantName    String?
   variantOptions Json?
-  price     Int
-  quantity  Int
+  price          Int
+  quantity       Int
 
-  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product Product @relation(fields: [productId], references: [id])
+  order   Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product         @relation(fields: [productId], references: [id])
   variant ProductVariant? @relation(fields: [variantId], references: [id])
 
   createdAt DateTime @default(now())
@@ -598,9 +654,8 @@ model PromotionProduct {
   @@unique([promotionId, productId])
 }
 
-
 model RestockAlert {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   productId   String
   productName String
   productSlug String?
@@ -610,7 +665,7 @@ model RestockAlert {
   name        String
   phone       String
   note        String?
-  status      String   @default("PENDING")
+  status      String    @default("PENDING")
   notifiedAt  DateTime?
 
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
@@ -621,7 +676,6 @@ model RestockAlert {
   @@index([status, createdAt])
   @@index([productId, phone, status])
 }
-
 
 model Banner {
   id            String  @id @default(cuid())

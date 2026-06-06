@@ -17,6 +17,7 @@ import productRoutes from "./routes/productRoutes.js";
 import inventoryRoutes from "./routes/inventoryRoutes.js";
 import pricingRoutes from "./routes/pricingRoutes.js";
 import promotionRoutes from "./routes/promotionRoutes.js";
+import voucherRoutes from "./routes/voucherRoutes.js";
 import restockAlertRoutes from "./routes/restockAlertRoutes.js";
 import { publicBannerRouter, adminBannerRouter } from "./routes/bannerRoutes.js";
 
@@ -78,6 +79,7 @@ app.use([
   "/api/admin",
   "/api/products/admin",
   "/api/orders/admin",
+  "/api/vouchers/admin",
   "/api/inventory",
   "/api/purchase-receipts",
 ], requireAuth, requireAdminRole);
@@ -90,6 +92,7 @@ app.use("/api/products", productRoutes);
 app.use("/api/inventory", inventoryRoutes);
 app.use("/api/pricing", pricingRoutes);
 app.use("/api/promotions", promotionRoutes);
+app.use("/api/vouchers", voucherRoutes);
 app.use("/api/restock-alerts", restockAlertRoutes);
 app.use("/api/banners", publicBannerRouter);
 app.use("/api/admin/banners", adminBannerRouter);
