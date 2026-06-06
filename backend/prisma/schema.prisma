@@ -65,6 +65,7 @@ model User {
   wishlistItems      WishlistItem[]
   orders             Order[]
   voucherRedemptions VoucherRedemption[]
+  productReviews     ProductReview[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -314,8 +315,9 @@ model Product {
   wishlistItems         WishlistItem[]
   restockAlerts         RestockAlert[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  productReviews ProductReview[]
 }
 
 model ProductVariant {
@@ -345,6 +347,37 @@ model ProductVariant {
 
   @@index([productId, active, sortOrder])
   @@index([sku, active])
+}
+
+model ProductReview {
+  id               String    @id @default(cuid())
+  productId        String
+  userId           String?
+  orderNo          String?
+  customerName     String
+  customerEmail    String?
+  rating           Int
+  title            String?
+  content          String
+  images           Json?
+  status           String    @default("PENDING")
+  verifiedPurchase Boolean   @default(false)
+  helpfulCount     Int       @default(0)
+  adminReply       String?
+  moderatedById    String?
+  moderatedAt      DateTime?
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user    User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  order     Order?   @relation(fields: [orderId], references: [id])
+  orderId   String?
+
+  @@index([productId, status, createdAt])
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
 }
 
 model Voucher {
@@ -434,6 +467,7 @@ model Order {
   shipments          Shipment[]
   auditLogs          AuditLog[]
   voucherRedemptions VoucherRedemption[]
+  productReviews     ProductReview[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

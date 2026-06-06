@@ -952,8 +952,58 @@ function SpecsCard({ product, lang }) {
   );
 }
 
-function Reviews({ reviews, lang }) {
+function Reviews({ product, reviews, lang, onSubmitted }) {
   const t = copy[lang];
+  const [draft, setDraft] = useState({
+    customerName: "",
+    customerEmail: "",
+    orderNo: "",
+    rating: 5,
+    title: "",
+    content: "",
+  });
+  const [message, setMessage] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  function patch(field, value) {
+    setDraft((prev) => ({ ...prev, [field]: value }));
+  }
+
+  async function submitReview() {
+    if (!product?.id || busy) return;
+
+    setBusy(true);
+    setMessage("");
+
+    try {
+      await createStorefrontReviewApi({
+        productId: product.id,
+        slug: product.slug,
+        sku: product.sku,
+        customerName: draft.customerName,
+        customerEmail: draft.customerEmail,
+        orderNo: draft.orderNo,
+        rating: Number(draft.rating || 5),
+        title: draft.title,
+        content: draft.content,
+      });
+
+      setDraft({
+        customerName: "",
+        customerEmail: "",
+        orderNo: "",
+        rating: 5,
+        title: "",
+        content: "",
+      });
+      setMessage(lang === "vi" ? "Đã gửi đánh giá. Review sẽ hiển thị sau khi được duyệt." : "Review submitted. It will appear after moderation.");
+      await onSubmitted?.();
+    } catch (error) {
+      setMessage(error?.message || (lang === "vi" ? "Không gửi được đánh giá." : "Cannot submit review."));
+    } finally {
+      setBusy(false);
+    }
+  }
 
   return (
     <section className="mx-auto max-w-[1440px] px-4 py-4 lg:px-8">
@@ -968,19 +1018,48 @@ function Reviews({ reviews, lang }) {
 
         {reviews.length ? (
           <div className="grid gap-3 lg:grid-cols-3">
-            {reviews.slice(0, 3).map((review) => (
+            {reviews.slice(0, 6).map((review) => (
               <div key={review.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                 <div className="mb-2 flex gap-1 text-amber-400">
                   {Array.from({ length: Number(review.rating || 5) }).map((_, index) => <Star key={index} size={14} fill="currentColor" />)}
                 </div>
-                <div className="text-sm font-black text-slate-950">{review.customer || review.name || "Builder"}</div>
-                <p className="mt-2 text-sm leading-6 text-slate-600">{review.comment || review.content}</p>
+                <div className="text-sm font-black text-slate-950">{review.customerName || review.customer || review.name || "Builder"}</div>
+                {review.verifiedPurchase && (
+                  <div className="mt-1 inline-flex rounded-full bg-blue-50 px-2 py-1 text-[11px] font-black text-blue-700">
+                    Verified purchase
+                  </div>
+                )}
+                {review.title && <div className="mt-2 text-sm font-black text-slate-900">{review.title}</div>}
+                <p className="mt-2 text-sm leading-6 text-slate-600">{review.content || review.comment}</p>
+                {review.adminReply && (
+                  <div className="mt-3 rounded-xl bg-white px-3 py-2 text-xs font-bold text-blue-700">
+                    Shop reply: {review.adminReply}
+                  </div>
+                )}
               </div>
             ))}
           </div>
         ) : (
           <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-sm font-bold text-slate-500">{t.noReviews}</div>
         )}
+
+        <div className="mt-6 rounded-3xl border border-blue-100 bg-blue-50 p-4">
+          <div className="text-sm font-black text-blue-900">{lang === "vi" ? "Viết đánh giá" : "Write a review"}</div>
+          <div className="mt-4 grid gap-3 md:grid-cols-2">
+            <input value={draft.customerName} onChange={(e) => patch("customerName", e.target.value)} placeholder={lang === "vi" ? "Tên của bạn" : "Your name"} className="rounded-2xl border border-blue-100 px-4 py-3 text-sm font-bold outline-none" />
+            <input value={draft.customerEmail} onChange={(e) => patch("customerEmail", e.target.value)} placeholder="Email" className="rounded-2xl border border-blue-100 px-4 py-3 text-sm font-bold outline-none" />
+            <input value={draft.orderNo} onChange={(e) => patch("orderNo", e.target.value)} placeholder={lang === "vi" ? "Mã đơn hàng nếu có" : "Order no if any"} className="rounded-2xl border border-blue-100 px-4 py-3 text-sm font-bold outline-none" />
+            <select value={draft.rating} onChange={(e) => patch("rating", Number(e.target.value))} className="rounded-2xl border border-blue-100 px-4 py-3 text-sm font-bold outline-none">
+              {[5, 4, 3, 2, 1].map((rating) => <option key={rating} value={rating}>{rating} stars</option>)}
+            </select>
+            <input value={draft.title} onChange={(e) => patch("title", e.target.value)} placeholder={lang === "vi" ? "Tiêu đề" : "Title"} className="rounded-2xl border border-blue-100 px-4 py-3 text-sm font-bold outline-none md:col-span-2" />
+            <textarea value={draft.content} onChange={(e) => patch("content", e.target.value)} rows={4} placeholder={lang === "vi" ? "Nội dung đánh giá" : "Review content"} className="rounded-2xl border border-blue-100 px-4 py-3 text-sm font-bold outline-none md:col-span-2" />
+          </div>
+          {message && <div className="mt-3 text-xs font-black text-blue-800">{message}</div>}
+          <button onClick={() => void submitReview()} disabled={busy} className="mt-4 rounded-2xl bg-blue-700 px-5 py-3 text-xs font-black text-white disabled:opacity-50">
+            {busy ? "..." : lang === "vi" ? "Gửi đánh giá" : "Submit review"}
+          </button>
+        </div>
       </div>
     </section>
   );
@@ -1097,10 +1176,20 @@ export default function ProductDetailPage() {
   }
 
 
-  const productReviews = useMemo(() => {
-    if (!product) return [];
-    return (state.reviews || []).filter((review) => review.productId === product.id && review.approved !== false);
-  }, [state.reviews, product]);
+  const [productReviews, setProductReviews] = useState([]);
+
+  useEffect(() => {
+    if (!product?.id) {
+      setProductReviews([]);
+      return;
+    }
+
+    const key = product.slug || product.id;
+
+    getStorefrontProductReviewsApi(key)
+      .then((rows) => setProductReviews(rows || []))
+      .catch(() => setProductReviews(Array.isArray(product.reviews) ? product.reviews : []));
+  }, [product?.id, product?.slug, product?.reviews]);
 
   const relatedProducts = useMemo(() => {
     if (!product) return [];
@@ -1228,7 +1317,12 @@ export default function ProductDetailPage() {
           </div>
         </section>
 
-        <Reviews reviews={productReviews} lang={lang} />
+        <Reviews
+          product={product}
+          reviews={productReviews}
+          lang={lang}
+          onSubmitted={() => getStorefrontProductReviewsApi(product.slug || product.id).then((rows) => setProductReviews(rows || [])).catch(() => {})}
+        />
 
         <section className="mx-auto max-w-[1440px] px-4 py-4 lg:px-8">
           <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">

@@ -44,6 +44,11 @@ function productInclude() {
     variants: {
       orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
     },
+    reviews: {
+      where: { status: "APPROVED" },
+      orderBy: [{ verifiedPurchase: "desc" }, { createdAt: "desc" }],
+      take: 50,
+    },
     groupItems: {
       include: { group: true },
       orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
