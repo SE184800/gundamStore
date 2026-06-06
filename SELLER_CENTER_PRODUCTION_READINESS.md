@@ -49,3 +49,18 @@ localStorage is allowed only for:
 - Support ticket image upload is currently URL/list based and can be enhanced with media upload integration.
 - Payment gateway integration is represented by payment status workflow and can be connected to real gateway later.
 - Shipping carrier integration is manual tracking entry and can be connected to carrier API later.
+
+## Flash Sale Decision — Post-MVP Backlog
+
+For Production MVP, `/flash-sale` is treated as a campaign/promotion display page only.
+
+It is not yet a full flash sale engine with:
+
+- dedicated `FlashSale` / `FlashSaleItem` DB models
+- admin `/admin/flash-sales`
+- countdown engine
+- sale stock limit
+- per-user/per-order limit
+- checkout priority resolver above normal promotion
+
+The production-ready Flash Sale module is deferred to post-MVP backlog.

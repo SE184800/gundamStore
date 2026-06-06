@@ -263,9 +263,11 @@ function getDataIssues(payload = {}, row = {}) {
   if (!payload.sku) issues.push("Missing SKU");
   if (!payload.nameVi) issues.push("Missing product name");
   if (payload.active && !payload.categoryId) issues.push("Missing category");
-  if (payload.active && Number(payload.price || 0) <= 0) issues.push("Missing price");
+  const hasVariantRow = Boolean(String(row.variantSku || "").trim());
+
+  if (payload.active && Number(payload.price || 0) <= 0 && !hasVariantRow) issues.push("Missing price");
   if (payload.active && !payload.imageUrl) issues.push("Missing image");
-  if (payload.active && Number(payload.stock || 0) <= 0 && !canSellWithoutStock(payload.status) && !row.variantSku) {
+  if (payload.active && Number(payload.stock || 0) <= 0 && !canSellWithoutStock(payload.status) && !hasVariantRow) {
     issues.push("Missing stock");
   }
 

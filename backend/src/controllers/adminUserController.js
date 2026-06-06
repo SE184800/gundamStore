@@ -5,6 +5,8 @@ import { prisma } from "../config/prisma.js";
 const DEFAULT_PERMISSIONS = [
   ["products:read", "Read products"],
   ["products:update", "Update products"],
+  ["promotions:read", "Read promotions and vouchers"],
+  ["promotions:update", "Update promotions and vouchers"],
   ["orders:read", "Read orders"],
   ["orders:update", "Update orders"],
   ["reports:read", "Read reports"],

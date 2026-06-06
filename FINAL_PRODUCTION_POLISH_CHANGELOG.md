@@ -29,3 +29,18 @@
 - Added production readiness checklist.
 - Added final changelog.
 - Synced storefront header/footer trust links.
+
+## Flash Sale Decision — Post-MVP Backlog
+
+For Production MVP, `/flash-sale` is treated as a campaign/promotion display page only.
+
+It is not yet a full flash sale engine with:
+
+- dedicated `FlashSale` / `FlashSaleItem` DB models
+- admin `/admin/flash-sales`
+- countdown engine
+- sale stock limit
+- per-user/per-order limit
+- checkout priority resolver above normal promotion
+
+The production-ready Flash Sale module is deferred to post-MVP backlog.

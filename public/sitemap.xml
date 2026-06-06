@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset
   xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://gundam-store-vn.example.com/</loc></url>
-  <url><loc>https://gundam-store-vn.example.com/shop</loc></url>
-  <url><loc>https://gundam-store-vn.example.com/order-lookup</loc></url>
-  <url><loc>https://gundam-store-vn.example.com/support</loc></url>
-  <url><loc>https://gundam-store-vn.example.com/shipping-policy</loc></url>
-  <url><loc>https://gundam-store-vn.example.com/return-policy</loc></url>
-  <url><loc>https://gundam-store-vn.example.com/payment-guide</loc></url>
-  <url><loc>https://gundam-store-vn.example.com/warranty</loc></url>
-  <url><loc>https://gundam-store-vn.example.com/faq</loc></url>
+  <url><loc>/</loc></url>
+  <url><loc>/shop</loc></url>
+  <url><loc>/order-lookup</loc></url>
+  <url><loc>/support</loc></url>
+  <url><loc>/shipping-policy</loc></url>
+  <url><loc>/return-policy</loc></url>
+  <url><loc>/payment-guide</loc></url>
+  <url><loc>/warranty</loc></url>
+  <url><loc>/faq</loc></url>
 </urlset>

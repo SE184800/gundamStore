@@ -59,3 +59,18 @@
 npm run backend:check
 npm run build
 FRONTEND_URL="http://127.0.0.1:5173" BACKEND_URL="http://127.0.0.1:4800" node scripts/smoke-final-mvp.mjs
+
+## Flash Sale Decision — Post-MVP Backlog
+
+For Production MVP, `/flash-sale` is treated as a campaign/promotion display page only.
+
+It is not yet a full flash sale engine with:
+
+- dedicated `FlashSale` / `FlashSaleItem` DB models
+- admin `/admin/flash-sales`
+- countdown engine
+- sale stock limit
+- per-user/per-order limit
+- checkout priority resolver above normal promotion
+
+The production-ready Flash Sale module is deferred to post-MVP backlog.

@@ -742,6 +742,7 @@ const PRODUCT_ISSUE_LABELS = {
   "Ảnh": "Missing image",
   "Giá": "Missing price",
   "Tồn kho": "Missing stock",
+  Variant: "Missing sellable variant",
 };
 
 function getProductIssueDisplay(product = {}) {
@@ -753,11 +754,40 @@ function allowsNoStockForCommercialStatus(status = "") {
   return normalized.includes("pre") || normalized.includes("coming");
 }
 
+function getActiveProductVariants(product = {}) {
+  return (Array.isArray(product.variants) ? product.variants : [])
+    .filter((variant) => {
+      const status = String(variant?.status || "").toLowerCase();
+      return variant && variant.active !== false && status !== "inactive";
+    });
+}
+
+function isProductVariantSellable(variant = {}) {
+  const status = String(variant.status || "").toLowerCase();
+
+  return (
+    variant.active !== false &&
+    !["inactive", "draft"].includes(status) &&
+    Number(variant.price || 0) > 0 &&
+    (Number(variant.stock || 0) > 0 || allowsNoStockForCommercialStatus(variant.status))
+  );
+}
+
+function hasProductVariants(product = {}) {
+  return getActiveProductVariants(product).length > 0;
+}
+
+function hasSellableProductVariant(product = {}) {
+  return getActiveProductVariants(product).some(isProductVariantSellable);
+}
+
 function getPublishChecklistItems(product = {}) {
   const status = String(product.status || "").toLowerCase();
   const allowNoStock = allowsNoStockForCommercialStatus(status);
+  const hasVariants = hasProductVariants(product);
+  const hasSellableVariant = hasSellableProductVariant(product);
 
-  return [
+  const common = [
     {
       key: "sku",
       label: "SKU",
@@ -782,18 +812,35 @@ function getPublishChecklistItems(product = {}) {
       ok: Boolean(product.imageUrl || product.images?.length),
       missing: "Missing image",
     },
-    {
-      key: "price",
-      label: "Selling price > 0",
-      ok: Number(product.price || 0) > 0,
-      missing: "Missing price",
-    },
-    {
-      key: "stock",
-      label: "Stock > 0 or Pre-order / Coming soon",
-      ok: Number(product.stock || 0) > 0 || allowNoStock,
-      missing: "Missing stock",
-    },
+  ];
+
+  const commercial = hasVariants
+    ? [
+        {
+          key: "variant",
+          label: "At least 1 sellable variant",
+          ok: hasSellableVariant,
+          missing: "Missing sellable variant",
+        },
+      ]
+    : [
+        {
+          key: "price",
+          label: "Selling price > 0",
+          ok: Number(product.price || 0) > 0,
+          missing: "Missing price",
+        },
+        {
+          key: "stock",
+          label: "Stock > 0 or Pre-order / Coming soon",
+          ok: Number(product.stock || 0) > 0 || allowNoStock,
+          missing: "Missing stock",
+        },
+      ];
+
+  return [
+    ...common,
+    ...commercial,
     {
       key: "publish",
       label: "Active / Publish status",
@@ -850,21 +897,38 @@ function PublishReadinessChecklist({ draft }) {
 
 function getProductIssueStatus(product = {}) {
   const missing = [];
+  const hasVariants = hasProductVariants(product);
 
   if (!product.sku) missing.push("SKU");
   if (!product.nameVi && !product.name?.vi) missing.push("Tên");
   if (!product.categoryId && !product.category?.id) missing.push("Danh mục");
   if (!product.imageUrl && !product.images?.length) missing.push("Ảnh");
-  if (Number(product.price || 0) <= 0) missing.push("Giá");
-  if (Number(product.stock || 0) <= 0 && !allowsNoStockForCommercialStatus(product.status)) missing.push("Tồn kho");
+
+  if (hasVariants) {
+    if (!hasSellableProductVariant(product)) missing.push("Variant");
+  } else {
+    if (Number(product.price || 0) <= 0) missing.push("Giá");
+    if (Number(product.stock || 0) <= 0 && !allowsNoStockForCommercialStatus(product.status)) missing.push("Tồn kho");
+  }
 
   return missing;
 }
 
 function isSellingProduct(product = {}) {
+  const status = String(product.status || "").toLowerCase();
+
+  if (
+    product.active === false ||
+    ["inactive", "draft"].includes(status)
+  ) {
+    return false;
+  }
+
+  if (hasProductVariants(product)) {
+    return hasSellableProductVariant(product);
+  }
+
   return (
-    product.active !== false &&
-    !["inactive", "draft"].includes(String(product.status || "").toLowerCase()) &&
     Number(product.price || 0) > 0 &&
     (Number(product.stock || 0) > 0 || allowsNoStockForCommercialStatus(product.status))
   );
@@ -877,7 +941,11 @@ function getProductTabMatch(product = {}, tab = "all") {
   if (tab === "all") return true;
   if (tab === "selling") return isSellingProduct(product);
   if (tab === "outOfStock") return Number(product.stock || 0) <= 0 && !allowsNoStockForCommercialStatus(status);
-  if (tab === "missingPrice") return Number(product.price || 0) <= 0;
+  if (tab === "missingPrice") {
+    return hasProductVariants(product)
+      ? !hasSellableProductVariant(product)
+      : Number(product.price || 0) <= 0;
+  }
   if (tab === "draft") return status === "draft" || status === "inactive";
   if (tab === "hidden") return product.active === false;
   if (tab === "dataIssue") return issues.length > 0;
@@ -1248,7 +1316,7 @@ export default function AdminProducts() {
       payload.publishBlockedReason = `Missing required data: ${issues.join(", ")}`;
     }
 
-    if (Number(payload.price || 0) <= 0) {
+    if (Number(payload.price || 0) <= 0 && !hasSellableProductVariant(payload)) {
       payload.active = false;
       payload.status = "draft";
     }
@@ -1268,7 +1336,7 @@ export default function AdminProducts() {
       setDrawerOpen(false);
       await reload();
 
-      if (isCreate && saved?.id) {
+      if (isCreate && saved?.id && Number(saved.price || 0) <= 0 && !hasSellableProductVariant(saved)) {
         setPricePrompt(saved);
       }
     } catch (error) {

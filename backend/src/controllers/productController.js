@@ -165,6 +165,34 @@ function getSellableVariants(product = {}) {
     });
 }
 
+function getSellableVariantInputs(variants = []) {
+  return (Array.isArray(variants) ? variants : [])
+    .filter((variant) => {
+      const status = String(variant?.status || "inStock").trim();
+      const normalizedStatus = normalizeProductKey(status);
+
+      return (
+        variant &&
+        variant.active !== false &&
+        normalizedStatus !== "inactive" &&
+        normalizedStatus !== "draft" &&
+        Number(variant.price || 0) > 0 &&
+        (Number(variant.stock || 0) > 0 || canSellWithoutStock(status))
+      );
+    });
+}
+
+function hasActiveVariantInputs(variants = []) {
+  return (Array.isArray(variants) ? variants : []).some((variant) => {
+    const normalizedStatus = normalizeProductKey(variant?.status || "");
+    return variant && variant.active !== false && normalizedStatus !== "inactive";
+  });
+}
+
+function hasSellableVariantInputs(variants = []) {
+  return getSellableVariantInputs(variants).length > 0;
+}
+
 function hasSellableStock(product = {}) {
   return Number(product.stock || 0) > 0 || canSellWithoutStock(product.status) || getSellableVariants(product).length > 0;
 }
@@ -197,7 +225,21 @@ function isStorefrontSellableProduct(product = {}) {
   return product.sellable && Number(product.finalPrice || product.price || 0) > 0 && hasSellableStock(product);
 }
 
-function applyAdminProductPublishGuard(payload = {}) {
+function applyAdminProductPublishGuard(payload = {}, source = {}) {
+  const sourceVariants = Array.isArray(source.variants) ? source.variants : [];
+  const hasVariantRows = hasActiveVariantInputs(sourceVariants);
+  const hasSellableVariantRows = hasSellableVariantInputs(sourceVariants);
+
+  if (hasVariantRows) {
+    if (payload.active !== false && !hasSellableVariantRows) {
+      payload.active = false;
+      payload.status = "draft";
+      payload.publishBlockedReason = "At least one active variant with price > 0 and sellable stock is required.";
+    }
+
+    return payload;
+  }
+
   const hasPrice = Number(payload.price || 0) > 0;
   const hasStock = Number(payload.stock || 0) > 0;
   const allowNoStock = canSellWithoutStock(payload.status);
@@ -436,7 +478,6 @@ export async function listStorefrontProducts(req, res, next) {
     const products = await prisma.product.findMany({
       where: {
         active: true,
-        price: { gt: 0 },
       },
       include: productInclude(),
       orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
@@ -476,7 +517,6 @@ export async function getStorefrontProductByKey(req, res, next) {
     const product = await prisma.product.findFirst({
       where: {
         active: true,
-        price: { gt: 0 },
         OR: orConditions,
       },
       include: productInclude(),
@@ -521,7 +561,7 @@ export async function createAdminProduct(req, res, next) {
   try {
     const payload = sanitizeAdminProductInput(req.body);
 
-    applyAdminProductPublishGuard(payload);
+    applyAdminProductPublishGuard(payload, req.body);
 
     const product = await prisma.$transaction(async (tx) => {
       const created = await tx.product.create({ data: payload });
@@ -544,7 +584,7 @@ export async function updateAdminProduct(req, res, next) {
   try {
     const id = String(req.params.id || "").trim();
     const payload = sanitizeAdminProductInput(req.body);
-    applyAdminProductPublishGuard(payload);
+    applyAdminProductPublishGuard(payload, req.body);
 
     const product = await prisma.$transaction(async (tx) => {
       const updatedProduct = await tx.product.update({ where: { id }, data: payload });
