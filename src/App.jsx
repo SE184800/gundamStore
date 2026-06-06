@@ -134,9 +134,7 @@ export default function App() {
           <Route path="/wishlist" element={<WishlistPage />} />
           <Route path="/favorites" element={<WishlistPage />} />
           <Route path="/compare" element={<ComparePage />} />
-          <Route path="/faq" element={<FAQPage />} />
           <Route path="/return-policy" element={<PolicyPage pageKey="return-policy" />} />
-          <Route path="/contact" element={<ContactPage />} />
 
           {/* Content & Blogs */}
           <Route path="/news" element={<NewsPage />} />
@@ -150,7 +148,7 @@ export default function App() {
           <Route path="/checkout" element={<CheckoutPage />} />
           <Route path="/order-success/:id" element={<OrderSuccessPage />} />
 
-          {/* 🔐 Admin Module (Grouped & Protected) */}
+          {/* Support & Trust Pages */}
           <Route path="/contact" element={<StorefrontSupportPage defaultType="COMPLAINT" />} />
           <Route path="/support" element={<StorefrontSupportPage defaultType="COMPLAINT" />} />
           <Route path="/return-request" element={<StorefrontSupportPage defaultType="RETURN" />} />
@@ -158,6 +156,8 @@ export default function App() {
           <Route path="/payment-guide" element={<PolicyPage pageKey="payment-guide" />} />
           <Route path="/warranty" element={<PolicyPage pageKey="warranty" />} />
           <Route path="/faq" element={<PolicyPage pageKey="faq" />} />
+
+          {/* 🔐 Admin Module (Grouped & Protected) */}
           <Route path="/admin/login" element={<AdminLoginPage />} />
           <Route path="/admin/access-denied" element={<AdminAccessDeniedPage />} />
 
