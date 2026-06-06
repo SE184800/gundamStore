@@ -18,6 +18,7 @@ const PreOrderPage = lazy(() => import("./pages/storefront/PreOrderPage"));
 const BuildGuidePage = lazy(() => import("./pages/storefront/BuildGuidePage"));
 const CommunityGalleryPage = lazy(() => import("./pages/storefront/CommunityGalleryPage"));
 const OrderLookupPage = lazy(() => import("./pages/storefront/OrderLookupPage"));
+const AccountDashboardPage = lazy(() => import("./pages/storefront/AccountDashboardPage"));
 const AccountProfilePage = lazy(() => import("./pages/storefront/AccountProfilePage"));
 const MyOrdersPage = lazy(() => import("./pages/storefront/MyOrdersPage"));
 const OrderDetailPage = lazy(() => import("./pages/storefront/OrderDetailPage"));
@@ -124,7 +125,7 @@ export default function App() {
           <Route path="/community-gallery" element={<CommunityGalleryPage />} />
           <Route path="/order-lookup" element={<OrderLookupPage />} />
           <Route path="/profile" element={<AccountProfilePage />} />
-          <Route path="/account" element={<AccountProfilePage />} />
+          <Route path="/account" element={<AccountDashboardPage />} />
           <Route path="/account/profile" element={<AccountProfilePage />} />
           <Route path="/orders" element={<MyOrdersPage />} />
           <Route path="/orders/:id" element={<OrderDetailPage />} />

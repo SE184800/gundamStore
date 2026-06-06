@@ -4,10 +4,13 @@ import {
   AlertCircle,
   CheckCircle2,
   Clock,
+  CreditCard,
   MapPin,
+  MessageSquare,
   Package,
   RotateCcw,
   ShieldCheck,
+  Truck,
   Undo2,
   XCircle,
 } from "lucide-react";
@@ -34,6 +37,7 @@ import {
 import { getCart, saveCart } from "../../services/CartService";
 import StorefrontShell from "../../components/storefront/StorefrontShell";
 import { cancelMyStorefrontOrderApi, getMyStorefrontOrderByIdApi } from "../../services/StorefrontOrderApiService";
+import { createStorefrontComplaintApi } from "../../services/StorefrontComplaintApiService";
 import { useLang } from "../../store/CmsStore";
 
 const money = (n) => (Number(n) || 0).toLocaleString("vi-VN") + "đ";
@@ -363,7 +367,9 @@ export default function OrderDetailPage() {
   const currentIndex = PUBLIC_STEPS.indexOf(order.status);
   const directCancel = canCustomerCancelDirect(order.status);
   const cancelRequest = !isBackendOrder && canCustomerRequestCancel(order.status);
-  const returnRequest = !isBackendOrder && canCustomerRequestReturn(order.status);
+  const returnRequest = isBackendOrder
+    ? canCustomerRequestReturn(order.status)
+    : canCustomerRequestReturn(order.status);
   const balanceRequestEligible =
     !isBackendOrder &&
     order.orderType === "preorder" &&
@@ -429,6 +435,25 @@ export default function OrderDetailPage() {
       }
 
       if (type === "return") {
+        if (isBackendOrder) {
+          await createStorefrontComplaintApi({
+            orderId: order.backendOrderId || order.id,
+            orderNo: order.orderNo || order.orderCode || order.id,
+            customerName: order.customer?.name || "Customer",
+            customerPhone: order.customer?.phone || "",
+            customerEmail: order.customer?.email || "",
+            type: "RETURN",
+            issue: reason,
+            description: note || reason,
+            priority: "MEDIUM",
+          });
+
+          alert(t.requestSent);
+          setModalType(null);
+          setRefreshKey((value) => value + 1);
+          return;
+        }
+
         requestReturnOrder(order.id, reason, note);
       }
 
@@ -580,6 +605,16 @@ export default function OrderDetailPage() {
                   <p><b>{t.address}:</b> {order.customer?.address || "-"}</p>
                   <p><b>{t.note}:</b> {order.customer?.note || "-"}</p>
                 </div>
+
+                {(order.shippingInfo?.carrier || order.shippingInfo?.trackingCode) && (
+                  <div className="mt-4 rounded-2xl bg-blue-50 p-4 text-sm font-bold text-blue-800">
+                    <Truck size={17} className="mr-1 inline" />
+                    {order.shippingInfo?.carrier || "-"} · {order.shippingInfo?.trackingCode || "-"}
+                    <div className="mt-1 text-xs text-blue-600">
+                      {order.shippingInfo?.status || order.shippingInfo?.method || ""}
+                    </div>
+                  </div>
+                )}
               </div>
 
 
@@ -631,6 +666,31 @@ export default function OrderDetailPage() {
                   </div>
                 </div>
               </div>
+
+              {(order.supportTickets || []).length > 0 && (
+                <div className="rounded-3xl bg-white p-6 shadow-sm">
+                  <h2 className="flex items-center gap-2 text-xl font-black">
+                    <MessageSquare size={20} /> {lang === "en" ? "Support tickets" : "Yêu cầu hỗ trợ"}
+                  </h2>
+
+                  <div className="mt-4 space-y-3">
+                    {(order.supportTickets || []).map((ticket) => (
+                      <div key={ticket.id} className="rounded-2xl bg-slate-50 p-4 text-sm">
+                        <div className="flex items-center justify-between gap-3">
+                          <b className="text-blue-700">{ticket.ticketNo}</b>
+                          <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-black text-amber-700">{ticket.status}</span>
+                        </div>
+                        <div className="mt-2 font-black text-slate-900">{ticket.issue}</div>
+                        {ticket.refundStatus && ticket.refundStatus !== "NONE" && (
+                          <div className="mt-1 text-xs font-bold text-slate-500">
+                            Refund: {ticket.refundStatus} · {money(ticket.refundAmount || 0)}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <div className="rounded-3xl bg-white p-6 shadow-sm">
                 <button
