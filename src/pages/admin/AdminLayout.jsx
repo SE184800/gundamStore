@@ -66,6 +66,7 @@ const copy = {
     vouchers: "Voucher / Coupon",
     sales: "Bán hàng & đơn hàng",
     orders: "Đơn hàng",
+    fulfillment: "Xử lý giao hàng",
     customers: "Khách hàng / CRM",
     restockAlerts: "Báo hàng / Restock",
     customerService: "Chăm sóc khách hàng",
@@ -114,6 +115,7 @@ const copy = {
     vouchers: "Vouchers / Coupons",
     sales: "Sales & Orders",
     orders: "Orders",
+    fulfillment: "Fulfillment",
     customers: "Customers / CRM",
     restockAlerts: "Restock Alerts",
     customerService: "Customer Service",
@@ -221,6 +223,7 @@ function getPageTitle(pathname, t) {
   if (pathname.includes("/admin/inventory")) return t.inventory;
   if (pathname.includes("/admin/vouchers")) return t.vouchers;
   if (pathname.includes("/admin/promotions")) return t.promotions;
+  if (pathname.includes("/admin/fulfillment")) return t.fulfillment;
   if (pathname.includes("/admin/customers")) return t.customers;
   if (pathname.includes("/admin/orders")) return t.orders;
   if (pathname.includes("/admin/restock-alerts")) return t.restockAlerts;
@@ -291,6 +294,7 @@ export default function AdminLayout() {
 
             <NavGroup title={t.sales}>
               <NavItem to="/admin/orders" icon={ShoppingCart} label={t.orders} />
+              <NavItem to="/admin/fulfillment" icon={Truck} label={t.fulfillment} />
               <NavItem to="/admin/customers" icon={Users} label={t.customers} />
               <NavItem to="/admin/restock-alerts" icon={Bell} label={t.restockAlerts} />
             </NavGroup>

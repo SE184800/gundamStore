@@ -11,6 +11,7 @@ import { requireAuth } from "./middleware/auth.js";
 import healthRoutes from "./routes/healthRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
+import fulfillmentRoutes from "./routes/fulfillmentRoutes.js";
 import accountRoutes from "./routes/accountRoutes.js";
 import productRoutes from "./routes/productRoutes.js";
 // 🟢 Giữ nguyên các tuyến đường mới kéo từ sandbox về
@@ -81,6 +82,7 @@ app.use([
   "/api/admin",
   "/api/products/admin",
   "/api/orders/admin",
+  "/api/fulfillment/admin",
   "/api/vouchers/admin",
   "/api/reviews/admin",
   "/api/customers/admin",
@@ -90,6 +92,7 @@ app.use([
 
 app.use("/api/auth", authRoutes);
 app.use("/api/orders", orderRoutes);
+app.use("/api/fulfillment", fulfillmentRoutes);
 app.use("/api/account", accountRoutes);
 app.use("/api/products", productRoutes);
 // 🟢 Kích hoạt các tuyến đường mới
