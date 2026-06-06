@@ -1,5 +1,7 @@
 const ADMIN_TOKEN_KEY = "gundam-admin-token";
 const ACCOUNT_TOKEN_KEY = "gundam_token";
+const ADMIN_SESSION_KEY = "gundam-admin-auth";
+const ADMIN_USER_KEY = "gundam-admin-user";
 
 export function getApiBaseUrl() {
   const baseUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_BASE_URL || "";
@@ -11,7 +13,7 @@ export function getStoredAdminToken() {
     const directToken = localStorage.getItem(ADMIN_TOKEN_KEY) || "";
     if (directToken) return directToken;
 
-    const adminSession = JSON.parse(localStorage.getItem("gundam-admin-auth") || "null");
+    const adminSession = JSON.parse(localStorage.getItem(ADMIN_SESSION_KEY) || "null");
     return adminSession?.token || "";
   } catch {
     return "";
@@ -44,6 +46,33 @@ export function clearStoredAdminToken() {
   localStorage.removeItem(ADMIN_TOKEN_KEY);
 }
 
+export function clearStoredAdminSession() {
+  clearStoredAdminToken();
+  localStorage.removeItem(ADMIN_SESSION_KEY);
+  localStorage.removeItem(ADMIN_USER_KEY);
+}
+
+function shouldForceAdminLogout(path = "", status = 0) {
+  return (
+    status === 401 &&
+    (
+      path.startsWith("/api/admin") ||
+      path.includes("/admin") ||
+      path.startsWith("/api/products/admin") ||
+      path.startsWith("/api/orders/admin") ||
+      path.startsWith("/api/reports/admin") ||
+      path.startsWith("/api/audit/admin") ||
+      path.startsWith("/api/admin-users") ||
+      path.startsWith("/api/dashboard/admin") ||
+      path.startsWith("/api/fulfillment/admin") ||
+      path.startsWith("/api/vouchers/admin") ||
+      path.startsWith("/api/reviews/admin") ||
+      path.startsWith("/api/complaints/admin") ||
+      path.startsWith("/api/customers/admin")
+    )
+  );
+}
+
 export async function apiRequest(path, options = {}) {
   const baseUrl = getApiBaseUrl();
   const token = options.token ?? getStoredAdminToken();
@@ -68,6 +97,11 @@ export async function apiRequest(path, options = {}) {
     : await response.text();
 
   if (!response.ok) {
+    if (shouldForceAdminLogout(path, response.status)) {
+      clearStoredAdminSession();
+      window.dispatchEvent(new CustomEvent("gundam-admin-auth-expired"));
+    }
+
     const message =
       typeof data === "object" && data?.message
         ? data.message
