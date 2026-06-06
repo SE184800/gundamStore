@@ -22,6 +22,12 @@ function resolveBackendProductId(product = {}) {
 }
 
 function identity(item = {}) {
+  const variantKey = item.variantId || item.variantSku;
+
+  if (variantKey) {
+    return [`variant:${variantKey}`];
+  }
+
   return [
     item.backendProductId,
     item.productId,
@@ -122,6 +128,10 @@ export function validateCartStock(product, quantity = 1, products = []) {
       productId: backendProductId || product?.productId || product?.id || product?.slug,
       sku: product?.sku || "",
       slug: product?.slug || "",
+      variantId: product?.variantId || "",
+      variantSku: product?.variantSku || "",
+      variantName: product?.variantName || "",
+      variantOptions: product?.variantOptions || null,
       quantity: Number(quantity) || 1,
       selected: true,
     },
@@ -133,7 +143,9 @@ export function validateCartStock(product, quantity = 1, products = []) {
   const currentQty = Number(found?.quantity || 0);
   const requestQty = Math.max(1, Number(quantity) || 1);
   const stock = getStock(item.backendProductId || item.productId || item.id || product?.id);
-  const available = Number(stock?.available ?? product?.stock ?? 0);
+  const available = item.variantId
+    ? Number(product?.stock ?? item.stock ?? 0)
+    : Number(stock?.available ?? product?.stock ?? 0);
 
   if (available <= 0) {
     return { ok: false, reason: "OUT_OF_STOCK", available, currentQty, requestQty, item };
@@ -161,6 +173,10 @@ export function addProductToCart(product, quantity = 1, products = []) {
       productId: backendProductId || product?.productId || product?.id || product?.slug,
       sku: product?.sku || "",
       slug: product?.slug || "",
+      variantId: product?.variantId || "",
+      variantSku: product?.variantSku || "",
+      variantName: product?.variantName || "",
+      variantOptions: product?.variantOptions || null,
       quantity: Number(quantity) || 1,
       selected: true,
     },
@@ -199,7 +215,8 @@ export function clearCartItems(itemIds = []) {
       (item) =>
         !itemIds.includes(item.id) &&
         !itemIds.includes(item.productId) &&
-        !itemIds.includes(item.backendProductId)
+        !itemIds.includes(item.backendProductId) &&
+        !itemIds.includes(item.variantId)
     )
   );
 }
@@ -210,6 +227,10 @@ export function buildCheckoutDraftFromItems(items = [], options = {}, products =
     ...item,
     id: item.id || item.productId || item.backendProductId,
     productId: item.productId || item.id || item.backendProductId,
+    variantId: item.variantId || "",
+    variantSku: item.variantSku || "",
+    variantName: item.variantName || "",
+    variantOptions: item.variantOptions || null,
     quantity: Math.max(1, Number(item.quantity) || 1),
     selected: item.selected !== false,
   }));

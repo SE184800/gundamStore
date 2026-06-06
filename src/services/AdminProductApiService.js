@@ -76,6 +76,28 @@ export function mapBackendProductForAdmin(product = {}) {
     groups,
     groupItems,
 
+    variants: Array.isArray(product.variants)
+      ? product.variants.map((variant) => ({
+          id: variant.id,
+          productId: variant.productId,
+          sku: variant.sku || "",
+          barcode: variant.barcode || "",
+          nameVi: variant.nameVi || "",
+          nameEn: variant.nameEn || variant.nameVi || "",
+          option1Name: variant.option1Name || "",
+          option1Value: variant.option1Value || "",
+          option2Name: variant.option2Name || "",
+          option2Value: variant.option2Value || "",
+          price: Number(variant.price || 0),
+          oldPrice: Number(variant.oldPrice || 0),
+          stock: Number(variant.stock || 0),
+          imageUrl: variant.imageUrl || "",
+          active: variant.active !== false,
+          status: variant.status || "inStock",
+          sortOrder: Number(variant.sortOrder || 0),
+        }))
+      : [],
+
     source: "backend",
     backendRaw: product,
     createdAt: product.createdAt,
@@ -176,6 +198,27 @@ function toBackendPayload(product = {}) {
 
     categoryId: product.categoryId || null,
     supplierId: product.supplierId || null,
+
+    variants: Array.isArray(product.variants)
+      ? product.variants.map((variant, index) => ({
+          id: variant.id || "",
+          sku: variant.sku || "",
+          barcode: variant.barcode || "",
+          nameVi: variant.nameVi || "",
+          nameEn: variant.nameEn || variant.nameVi || "",
+          option1Name: variant.option1Name || "",
+          option1Value: variant.option1Value || "",
+          option2Name: variant.option2Name || "",
+          option2Value: variant.option2Value || "",
+          price: Number(variant.price || 0),
+          oldPrice: Number(variant.oldPrice || 0),
+          stock: Number(variant.stock || 0),
+          imageUrl: variant.imageUrl || "",
+          active: variant.active !== false,
+          status: variant.status || "inStock",
+          sortOrder: Number(variant.sortOrder ?? index),
+        }))
+      : [],
   };
 }
 

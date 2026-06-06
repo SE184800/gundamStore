@@ -37,6 +37,8 @@ const createOrderSchema = z.object({
       productId: z.string().optional().or(z.literal("")),
       sku: z.string().optional().or(z.literal("")),
       slug: z.string().optional().or(z.literal("")),
+      variantId: z.string().optional().or(z.literal("")),
+      variantSku: z.string().optional().or(z.literal("")),
       quantity: z.number().int().min(1).max(99),
     })
   ).min(1),
@@ -50,14 +52,64 @@ function resolveProductForItem(products = [], item = {}) {
   const productId = normalizeLookup(item.productId);
   const sku = normalizeLookup(item.sku);
   const slug = normalizeLookup(item.slug);
+  const variantId = normalizeLookup(item.variantId);
+  const variantSku = normalizeLookup(item.variantSku);
 
   return products.find((product) => {
+    const variantMatch = (product.variants || []).some((variant) => {
+      return (
+        (variantId && normalizeLookup(variant.id) === variantId) ||
+        (variantSku && normalizeLookup(variant.sku) === variantSku)
+      );
+    });
+
     return (
+      variantMatch ||
       (productId && normalizeLookup(product.id) === productId) ||
       (sku && normalizeLookup(product.sku) === sku) ||
       (slug && normalizeLookup(product.slug) === slug)
     );
   });
+}
+
+function resolveVariantForItem(product = {}, item = {}) {
+  const variantId = normalizeLookup(item.variantId);
+  const variantSku = normalizeLookup(item.variantSku || item.sku);
+
+  if (!variantId && !variantSku) return null;
+
+  return (product.variants || []).find((variant) => {
+    return (
+      (variantId && normalizeLookup(variant.id) === variantId) ||
+      (variantSku && normalizeLookup(variant.sku) === variantSku)
+    );
+  }) || null;
+}
+
+function productHasVariants(product = {}) {
+  return (product.variants || []).some((variant) => variant.active !== false);
+}
+
+function canSellVariantWithoutStock(status = "") {
+  const normalized = normalizeLookup(status);
+  return normalized.includes("pre") || normalized.includes("coming");
+}
+
+function isVariantSellable(variant = {}) {
+  return (
+    variant.active !== false &&
+    Number(variant.price || 0) > 0 &&
+    (Number(variant.stock || 0) > 0 || canSellVariantWithoutStock(variant.status))
+  );
+}
+
+function variantOptionsSnapshot(variant = {}) {
+  return {
+    option1Name: variant.option1Name || "",
+    option1Value: variant.option1Value || "",
+    option2Name: variant.option2Name || "",
+    option2Value: variant.option2Value || "",
+  };
 }
 
 function generateOrderNo() {
@@ -175,6 +227,51 @@ async function restoreOrderStockOnce(tx, order, { actorId = null, reason = "", n
   const now = new Date();
 
   for (const item of order.items || []) {
+    if (item.variantId) {
+      const variantSnapshot = await tx.productVariant.findUnique({
+        where: { id: item.variantId },
+        select: {
+          id: true,
+          productId: true,
+          sku: true,
+          stock: true,
+        },
+      });
+
+      if (!variantSnapshot) {
+        const error = new Error(`Variant ${item.variantId} was not found for stock restore`);
+        error.statusCode = 409;
+        throw error;
+      }
+
+      const beforeStock = variantSnapshot.stock;
+      const afterStock = beforeStock + item.quantity;
+
+      await tx.productVariant.update({
+        where: { id: variantSnapshot.id },
+        data: {
+          stock: {
+            increment: item.quantity,
+          },
+        },
+      });
+
+      await tx.inventoryLog.create({
+        data: {
+          productId: variantSnapshot.productId,
+          type: "RESTORE",
+          quantity: item.quantity,
+          beforeStock,
+          afterStock,
+          reason: reason || `Order cancellation stock restore for variant ${variantSnapshot.sku}`,
+          refType: "ORDER_CANCEL_VARIANT",
+          refId: order.id,
+        },
+      });
+
+      continue;
+    }
+
     const productSnapshot = await tx.product.findUnique({
       where: { id: item.productId },
       select: {
@@ -249,20 +346,32 @@ export async function createOrder(req, res, next) {
           include: { promotion: true },
           orderBy: { createdAt: "desc" },
         },
+        variants: {
+          orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+        },
       },
     });
 
     const resolvedItems = body.items.map((item) => {
       const product = resolveProductForItem(products, item);
+      const variant = product ? resolveVariantForItem(product, item) : null;
+      const decoratedProduct = product ? decorateProductWithCommercialPrice(product) : null;
+      const finalPrice = variant ? Number(variant.price || 0) : Number(decoratedProduct?.finalPrice || decoratedProduct?.price || 0);
 
       return {
         ...item,
-        product: product ? decorateProductWithCommercialPrice(product) : null,
+        product: decoratedProduct,
+        variant,
+        finalPrice,
       };
     });
 
     const invalidItem = resolvedItems.find((item) => {
-      return !item.product || !item.product.sellable || Number(item.product.finalPrice || item.product.price || 0) <= 0;
+      if (!item.product) return true;
+      if (productHasVariants(item.product) && !item.variant) return true;
+      if (item.variant && !isVariantSellable(item.variant)) return true;
+      if (!item.variant && (!item.product.sellable || Number(item.finalPrice || 0) <= 0)) return true;
+      return false;
     });
 
     if (invalidItem) {
@@ -280,29 +389,33 @@ export async function createOrder(req, res, next) {
     const reservationMap = new Map();
 
     for (const item of resolvedItems) {
-      const productId = item.product.id;
-      const current = reservationMap.get(productId) || {
+      const reservationKey = item.variant ? `variant:${item.variant.id}` : `product:${item.product.id}`;
+      const current = reservationMap.get(reservationKey) || {
         product: item.product,
+        variant: item.variant || null,
         quantity: 0,
       };
 
       current.quantity += item.quantity;
-      reservationMap.set(productId, current);
+      reservationMap.set(reservationKey, current);
     }
 
     const stockReservations = Array.from(reservationMap.values());
 
     for (const item of stockReservations) {
-      if (item.product.stock < item.quantity) {
+      const stock = item.variant ? Number(item.variant.stock || 0) : Number(item.product.stock || 0);
+      const sku = item.variant ? item.variant.sku : item.product.sku;
+
+      if (stock < item.quantity && !(item.variant && canSellVariantWithoutStock(item.variant.status))) {
         return res.status(400).json({
           success: false,
-          message: `Insufficient stock for product ${item.product.sku}`,
+          message: `Insufficient stock for product ${sku}`,
         });
       }
     }
 
     const subtotal = resolvedItems.reduce((sum, item) => {
-      return sum + Number(item.product.finalPrice || item.product.price || 0) * item.quantity;
+      return sum + Number(item.finalPrice || 0) * item.quantity;
     }, 0);
 
     const total = Math.max(0, subtotal + body.shippingFee - body.discount);
@@ -339,9 +452,13 @@ export async function createOrder(req, res, next) {
 
               return {
                 productId: product.id,
-                sku: product.sku,
+                variantId: item.variant?.id || null,
+                sku: item.variant?.sku || product.sku,
+                variantSku: item.variant?.sku || null,
                 name: product.nameVi,
-                price: Number(product.finalPrice || product.price || 0),
+                variantName: item.variant?.nameVi || null,
+                variantOptions: item.variant ? variantOptionsSnapshot(item.variant) : null,
+                price: Number(item.finalPrice || 0),
                 quantity: item.quantity,
               };
             }),
@@ -351,6 +468,70 @@ export async function createOrder(req, res, next) {
       });
 
       for (const item of stockReservations) {
+        if (item.variant) {
+          const variantSnapshot = await tx.productVariant.findUnique({
+            where: { id: item.variant.id },
+            select: {
+              id: true,
+              productId: true,
+              sku: true,
+              stock: true,
+              active: true,
+              status: true,
+            },
+          });
+
+          if (!variantSnapshot || !variantSnapshot.active) {
+            const error = new Error(`Variant ${item.variant.sku} is no longer available`);
+            error.statusCode = 409;
+            throw error;
+          }
+
+          if (variantSnapshot.stock < item.quantity && !canSellVariantWithoutStock(variantSnapshot.status)) {
+            const error = new Error(`Insufficient stock for variant ${variantSnapshot.sku}`);
+            error.statusCode = 409;
+            throw error;
+          }
+
+          if (!canSellVariantWithoutStock(variantSnapshot.status)) {
+            const updated = await tx.productVariant.updateMany({
+              where: {
+                id: variantSnapshot.id,
+                active: true,
+                stock: {
+                  gte: item.quantity,
+                },
+              },
+              data: {
+                stock: {
+                  decrement: item.quantity,
+                },
+              },
+            });
+
+            if (updated.count !== 1) {
+              const error = new Error(`Insufficient stock for variant ${variantSnapshot.sku}`);
+              error.statusCode = 409;
+              throw error;
+            }
+
+            await tx.inventoryLog.create({
+              data: {
+                productId: variantSnapshot.productId,
+                type: "RESERVE",
+                quantity: item.quantity,
+                beforeStock: variantSnapshot.stock,
+                afterStock: variantSnapshot.stock - item.quantity,
+                reason: `Order stock reservation for variant ${variantSnapshot.sku}`,
+                refType: "ORDER_VARIANT",
+                refId: created.id,
+              },
+            });
+          }
+
+          continue;
+        }
+
         const productSnapshot = await tx.product.findUnique({
           where: { id: item.product.id },
           select: {
