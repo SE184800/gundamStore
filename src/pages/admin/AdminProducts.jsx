@@ -523,6 +523,7 @@ export default function AdminProducts() {
   const [apiError, setApiError] = useState("");
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [draft, setDraft] = useState(emptyDraft);
+  const [pricePrompt, setPricePrompt] = useState(null);
 
   async function reload() {
     setLoading(true);
@@ -659,6 +660,7 @@ export default function AdminProducts() {
 
   async function save() {
     const payload = buildPayload();
+    const isCreate = !payload.id;
 
     try {
       const saved = payload.id
@@ -667,9 +669,18 @@ export default function AdminProducts() {
 
       setDrawerOpen(false);
       await reload();
+
+      if (isCreate && saved?.id) {
+        setPricePrompt(saved);
+      }
     } catch (error) {
       alert(error?.message || "Save product failed.");
     }
+  }
+
+  function goToPricingNow() {
+    if (!pricePrompt?.id) return;
+    window.location.href = `/admin/pricing?productId=${encodeURIComponent(pricePrompt.id)}`;
   }
 
   async function deactivate(product) {
@@ -685,6 +696,42 @@ export default function AdminProducts() {
 
   return (
     <>
+      {pricePrompt && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/50 p-4">
+          <div className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl">
+            <div className="text-xs font-black uppercase tracking-[0.2em] text-blue-700">
+              Product pricing required
+            </div>
+            <h2 className="mt-3 text-2xl font-black text-slate-950">
+              Tạo sản phẩm thành công
+            </h2>
+            <p className="mt-3 text-sm font-bold leading-6 text-slate-600">
+              Bạn cần thiết lập giá bán trước khi sản phẩm hiển thị ngoài storefront.
+            </p>
+            <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <div className="text-sm font-black text-slate-900">{pricePrompt.nameVi || pricePrompt.name?.vi}</div>
+              <div className="text-xs font-bold text-slate-500">{pricePrompt.sku}</div>
+            </div>
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => setPricePrompt(null)}
+                className="rounded-2xl border border-slate-300 bg-white px-5 py-3 text-sm font-black text-slate-700 hover:bg-slate-50"
+              >
+                Để sau
+              </button>
+              <button
+                type="button"
+                onClick={goToPricingNow}
+                className="rounded-2xl bg-blue-700 px-5 py-3 text-sm font-black text-white hover:bg-blue-800"
+              >
+                Thiết lập giá ngay
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <AdminPageHeader
         eyebrow="Product Information Management"
         title={t.title}

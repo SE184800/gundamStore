@@ -56,6 +56,7 @@ export default function AdminPricing() {
   const [draft, setDraft] = useState(emptyDraft);
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState("");
+  const [autoOpenProductId, setAutoOpenProductId] = useState("");
 
   async function reload() {
     setLoading(true);
@@ -85,13 +86,22 @@ export default function AdminPricing() {
   }
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const productId = params.get("productId") || "";
+    setAutoOpenProductId(productId);
     void reload();
   }, []);
 
   const rows = useMemo(() => {
     const q = query.trim().toLowerCase();
 
-    return products.filter((item) =>
+    let result = products;
+
+    if (autoOpenProductId) {
+      result = result.filter((item) => item.id === autoOpenProductId);
+    }
+
+    return result.filter((item) =>
       !q ||
       [item.sku, item.slug, item.nameVi, item.nameEn, item.category?.nameVi, item.supplier?.name]
         .filter(Boolean)
@@ -99,7 +109,7 @@ export default function AdminPricing() {
         .toLowerCase()
         .includes(q)
     );
-  }, [products, query]);
+  }, [products, query, autoOpenProductId]);
 
   const priceByProduct = useMemo(() => {
     const map = new Map();
@@ -112,6 +122,19 @@ export default function AdminPricing() {
 
     return map;
   }, [prices]);
+
+  useEffect(() => {
+    if (!autoOpenProductId || drawerOpen || !products.length) return;
+
+    const product = products.find((item) => item.id === autoOpenProductId);
+
+    if (product) {
+      console.info("ADMIN_PRICING_AUTO_OPEN", product.sku);
+      openCreate(product);
+      setQuery(product.sku || product.slug || product.nameVi || "");
+      setAutoOpenProductId("");
+    }
+  }, [autoOpenProductId, drawerOpen, products]);
 
   const summary = useMemo(() => {
     return {
@@ -265,6 +288,12 @@ export default function AdminPricing() {
       <section className="mb-4 rounded-3xl border border-emerald-100 bg-emerald-50 p-4 text-sm font-bold text-emerald-800">
         Pricing = Avg Cost + Margin · {loading ? "Loading..." : `${products.length} products`}
       </section>
+
+      {autoOpenProductId && (
+        <section className="mb-4 rounded-3xl border border-blue-100 bg-blue-50 p-4 text-sm font-bold text-blue-800">
+          Đang mở sản phẩm vừa tạo để thiết lập giá bán...
+        </section>
+      )}
 
       {apiError && (
         <section className="mb-4 rounded-3xl border border-red-100 bg-red-50 p-4 text-sm font-bold text-red-700">
