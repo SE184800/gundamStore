@@ -47,6 +47,60 @@ function isActiveNow(row) {
   return start <= now && (!end || now <= end);
 }
 
+function getProductSellingPrice(product = {}) {
+  return Number(product.finalPrice || product.effectivePrice || product.price || 0);
+}
+
+function calculatePromotionPreview(product = {}, draft = {}) {
+  const sellingPrice = getProductSellingPrice(product);
+  const type = String(draft.type || "PERCENT").toUpperCase();
+  const value = Number(draft.value || 0);
+
+  const discount =
+    type === "PERCENT"
+      ? Math.round(sellingPrice * Math.min(Math.max(value, 0), 100) / 100)
+      : Math.min(Math.max(value, 0), sellingPrice);
+
+  return {
+    product,
+    sellingPrice,
+    discount,
+    finalPrice: Math.max(0, sellingPrice - discount),
+  };
+}
+
+function getPromotionValidationErrors(draft = {}, products = []) {
+  const errors = [];
+  const type = String(draft.type || "PERCENT").toUpperCase();
+  const value = Number(draft.value || 0);
+  const productIds = Array.isArray(draft.productIds) ? draft.productIds : [];
+  const selectedProducts = products.filter((product) => productIds.includes(product.id));
+
+  if (!draft.code) errors.push("Promotion code is required.");
+  if (!draft.nameVi) errors.push("Vietnamese campaign name is required.");
+  if (!productIds.length) errors.push("Promotion must apply to at least one product.");
+  if (value <= 0) errors.push("Discount value must be greater than zero.");
+  if (type === "PERCENT" && value > 100) errors.push("Percent discount cannot be greater than 100.");
+
+  if (draft.endDate && draft.startDate && new Date(draft.endDate) < new Date(draft.startDate)) {
+    errors.push("End date must be after start date.");
+  }
+
+  for (const product of selectedProducts) {
+    const sellingPrice = getProductSellingPrice(product);
+
+    if (sellingPrice <= 0) {
+      errors.push(`${product.sku} has no selling price.`);
+    }
+
+    if (type === "FIXED" && value > sellingPrice) {
+      errors.push(`Fixed discount cannot exceed selling price for ${product.sku}.`);
+    }
+  }
+
+  return Array.from(new Set(errors));
+}
+
 const emptyDraft = {
   id: "",
   code: "",
@@ -70,6 +124,7 @@ export default function AdminPromotions() {
   const [draft, setDraft] = useState(emptyDraft);
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState("");
+  const [preselectProductId, setPreselectProductId] = useState("");
 
   async function reload() {
     setLoading(true);
@@ -99,6 +154,8 @@ export default function AdminPromotions() {
   }
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    setPreselectProductId(params.get("productId") || "");
     void reload();
   }, []);
 
@@ -132,6 +189,15 @@ export default function AdminPromotions() {
     };
   }, [promotions]);
 
+  const previewRows = useMemo(() => {
+    const selected = products.filter((product) => draft.productIds?.includes(product.id));
+    return selected.map((product) => calculatePromotionPreview(product, draft));
+  }, [products, draft]);
+
+  const validationErrors = useMemo(() => {
+    return getPromotionValidationErrors(draft, products);
+  }, [draft, products]);
+
   function patch(field, value) {
     setDraft((prev) => {
       const next = { ...prev, [field]: value };
@@ -160,6 +226,25 @@ export default function AdminPromotions() {
     setDrawerOpen(true);
   }
 
+  useEffect(() => {
+    if (!preselectProductId || !products.length) return;
+
+    const product = products.find((item) => item.id === preselectProductId);
+
+    if (!product) return;
+
+    console.info("PROMOTION_PRESELECT_PRODUCT", product.sku);
+    setDraft({
+      ...emptyDraft,
+      nameVi: `Discount ${product.sku}`,
+      code: makeCode(`DISCOUNT_${product.sku}`),
+      productIds: [product.id],
+    });
+    setQuery(product.sku || product.nameVi || "");
+    setDrawerOpen(true);
+    setPreselectProductId("");
+  }, [preselectProductId, products]);
+
   function openEdit(item) {
     setDraft({
       ...emptyDraft,
@@ -172,6 +257,13 @@ export default function AdminPromotions() {
   }
 
   async function save() {
+    const errors = getPromotionValidationErrors(draft, products);
+
+    if (errors.length) {
+      alert(errors.join("\n"));
+      return;
+    }
+
     try {
       const payload = {
         code: draft.code,
@@ -184,7 +276,7 @@ export default function AdminPromotions() {
         active: draft.active !== false,
         priority: Number(draft.priority || 0),
         note: draft.note,
-        productIds: draft.productIds || [],
+        productIds: Array.from(new Set(draft.productIds || [])),
       };
 
       if (draft.id) {
@@ -344,6 +436,53 @@ export default function AdminPromotions() {
 
           <AdminToggle label="Active" checked={draft.active !== false} onChange={(value) => patch("active", value)} />
 
+          <section className="rounded-3xl border border-blue-100 bg-blue-50 p-4">
+            <div className="mb-3 text-sm font-black text-blue-900">Final price preview</div>
+
+            {validationErrors.length > 0 && (
+              <div className="mb-3 rounded-2xl border border-red-100 bg-red-50 p-3 text-xs font-bold leading-5 text-red-700">
+                {validationErrors.map((error) => (
+                  <div key={error}>• {error}</div>
+                ))}
+              </div>
+            )}
+
+            {previewRows.length ? (
+              <div className="space-y-2">
+                {previewRows.slice(0, 8).map((row) => (
+                  <div key={row.product.id} className="grid gap-3 rounded-2xl bg-white p-3 text-xs font-bold text-slate-600 md:grid-cols-[1.5fr_1fr_1fr_1fr]">
+                    <div>
+                      <div className="font-black text-slate-900">{row.product.nameVi}</div>
+                      <div className="text-slate-400">{row.product.sku}</div>
+                    </div>
+                    <div>
+                      <div className="text-slate-400">Selling price</div>
+                      <div className="font-black text-slate-900">{formatCurrency(row.sellingPrice)}</div>
+                    </div>
+                    <div>
+                      <div className="text-slate-400">Discount</div>
+                      <div className="font-black text-red-500">-{formatCurrency(row.discount)}</div>
+                    </div>
+                    <div>
+                      <div className="text-slate-400">Final price</div>
+                      <div className="font-black text-emerald-600">{formatCurrency(row.finalPrice)}</div>
+                    </div>
+                  </div>
+                ))}
+
+                {previewRows.length > 8 && (
+                  <div className="text-xs font-bold text-blue-700">
+                    +{previewRows.length - 8} more product(s)
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-dashed border-blue-200 bg-white/70 p-4 text-center text-xs font-bold text-blue-600">
+                Chọn sản phẩm để xem selling price, discount và final price.
+              </div>
+            )}
+          </section>
+
           <AdminTextarea label="Ghi chú" rows={3} value={draft.note} onChange={(value) => patch("note", value)} />
 
           <section className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
@@ -366,7 +505,7 @@ export default function AdminPromotions() {
                     <div>
                       <div className="font-black">{product.nameVi}</div>
                       <div className="text-xs font-semibold text-slate-500">
-                        {product.sku} · Price {formatCurrency(product.price || 0)}
+                        {product.sku} · Selling {formatCurrency(getProductSellingPrice(product))} · Final {formatCurrency(calculatePromotionPreview(product, draft).finalPrice)}
                       </div>
                     </div>
                     <div className={`rounded-full px-3 py-1 text-[11px] font-black ${checked ? "bg-blue-700 text-white" : "bg-slate-100 text-slate-500"}`}>
