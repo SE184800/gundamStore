@@ -66,6 +66,7 @@ model User {
   orders             Order[]
   voucherRedemptions VoucherRedemption[]
   productReviews     ProductReview[]
+  customerNotes      CustomerNote[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -155,6 +156,26 @@ model RolePermission {
   permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
 
   @@id([roleId, permissionId])
+}
+
+model CustomerNote {
+  id          String  @id @default(cuid())
+  customerId  String?
+  customerKey String
+  type        String  @default("NOTE")
+  content     String
+  createdById String?
+
+  customer User? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  order     Order?   @relation(fields: [orderId], references: [id])
+  orderId   String?
+
+  @@index([customerId, createdAt])
+  @@index([customerKey, createdAt])
+  @@index([type, createdAt])
 }
 
 model ProductCategory {
@@ -468,6 +489,7 @@ model Order {
   auditLogs          AuditLog[]
   voucherRedemptions VoucherRedemption[]
   productReviews     ProductReview[]
+  customerNotes      CustomerNote[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

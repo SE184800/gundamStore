@@ -63,6 +63,7 @@ const AdminCategories = lazy(() => import("./pages/admin/AdminCategories"));
 const AdminProductCategoryMapping = lazy(() => import("./pages/admin/AdminProductCategoryMapping"));
 const AdminProductDisplayMapping = lazy(() => import("./pages/admin/AdminProductDisplayMapping"));
 const AdminOrders = lazy(() => import("./pages/admin/AdminOrders"));
+const AdminCustomers = lazy(() => import("./pages/admin/AdminCustomers"));
 const AdminChats = lazy(() => import("./pages/admin/AdminChats"));
 const AdminReviews = lazy(() => import("./pages/admin/AdminReviews"));
 const AdminCommunityGallery = lazy(() => import("./pages/admin/AdminCommunityGallery"));
