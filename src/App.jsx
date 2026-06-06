@@ -72,6 +72,7 @@ const AdminRestockAlerts = lazy(() => import("./pages/admin/AdminRestockAlerts")
 const AdminComplaints = lazy(() => import("./pages/admin/AdminComplaints"));
 const AdminAnalytics = lazy(() => import("./pages/admin/AdminAnalytics"));
 const AdminAuditLogs = lazy(() => import("./pages/admin/AdminAuditLogs"));
+const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
 const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
 const AdminQaHelper = lazy(() => import("./pages/admin/AdminQaHelper"));
 const AdminCommunication = lazy(() => import("./pages/admin/AdminCommunication"));
@@ -201,6 +202,7 @@ export default function App() {
             <Route path="complaints" element={<AdminComplaints />} />
             <Route path="analytics" element={<AdminAnalytics />} />
             <Route path="audit-logs" element={<AdminAuditLogs />} />
+            <Route path="users" element={<AdminUsers />} />
             <Route path="settings" element={<AdminSettings />} />
             <Route path="qa-helper" element={<AdminQaHelper />} />
           </Route>
