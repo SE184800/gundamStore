@@ -22,6 +22,12 @@ function getCopy(lang) {
         ? "Shipping • Returns • Warranty • Customer care"
         : "Giao hàng • Đổi trả • Bảo hành • CSKH",
     payment: lang === "en" ? "Payment" : "Thanh toán",
+    contact: lang === "en" ? "Support" : "Hỗ trợ",
+    shippingPolicy: lang === "en" ? "Shipping policy" : "Chính sách giao hàng",
+    returnPolicy: lang === "en" ? "Return policy" : "Đổi trả / hoàn tiền",
+    paymentGuide: lang === "en" ? "Payment guide" : "Hướng dẫn thanh toán",
+    warranty: lang === "en" ? "Warranty" : "Bảo hành",
+    faq: lang === "en" ? "FAQ" : "Câu hỏi thường gặp",
   };
 }
 
@@ -89,11 +95,23 @@ export default function StorefrontShell({ children }) {
           <div>
             <h3 className="font-black">{t.support}</h3>
             <p className="mt-2 text-sm text-slate-500">{t.supportDesc}</p>
+            <div className="mt-3 grid gap-2 text-sm font-bold text-blue-700">
+              <Link to="/support">{t.contact}</Link>
+              <Link to="/shipping-policy">{t.shippingPolicy}</Link>
+              <Link to="/return-policy">{t.returnPolicy}</Link>
+              <Link to="/warranty">{t.warranty}</Link>
+              <Link to="/faq">{t.faq}</Link>
+            </div>
           </div>
 
           <div>
             <h3 className="font-black">{t.payment}</h3>
             <p className="mt-2 text-sm text-slate-500">COD • Banking • Momo</p>
+            <div className="mt-3 grid gap-2 text-sm font-bold text-blue-700">
+              <Link to="/payment-guide">{t.paymentGuide}</Link>
+              <Link to="/order-lookup">{t.orderLookup}</Link>
+              <Link to="/account">{t.account}</Link>
+            </div>
           </div>
         </div>
       </footer>

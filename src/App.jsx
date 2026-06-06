@@ -36,6 +36,8 @@ const CartPage = lazy(() => import("./pages/storefront/CartPage"));
 const CheckoutPage = lazy(() => import("./pages/storefront/CheckoutPage"));
 const OrderSuccessPage = lazy(() => import("./pages/storefront/OrderSuccessPage"));
 
+const StorefrontSupportPage = lazy(() => import("./pages/storefront/StorefrontSupportPage"));
+const PolicyPage = lazy(() => import("./pages/storefront/PolicyPage"));
 const AdminLoginPage = lazy(() => import("./pages/admin/AdminLoginPage"));
 const AdminAccessDeniedPage = lazy(() => import("./pages/admin/AdminAccessDeniedPage"));
 const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
@@ -133,7 +135,7 @@ export default function App() {
           <Route path="/favorites" element={<WishlistPage />} />
           <Route path="/compare" element={<ComparePage />} />
           <Route path="/faq" element={<FAQPage />} />
-          <Route path="/return-policy" element={<ReturnPolicyPage />} />
+          <Route path="/return-policy" element={<PolicyPage pageKey="return-policy" />} />
           <Route path="/contact" element={<ContactPage />} />
 
           {/* Content & Blogs */}
@@ -149,6 +151,13 @@ export default function App() {
           <Route path="/order-success/:id" element={<OrderSuccessPage />} />
 
           {/* 🔐 Admin Module (Grouped & Protected) */}
+          <Route path="/contact" element={<StorefrontSupportPage defaultType="COMPLAINT" />} />
+          <Route path="/support" element={<StorefrontSupportPage defaultType="COMPLAINT" />} />
+          <Route path="/return-request" element={<StorefrontSupportPage defaultType="RETURN" />} />
+          <Route path="/shipping-policy" element={<PolicyPage pageKey="shipping-policy" />} />
+          <Route path="/payment-guide" element={<PolicyPage pageKey="payment-guide" />} />
+          <Route path="/warranty" element={<PolicyPage pageKey="warranty" />} />
+          <Route path="/faq" element={<PolicyPage pageKey="faq" />} />
           <Route path="/admin/login" element={<AdminLoginPage />} />
           <Route path="/admin/access-denied" element={<AdminAccessDeniedPage />} />
 

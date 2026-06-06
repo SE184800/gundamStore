@@ -1,10 +1,4 @@
 User-agent: *
 Allow: /
 
-Disallow: /admin
-Disallow: /checkout
-Disallow: /cart
-Disallow: /orders
-Disallow: /order-success
-
 Sitemap: /sitemap.xml
