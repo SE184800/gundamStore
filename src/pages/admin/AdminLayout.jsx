@@ -77,6 +77,7 @@ const copy = {
     complaints: "Khiếu nại",
     system: "Hệ thống",
     analytics: "Phân tích",
+    auditLogs: "Nhật ký hoạt động",
     settings: "Cài đặt",
     viewStore: "Xem cửa hàng",
     search: "Tìm trong admin...",
@@ -125,6 +126,7 @@ const copy = {
     complaints: "Complaints",
     system: "System",
     analytics: "Analytics",
+    auditLogs: "Audit Logs",
     settings: "Settings",
     viewStore: "View Store",
     search: "Search admin...",
@@ -234,6 +236,7 @@ function getPageTitle(pathname, t) {
   if (pathname.includes("/admin/community-gallery")) return t.gallery;
   if (pathname.includes("/admin/communication")) return t.communication;
   if (pathname.includes("/admin/complaints")) return t.complaints;
+  if (pathname.includes("/admin/audit-logs")) return t.auditLogs;
   if (pathname.includes("/admin/analytics")) return t.analytics;
   if (pathname.includes("/admin/settings")) return t.settings;
   if (pathname.includes("/admin/qa-helper")) return t.qaHelper;
@@ -309,6 +312,7 @@ export default function AdminLayout() {
 
             <NavGroup title={t.system}>
               <NavItem to="/admin/analytics" icon={Activity} label={t.analytics} />
+              <NavItem to="/admin/audit-logs" icon={History} label={t.auditLogs} />
               <NavItem to="/admin/settings" icon={Settings} label={t.settings} />
               <NavItem to="/admin/qa-helper" icon={TestTube2} label={t.qaHelper} />
             </NavGroup>

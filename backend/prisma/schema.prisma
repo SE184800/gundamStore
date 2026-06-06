@@ -629,6 +629,12 @@ model AuditLog {
   order Order? @relation(fields: [orderId], references: [id])
 
   createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([actorId, createdAt])
+  @@index([orderId, createdAt])
+  @@index([entity, entityId])
+  @@index([action, createdAt])
 }
 
 model PurchaseReceipt {
