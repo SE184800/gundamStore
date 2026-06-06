@@ -272,3 +272,71 @@ export async function setAdminProductGroupsApi(productId, groupIds = []) {
 
   return mapBackendProductForAdmin(data.product);
 }
+
+function downloadCsvText(filename = "products.csv", text = "") {
+  const blob = new Blob([text], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+
+  link.href = url;
+  link.download = filename;
+
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+
+  URL.revokeObjectURL(url);
+}
+
+export async function downloadAdminProductImportTemplateCsv() {
+  const text = await apiRequest("/api/products/admin/import-template", {
+    method: "GET",
+    headers: {
+      Accept: "text/csv",
+    },
+  });
+
+  downloadCsvText("product-import-template.csv", text);
+  return text;
+}
+
+export async function exportAdminProductsCsv() {
+  const text = await apiRequest("/api/products/admin/export", {
+    method: "GET",
+    headers: {
+      Accept: "text/csv",
+    },
+  });
+
+  downloadCsvText("products-export.csv", text);
+  return text;
+}
+
+export async function previewAdminProductImportCsv(csvText = "") {
+  const data = await apiRequest("/api/products/admin/import-preview", {
+    method: "POST",
+    body: JSON.stringify({ csvText }),
+  });
+
+  if (!data?.success) {
+    throw new Error(data?.message || "Import preview failed.");
+  }
+
+  return data;
+}
+
+export async function commitAdminProductImportCsv(csvText = "", mode = "upsert") {
+  const data = await apiRequest("/api/products/admin/import-commit", {
+    method: "POST",
+    body: JSON.stringify({ csvText, mode }),
+  });
+
+  if (!data?.success) {
+    const message = data?.message || "Import commit failed.";
+    const error = new Error(message);
+    error.data = data;
+    throw error;
+  }
+
+  return data;
+}
