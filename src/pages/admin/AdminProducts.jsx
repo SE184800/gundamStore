@@ -71,7 +71,7 @@ const emptyDraft = {
 const STATUS_OPTIONS = [
   { value: "inStock", label: "Hàng sẵn / In stock" },
   { value: "preorder", label: "Pre-order" },
-  { value: "sale", label: "Sale" },
+  { value: "sale", label: "Sale (legacy - use Promotion)" },
   { value: "comingSoon", label: "Coming soon" },
   { value: "outOfStock", label: "Hết hàng / Out of stock" },
   { value: "draft", label: "Draft / Nháp" },
@@ -561,9 +561,14 @@ function getProductIssueDisplay(product = {}) {
   return getProductIssueStatus(product).map((issue) => PRODUCT_ISSUE_LABELS[issue] || `Missing ${issue}`);
 }
 
+function allowsNoStockForCommercialStatus(status = "") {
+  const normalized = String(status || "").toLowerCase();
+  return normalized.includes("pre") || normalized.includes("coming");
+}
+
 function getPublishChecklistItems(product = {}) {
   const status = String(product.status || "").toLowerCase();
-  const allowNoStock = status.includes("pre") || status.includes("coming");
+  const allowNoStock = allowsNoStockForCommercialStatus(status);
 
   return [
     {
@@ -664,7 +669,7 @@ function getProductIssueStatus(product = {}) {
   if (!product.categoryId && !product.category?.id) missing.push("Danh mục");
   if (!product.imageUrl && !product.images?.length) missing.push("Ảnh");
   if (Number(product.price || 0) <= 0) missing.push("Giá");
-  if (Number(product.stock || 0) <= 0 && product.status !== "preorder") missing.push("Tồn kho");
+  if (Number(product.stock || 0) <= 0 && !allowsNoStockForCommercialStatus(product.status)) missing.push("Tồn kho");
 
   return missing;
 }
@@ -674,7 +679,7 @@ function isSellingProduct(product = {}) {
     product.active !== false &&
     !["inactive", "draft"].includes(String(product.status || "").toLowerCase()) &&
     Number(product.price || 0) > 0 &&
-    (Number(product.stock || 0) > 0 || product.status === "preorder")
+    (Number(product.stock || 0) > 0 || allowsNoStockForCommercialStatus(product.status))
   );
 }
 
@@ -684,7 +689,7 @@ function getProductTabMatch(product = {}, tab = "all") {
 
   if (tab === "all") return true;
   if (tab === "selling") return isSellingProduct(product);
-  if (tab === "outOfStock") return Number(product.stock || 0) <= 0 && status !== "preorder";
+  if (tab === "outOfStock") return Number(product.stock || 0) <= 0 && !allowsNoStockForCommercialStatus(status);
   if (tab === "missingPrice") return Number(product.price || 0) <= 0;
   if (tab === "draft") return status === "draft" || status === "inactive";
   if (tab === "hidden") return product.active === false;
