@@ -4,6 +4,7 @@ import {
   addMyWishlistItem,
   clearMyWishlist,
   getMyProfile,
+  getMyAccountDashboard,
   listMyWishlist,
   removeMyWishlistItem,
   updateMyProfile,
@@ -16,6 +17,7 @@ import {
 
 const router = express.Router();
 
+router.get("/dashboard", requireAuth, getMyAccountDashboard);
 router.get("/me", requireAuth, getMyProfile);
 router.patch("/me", requireAuth, updateMyProfile);
 

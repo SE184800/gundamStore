@@ -123,7 +123,25 @@ function includeOrderRelations() {
   return {
     items: true,
     payments: true,
-    shipments: true,
+    shipments: {
+      orderBy: [{ createdAt: "desc" }],
+    },
+    complaintTickets: {
+      orderBy: [{ createdAt: "desc" }],
+      select: {
+        id: true,
+        ticketNo: true,
+        type: true,
+        issue: true,
+        status: true,
+        priority: true,
+        refundAmount: true,
+        refundStatus: true,
+        returnTracking: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    },
   };
 }
 

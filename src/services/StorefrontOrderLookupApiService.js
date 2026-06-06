@@ -60,8 +60,79 @@ function writeSuccessStore(store = {}) {
   }
 }
 
+function buildOrderTimeline(order = {}, shipment = null) {
+  const status = API_TO_UI_STATUS[order.status] || order.status || ORDER_STATUS.PLACED;
+  const rows = [
+    {
+      status: ORDER_STATUS.PLACED,
+      time: order.createdAt,
+      title: "Đã đặt hàng",
+      note: "Đơn hàng đã được ghi nhận trên hệ thống.",
+    },
+  ];
+
+  if (["CONFIRMED", "PACKING", "SHIPPING", "DELIVERED", "COMPLETED"].includes(order.status)) {
+    rows.push({
+      status: ORDER_STATUS.CONFIRMED,
+      time: order.confirmedAt || order.updatedAt,
+      title: "Đã xác nhận",
+      note: "Shop đã xác nhận đơn hàng.",
+    });
+  }
+
+  if (["PACKING", "SHIPPING", "DELIVERED", "COMPLETED"].includes(order.status)) {
+    rows.push({
+      status: ORDER_STATUS.PACKING,
+      time: shipment?.createdAt || order.updatedAt,
+      title: "Đang đóng gói",
+      note: "Đơn hàng đang được chuẩn bị.",
+    });
+  }
+
+  if (["SHIPPING", "DELIVERED", "COMPLETED"].includes(order.status)) {
+    rows.push({
+      status: ORDER_STATUS.SHIPPING,
+      time: shipment?.updatedAt || order.updatedAt,
+      title: "Đang giao hàng",
+      note: [shipment?.carrier, shipment?.trackingCode].filter(Boolean).join(" · ") || "Đơn hàng đã bàn giao vận chuyển.",
+    });
+  }
+
+  if (["DELIVERED", "COMPLETED"].includes(order.status)) {
+    rows.push({
+      status: ORDER_STATUS.DELIVERED,
+      time: order.updatedAt,
+      title: "Đã giao hàng",
+      note: "Đơn hàng đã được giao.",
+    });
+  }
+
+  if (order.status === "COMPLETED") {
+    rows.push({
+      status: ORDER_STATUS.COMPLETED,
+      time: order.updatedAt,
+      title: "Hoàn tất",
+      note: "Đơn hàng đã hoàn tất.",
+    });
+  }
+
+  if (["CANCELLED", "REFUNDED"].includes(order.status)) {
+    rows.push({
+      status,
+      time: order.cancelledAt || order.updatedAt,
+      title: order.status === "CANCELLED" ? "Đã hủy" : "Đã hoàn tiền",
+      note: order.cancelReason || "Đơn hàng đã ở trạng thái cuối.",
+    });
+  }
+
+  return rows.filter((item) => item.time || item.status === ORDER_STATUS.PLACED);
+}
+
 export function mapBackendOrderForStorefront(order = {}) {
-  const shipment = Array.isArray(order.shipments) ? order.shipments[0] : null;
+  const shipments = Array.isArray(order.shipments)
+    ? [...order.shipments].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+    : [];
+  const shipment = shipments[0] || null;
   const payment = Array.isArray(order.payments) ? order.payments[0] : null;
 
   return {
@@ -112,23 +183,19 @@ export function mapBackendOrderForStorefront(order = {}) {
       trackingCode: shipment?.trackingCode || "",
       fee: Number(shipment?.fee || order.shippingFee || 0),
       status: shipment?.status || "",
+      method: shipment?.shippingMethod || order.shippingMethod || "FAST",
       note: shipment?.note || "",
+      updatedAt: shipment?.updatedAt || "",
     },
 
     status: API_TO_UI_STATUS[order.status] || order.status || ORDER_STATUS.PLACED,
 
-    timeline: [
-      {
-        status: API_TO_UI_STATUS[order.status] || order.status || ORDER_STATUS.PLACED,
-        time: order.updatedAt || order.createdAt,
-        title: "Đồng bộ từ PostgreSQL",
-        note: `Backend order status: ${order.status || ORDER_STATUS.PLACED}`,
-      },
-    ],
+    timeline: buildOrderTimeline(order, shipment),
 
     preorder: order.preorder || null,
     cancelRequest: null,
-    returnRequest: null,
+    returnRequest: (order.complaintTickets || []).find((ticket) => ["RETURN", "REFUND"].includes(ticket.type)) || null,
+    supportTickets: order.complaintTickets || [],
     adminNote: order.note || "",
 
     source: order.source || "backend",

@@ -90,7 +90,7 @@ function getMenuItems(lang) {
   return [
     {
       label: lang === "en" ? "Personal information" : "Thông tin cá nhân",
-      href: "/profile",
+      href: "/account/profile",
       icon: User,
       active: true,
     },
@@ -106,22 +106,22 @@ function getMenuItems(lang) {
     },
     {
       label: lang === "en" ? "My addresses" : "Địa chỉ của tôi",
-      href: "/profile#address",
+      href: "/account/profile#address",
       icon: MapPin,
     },
     {
       label: lang === "en" ? "Payment methods" : "Phương thức thanh toán",
-      href: "/profile#payment",
+      href: "/account/profile#payment",
       icon: CreditCard,
     },
     {
       label: lang === "en" ? "Change password" : "Đổi mật khẩu",
-      href: "/profile#password",
+      href: "/account/profile#password",
       icon: Lock,
     },
     {
       label: lang === "en" ? "Notifications" : "Thông báo",
-      href: "/profile#notification",
+      href: "/account/profile#notification",
       icon: Bell,
     },
   ];
