@@ -135,6 +135,38 @@ function decorateProductWithPromotion(product) {
   return decorateProductWithCommercialPrice(product);
 }
 
+function canSellWithoutStock(status = "") {
+  const normalized = normalizeProductKey(status);
+
+  return normalized === "preorder" || normalized === "comingsoon";
+}
+
+function hasSellableStock(product = {}) {
+  return Number(product.stock || 0) > 0 || canSellWithoutStock(product.status);
+}
+
+function applyAdminProductPublishGuard(payload = {}) {
+  const hasPrice = Number(payload.price || 0) > 0;
+  const hasStock = Number(payload.stock || 0) > 0;
+  const allowNoStock = canSellWithoutStock(payload.status);
+
+  if (!hasPrice) {
+    payload.price = 0;
+    payload.oldPrice = 0;
+    payload.active = false;
+    payload.status = "draft";
+    return payload;
+  }
+
+  if (payload.active !== false && !hasStock && !allowNoStock) {
+    payload.active = false;
+    payload.status = "draft";
+    return payload;
+  }
+
+  return payload;
+}
+
 
 function intValue(value, fallback = 0) {
   const n = Number(value);
@@ -261,9 +293,15 @@ export async function listStorefrontProducts(req, res, next) {
       take: 200,
     });
 
+    const sellableProducts = products
+      .map(decorateProductWithPromotion)
+      .filter((product) => {
+        return product.sellable && Number(product.finalPrice || product.price || 0) > 0 && hasSellableStock(product);
+      });
+
     res.json({
       success: true,
-      products: products.map(decorateProductWithPromotion),
+      products: sellableProducts,
     });
   } catch (err) {
     next(err);
@@ -296,7 +334,14 @@ export async function getStorefrontProductByKey(req, res, next) {
       include: productInclude(),
     });
 
-    if (!product) {
+    const decoratedProduct = product ? decorateProductWithPromotion(product) : null;
+
+    if (
+      !decoratedProduct ||
+      !decoratedProduct.sellable ||
+      Number(decoratedProduct.finalPrice || decoratedProduct.price || 0) <= 0 ||
+      !hasSellableStock(decoratedProduct)
+    ) {
       return res.status(404).json({
         success: false,
         message: "Product not found",
@@ -333,13 +378,7 @@ export async function createAdminProduct(req, res, next) {
   try {
     const payload = sanitizeAdminProductInput(req.body);
 
-    // Product master is not sellable until an effective ProductPrice exists.
-    if (Number(payload.price || 0) <= 0) {
-      payload.price = 0;
-      payload.oldPrice = 0;
-      payload.active = false;
-      payload.status = "inactive";
-    }
+    applyAdminProductPublishGuard(payload);
 
     const product = await prisma.$transaction(async (tx) => {
       const created = await tx.product.create({ data: payload });
@@ -361,6 +400,7 @@ export async function updateAdminProduct(req, res, next) {
   try {
     const id = String(req.params.id || "").trim();
     const payload = sanitizeAdminProductInput(req.body);
+    applyAdminProductPublishGuard(payload);
 
     const product = await prisma.$transaction(async (tx) => {
       await tx.product.update({ where: { id }, data: payload });
