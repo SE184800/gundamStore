@@ -65,6 +65,7 @@ model User {
   wishlistItems      WishlistItem[]
   orders             Order[]
   voucherRedemptions VoucherRedemption[]
+  complaintTickets   ComplaintTicket[]
   productReviews     ProductReview[]
   customerNotes      CustomerNote[]
 
@@ -370,6 +371,56 @@ model ProductVariant {
   @@index([sku, active])
 }
 
+model ComplaintTicket {
+  id             String    @id @default(cuid())
+  ticketNo       String    @unique
+  orderId        String?
+  customerId     String?
+  customerName   String
+  customerPhone  String?
+  customerEmail  String?
+  type           String    @default("COMPLAINT")
+  issue          String
+  description    String
+  priority       String    @default("MEDIUM")
+  status         String    @default("NEW")
+  resolution     String?
+  refundAmount   Int       @default(0)
+  refundStatus   String    @default("NONE")
+  returnTracking String?
+  images         Json?
+  assignedToId   String?
+  closedAt       DateTime?
+
+  order    Order? @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  customer User?  @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+  comments ComplaintTicketComment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, priority, createdAt])
+  @@index([orderId])
+  @@index([customerId])
+  @@index([ticketNo])
+}
+
+model ComplaintTicketComment {
+  id        String  @id @default(cuid())
+  ticketId  String
+  actorId   String?
+  actorName String?
+  type      String  @default("COMMENT")
+  content   String
+
+  ticket ComplaintTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([ticketId, createdAt])
+}
+
 model ProductReview {
   id               String    @id @default(cuid())
   productId        String
@@ -488,11 +539,12 @@ model Order {
   shipments          Shipment[]
   auditLogs          AuditLog[]
   voucherRedemptions VoucherRedemption[]
+  complaintTickets   ComplaintTicket[]
   productReviews     ProductReview[]
-  customerNotes      CustomerNote[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  customerNotes CustomerNote[]
 
   @@index([customerId, createdAt])
   @@index([status, stockRestoredAt])
