@@ -253,8 +253,12 @@ function isPreorder(product) {
 }
 
 function isSale(product) {
-  const status = String(product.status || "").toLowerCase();
-  return Boolean(status.includes("sale") || Number(product.oldPrice || 0) > Number(product.price || 0));
+  const finalPrice = Number(product.finalPrice || product.effectivePrice || product.price || 0);
+  const compareAtPrice = Number(product.compareAtPrice || product.oldPrice || product.originalPrice || 0);
+
+  return Boolean(product.activePromotion) ||
+    Number(product.discountAmount || 0) > 0 ||
+    (finalPrice > 0 && compareAtPrice > finalPrice);
 }
 
 function GundamVisual({ tone = "blue", imageUrl, large = false }) {
@@ -331,8 +335,8 @@ function ProductInfo({ product, lang, actions, onPreorder }) {
   const stock = Number(product.stock || 0);
   const isOutOfStock = !preorder && stock <= 0;
   const maxQty = preorder ? 99 : Math.max(1, stock);
-  const price = Number(product.price || 0);
-  const oldPrice = Number(product.oldPrice || 0);
+  const price = Number(product.finalPrice || product.effectivePrice || product.price || 0);
+  const oldPrice = Number(product.compareAtPrice || product.oldPrice || 0);
   const save = oldPrice > price ? oldPrice - price : 0;
   const [wishlistSaved, setWishlistSaved] = useState(false);
   const [wishlistBusy, setWishlistBusy] = useState(false);

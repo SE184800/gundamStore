@@ -124,6 +124,15 @@ function normalizeText(value = "") {
   return String(value || "").toLowerCase().trim();
 }
 
+function hasCommercialDiscount(product = {}) {
+  const finalPrice = Number(product.finalPrice || product.effectivePrice || product.price || 0);
+  const compareAtPrice = Number(product.compareAtPrice || product.oldPrice || product.originalPrice || 0);
+
+  return Boolean(product.activePromotion) ||
+    Number(product.discountAmount || 0) > 0 ||
+    (finalPrice > 0 && compareAtPrice > finalPrice);
+}
+
 function getProductSearchText(product, lang) {
   return [
     getProductName(product, lang),
@@ -174,7 +183,7 @@ function getStockStatus(product) {
   const status = normalizeText(product.status);
 
   if (status.includes("pre")) return "preorder";
-  if (status.includes("sale")) return "sale";
+  if (hasCommercialDiscount(product)) return "sale";
   if (stock <= 0 || status.includes("out")) return "outOfStock";
   return "inStock";
 }
