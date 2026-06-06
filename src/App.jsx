@@ -190,6 +190,7 @@ export default function App() {
 
             {/* Customer Operations */}
             <Route path="orders" element={<AdminOrders />} />
+            <Route path="customers" element={<AdminCustomers />} />
             <Route path="chats" element={<AdminChats />} />
             <Route path="reviews" element={<AdminReviews />} />
             <Route path="community-gallery" element={<AdminCommunityGallery />} />
