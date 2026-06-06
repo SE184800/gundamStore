@@ -11,6 +11,7 @@ import { requireAuth } from "./middleware/auth.js";
 import healthRoutes from "./routes/healthRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
+import dashboardRoutes from "./routes/dashboardRoutes.js";
 import fulfillmentRoutes from "./routes/fulfillmentRoutes.js";
 import accountRoutes from "./routes/accountRoutes.js";
 import productRoutes from "./routes/productRoutes.js";
@@ -83,6 +84,7 @@ app.use([
   "/api/admin",
   "/api/products/admin",
   "/api/orders/admin",
+  "/api/dashboard/admin",
   "/api/fulfillment/admin",
   "/api/vouchers/admin",
   "/api/reviews/admin",
@@ -94,6 +96,7 @@ app.use([
 
 app.use("/api/auth", authRoutes);
 app.use("/api/orders", orderRoutes);
+app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/fulfillment", fulfillmentRoutes);
 app.use("/api/account", accountRoutes);
 app.use("/api/products", productRoutes);
