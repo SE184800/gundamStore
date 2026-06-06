@@ -15,10 +15,14 @@ import { useLang } from "../../store/CmsStore";
 import { formatCurrency } from "../../utils/format";
 import { logoutAdmin } from "../../services/AdminAuthService";
 import {
+  commitAdminProductImportCsv,
   createAdminProductApi,
   deactivateAdminProductApi,
+  downloadAdminProductImportTemplateCsv,
+  exportAdminProductsCsv,
   getAdminCatalogReferenceApi,
   getAdminProductsFromApi,
+  previewAdminProductImportCsv,
   updateAdminProductApi,
 } from "../../services/AdminProductApiService";
 
@@ -881,6 +885,205 @@ function getProductTabMatch(product = {}, tab = "all") {
   return true;
 }
 
+function ProductBulkImportExportPanel({ onImported }) {
+  const [open, setOpen] = useState(false);
+  const [mode, setMode] = useState("upsert");
+  const [csvText, setCsvText] = useState("");
+  const [preview, setPreview] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
+
+  async function handleFile(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.name.toLowerCase().endsWith(".csv") && !file.type.includes("csv")) {
+      alert("Please upload CSV file only for this phase.");
+      event.target.value = "";
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      alert("CSV file is too large. Maximum 2MB for this phase.");
+      event.target.value = "";
+      return;
+    }
+
+    const text = await file.text();
+    setCsvText(text);
+    setPreview(null);
+    setMessage(`Loaded ${file.name}`);
+  }
+
+  async function previewImport() {
+    setBusy(true);
+    setMessage("");
+
+    try {
+      const result = await previewAdminProductImportCsv(csvText);
+      setPreview(result);
+      setMessage(`Preview: ${result.validRows}/${result.totalRows} valid row(s).`);
+    } catch (error) {
+      setMessage(error?.message || "Preview failed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function commitImport() {
+    if (!preview) {
+      alert("Please preview before commit.");
+      return;
+    }
+
+    if (preview.errorRows > 0) {
+      alert("Import has error rows. Please fix CSV and preview again.");
+      return;
+    }
+
+    if (!window.confirm(`Commit import with mode: ${mode}?`)) return;
+
+    setBusy(true);
+    setMessage("");
+
+    try {
+      const result = await commitAdminProductImportCsv(csvText, mode);
+      setMessage(`Import done. Created ${result.created}, updated ${result.updated}, variants ${result.variants}, skipped ${result.skipped}.`);
+      setPreview(null);
+      setCsvText("");
+      await onImported?.();
+    } catch (error) {
+      const details = error?.data?.errorRows?.slice?.(0, 3)?.map((row) => `Line ${row.line}: ${row.errors.join("; ")}`).join("\n");
+      setMessage(details || error?.message || "Commit failed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="mb-4 rounded-3xl border border-blue-100 bg-blue-50 p-4">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <div className="text-sm font-black text-blue-900">Bulk Import / Export Products</div>
+          <p className="mt-1 text-sm font-semibold text-blue-800/80">
+            CSV first phase. Preview validates line number, product readiness, category/supplier code and variant data before commit.
+          </p>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => void downloadAdminProductImportTemplateCsv()}
+            className="rounded-2xl border border-blue-200 bg-white px-4 py-2 text-xs font-black text-blue-700 hover:bg-blue-50"
+          >
+            Download Template
+          </button>
+          <button
+            type="button"
+            onClick={() => void exportAdminProductsCsv()}
+            className="rounded-2xl border border-emerald-200 bg-white px-4 py-2 text-xs font-black text-emerald-700 hover:bg-emerald-50"
+          >
+            Export Products
+          </button>
+          <button
+            type="button"
+            onClick={() => setOpen((value) => !value)}
+            className="rounded-2xl bg-blue-700 px-4 py-2 text-xs font-black text-white hover:bg-blue-800"
+          >
+            Import Products
+          </button>
+        </div>
+      </div>
+
+      {open && (
+        <div className="mt-4 rounded-3xl bg-white p-4 shadow-sm">
+          <div className="grid gap-4 lg:grid-cols-[260px_1fr]">
+            <div className="space-y-3">
+              <label className="block text-xs font-black uppercase text-slate-500">Import mode</label>
+              <select
+                value={mode}
+                onChange={(event) => setMode(event.target.value)}
+                className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm font-bold outline-none"
+              >
+                <option value="create">Create new only</option>
+                <option value="update">Update existing by SKU</option>
+                <option value="upsert">Upsert by SKU</option>
+              </select>
+
+              <input
+                type="file"
+                accept=".csv,text/csv"
+                onChange={handleFile}
+                className="w-full rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-3 text-xs font-bold text-slate-600"
+              />
+
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  disabled={busy || !csvText.trim()}
+                  onClick={() => void previewImport()}
+                  className="rounded-2xl bg-slate-900 px-4 py-2 text-xs font-black text-white disabled:opacity-50"
+                >
+                  Preview
+                </button>
+                <button
+                  type="button"
+                  disabled={busy || !preview || preview.errorRows > 0}
+                  onClick={() => void commitImport()}
+                  className="rounded-2xl bg-emerald-600 px-4 py-2 text-xs font-black text-white disabled:opacity-50"
+                >
+                  Commit
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <textarea
+                value={csvText}
+                onChange={(event) => {
+                  setCsvText(event.target.value);
+                  setPreview(null);
+                }}
+                placeholder="Paste CSV content here..."
+                className="h-44 w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 font-mono text-xs outline-none focus:border-blue-300 focus:bg-white"
+              />
+
+              {message && (
+                <div className="mt-3 whitespace-pre-line rounded-2xl bg-blue-50 p-3 text-xs font-black text-blue-700">
+                  {message}
+                </div>
+              )}
+
+              {preview && (
+                <div className="mt-3 overflow-hidden rounded-2xl border border-slate-200">
+                  <div className="grid grid-cols-3 bg-slate-50 p-3 text-xs font-black text-slate-600">
+                    <div>Total: {preview.totalRows}</div>
+                    <div className="text-emerald-600">Valid: {preview.validRows}</div>
+                    <div className="text-red-600">Errors: {preview.errorRows}</div>
+                  </div>
+
+                  <div className="max-h-64 overflow-auto">
+                    {(preview.rows || []).slice(0, 40).map((row) => (
+                      <div key={`${row.line}-${row.sku}-${row.variantSku}`} className="grid gap-2 border-t border-slate-100 p-3 text-xs md:grid-cols-[80px_1fr_1fr_1fr]">
+                        <div className="font-black text-slate-500">Line {row.line}</div>
+                        <div className="font-black text-slate-900">{row.sku}</div>
+                        <div className="text-slate-600">{row.variantSku || "Parent product"}</div>
+                        <div className={row.valid ? "font-black text-emerald-600" : "font-black text-red-600"}>
+                          {row.valid ? "Valid" : row.errors.join("; ")}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
 export default function AdminProducts() {
   const [lang] = useLang();
   const t = getCopy(lang);
@@ -1193,6 +1396,8 @@ export default function AdminProducts() {
         <div className="text-sm font-black text-emerald-800">{t.backendSource}</div>
         <p className="mt-1 text-sm font-semibold text-emerald-700/80">{t.backendDesc}</p>
       </section>
+
+      <ProductBulkImportExportPanel onImported={reload} />
 
       {apiError && (
         <section className="mb-4 rounded-3xl border border-red-100 bg-red-50 p-4">
