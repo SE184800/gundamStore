@@ -780,6 +780,53 @@ export default function AdminProducts() {
     window.location.href = `/admin/pricing?productId=${encodeURIComponent(pricePrompt.id)}`;
   }
 
+  function goToProductPricing(product) {
+    if (!product?.id) return;
+    window.location.href = `/admin/pricing?productId=${encodeURIComponent(product.id)}`;
+  }
+
+  function goToProductPromotion(product) {
+    if (!product?.id) return;
+    window.location.href = `/admin/promotions?productId=${encodeURIComponent(product.id)}`;
+  }
+
+  function goToProductInventory(product) {
+    if (!product?.id) return;
+    window.location.href = `/admin/inventory?productId=${encodeURIComponent(product.id)}`;
+  }
+
+  function previewProduct(product) {
+    const slug = product?.slug || product?.id;
+    if (!slug) return;
+    window.open(`/product/${slug}`, "_blank", "noopener,noreferrer");
+  }
+
+  async function toggleProductPublish(product) {
+    const shouldPublish =
+      product.active === false ||
+      ["inactive", "draft"].includes(String(product.status || "").toLowerCase());
+
+    const issues = getProductIssueStatus(product);
+
+    if (shouldPublish && issues.length) {
+      alert(`Không thể publish. Thiếu: ${issues.join(", ")}`);
+      return;
+    }
+
+    const next = {
+      ...product,
+      active: shouldPublish,
+      status: shouldPublish ? "inStock" : "inactive",
+    };
+
+    try {
+      await updateAdminProductApi(product.id, next);
+      await reload();
+    } catch (error) {
+      alert(error?.message || "Update publish status failed.");
+    }
+  }
+
   async function deactivate(product) {
     if (!window.confirm(`Ẩn sản phẩm ${product.sku}?`)) return;
 
@@ -947,7 +994,7 @@ export default function AdminProducts() {
                 rows.map((product) => (
                   <tr key={product.id} className="border-t border-slate-100 hover:bg-slate-50">
                     <td className="px-4 py-3">
-                      <div className="flex gap-2">
+                      <div className="flex min-w-[220px] flex-wrap gap-2">
                         <button
                           onClick={() => openEdit(product)}
                           className="rounded-md border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50"
@@ -957,8 +1004,55 @@ export default function AdminProducts() {
                         </button>
 
                         <button
+                          type="button"
+                          onClick={() => goToProductPricing(product)}
+                          className="rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-black text-blue-700 hover:bg-blue-100"
+                        >
+                          Set price
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => goToProductPromotion(product)}
+                          className="rounded-md border border-fuchsia-200 bg-fuchsia-50 px-3 py-2 text-xs font-black text-fuchsia-700 hover:bg-fuchsia-100"
+                        >
+                          Set discount
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => goToProductInventory(product)}
+                          className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-black text-amber-700 hover:bg-amber-100"
+                        >
+                          Adjust stock
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => previewProduct(product)}
+                          className="rounded-md border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50"
+                        >
+                          Preview
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => void toggleProductPublish(product)}
+                          className={`rounded-md px-3 py-2 text-xs font-black ${
+                            product.active === false || ["inactive", "draft"].includes(String(product.status || "").toLowerCase())
+                              ? "border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                              : "border border-slate-300 bg-slate-100 text-slate-600 hover:bg-slate-200"
+                          }`}
+                        >
+                          {product.active === false || ["inactive", "draft"].includes(String(product.status || "").toLowerCase())
+                            ? "Publish"
+                            : "Unpublish"}
+                        </button>
+
+                        <button
                           onClick={() => void deactivate(product)}
                           className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-600 hover:bg-red-100"
+                          title="Deactivate"
                         >
                           <Trash2 size={14} />
                         </button>
@@ -1041,6 +1135,16 @@ export default function AdminProducts() {
                       <div className="mt-1 rounded-full bg-slate-100 px-3 py-1 text-[10px] font-black text-slate-500">
                         DB PRODUCT
                       </div>
+
+                      {getProductIssueStatus(product).length > 0 && (
+                        <div className="mt-2 flex max-w-[180px] flex-wrap gap-1">
+                          {getProductIssueStatus(product).map((issue) => (
+                            <span key={issue} className="rounded-full bg-red-50 px-2 py-1 text-[10px] font-black text-red-600">
+                              Missing {issue}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))
