@@ -66,6 +66,7 @@ const emptyDraft = {
   categoryId: "",
   supplierId: "",
   groupIds: [],
+  variants: [],
 };
 
 const STATUS_OPTIONS = [
@@ -247,9 +248,189 @@ function normalizeDraft(product = {}) {
     supplierId: product.supplierId || product.supplier?.id || "",
     groupIds: Array.isArray(product.groupIds) ? product.groupIds : [],
 
+    variants: Array.isArray(product.variants)
+      ? product.variants.map((variant, index) => ({
+          id: variant.id || "",
+          sku: variant.sku || "",
+          barcode: variant.barcode || "",
+          nameVi: variant.nameVi || "",
+          nameEn: variant.nameEn || variant.nameVi || "",
+          option1Name: variant.option1Name || "",
+          option1Value: variant.option1Value || "",
+          option2Name: variant.option2Name || "",
+          option2Value: variant.option2Value || "",
+          price: Number(variant.price || 0),
+          oldPrice: Number(variant.oldPrice || 0),
+          stock: Number(variant.stock || 0),
+          imageUrl: variant.imageUrl || "",
+          active: variant.active !== false,
+          status: variant.status || "inStock",
+          sortOrder: Number(variant.sortOrder ?? index),
+        }))
+      : [],
+
     specsText: formatSpecsText(product.specs),
     boxItemsText: formatBoxItemsText(product.boxItems),
   };
+}
+
+function createEmptyVariant(index = 0, parentSku = "") {
+  return {
+    id: "",
+    sku: parentSku ? `${parentSku}-VAR-${index + 1}` : "",
+    barcode: "",
+    nameVi: "",
+    nameEn: "",
+    option1Name: "Version",
+    option1Value: "",
+    option2Name: "",
+    option2Value: "",
+    price: 0,
+    oldPrice: 0,
+    stock: 0,
+    imageUrl: "",
+    active: true,
+    status: "inStock",
+    sortOrder: index,
+  };
+}
+
+function VariantEditor({ draft, setDraft }) {
+  const variants = Array.isArray(draft.variants) ? draft.variants : [];
+
+  function patchVariant(index, field, value) {
+    setDraft((prev) => {
+      const nextVariants = [...(prev.variants || [])];
+      nextVariants[index] = {
+        ...nextVariants[index],
+        [field]: value,
+      };
+      return { ...prev, variants: nextVariants };
+    });
+  }
+
+  function addVariant() {
+    setDraft((prev) => {
+      const next = [...(prev.variants || []), createEmptyVariant((prev.variants || []).length, prev.sku)];
+      return { ...prev, variants: next };
+    });
+  }
+
+  function deactivateVariant(index) {
+    setDraft((prev) => {
+      const nextVariants = [...(prev.variants || [])];
+      const current = nextVariants[index] || {};
+      nextVariants[index] = {
+        ...current,
+        active: false,
+        status: "inactive",
+      };
+      return { ...prev, variants: nextVariants };
+    });
+  }
+
+  function removeNewVariant(index) {
+    setDraft((prev) => {
+      const nextVariants = [...(prev.variants || [])];
+      const current = nextVariants[index];
+
+      if (current?.id) {
+        nextVariants[index] = {
+          ...current,
+          active: false,
+          status: "inactive",
+        };
+      } else {
+        nextVariants.splice(index, 1);
+      }
+
+      return { ...prev, variants: nextVariants };
+    });
+  }
+
+  return (
+    <section className="rounded-3xl border border-blue-100 bg-blue-50 p-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <div className="text-sm font-black text-blue-900">Variants / Phân loại hàng</div>
+          <p className="mt-1 text-xs font-semibold text-blue-800/80">
+            Mỗi variant có SKU, giá, tồn kho và ảnh riêng. Product parent chỉ đóng vai trò grouping/display.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={addVariant}
+          className="rounded-2xl bg-blue-700 px-4 py-2 text-xs font-black text-white hover:bg-blue-800"
+        >
+          + Add variant
+        </button>
+      </div>
+
+      {!variants.length && (
+        <div className="mt-4 rounded-2xl border border-dashed border-blue-200 bg-white/70 p-4 text-center text-xs font-bold text-blue-700">
+          Chưa có variant. Product sẽ bán theo SKU/giá/tồn kho của parent như hiện tại.
+        </div>
+      )}
+
+      <div className="mt-4 space-y-4">
+        {variants.map((variant, index) => (
+          <div
+            key={variant.id || index}
+            className={`rounded-3xl border bg-white p-4 shadow-sm ${
+              variant.active === false ? "border-slate-200 opacity-60" : "border-blue-100"
+            }`}
+          >
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <div className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+                Variant #{index + 1}
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => deactivateVariant(index)}
+                  className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-black text-slate-600 hover:bg-slate-50"
+                >
+                  Unpublish
+                </button>
+                <button
+                  type="button"
+                  onClick={() => removeNewVariant(index)}
+                  className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-black text-red-600 hover:bg-red-100"
+                >
+                  {variant.id ? "Deactivate" : "Remove"}
+                </button>
+              </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-3">
+              <AdminTextField label="Variant SKU" required value={variant.sku} onChange={(value) => patchVariant(index, "sku", value)} />
+              <AdminTextField label="Variant barcode" value={variant.barcode} onChange={(value) => patchVariant(index, "barcode", value)} />
+              <AdminTextField label="Sort order" type="number" value={variant.sortOrder} onChange={(value) => patchVariant(index, "sortOrder", value)} />
+              <AdminTextField label="Variant name VI" required value={variant.nameVi} onChange={(value) => patchVariant(index, "nameVi", value)} />
+              <AdminTextField label="Variant name EN" value={variant.nameEn} onChange={(value) => patchVariant(index, "nameEn", value)} />
+              <AdminSelect label="Status" options={STATUS_OPTIONS} value={variant.status} onChange={(value) => patchVariant(index, "status", value)} />
+              <AdminTextField label="Option 1 name" value={variant.option1Name} onChange={(value) => patchVariant(index, "option1Name", value)} />
+              <AdminTextField label="Option 1 value" value={variant.option1Value} onChange={(value) => patchVariant(index, "option1Value", value)} />
+              <AdminTextField label="Option 2 name" value={variant.option2Name} onChange={(value) => patchVariant(index, "option2Name", value)} />
+              <AdminTextField label="Option 2 value" value={variant.option2Value} onChange={(value) => patchVariant(index, "option2Value", value)} />
+              <AdminTextField label="Variant price" type="number" suffix="đ" value={variant.price} onChange={(value) => patchVariant(index, "price", value)} />
+              <AdminTextField label="Variant old price" type="number" suffix="đ" value={variant.oldPrice} onChange={(value) => patchVariant(index, "oldPrice", value)} />
+              <AdminTextField label="Variant stock" type="number" value={variant.stock} onChange={(value) => patchVariant(index, "stock", value)} />
+            </div>
+
+            <div className="mt-4">
+              <AdminImageUploader
+                label="Variant image"
+                value={variant.imageUrl}
+                onChange={(value) => patchVariant(index, "imageUrl", value)}
+                recommended="1200 x 1200 px"
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
 }
 
 function ProductForm({ draft, setDraft, reference }) {
@@ -429,6 +610,8 @@ function ProductForm({ draft, setDraft, reference }) {
           Pricing Center vẫn là nơi quản lý ProductPrice/history chính thức. Section này giúp tạo sản phẩm mới theo flow seller center và tránh publish sản phẩm giá 0đ.
         </div>
       </div>
+
+      <VariantEditor draft={draft} setDraft={setDraft} />
 
       <PublishReadinessChecklist draft={draft} />
 

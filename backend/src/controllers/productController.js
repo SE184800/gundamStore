@@ -41,6 +41,9 @@ function productInclude() {
       where: { active: true },
       orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
     },
+    variants: {
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+    },
     groupItems: {
       include: { group: true },
       orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
@@ -281,6 +284,104 @@ async function syncProductImages(tx, productId, body = {}) {
   });
 }
 
+function sanitizeVariantInput(raw = {}, product = {}) {
+  const sku = String(raw.sku || "").trim().toUpperCase();
+  const nameVi = String(raw.nameVi || raw.name?.vi || raw.option1Value || product.nameVi || "").trim();
+  const nameEn = String(raw.nameEn || raw.name?.en || nameVi).trim();
+  const status = String(raw.status || "inStock").trim() || "inStock";
+
+  if (!sku) {
+    const error = new Error("Variant SKU is required.");
+    error.status = 400;
+    throw error;
+  }
+
+  if (!nameVi) {
+    const error = new Error("Variant Vietnamese name is required.");
+    error.status = 400;
+    throw error;
+  }
+
+  const payload = {
+    sku,
+    barcode: String(raw.barcode || "").trim() || null,
+    nameVi,
+    nameEn: nameEn || nameVi,
+    option1Name: String(raw.option1Name || "").trim() || null,
+    option1Value: String(raw.option1Value || "").trim() || null,
+    option2Name: String(raw.option2Name || "").trim() || null,
+    option2Value: String(raw.option2Value || "").trim() || null,
+    price: intValue(raw.price, 0),
+    oldPrice: intValue(raw.oldPrice, 0),
+    stock: intValue(raw.stock, 0),
+    imageUrl: String(raw.imageUrl || "").trim() || null,
+    active: raw.active !== false,
+    status,
+    sortOrder: intValue(raw.sortOrder, 0),
+  };
+
+  applyAdminProductPublishGuard(payload);
+  return payload;
+}
+
+async function syncProductVariants(tx, productId, body = {}, product = {}) {
+  if (!Array.isArray(body.variants)) return;
+
+  const keepIds = [];
+
+  for (const raw of body.variants) {
+    const payload = sanitizeVariantInput(raw, product);
+
+    if (raw.id) {
+      const updated = await tx.productVariant.update({
+        where: { id: raw.id },
+        data: payload,
+      });
+      keepIds.push(updated.id);
+      continue;
+    }
+
+    const existing = await tx.productVariant.findUnique({
+      where: { sku: payload.sku },
+    });
+
+    if (existing) {
+      if (existing.productId !== productId) {
+        const error = new Error(`Variant SKU ${payload.sku} already belongs to another product.`);
+        error.status = 409;
+        throw error;
+      }
+
+      const updated = await tx.productVariant.update({
+        where: { id: existing.id },
+        data: payload,
+      });
+      keepIds.push(updated.id);
+      continue;
+    }
+
+    const created = await tx.productVariant.create({
+      data: {
+        ...payload,
+        productId,
+      },
+    });
+
+    keepIds.push(created.id);
+  }
+
+  await tx.productVariant.updateMany({
+    where: {
+      productId,
+      id: { notIn: keepIds.length ? keepIds : ["__none__"] },
+    },
+    data: {
+      active: false,
+      status: "inactive",
+    },
+  });
+}
+
 export async function listStorefrontProducts(req, res, next) {
   try {
     const products = await prisma.product.findMany({
@@ -383,6 +484,7 @@ export async function createAdminProduct(req, res, next) {
     const product = await prisma.$transaction(async (tx) => {
       const created = await tx.product.create({ data: payload });
       await syncProductImages(tx, created.id, req.body);
+      await syncProductVariants(tx, created.id, req.body, created);
 
       return tx.product.findUnique({
         where: { id: created.id },
@@ -403,8 +505,9 @@ export async function updateAdminProduct(req, res, next) {
     applyAdminProductPublishGuard(payload);
 
     const product = await prisma.$transaction(async (tx) => {
-      await tx.product.update({ where: { id }, data: payload });
+      const updatedProduct = await tx.product.update({ where: { id }, data: payload });
       await syncProductImages(tx, id, req.body);
+      await syncProductVariants(tx, id, req.body, updatedProduct);
 
       return tx.product.findUnique({
         where: { id },
