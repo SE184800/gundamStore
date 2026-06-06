@@ -64,6 +64,8 @@ export function getProductSearchText(product = {}) {
 
 export function getProductPrice(product = {}) {
   const directPrice =
+    Number(product.finalPrice) ||
+    Number(product.effectivePrice) ||
     Number(product.price) ||
     Number(product.salePrice) ||
     Number(product.unitPrice) ||
@@ -87,6 +89,10 @@ export function normalizeCartItem(item = {}, product = null) {
     productId: item.productId || item.id || product?.id,
     slug: item.slug || product?.slug,
     sku: item.sku || product?.sku,
+    variantId: item.variantId || product?.variantId || "",
+    variantSku: item.variantSku || product?.variantSku || "",
+    variantName: item.variantName || product?.variantName || "",
+    variantOptions: item.variantOptions || product?.variantOptions || null,
     name: item.name || product?.name || product?.title || "Gundam Product",
     image:
       item.image ||

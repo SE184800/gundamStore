@@ -144,8 +144,52 @@ function canSellWithoutStock(status = "") {
   return normalized === "preorder" || normalized === "comingsoon";
 }
 
+function getSellableVariants(product = {}) {
+  return (product.variants || [])
+    .filter((variant) => {
+      return (
+        variant.active !== false &&
+        Number(variant.price || 0) > 0 &&
+        (Number(variant.stock || 0) > 0 || canSellWithoutStock(variant.status))
+      );
+    })
+    .sort((a, b) => {
+      const sortDiff = Number(a.sortOrder || 0) - Number(b.sortOrder || 0);
+      if (sortDiff !== 0) return sortDiff;
+      return Number(a.price || 0) - Number(b.price || 0);
+    });
+}
+
 function hasSellableStock(product = {}) {
-  return Number(product.stock || 0) > 0 || canSellWithoutStock(product.status);
+  return Number(product.stock || 0) > 0 || canSellWithoutStock(product.status) || getSellableVariants(product).length > 0;
+}
+
+function decorateProductForStorefront(product = {}) {
+  const decorated = decorateProductWithPromotion(product);
+  const sellableVariants = getSellableVariants(decorated);
+
+  if (!sellableVariants.length) return decorated;
+
+  const firstVariant = sellableVariants[0];
+
+  return {
+    ...decorated,
+    variants: sellableVariants,
+    hasVariants: true,
+    sellable: true,
+    price: Number(firstVariant.price || 0),
+    finalPrice: Number(firstVariant.price || 0),
+    oldPrice: Number(firstVariant.oldPrice || 0),
+    compareAtPrice: Number(firstVariant.oldPrice || 0),
+    stock: sellableVariants.reduce((sum, variant) => sum + Number(variant.stock || 0), 0),
+    notSellableReason: "",
+  };
+}
+
+function isStorefrontSellableProduct(product = {}) {
+  if (product.hasVariants && getSellableVariants(product).length > 0) return true;
+
+  return product.sellable && Number(product.finalPrice || product.price || 0) > 0 && hasSellableStock(product);
 }
 
 function applyAdminProductPublishGuard(payload = {}) {
@@ -395,10 +439,8 @@ export async function listStorefrontProducts(req, res, next) {
     });
 
     const sellableProducts = products
-      .map(decorateProductWithPromotion)
-      .filter((product) => {
-        return product.sellable && Number(product.finalPrice || product.price || 0) > 0 && hasSellableStock(product);
-      });
+      .map(decorateProductForStorefront)
+      .filter(isStorefrontSellableProduct);
 
     res.json({
       success: true,
@@ -435,14 +477,9 @@ export async function getStorefrontProductByKey(req, res, next) {
       include: productInclude(),
     });
 
-    const decoratedProduct = product ? decorateProductWithPromotion(product) : null;
+    const decoratedProduct = product ? decorateProductForStorefront(product) : null;
 
-    if (
-      !decoratedProduct ||
-      !decoratedProduct.sellable ||
-      Number(decoratedProduct.finalPrice || decoratedProduct.price || 0) <= 0 ||
-      !hasSellableStock(decoratedProduct)
-    ) {
+    if (!decoratedProduct || !isStorefrontSellableProduct(decoratedProduct)) {
       return res.status(404).json({
         success: false,
         message: "Product not found",

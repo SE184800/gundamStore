@@ -261,6 +261,55 @@ function isSale(product) {
     (finalPrice > 0 && compareAtPrice > finalPrice);
 }
 
+function getActiveVariants(product = {}) {
+  return (product.variants || [])
+    .filter((variant) => variant.active !== false)
+    .sort((a, b) => {
+      const sortDiff = Number(a.sortOrder || 0) - Number(b.sortOrder || 0);
+      if (sortDiff !== 0) return sortDiff;
+      return String(a.sku || "").localeCompare(String(b.sku || ""));
+    });
+}
+
+function getVariantLabel(variant = {}) {
+  return [
+    variant.option1Value || variant.nameVi || variant.sku,
+    variant.option2Value,
+  ].filter(Boolean).join(" / ");
+}
+
+function getVariantOptions(variant = {}) {
+  return {
+    option1Name: variant.option1Name || "",
+    option1Value: variant.option1Value || "",
+    option2Name: variant.option2Name || "",
+    option2Value: variant.option2Value || "",
+  };
+}
+
+function mergeProductVariant(product = {}, variant = null) {
+  if (!variant) return product;
+
+  const variantName = variant.nameVi || getVariantLabel(variant) || variant.sku;
+
+  return {
+    ...product,
+    sku: variant.sku || product.sku,
+    variantId: variant.id,
+    variantSku: variant.sku,
+    variantName,
+    variantOptions: getVariantOptions(variant),
+    price: Number(variant.price || 0),
+    finalPrice: Number(variant.price || 0),
+    oldPrice: Number(variant.oldPrice || 0),
+    compareAtPrice: Number(variant.oldPrice || 0),
+    stock: Number(variant.stock || 0),
+    status: variant.status || product.status,
+    imageUrl: variant.imageUrl || product.imageUrl,
+    images: variant.imageUrl ? [variant.imageUrl, ...(product.images || [])] : product.images,
+  };
+}
+
 function GundamVisual({ tone = "blue", imageUrl, large = false }) {
   const toneMap = {
     blue: "from-blue-950 via-blue-600 to-sky-100",
@@ -330,14 +379,9 @@ function QuantitySelector({ qty, setQty, maxQty = 99, disabled = false }) {
 
 function ProductInfo({ product, lang, actions, onPreorder }) {
   const t = copy[lang];
+  const variants = useMemo(() => getActiveVariants(product), [product]);
+  const [selectedVariantId, setSelectedVariantId] = useState("");
   const [qty, setQty] = useState(1);
-  const preorder = isPreorder(product);
-  const stock = Number(product.stock || 0);
-  const isOutOfStock = !preorder && stock <= 0;
-  const maxQty = preorder ? 99 : Math.max(1, stock);
-  const price = Number(product.finalPrice || product.effectivePrice || product.price || 0);
-  const oldPrice = Number(product.compareAtPrice || product.oldPrice || 0);
-  const save = oldPrice > price ? oldPrice - price : 0;
   const [wishlistSaved, setWishlistSaved] = useState(false);
   const [wishlistBusy, setWishlistBusy] = useState(false);
   const [wishlistMessage, setWishlistMessage] = useState("");
@@ -346,6 +390,31 @@ function ProductInfo({ product, lang, actions, onPreorder }) {
   const [alertMessage, setAlertMessage] = useState("");
   const [alertError, setAlertError] = useState("");
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!variants.length) {
+      setSelectedVariantId("");
+      return;
+    }
+
+    if (!variants.some((variant) => variant.id === selectedVariantId)) {
+      setSelectedVariantId(variants[0].id);
+    }
+  }, [variants, selectedVariantId]);
+
+  useEffect(() => {
+    setQty(1);
+  }, [selectedVariantId]);
+
+  const selectedVariant = variants.find((variant) => variant.id === selectedVariantId) || null;
+  const currentProduct = selectedVariant ? mergeProductVariant(product, selectedVariant) : product;
+  const preorder = isPreorder(currentProduct);
+  const stock = Number(currentProduct.stock || 0);
+  const isOutOfStock = !preorder && stock <= 0;
+  const maxQty = preorder ? 99 : Math.max(1, stock);
+  const price = Number(currentProduct.finalPrice || currentProduct.effectivePrice || currentProduct.price || 0);
+  const oldPrice = Number(currentProduct.compareAtPrice || currentProduct.oldPrice || 0);
+  const save = oldPrice > price ? oldPrice - price : 0;
 
   function showCartError(result) {
     const available = Number(result?.available || 0);
@@ -359,28 +428,28 @@ function ProductInfo({ product, lang, actions, onPreorder }) {
   function handleAddToCart() {
     if (isOutOfStock) return;
 
-    const validation = validateCartStock(product, qty);
+    const validation = validateCartStock(currentProduct, qty);
     if (!validation.ok) {
       showCartError(validation);
       return;
     }
 
-    addProductToCart(product, qty);
+    addProductToCart(currentProduct, qty);
     forceCartBadgeSync();
-    actions?.track?.("add_to_cart", { productId: product.id, qty });
+    actions?.track?.("add_to_cart", { productId: product.id, variantId: currentProduct.variantId || "", qty });
   }
 
   function handleBuyNow() {
     if (isOutOfStock) return;
 
-    const result = saveBuyNowDraft(product, qty, { shippingMethod: "FAST" });
+    const result = saveBuyNowDraft(currentProduct, qty, { shippingMethod: "FAST" });
     if (!result.ok) {
       showCartError(result);
       return;
     }
 
     forceCartBadgeSync();
-    actions?.track?.("buy_now", { productId: product.id, qty });
+    actions?.track?.("buy_now", { productId: product.id, variantId: currentProduct.variantId || "", qty });
     navigate("/checkout");
   }
 
@@ -471,7 +540,7 @@ function ProductInfo({ product, lang, actions, onPreorder }) {
     setAlertError("");
 
     try {
-      await registerRestockAlert(product, alertForm);
+      await registerRestockAlert(currentProduct, alertForm);
       setAlertMessage(t.notifySuccess);
       setAlertForm({ name: "", phone: "", note: "" });
     } catch (error) {
@@ -491,6 +560,59 @@ function ProductInfo({ product, lang, actions, onPreorder }) {
 
       <h1 className="mt-4 text-3xl font-black leading-tight text-slate-950 lg:text-4xl">{productName(product, lang)}</h1>
       <p className="mt-3 text-sm leading-6 text-slate-600">{productDesc(product, lang, t.defaultDesc)}</p>
+
+      {/* VARIANT_SELECTOR_START */}
+      {variants.length > 0 && (
+        <section className="mt-5 rounded-3xl border border-blue-100 bg-blue-50 p-4">
+          <div className="mb-3 text-sm font-black text-blue-900">
+            {lang === "vi" ? "Phân loại hàng" : "Variants"}
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            {variants.map((variant) => {
+              const selected = selectedVariantId === variant.id;
+              const disabled = variant.active === false || (Number(variant.stock || 0) <= 0 && !isPreorder(variant));
+
+              return (
+                <button
+                  key={variant.id}
+                  type="button"
+                  disabled={variant.active === false}
+                  onClick={() => setSelectedVariantId(variant.id)}
+                  className={`flex items-center gap-3 rounded-2xl border p-3 text-left transition ${
+                    selected
+                      ? "border-blue-500 bg-white ring-4 ring-blue-100"
+                      : "border-blue-100 bg-white/70 hover:bg-white"
+                  } ${disabled ? "opacity-60" : ""}`}
+                >
+                  <div className="h-14 w-14 overflow-hidden rounded-xl bg-slate-100">
+                    {variant.imageUrl ? (
+                      <img src={variant.imageUrl} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                      <GundamVisual tone={product.tone || "blue"} />
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="font-black text-slate-950">{getVariantLabel(variant)}</div>
+                    <div className="text-xs font-bold text-slate-500">{variant.sku}</div>
+                    <div className="mt-1 text-xs font-black text-blue-700">{money(variant.price)}</div>
+                    <div className={`mt-1 text-[11px] font-black ${Number(variant.stock || 0) > 0 ? "text-emerald-600" : "text-red-500"}`}>
+                      {Number(variant.stock || 0) > 0 ? `${t.stock}: ${variant.stock}` : t.outOfStock}
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          {selectedVariant && (
+            <div className="mt-3 rounded-2xl bg-white px-4 py-3 text-xs font-bold text-slate-600">
+              {lang === "vi" ? "Đang chọn" : "Selected"}: <span className="font-black text-slate-950">{getVariantLabel(selectedVariant)}</span>
+            </div>
+          )}
+        </section>
+      )}
+      {/* VARIANT_SELECTOR_END */}
 
       <div className="mt-4 flex flex-wrap items-center gap-4 text-sm">
         <div className="flex items-center gap-1 text-amber-400">
@@ -576,7 +698,7 @@ function ProductInfo({ product, lang, actions, onPreorder }) {
 
 
       {/* RestockAlertFormStart */}
-      {(preorder || Number(product.stock || 0) <= 0 || String(product.status || "").toLowerCase().includes("coming")) && (
+      {(preorder || Number(currentProduct.stock || 0) <= 0 || String(currentProduct.status || "").toLowerCase().includes("coming")) && (
         <form onSubmit={submitRestockAlert} className="mt-5 rounded-3xl border border-cyan-100 bg-cyan-50 p-5">
           <div className="mb-3 flex items-center gap-2 text-sm font-black text-cyan-800">
             <BellRing size={18} />
