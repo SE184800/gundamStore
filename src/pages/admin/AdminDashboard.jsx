@@ -1,238 +1,290 @@
+import { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
   BarChart3,
+  Boxes,
   CheckCircle2,
   ClipboardList,
-  Package,
+  PackageSearch,
+  RefreshCcw,
   ShoppingCart,
   Star,
+  Ticket,
   Truck,
+  Users,
+  WalletCards,
 } from "lucide-react";
 import AdminPageHeader from "../../components/admin/AdminPageHeader";
-import AdminStatusBadge from "../../components/admin/AdminStatusBadge";
-import { useCms, useLang } from "../../store/CmsStore";
-import { formatCurrency, getText } from "../../utils/format";
+import { formatCurrency } from "../../utils/format";
+import { getAdminDashboardKpisApi } from "../../services/AdminDashboardApiService";
 
-function kpiTone(tone) {
-  const map = {
-    blue: "border-blue-100 bg-blue-50 text-blue-700",
-    emerald: "border-emerald-100 bg-emerald-50 text-emerald-700",
-    amber: "border-amber-100 bg-amber-50 text-amber-700",
-    red: "border-red-100 bg-red-50 text-red-700",
+function StatCard({ icon: Icon, label, value, hint, tone = "blue" }) {
+  const toneMap = {
+    blue: "bg-blue-50 text-blue-700",
+    emerald: "bg-emerald-50 text-emerald-700",
+    amber: "bg-amber-50 text-amber-700",
+    red: "bg-red-50 text-red-700",
+    violet: "bg-violet-50 text-violet-700",
+    slate: "bg-slate-100 text-slate-700",
   };
-  return map[tone] || map.blue;
-}
-
-function MiniChart() {
-  const values = [48, 60, 52, 75, 68, 88, 92, 77, 96, 110, 104, 125];
 
   return (
-    <div className="flex h-72 items-end gap-3 border-b border-l border-slate-200 px-4 pb-4">
-      {values.map((value, index) => (
-        <div key={index} className="flex flex-1 flex-col items-center gap-2">
-          <div className="w-full rounded-t-md bg-blue-600/85" style={{ height: `${value * 1.55}px` }} />
-          <span className="text-[10px] font-bold text-slate-400">T{index + 1}</span>
+    <div className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-xs font-black uppercase tracking-wide text-slate-400">{label}</p>
+          <p className="mt-2 text-2xl font-black text-slate-950">{value}</p>
+          {hint && <p className="mt-1 text-xs font-bold text-slate-500">{hint}</p>}
         </div>
-      ))}
+        <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${toneMap[tone] || toneMap.blue}`}>
+          <Icon size={22} />
+        </div>
+      </div>
     </div>
   );
 }
 
+function BarRow({ label, value, max, tone = "bg-blue-600" }) {
+  const percent = max > 0 ? Math.max(4, Math.round((Number(value || 0) / max) * 100)) : 0;
+
+  return (
+    <div className="grid gap-2">
+      <div className="flex items-center justify-between text-xs font-black text-slate-600">
+        <span>{label}</span>
+        <span>{value}</span>
+      </div>
+      <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+        <div className={`h-full rounded-full ${tone}`} style={{ width: `${percent}%` }} />
+      </div>
+    </div>
+  );
+}
+
+function MiniTrend({ data = [] }) {
+  const maxRevenue = Math.max(...data.map((item) => Number(item.revenue || 0)), 1);
+
+  return (
+    <div className="flex h-44 items-end gap-2 rounded-3xl bg-slate-50 p-4">
+      {data.map((item) => {
+        const height = Math.max(8, Math.round((Number(item.revenue || 0) / maxRevenue) * 140));
+
+        return (
+          <div key={item.date} className="flex min-w-0 flex-1 flex-col items-center justify-end gap-2">
+            <div className="w-full rounded-t-xl bg-blue-600" style={{ height }} title={`${item.date}: ${formatCurrency(item.revenue)}`} />
+            <div className="w-full truncate text-center text-[10px] font-bold text-slate-400">{item.date.slice(5)}</div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function Section({ title, desc, children, action }) {
+  return (
+    <section className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm">
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div>
+          <h2 className="text-lg font-black text-slate-950">{title}</h2>
+          {desc && <p className="mt-1 text-sm font-semibold text-slate-500">{desc}</p>}
+        </div>
+        {action}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function shortDate(value) {
+  if (!value) return "-";
+  return new Date(value).toLocaleString("vi-VN");
+}
+
 export default function AdminDashboard() {
-  const { state } = useCms();
-  const [lang] = useLang();
+  const [data, setData] = useState(null);
+  const [apiError, setApiError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const products = state.products || [];
-  const orders = state.orders || [];
-  const chats = state.chats || [];
-  const reviews = state.reviews || [];
-  const inventory = state.inventory || [];
+  async function reload() {
+    setLoading(true);
+    setApiError("");
 
-  const revenue = orders.reduce((sum, order) => sum + Number(order.total || order.amount || 0), 0);
-  const lowStockCount = inventory.filter((item) => Number(item.available ?? item.onHand ?? 0) <= Number(item.lowStockThreshold || 3)).length;
+    try {
+      const result = await getAdminDashboardKpisApi();
+      setData(result);
+    } catch (error) {
+      setApiError(error?.message || "Cannot load dashboard.");
+      setData(null);
+    } finally {
+      setLoading(false);
+    }
+  }
 
-  const kpis = [
-    {
-      label: "Revenue today",
-      value: revenue > 0 ? formatCurrency(revenue) : "18.45M₫",
-      change: "+12.8%",
-      icon: BarChart3,
-      tone: "blue",
-    },
-    {
-      label: "New orders",
-      value: orders.length || 42,
-      change: "+8 orders",
-      icon: ShoppingCart,
-      tone: "emerald",
-    },
-    {
-      label: "Pending tickets",
-      value: chats.length || 9,
-      change: "3 urgent",
-      icon: ClipboardList,
-      tone: "amber",
-    },
-    {
-      label: "Low stock",
-      value: lowStockCount || 16,
-      change: "Need action",
-      icon: AlertTriangle,
-      tone: "red",
-    },
-  ];
+  useEffect(() => {
+    void reload();
+  }, []);
 
-  const topProducts = [...products]
-    .sort((a, b) => Number(b.sold || 0) - Number(a.sold || 0))
-    .slice(0, 5);
+  const kpis = data?.kpis || {};
+  const charts = data?.charts || {};
+  const queues = data?.actionQueues || {};
+
+  const maxOrderStatus = useMemo(() => {
+    return Math.max(...Object.values(charts.orderStatusSummary || {}).map(Number), 1);
+  }, [charts.orderStatusSummary]);
+
+  const maxFulfillment = useMemo(() => {
+    return Math.max(...Object.values(charts.fulfillmentSummary || {}).map(Number), 1);
+  }, [charts.fulfillmentSummary]);
 
   return (
     <>
       <AdminPageHeader
-        eyebrow="Operations Command Center"
-        title="Dashboard vận hành ecommerce"
-        desc="Theo dõi doanh thu, đơn hàng, tồn kho, ticket CSKH, pre-order và hành vi khách hàng trong một màn hình vận hành."
+        eyebrow="Executive Operations"
+        title="Admin KPI Dashboard"
+        desc="One-page operating view across sales, products, inventory, fulfillment, customers, reviews and complaints."
         action={
-          <div className="flex flex-wrap gap-2">
-            <button className="rounded-md border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50">
-              Export report
-            </button>
-            <button className="rounded-md bg-blue-700 px-4 py-2 text-xs font-black text-white hover:bg-blue-800">
-              Create task
-            </button>
-          </div>
+          <button
+            onClick={() => void reload()}
+            className="rounded-md border border-slate-300 bg-white px-4 py-2 text-xs font-black text-slate-700 hover:bg-slate-50"
+          >
+            <RefreshCcw size={15} className="mr-1 inline" />
+            {loading ? "Loading..." : "Refresh"}
+          </button>
         }
       />
 
+      {apiError && (
+        <section className="mb-4 rounded-3xl border border-red-100 bg-red-50 p-4 text-sm font-black text-red-700">
+          {apiError}
+        </section>
+      )}
+
       <section className="mb-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {kpis.map((item) => {
-          const Icon = item.icon;
-          return (
-            <div key={item.label} className="rounded-md border border-slate-200 bg-white p-4">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <div className="text-xs font-bold uppercase tracking-wide text-slate-500">{item.label}</div>
-                  <div className="mt-2 text-2xl font-black text-slate-950">{item.value}</div>
-                  <div className={`mt-3 inline-flex rounded-md border px-2 py-1 text-xs font-black ${kpiTone(item.tone)}`}>
-                    {item.change}
-                  </div>
-                </div>
-                <div className={`flex h-10 w-10 items-center justify-center rounded-md border ${kpiTone(item.tone)}`}>
-                  <Icon size={20} />
-                </div>
-              </div>
-            </div>
-          );
-        })}
+        <StatCard icon={WalletCards} label="Revenue today" value={formatCurrency(kpis.revenueToday || 0)} hint="Valid non-cancelled orders" tone="emerald" />
+        <StatCard icon={BarChart3} label="Revenue 30 days" value={formatCurrency(kpis.revenue30 || 0)} hint={`AOV ${formatCurrency(kpis.avgOrderValue30 || 0)}`} tone="blue" />
+        <StatCard icon={ShoppingCart} label="Orders today" value={kpis.ordersToday || 0} hint={`${kpis.orders30 || 0} orders in 30 days`} tone="violet" />
+        <StatCard icon={Users} label="Customers" value={kpis.customers || 0} hint="Registered accounts" tone="slate" />
+        <StatCard icon={Boxes} label="Active products" value={kpis.activeProducts || 0} hint={`${kpis.productIssues || 0} product data issue(s)`} tone={kpis.productIssues ? "amber" : "emerald"} />
+        <StatCard icon={PackageSearch} label="Low stock" value={kpis.lowStockProducts || 0} hint="Stock <= 5" tone={kpis.lowStockProducts ? "amber" : "emerald"} />
+        <StatCard icon={Truck} label="Need tracking" value={kpis.fulfillmentNeedsTracking || 0} hint="Shipping orders missing tracking" tone={kpis.fulfillmentNeedsTracking ? "red" : "emerald"} />
+        <StatCard icon={Ticket} label="Open complaints" value={kpis.openComplaints || 0} hint={`${kpis.pendingReviews || 0} pending review(s)`} tone={kpis.openComplaints ? "red" : "emerald"} />
       </section>
 
-      <section className="mb-4 grid gap-4 xl:grid-cols-[1.35fr_0.65fr]">
-        <div className="rounded-md border border-slate-200 bg-white p-4">
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <div>
-              <h2 className="text-base font-black text-slate-950">Revenue & conversion trend</h2>
-              <p className="mt-1 text-xs font-semibold text-slate-500">
-                Xem xu hướng doanh thu và tỉ lệ chuyển đổi theo thời gian.
-              </p>
-            </div>
-            <select className="rounded-md border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700">
-              <option>Last 12 months</option>
-              <option>Last 30 days</option>
-            </select>
-          </div>
-          <MiniChart />
-        </div>
+      <section className="grid gap-4 xl:grid-cols-[1.4fr_1fr]">
+        <Section title="Revenue trend" desc="Last 14 days from backend orders">
+          <MiniTrend data={charts.dailyTrend || []} />
+        </Section>
 
-        <div className="rounded-md border border-slate-200 bg-white p-4">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-base font-black text-slate-950">Action queue</h2>
-            <button className="text-xs font-black text-blue-700 hover:underline">View all</button>
-          </div>
-
+        <Section title="Order status mix" desc="Last 30 days">
           <div className="space-y-3">
-            {[
-              ["5 đơn Pre-order cần xác nhận cọc", "Order Staff", "High"],
-              ["Banner Hero T06 cần publish lúc 20:00", "Content", "Medium"],
-              ["RG Hi-ν còn 2 sản phẩm khả dụng", "Inventory", "High"],
-              ["12 đánh giá mới cần duyệt", "CSKH", "Low"],
-            ].map(([title, owner, priority]) => (
-              <div key={title} className="rounded-md border border-slate-200 bg-slate-50 p-3">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="text-sm font-black leading-5 text-slate-950">{title}</div>
-                  <AdminStatusBadge>{priority}</AdminStatusBadge>
+            {Object.entries(charts.orderStatusSummary || {}).map(([status, value]) => (
+              <BarRow key={status} label={status} value={value} max={maxOrderStatus} tone="bg-violet-600" />
+            ))}
+            {!Object.keys(charts.orderStatusSummary || {}).length && <div className="rounded-2xl border border-dashed border-slate-200 p-6 text-center text-sm font-bold text-slate-400">No order status data.</div>}
+          </div>
+        </Section>
+      </section>
+
+      <section className="mt-4 grid gap-4 xl:grid-cols-3">
+        <Section title="Fulfillment queue" desc="Operational load by stage">
+          <div className="space-y-3">
+            {Object.entries(charts.fulfillmentSummary || {}).map(([stage, value]) => (
+              <BarRow key={stage} label={stage} value={value} max={maxFulfillment} tone={stage === "needsTracking" ? "bg-red-600" : "bg-blue-600"} />
+            ))}
+          </div>
+        </Section>
+
+        <Section title="Top products" desc="By revenue, last 30 days">
+          <div className="space-y-3">
+            {(charts.topProducts || []).map((item) => (
+              <div key={`${item.sku}-${item.name}`} className="rounded-2xl bg-slate-50 p-3">
+                <div className="text-xs font-black text-slate-500">{item.sku}</div>
+                <div className="mt-1 line-clamp-1 text-sm font-black text-slate-950">{item.name}</div>
+                <div className="mt-2 flex justify-between text-xs font-black">
+                  <span className="text-blue-700">Qty {item.quantity}</span>
+                  <span className="text-emerald-700">{formatCurrency(item.revenue)}</span>
                 </div>
-                <div className="mt-2 text-xs font-semibold text-slate-500">Owner: {owner}</div>
+              </div>
+            ))}
+            {!(charts.topProducts || []).length && <div className="rounded-2xl border border-dashed border-slate-200 p-6 text-center text-sm font-bold text-slate-400">No sales item data.</div>}
+          </div>
+        </Section>
+
+        <Section title="Active vouchers" desc="Commercial campaigns in market">
+          <div className="space-y-3">
+            {(queues.vouchers || []).slice(0, 8).map((voucher) => (
+              <div key={voucher.id} className="rounded-2xl bg-slate-50 p-3">
+                <div className="flex items-center justify-between">
+                  <div className="font-black text-slate-900">{voucher.code}</div>
+                  <div className="text-xs font-black text-blue-700">{voucher.type}</div>
+                </div>
+                <div className="mt-1 text-xs font-bold text-slate-500">{voucher.name}</div>
+                <div className="mt-2 text-xs font-bold text-slate-600">
+                  Used {voucher.usedCount || 0}/{voucher.usageLimit || "∞"}
+                </div>
+              </div>
+            ))}
+            {!(queues.vouchers || []).length && <div className="rounded-2xl border border-dashed border-slate-200 p-6 text-center text-sm font-bold text-slate-400">No active vouchers.</div>}
+          </div>
+        </Section>
+      </section>
+
+      <section className="mt-4 grid gap-4 xl:grid-cols-3">
+        <Section title="Product data issues" desc="Need commercial/product admin action">
+          <div className="space-y-3">
+            {(queues.productIssues || []).map((product) => (
+              <div key={product.id} className="rounded-2xl border border-amber-100 bg-amber-50 p-3">
+                <div className="text-xs font-black text-amber-700">{product.sku}</div>
+                <div className="mt-1 line-clamp-1 text-sm font-black text-slate-950">{product.name}</div>
+                <div className="mt-2 flex flex-wrap gap-1">
+                  {product.issues.map((issue) => (
+                    <span key={issue} className="rounded-full bg-white px-2 py-1 text-[11px] font-black text-amber-700">{issue}</span>
+                  ))}
+                </div>
+              </div>
+            ))}
+            {!(queues.productIssues || []).length && <div className="rounded-2xl bg-emerald-50 p-5 text-sm font-black text-emerald-700"><CheckCircle2 size={15} className="mr-1 inline" /> No product data issues.</div>}
+          </div>
+        </Section>
+
+        <Section title="Low stock watchlist" desc="Active products with stock <= 5">
+          <div className="space-y-3">
+            {(queues.lowStockProducts || []).map((product) => (
+              <div key={product.id} className="grid grid-cols-[1fr_auto] rounded-2xl bg-slate-50 p-3">
+                <div>
+                  <div className="text-xs font-black text-slate-500">{product.sku}</div>
+                  <div className="mt-1 line-clamp-1 text-sm font-black text-slate-950">{product.name}</div>
+                </div>
+                <div className="text-lg font-black text-red-600">{product.stock}</div>
+              </div>
+            ))}
+            {!(queues.lowStockProducts || []).length && <div className="rounded-2xl bg-emerald-50 p-5 text-sm font-black text-emerald-700">Stock level looks good.</div>}
+          </div>
+        </Section>
+
+        <Section title="Fulfillment action queue" desc="Latest active fulfillment orders">
+          <div className="space-y-3">
+            {(queues.fulfillment || []).map((order) => (
+              <div key={order.id} className="rounded-2xl bg-slate-50 p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="font-black text-slate-900">{order.orderNo}</div>
+                  <div className="rounded-full bg-blue-50 px-2 py-1 text-[11px] font-black text-blue-700">{order.status}</div>
+                </div>
+                <div className="mt-1 text-xs font-bold text-slate-500">{order.customerName} · {order.customerPhone}</div>
+                <div className="mt-2 flex justify-between text-xs font-black">
+                  <span className={order.trackingCode ? "text-emerald-600" : "text-red-600"}>{order.trackingCode || "Missing tracking"}</span>
+                  <span>{shortDate(order.createdAt)}</span>
+                </div>
               </div>
             ))}
           </div>
-        </div>
+        </Section>
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-[1fr_360px]">
-        <div className="overflow-hidden rounded-md border border-slate-200 bg-white">
-          <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
-            <div>
-              <h2 className="text-base font-black text-slate-950">Top behavior products</h2>
-              <p className="mt-1 text-xs font-semibold text-slate-500">
-                Sản phẩm được xem nhiều, thêm giỏ nhiều và có doanh số tốt.
-              </p>
-            </div>
-            <button className="rounded-md border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700">
-              Open analytics
-            </button>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="min-w-[760px] w-full text-sm">
-              <thead className="bg-slate-50 text-left text-xs font-black uppercase text-slate-500">
-                <tr>
-                  <th className="px-4 py-3">SKU</th>
-                  <th className="px-4 py-3">Product</th>
-                  <th className="px-4 py-3 text-right">Views</th>
-                  <th className="px-4 py-3 text-right">Add cart</th>
-                  <th className="px-4 py-3 text-right">Sold</th>
-                  <th className="px-4 py-3 text-right">Rating</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(topProducts.length ? topProducts : products.slice(0, 5)).map((product, index) => (
-                  <tr key={product.id || index} className="border-t border-slate-100 hover:bg-slate-50">
-                    <td className="px-4 py-3 font-bold text-slate-500">{product.sku || "-"}</td>
-                    <td className="px-4 py-3 font-black text-slate-950">{getText(product.name, lang)}</td>
-                    <td className="px-4 py-3 text-right font-bold text-slate-700">{product.views || 1280 - index * 120}</td>
-                    <td className="px-4 py-3 text-right font-bold text-slate-700">{product.carts || 146 - index * 12}</td>
-                    <td className="px-4 py-3 text-right font-bold text-blue-700">{product.sold || 0}</td>
-                    <td className="px-4 py-3 text-right font-black text-amber-500">
-                      <Star size={14} className="mr-1 inline" fill="currentColor" />
-                      {product.rating || "4.9"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+      {data?.generatedAt && (
+        <div className="mt-4 text-right text-xs font-bold text-slate-400">
+          Generated at {shortDate(data.generatedAt)}
         </div>
-
-        <div className="rounded-md border border-slate-200 bg-white p-4">
-          <h2 className="text-base font-black text-slate-950">System health</h2>
-          <div className="mt-4 space-y-3">
-            {[
-              ["CMS publish status", "Healthy", CheckCircle2],
-              ["Media storage", "Local base64 demo", Package],
-              ["Inventory sync", "Demo mode", Truck],
-              ["Analytics events", "Tracking", BarChart3],
-            ].map(([label, value, Icon]) => (
-              <div key={label} className="flex items-center justify-between rounded-md border border-slate-200 bg-slate-50 p-3">
-                <span className="flex items-center gap-2 text-sm font-bold text-slate-600">
-                  <Icon size={16} className="text-blue-600" />
-                  {label}
-                </span>
-                <AdminStatusBadge>{value}</AdminStatusBadge>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      )}
     </>
   );
 }
