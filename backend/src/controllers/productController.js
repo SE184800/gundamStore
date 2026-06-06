@@ -278,7 +278,10 @@ async function syncProductImages(tx, productId, body = {}) {
 export async function listStorefrontProducts(req, res, next) {
   try {
     const products = await prisma.product.findMany({
-      where: { active: true },
+      where: {
+        active: true,
+        price: { gt: 0 },
+      },
       include: productInclude(),
       orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
       take: 200,
@@ -311,7 +314,11 @@ export async function getStorefrontProductByKey(req, res, next) {
     if (alias?.slug) orConditions.push({ slug: alias.slug });
 
     const product = await prisma.product.findFirst({
-      where: { active: true, OR: orConditions },
+      where: {
+        active: true,
+        price: { gt: 0 },
+        OR: orConditions,
+      },
       include: productInclude(),
     });
 
@@ -351,6 +358,14 @@ export async function listAdminProducts(req, res, next) {
 export async function createAdminProduct(req, res, next) {
   try {
     const payload = sanitizeAdminProductInput(req.body);
+
+    // Product master is not sellable until an effective ProductPrice exists.
+    if (Number(payload.price || 0) <= 0) {
+      payload.price = 0;
+      payload.oldPrice = 0;
+      payload.active = false;
+      payload.status = "inactive";
+    }
 
     const product = await prisma.$transaction(async (tx) => {
       const created = await tx.product.create({ data: payload });
