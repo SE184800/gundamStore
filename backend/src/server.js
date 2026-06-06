@@ -21,6 +21,7 @@ import promotionRoutes from "./routes/promotionRoutes.js";
 import voucherRoutes from "./routes/voucherRoutes.js";
 import restockAlertRoutes from "./routes/restockAlertRoutes.js";
 import reviewRoutes from "./routes/reviewRoutes.js";
+import complaintRoutes from "./routes/complaintRoutes.js";
 import customerRoutes from "./routes/customerRoutes.js";
 import { publicBannerRouter, adminBannerRouter } from "./routes/bannerRoutes.js";
 
@@ -85,6 +86,7 @@ app.use([
   "/api/fulfillment/admin",
   "/api/vouchers/admin",
   "/api/reviews/admin",
+  "/api/complaints/admin",
   "/api/customers/admin",
   "/api/inventory",
   "/api/purchase-receipts",
@@ -102,6 +104,7 @@ app.use("/api/promotions", promotionRoutes);
 app.use("/api/vouchers", voucherRoutes);
 app.use("/api/restock-alerts", restockAlertRoutes);
 app.use("/api/reviews", reviewRoutes);
+app.use("/api/complaints", complaintRoutes);
 app.use("/api/customers", customerRoutes);
 app.use("/api/banners", publicBannerRouter);
 app.use("/api/admin/banners", adminBannerRouter);
