@@ -19,6 +19,7 @@ import pricingRoutes from "./routes/pricingRoutes.js";
 import promotionRoutes from "./routes/promotionRoutes.js";
 import voucherRoutes from "./routes/voucherRoutes.js";
 import restockAlertRoutes from "./routes/restockAlertRoutes.js";
+import reviewRoutes from "./routes/reviewRoutes.js";
 import { publicBannerRouter, adminBannerRouter } from "./routes/bannerRoutes.js";
 
 const app = express();
@@ -80,6 +81,7 @@ app.use([
   "/api/products/admin",
   "/api/orders/admin",
   "/api/vouchers/admin",
+  "/api/reviews/admin",
   "/api/inventory",
   "/api/purchase-receipts",
 ], requireAuth, requireAdminRole);
@@ -94,6 +96,7 @@ app.use("/api/pricing", pricingRoutes);
 app.use("/api/promotions", promotionRoutes);
 app.use("/api/vouchers", voucherRoutes);
 app.use("/api/restock-alerts", restockAlertRoutes);
+app.use("/api/reviews", reviewRoutes);
 app.use("/api/banners", publicBannerRouter);
 app.use("/api/admin/banners", adminBannerRouter);
 
