@@ -75,16 +75,22 @@ export async function optionalAuth(req, res, next) {
 
 export function requirePermission(permissionCode) {
   return (req, res, next) => {
+    const roleCode = String(req.user?.role?.code || "").toUpperCase();
     const permissions =
       req.user?.role?.permissions?.map((item) => item.permission.code) || [];
 
-    if (!permissions.includes(permissionCode)) {
-      return res.status(403).json({
-        success: false,
-        message: "Forbidden: insufficient permission",
-      });
+    if (
+      roleCode === "ADMIN" ||
+      roleCode === "SUPER_ADMIN" ||
+      permissions.includes("*") ||
+      permissions.includes(permissionCode)
+    ) {
+      return next();
     }
 
-    next();
+    return res.status(403).json({
+      success: false,
+      message: "Forbidden: insufficient permission",
+    });
   };
 }
