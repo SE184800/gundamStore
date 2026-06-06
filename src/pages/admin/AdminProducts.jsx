@@ -430,6 +430,8 @@ function ProductForm({ draft, setDraft, reference }) {
         </div>
       </div>
 
+      <PublishReadinessChecklist draft={draft} />
+
       <div className="grid gap-4 md:grid-cols-2">
         <AdminSelect
           label="Trạng thái hiển thị"
@@ -543,6 +545,114 @@ function ProductForm({ draft, setDraft, reference }) {
         />
       </div>
     </div>
+  );
+}
+
+const PRODUCT_ISSUE_LABELS = {
+  SKU: "Missing SKU",
+  "Tên": "Missing product name",
+  "Danh mục": "Missing category",
+  "Ảnh": "Missing image",
+  "Giá": "Missing price",
+  "Tồn kho": "Missing stock",
+};
+
+function getProductIssueDisplay(product = {}) {
+  return getProductIssueStatus(product).map((issue) => PRODUCT_ISSUE_LABELS[issue] || `Missing ${issue}`);
+}
+
+function getPublishChecklistItems(product = {}) {
+  const status = String(product.status || "").toLowerCase();
+  const allowNoStock = status.includes("pre") || status.includes("coming");
+
+  return [
+    {
+      key: "sku",
+      label: "SKU",
+      ok: Boolean(product.sku),
+      missing: "Missing SKU",
+    },
+    {
+      key: "name",
+      label: "Product name",
+      ok: Boolean(product.nameVi || product.name?.vi),
+      missing: "Missing product name",
+    },
+    {
+      key: "category",
+      label: "Category",
+      ok: Boolean(product.categoryId || product.category?.id),
+      missing: "Missing category",
+    },
+    {
+      key: "image",
+      label: "Main image",
+      ok: Boolean(product.imageUrl || product.images?.length),
+      missing: "Missing image",
+    },
+    {
+      key: "price",
+      label: "Selling price > 0",
+      ok: Number(product.price || 0) > 0,
+      missing: "Missing price",
+    },
+    {
+      key: "stock",
+      label: "Stock > 0 or Pre-order / Coming soon",
+      ok: Number(product.stock || 0) > 0 || allowNoStock,
+      missing: "Missing stock",
+    },
+    {
+      key: "publish",
+      label: "Active / Publish status",
+      ok: product.active !== false && !["draft", "inactive"].includes(status),
+      missing: "Draft / Inactive",
+      optional: true,
+    },
+  ];
+}
+
+function isPublishReady(product = {}) {
+  return getPublishChecklistItems(product)
+    .filter((item) => !item.optional)
+    .every((item) => item.ok);
+}
+
+function PublishReadinessChecklist({ draft }) {
+  const items = getPublishChecklistItems(draft);
+  const ready = isPublishReady(draft);
+
+  return (
+    <section className={`rounded-3xl border p-4 ${
+      ready ? "border-emerald-100 bg-emerald-50" : "border-amber-100 bg-amber-50"
+    }`}>
+      <div className={`text-sm font-black ${ready ? "text-emerald-800" : "text-amber-800"}`}>
+        Publish readiness checklist
+      </div>
+      <p className={`mt-1 text-xs font-semibold ${ready ? "text-emerald-700/80" : "text-amber-700/80"}`}>
+        {ready
+          ? "Sản phẩm đủ điều kiện publish và hiển thị ngoài storefront."
+          : "Sản phẩm sẽ được lưu dạng Draft/Inactive và chưa hiển thị ngoài storefront nếu thiếu điều kiện bắt buộc."}
+      </p>
+
+      <div className="mt-4 grid gap-2 md:grid-cols-2">
+        {items.map((item) => (
+          <div
+            key={item.key}
+            className={`flex items-center justify-between rounded-2xl px-3 py-2 text-xs font-black ${
+              item.ok
+                ? "bg-white text-emerald-700"
+                : item.optional
+                  ? "bg-white text-slate-500"
+                  : "bg-red-50 text-red-600"
+            }`}
+          >
+            <span>{item.label}</span>
+            <span>{item.ok ? "✓ Ready" : item.missing}</span>
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -1077,6 +1187,24 @@ export default function AdminProducts() {
                       </div>
                       <div className="mt-1 text-xs font-bold text-violet-600">
                         {(product.images || []).length} image(s)
+                      </div>
+
+                      {/* DATA_ISSUE_BADGES_IN_PRODUCT_LIST */}
+                      <div className="mt-2 flex max-w-[260px] flex-wrap gap-1">
+                        {getProductIssueDisplay(product).length > 0 ? (
+                          getProductIssueDisplay(product).map((issue) => (
+                            <span
+                              key={issue}
+                              className="rounded-full bg-red-50 px-2 py-1 text-[10px] font-black text-red-600"
+                            >
+                              {issue}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-black text-emerald-700">
+                            Ready
+                          </span>
+                        )}
                       </div>
                     </td>
 
