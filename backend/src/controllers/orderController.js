@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { prisma } from "../config/prisma.js";
 import { decorateProductWithCommercialPrice } from "../services/commercialPriceResolver.js";
+import { resolveVoucherDiscount } from "./voucherController.js";
 
 function normalizeVietnamPhone(value = "") {
   const raw = String(value || "").replace(/[\s.\-()]/g, "").trim();
@@ -29,6 +30,8 @@ const createOrderSchema = z.object({
   customerAddress: z.string().min(5).max(255),
   shippingFee: z.number().int().min(0).default(0),
   discount: z.number().int().min(0).default(0),
+  shippingDiscount: z.number().int().min(0).default(0),
+  voucherCode: z.string().max(60).optional().or(z.literal("")),
   paymentMethod: z.enum(["COD", "BANK_TRANSFER", "CARD", "WALLET"]).default("COD"),
   paymentReference: z.string().max(120).optional().or(z.literal("")),
   note: z.string().max(500).optional(),
@@ -418,7 +421,37 @@ export async function createOrder(req, res, next) {
       return sum + Number(item.finalPrice || 0) * item.quantity;
     }, 0);
 
-    const total = Math.max(0, subtotal + body.shippingFee - body.discount);
+    const voucherResult = body.voucherCode
+      ? await resolveVoucherDiscount({
+          code: body.voucherCode,
+          subtotal,
+          shippingFee: body.shippingFee,
+          items: resolvedItems.map((item) => ({
+            productId: item.product.id,
+            categoryId: item.product.categoryId || "",
+            quantity: item.quantity,
+          })),
+          customerId: req.user?.id || null,
+          customerPhone,
+        })
+      : {
+          valid: false,
+          code: "",
+          discount: 0,
+          shippingDiscount: 0,
+          voucher: null,
+        };
+
+    if (body.voucherCode && !voucherResult.valid) {
+      return res.status(400).json({
+        success: false,
+        message: voucherResult.message || "Voucher is invalid.",
+      });
+    }
+
+    const discount = Number(voucherResult.discount || 0);
+    const shippingDiscount = Number(voucherResult.shippingDiscount || 0);
+    const total = Math.max(0, subtotal + body.shippingFee - discount - shippingDiscount);
 
     const order = await prisma.$transaction(async (tx) => {
       const created = await tx.order.create({
@@ -430,7 +463,10 @@ export async function createOrder(req, res, next) {
           customerAddress: body.customerAddress,
           paymentStatus: getInitialPaymentStatus(body.paymentMethod),
           shippingFee: body.shippingFee,
-          discount: body.discount,
+          discount,
+          shippingDiscount,
+          voucherCode: voucherResult.valid ? voucherResult.code : null,
+          voucherId: voucherResult.voucher?.id || null,
           subtotal,
           total,
           note: body.note || null,
@@ -466,6 +502,28 @@ export async function createOrder(req, res, next) {
         },
         include: includeOrderRelations(),
       });
+
+      if (voucherResult.valid && voucherResult.voucher) {
+        await tx.voucher.update({
+          where: { id: voucherResult.voucher.id },
+          data: {
+            usedCount: {
+              increment: 1,
+            },
+          },
+        });
+
+        await tx.voucherRedemption.create({
+          data: {
+            voucherId: voucherResult.voucher.id,
+            orderId: created.id,
+            customerId: req.user?.id || null,
+            code: voucherResult.code,
+            discount,
+            shippingDiscount,
+          },
+        });
+      }
 
       for (const item of stockReservations) {
         if (item.variant) {
@@ -740,6 +798,28 @@ export async function cancelMyOrder(req, res, next) {
         where: { id: currentOrder.id },
         include: includeOrderRelations(),
       });
+
+      if (voucherResult.valid && voucherResult.voucher) {
+        await tx.voucher.update({
+          where: { id: voucherResult.voucher.id },
+          data: {
+            usedCount: {
+              increment: 1,
+            },
+          },
+        });
+
+        await tx.voucherRedemption.create({
+          data: {
+            voucherId: voucherResult.voucher.id,
+            orderId: created.id,
+            customerId: req.user?.id || null,
+            code: voucherResult.code,
+            discount,
+            shippingDiscount,
+          },
+        });
+      }
     });
 
     return res.json({
@@ -867,6 +947,28 @@ export async function updateOrderStatus(req, res, next) {
         where: { id: currentOrder.id },
         include: includeOrderRelations(),
       });
+
+      if (voucherResult.valid && voucherResult.voucher) {
+        await tx.voucher.update({
+          where: { id: voucherResult.voucher.id },
+          data: {
+            usedCount: {
+              increment: 1,
+            },
+          },
+        });
+
+        await tx.voucherRedemption.create({
+          data: {
+            voucherId: voucherResult.voucher.id,
+            orderId: created.id,
+            customerId: req.user?.id || null,
+            code: voucherResult.code,
+            discount,
+            shippingDiscount,
+          },
+        });
+      }
     });
 
     res.json({
@@ -949,6 +1051,28 @@ export async function updateOrderPayment(req, res, next) {
         where: { id: currentOrder.id },
         include: includeOrderRelations(),
       });
+
+      if (voucherResult.valid && voucherResult.voucher) {
+        await tx.voucher.update({
+          where: { id: voucherResult.voucher.id },
+          data: {
+            usedCount: {
+              increment: 1,
+            },
+          },
+        });
+
+        await tx.voucherRedemption.create({
+          data: {
+            voucherId: voucherResult.voucher.id,
+            orderId: created.id,
+            customerId: req.user?.id || null,
+            code: voucherResult.code,
+            discount,
+            shippingDiscount,
+          },
+        });
+      }
     });
 
     res.json({
@@ -1047,6 +1171,28 @@ export async function updateOrderShipping(req, res, next) {
         where: { id: currentOrder.id },
         include: includeOrderRelations(),
       });
+
+      if (voucherResult.valid && voucherResult.voucher) {
+        await tx.voucher.update({
+          where: { id: voucherResult.voucher.id },
+          data: {
+            usedCount: {
+              increment: 1,
+            },
+          },
+        });
+
+        await tx.voucherRedemption.create({
+          data: {
+            voucherId: voucherResult.voucher.id,
+            orderId: created.id,
+            customerId: req.user?.id || null,
+            code: voucherResult.code,
+            discount,
+            shippingDiscount,
+          },
+        });
+      }
     });
 
     res.json({

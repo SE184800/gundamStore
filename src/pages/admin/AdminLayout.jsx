@@ -63,6 +63,7 @@ const copy = {
     stockCount: "Kiểm tồn",
     inventoryTransactions: "Lịch sử giao dịch",
     promotions: "Khuyến mãi",
+    vouchers: "Voucher / Coupon",
     sales: "Bán hàng & đơn hàng",
     orders: "Đơn hàng",
     restockAlerts: "Báo hàng / Restock",
@@ -109,6 +110,7 @@ const copy = {
     stockCount: "Stock Count",
     inventoryTransactions: "Transactions",
     promotions: "Promotions",
+    vouchers: "Vouchers / Coupons",
     sales: "Sales & Orders",
     orders: "Orders",
     restockAlerts: "Restock Alerts",
@@ -215,6 +217,7 @@ function getPageTitle(pathname, t) {
   if (pathname.includes("/admin/inventory/stock-count")) return t.stockCount;
   if (pathname.includes("/admin/inventory/receipts")) return t.inventoryReceipts;
   if (pathname.includes("/admin/inventory")) return t.inventory;
+  if (pathname.includes("/admin/vouchers")) return t.vouchers;
   if (pathname.includes("/admin/promotions")) return t.promotions;
   if (pathname.includes("/admin/orders")) return t.orders;
   if (pathname.includes("/admin/restock-alerts")) return t.restockAlerts;
@@ -280,6 +283,7 @@ export default function AdminLayout() {
             <NavGroup title={t.pricingOperations}>
               <NavItem to="/admin/pricing" icon={WalletCards} label={t.pricing} />
               <NavItem to="/admin/promotions" icon={Percent} label={t.promotions} />
+              <NavItem to="/admin/vouchers" icon={WalletCards} label={t.vouchers} />
             </NavGroup>
 
             <NavGroup title={t.sales}>

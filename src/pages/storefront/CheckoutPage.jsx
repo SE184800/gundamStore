@@ -7,6 +7,7 @@ import {
   clearCartItems,
 } from "../../services/CartService";
 import { applyVoucher } from "../../services/VoucherService";
+import { validateStorefrontVoucherApi } from "../../services/StorefrontVoucherApiService";
 import { createOrder } from "../../services/OrderService";
 import { getStock } from "../../services/InventoryService";
 import {
@@ -54,6 +55,9 @@ function getCopy(lang) {
     discount: lang === "en" ? "Discount" : "Giảm giá",
     shippingDiscount: lang === "en" ? "Shipping discount" : "Giảm phí ship",
     voucher: lang === "en" ? "Voucher" : "Voucher",
+    voucherPlaceholder: lang === "en" ? "Enter voucher code" : "Nhập mã voucher",
+    applyVoucher: lang === "en" ? "Apply" : "Áp dụng",
+    voucherApplied: lang === "en" ? "Voucher applied." : "Đã áp dụng voucher.",
     total: lang === "en" ? "Total payment" : "Tổng thanh toán",
     placeOrder: lang === "en" ? "Place order" : "Đặt hàng",
     validationTitle: lang === "en" ? "Please check your information" : "Vui lòng kiểm tra thông tin",
@@ -117,6 +121,10 @@ export default function CheckoutPage() {
   const [errors, setErrors] = useState([]);
   const [placingOrder, setPlacingOrder] = useState(false);
   const [apiNotice, setApiNotice] = useState("");
+  const [voucherInput, setVoucherInput] = useState("");
+  const [appliedVoucher, setAppliedVoucher] = useState(null);
+  const [voucherMessage, setVoucherMessage] = useState("");
+  const [voucherBusy, setVoucherBusy] = useState(false);
 
   const [customer, setCustomer] = useState({
     name: "",
@@ -233,6 +241,18 @@ export default function CheckoutPage() {
     }
 
     const shippingFee = Number(selectedShipping?.fee || 0);
+
+    if (appliedVoucher?.code) {
+      return {
+        subtotal,
+        shippingFee,
+        discount: Number(appliedVoucher.discount) || 0,
+        shippingDiscount: Number(appliedVoucher.shippingDiscount) || 0,
+        total: Math.max(0, subtotal + shippingFee - (Number(appliedVoucher.discount) || 0) - (Number(appliedVoucher.shippingDiscount) || 0)),
+        voucherCode: appliedVoucher.code,
+      };
+    }
+
     const voucher = applyVoucher(draft.voucherCode || "", subtotal, shippingFee);
 
     return {
@@ -243,7 +263,7 @@ export default function CheckoutPage() {
       total: Math.max(0, subtotal + shippingFee - (Number(voucher.discount) || 0) - (Number(voucher.shippingDiscount) || 0)),
       voucherCode: voucher.valid ? draft.voucherCode : "",
     };
-  }, [draft, selectedShipping]);
+  }, [draft, selectedShipping, appliedVoucher]);
 
   if (!draft) {
     return (
@@ -261,6 +281,46 @@ export default function CheckoutPage() {
         </main>
       </StorefrontShell>
     );
+  }
+
+  async function applyBackendVoucher() {
+    const code = String(voucherInput || "").trim().toUpperCase();
+
+    if (!code) {
+      setAppliedVoucher(null);
+      setVoucherMessage("");
+      return;
+    }
+
+    setVoucherBusy(true);
+    setVoucherMessage("");
+
+    try {
+      const subtotal = Number(draft?.subtotal || 0);
+      const shippingFee = Number(selectedShipping?.fee || 0);
+      const result = await validateStorefrontVoucherApi({
+        code,
+        subtotal,
+        shippingFee,
+        items: draft?.items || [],
+        customerPhone: customer.phone,
+      });
+
+      setAppliedVoucher({
+        code: result.code,
+        discount: Number(result.discount || 0),
+        shippingDiscount: Number(result.shippingDiscount || 0),
+        voucher: result.voucher || null,
+      });
+      setVoucherMessage(result.message || t.voucherApplied);
+      setDraft((prev) => prev ? { ...prev, voucherCode: result.code } : prev);
+    } catch (error) {
+      setAppliedVoucher(null);
+      setVoucherMessage(error?.message || "Voucher invalid.");
+      setDraft((prev) => prev ? { ...prev, voucherCode: "" } : prev);
+    } finally {
+      setVoucherBusy(false);
+    }
   }
 
   function validateCustomer() {
@@ -326,11 +386,16 @@ export default function CheckoutPage() {
 
     try {
       if (!isPreorder) {
-        const apiPayload = buildCreateOrderPayload({
-          customer: cleanCustomer,
-          draft,
-          pricing,
-        });
+        const apiPayload = {
+          ...buildCreateOrderPayload({
+            customer: cleanCustomer,
+            draft,
+            pricing,
+          }),
+          voucherCode: pricing.voucherCode || "",
+          discount: pricing.discount,
+          shippingDiscount: pricing.shippingDiscount,
+        };
 
         const apiOrder = await createStorefrontOrderApi(apiPayload);
         const mappedOrder = mapBackendOrderForStorefront(apiOrder);
@@ -653,6 +718,34 @@ export default function CheckoutPage() {
                 <ShieldCheck size={16} className="mr-1 inline" />
                 {t.saved}
               </div>
+
+              {/* CHECKOUT_VOUCHER_INPUT */}
+              {!isPreorder && (
+                <div className="mt-5 rounded-2xl border border-blue-100 bg-blue-50 p-4">
+                  <div className="mb-2 text-sm font-black text-blue-800">{t.voucher}</div>
+                  <div className="flex gap-2">
+                    <input
+                      value={voucherInput}
+                      onChange={(event) => setVoucherInput(event.target.value.toUpperCase())}
+                      placeholder={t.voucherPlaceholder}
+                      className="min-w-0 flex-1 rounded-xl border border-blue-100 bg-white px-3 py-2 text-sm font-bold outline-none focus:border-blue-400"
+                    />
+                    <button
+                      type="button"
+                      disabled={voucherBusy}
+                      onClick={() => void applyBackendVoucher()}
+                      className="rounded-xl bg-blue-700 px-4 py-2 text-xs font-black text-white disabled:opacity-50"
+                    >
+                      {voucherBusy ? "..." : t.applyVoucher}
+                    </button>
+                  </div>
+                  {voucherMessage && (
+                    <div className={`mt-2 text-xs font-black ${appliedVoucher ? "text-emerald-700" : "text-red-600"}`}>
+                      {voucherMessage}
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div className="mt-5 space-y-3 text-sm">
                 <div className="flex justify-between">
