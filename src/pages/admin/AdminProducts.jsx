@@ -74,10 +74,21 @@ const STATUS_OPTIONS = [
   { value: "sale", label: "Sale" },
   { value: "comingSoon", label: "Coming soon" },
   { value: "outOfStock", label: "Hết hàng / Out of stock" },
+  { value: "draft", label: "Draft / Nháp" },
   { value: "inactive", label: "Inactive" },
 ];
 
 const TONE_OPTIONS = ["blue", "cyan", "sky", "red", "gold", "slate", "violet"];
+
+const PRODUCT_TABS = [
+  { id: "all", label: "All" },
+  { id: "selling", label: "Selling" },
+  { id: "outOfStock", label: "Out of stock" },
+  { id: "missingPrice", label: "Missing price" },
+  { id: "draft", label: "Draft" },
+  { id: "hidden", label: "Hidden" },
+  { id: "dataIssue", label: "Data issue" },
+];
 
 function getCopy(lang) {
   return {
@@ -386,10 +397,37 @@ function ProductForm({ draft, setDraft, reference }) {
       </div>
 
       <div className="rounded-2xl border border-amber-100 bg-amber-50 p-4">
-        <div className="text-sm font-black text-amber-800">Giá bán và tồn kho sẽ quản lý ở màn hình riêng</div>
+        <div className="text-sm font-black text-amber-800">Seller price & stock readiness</div>
         <p className="mt-1 text-xs font-semibold text-amber-700/80">
-          Product Master chỉ giữ thông tin mô tả sản phẩm. Giá có hiệu lực theo ngày và tồn kho sẽ cập nhật ở Pricing / Inventory.
+          Sản phẩm chỉ được publish ra storefront khi có giá bán &gt; 0 và có tồn kho, hoặc đang ở trạng thái preorder.
         </p>
+
+        <div className="mt-4 grid gap-4 md:grid-cols-3">
+          <AdminTextField
+            label="Initial selling price"
+            type="number"
+            suffix="đ"
+            value={draft.price}
+            onChange={(value) => patch("price", value)}
+          />
+          <AdminTextField
+            label="Compare at / Old price"
+            type="number"
+            suffix="đ"
+            value={draft.oldPrice}
+            onChange={(value) => patch("oldPrice", value)}
+          />
+          <AdminTextField
+            label="Initial stock"
+            type="number"
+            value={draft.stock}
+            onChange={(value) => patch("stock", value)}
+          />
+        </div>
+
+        <div className="mt-3 rounded-xl bg-white/70 px-4 py-3 text-xs font-bold text-amber-800">
+          Pricing Center vẫn là nơi quản lý ProductPrice/history chính thức. Section này giúp tạo sản phẩm mới theo flow seller center và tránh publish sản phẩm giá 0đ.
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
@@ -508,6 +546,43 @@ function ProductForm({ draft, setDraft, reference }) {
   );
 }
 
+function getProductIssueStatus(product = {}) {
+  const missing = [];
+
+  if (!product.sku) missing.push("SKU");
+  if (!product.nameVi && !product.name?.vi) missing.push("Tên");
+  if (!product.categoryId && !product.category?.id) missing.push("Danh mục");
+  if (!product.imageUrl && !product.images?.length) missing.push("Ảnh");
+  if (Number(product.price || 0) <= 0) missing.push("Giá");
+  if (Number(product.stock || 0) <= 0 && product.status !== "preorder") missing.push("Tồn kho");
+
+  return missing;
+}
+
+function isSellingProduct(product = {}) {
+  return (
+    product.active !== false &&
+    !["inactive", "draft"].includes(String(product.status || "").toLowerCase()) &&
+    Number(product.price || 0) > 0 &&
+    (Number(product.stock || 0) > 0 || product.status === "preorder")
+  );
+}
+
+function getProductTabMatch(product = {}, tab = "all") {
+  const issues = getProductIssueStatus(product);
+  const status = String(product.status || "").toLowerCase();
+
+  if (tab === "all") return true;
+  if (tab === "selling") return isSellingProduct(product);
+  if (tab === "outOfStock") return Number(product.stock || 0) <= 0 && status !== "preorder";
+  if (tab === "missingPrice") return Number(product.price || 0) <= 0;
+  if (tab === "draft") return status === "draft" || status === "inactive";
+  if (tab === "hidden") return product.active === false;
+  if (tab === "dataIssue") return issues.length > 0;
+
+  return true;
+}
+
 export default function AdminProducts() {
   const [lang] = useLang();
   const t = getCopy(lang);
@@ -519,6 +594,7 @@ export default function AdminProducts() {
     groups: [],
   });
   const [query, setQuery] = useState("");
+  const [productTab, setProductTab] = useState("all");
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState("");
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -568,26 +644,28 @@ export default function AdminProducts() {
   const rows = useMemo(() => {
     const q = query.trim().toLowerCase();
 
-    return products.filter((product) => {
-      const haystack = [
-        product.sku,
-        product.slug,
-        product.barcode,
-        product.nameVi,
-        product.nameEn,
-        product.shortVi,
-        product.descriptionText,
-        product.category?.nameVi,
-        product.supplier?.name,
-        ...(product.groups || []).map((group) => group.nameVi),
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
+    return products
+      .filter((product) => getProductTabMatch(product, productTab))
+      .filter((product) => {
+        const haystack = [
+          product.sku,
+          product.slug,
+          product.barcode,
+          product.nameVi,
+          product.nameEn,
+          product.shortVi,
+          product.descriptionText,
+          product.category?.nameVi,
+          product.supplier?.name,
+          ...(product.groups || []).map((group) => group.nameVi),
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
 
-      return !q || haystack.includes(q);
-    });
-  }, [products, query]);
+        return !q || haystack.includes(q);
+      });
+  }, [products, query, productTab]);
 
   const summary = useMemo(() => {
     return {
@@ -623,7 +701,7 @@ export default function AdminProducts() {
       ].filter(Boolean))
     );
 
-    return {
+    const payload = {
       ...draft,
       price: Number(draft.price || 0),
       oldPrice: Number(draft.oldPrice || 0),
@@ -656,6 +734,25 @@ export default function AdminProducts() {
       image360Url: draft.image360Url || "",
       videoUrl: draft.videoUrl || "",
     };
+
+    const wantsPublish =
+      payload.active !== false &&
+      !["inactive", "draft"].includes(String(payload.status || "").toLowerCase());
+
+    const issues = getProductIssueStatus(payload);
+
+    if (wantsPublish && issues.length) {
+      payload.active = false;
+      payload.status = "draft";
+      payload.publishBlockedReason = `Missing required data: ${issues.join(", ")}`;
+    }
+
+    if (Number(payload.price || 0) <= 0) {
+      payload.active = false;
+      payload.status = "draft";
+    }
+
+    return payload;
   }
 
   async function save() {
@@ -783,6 +880,23 @@ export default function AdminProducts() {
       </section>
 
       <section className="mb-4 rounded-md border border-slate-200 bg-white p-4">
+        <div className="mb-4 flex flex-wrap gap-2">
+          {PRODUCT_TABS.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setProductTab(tab.id)}
+              className={`rounded-full px-4 py-2 text-xs font-black transition ${
+                productTab === tab.id
+                  ? "bg-blue-700 text-white"
+                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
         <div className="grid gap-3 lg:grid-cols-[1fr_auto]">
           <div className="flex items-center rounded-md border border-slate-300 bg-white px-3 py-2">
             <Search size={16} className="text-slate-400" />
