@@ -1,4 +1,5 @@
 import { prisma } from "../config/prisma.js";
+import { resolveProductCommercialPrice } from "../services/commercialPriceResolver.js";
 
 function intValue(value, fallback = 0) {
   const n = Number(value);
@@ -87,12 +88,66 @@ function promotionInclude() {
               where: { active: true },
               orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
             },
+            prices: {
+              where: { active: true },
+              orderBy: [{ startDate: "desc" }, { createdAt: "desc" }],
+              take: 20,
+            },
           },
         },
       },
       orderBy: { createdAt: "desc" },
     },
   };
+}
+
+async function validatePromotionProductRules(tx, payload, productIds = []) {
+  const uniqueProductIds = Array.from(new Set((productIds || []).filter(Boolean)));
+
+  if (!uniqueProductIds.length) {
+    const error = new Error("Promotion must apply to at least one product.");
+    error.status = 400;
+    throw error;
+  }
+
+  const products = await tx.product.findMany({
+    where: {
+      id: { in: uniqueProductIds },
+      active: true,
+    },
+    include: {
+      prices: {
+        where: { active: true },
+        orderBy: [{ startDate: "desc" }, { createdAt: "desc" }],
+        take: 20,
+      },
+    },
+  });
+
+  if (products.length !== uniqueProductIds.length) {
+    const error = new Error("Promotion product list contains invalid or inactive product.");
+    error.status = 400;
+    throw error;
+  }
+
+  for (const product of products) {
+    const commercialPrice = resolveProductCommercialPrice(product);
+    const sellingPrice = Number(commercialPrice.basePrice || product.price || 0);
+
+    if (sellingPrice <= 0) {
+      const error = new Error(`Product ${product.sku} has no active selling price.`);
+      error.status = 400;
+      throw error;
+    }
+
+    if (payload.type === "FIXED" && Number(payload.value || 0) > sellingPrice) {
+      const error = new Error(`Fixed discount cannot exceed selling price for product ${product.sku}.`);
+      error.status = 400;
+      throw error;
+    }
+  }
+
+  return uniqueProductIds;
 }
 
 export async function listAdminPromotions(req, res, next) {
@@ -115,11 +170,12 @@ export async function createAdminPromotion(req, res, next) {
     const productIds = Array.isArray(req.body.productIds) ? req.body.productIds.filter(Boolean) : [];
 
     const promotion = await prisma.$transaction(async (tx) => {
+      const validProductIds = await validatePromotionProductRules(tx, payload, productIds);
       const created = await tx.promotion.create({ data: payload });
 
-      if (productIds.length) {
+      if (validProductIds.length) {
         await tx.promotionProduct.createMany({
-          data: productIds.map((productId) => ({
+          data: validProductIds.map((productId) => ({
             promotionId: created.id,
             productId,
           })),
@@ -146,6 +202,8 @@ export async function updateAdminPromotion(req, res, next) {
     const productIds = Array.isArray(req.body.productIds) ? req.body.productIds.filter(Boolean) : [];
 
     const promotion = await prisma.$transaction(async (tx) => {
+      const validProductIds = await validatePromotionProductRules(tx, payload, productIds);
+
       await tx.promotion.update({
         where: { id },
         data: payload,
@@ -153,9 +211,9 @@ export async function updateAdminPromotion(req, res, next) {
 
       await tx.promotionProduct.deleteMany({ where: { promotionId: id } });
 
-      if (productIds.length) {
+      if (validProductIds.length) {
         await tx.promotionProduct.createMany({
-          data: productIds.map((productId) => ({
+          data: validProductIds.map((productId) => ({
             promotionId: id,
             productId,
           })),

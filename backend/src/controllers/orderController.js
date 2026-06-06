@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { prisma } from "../config/prisma.js";
+import { decorateProductWithCommercialPrice } from "../services/commercialPriceResolver.js";
 
 function normalizeVietnamPhone(value = "") {
   const raw = String(value || "").replace(/[\s.\-()]/g, "").trim();
@@ -244,6 +245,10 @@ export async function createOrder(req, res, next) {
           orderBy: [{ startDate: "desc" }, { createdAt: "desc" }],
           take: 20,
         },
+        promotionProducts: {
+          include: { promotion: true },
+          orderBy: { createdAt: "desc" },
+        },
       },
     });
 
@@ -252,11 +257,13 @@ export async function createOrder(req, res, next) {
 
       return {
         ...item,
-        product: product ? resolveCurrentSellingPrice(product) : null,
+        product: product ? decorateProductWithCommercialPrice(product) : null,
       };
     });
 
-    const invalidItem = resolvedItems.find((item) => !item.product);
+    const invalidItem = resolvedItems.find((item) => {
+      return !item.product || !item.product.sellable || Number(item.product.finalPrice || item.product.price || 0) <= 0;
+    });
 
     if (invalidItem) {
       return res.status(400).json({
@@ -295,7 +302,7 @@ export async function createOrder(req, res, next) {
     }
 
     const subtotal = resolvedItems.reduce((sum, item) => {
-      return sum + item.product.price * item.quantity;
+      return sum + Number(item.product.finalPrice || item.product.price || 0) * item.quantity;
     }, 0);
 
     const total = Math.max(0, subtotal + body.shippingFee - body.discount);
@@ -334,7 +341,7 @@ export async function createOrder(req, res, next) {
                 productId: product.id,
                 sku: product.sku,
                 name: product.nameVi,
-                price: product.price,
+                price: Number(product.finalPrice || product.price || 0),
                 quantity: item.quantity,
               };
             }),

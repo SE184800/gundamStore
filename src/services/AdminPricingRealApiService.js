@@ -58,3 +58,16 @@ export async function deactivateSellingPriceApi(priceId) {
 
   return data.price;
 }
+
+
+export async function recomputeEffectivePricesApi() {
+  const data = await apiRequest("/api/pricing/prices/recompute-effective", {
+    method: "POST",
+  });
+
+  if (!data?.success) {
+    throw new Error(data?.message || "Recompute effective prices failed.");
+  }
+
+  return data;
+}

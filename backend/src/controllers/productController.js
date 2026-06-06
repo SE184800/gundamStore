@@ -1,4 +1,5 @@
 import { prisma } from "../config/prisma.js";
+import { decorateProductWithCommercialPrice } from "../services/commercialPriceResolver.js";
 
 const PRODUCT_KEY_ALIASES = {
   "prod-action-base-5": { sku: "ACTION-BASE-5-CLEAR", slug: "action-base-5-clear" },
@@ -131,34 +132,7 @@ function calculatePromotionPrice(product, promotion) {
 }
 
 function decorateProductWithPromotion(product) {
-  const productWithPrice = decorateProductWithEffectiveSellingPrice(product);
-
-  const promotions = (productWithPrice.promotionProducts || [])
-    .map((item) => item.promotion)
-    .filter((promotion) => isPromotionActive(promotion))
-    .map((promotion) => calculatePromotionPrice(productWithPrice, promotion))
-    .sort((a, b) => {
-      if (b.priority !== a.priority) return b.priority - a.priority;
-      return b.discountAmount - a.discountAmount;
-    });
-
-  const activePromotion = promotions[0] || null;
-
-  if (!activePromotion) {
-    return {
-      ...productWithPrice,
-      activePromotion: null,
-      effectivePrice: Number(productWithPrice.price || 0),
-      compareAtPrice: Number(productWithPrice.oldPrice || 0),
-    };
-  }
-
-  return {
-    ...productWithPrice,
-    activePromotion,
-    effectivePrice: activePromotion.effectivePrice,
-    compareAtPrice: Number(productWithPrice.price || 0),
-  };
+  return decorateProductWithCommercialPrice(product);
 }
 
 
@@ -334,7 +308,7 @@ export async function getStorefrontProductByKey(req, res, next) {
 
     res.json({
       success: true,
-      product: decorateProductWithPromotion(product),
+      product: decoratedProduct,
     });
   } catch (err) {
     next(err);
