@@ -44,7 +44,7 @@ function productInclude() {
     variants: {
       orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
     },
-    reviews: {
+    productReviews: {
       where: { status: "APPROVED" },
       orderBy: [{ verifiedPurchase: "desc" }, { createdAt: "desc" }],
       take: 50,
@@ -143,6 +143,16 @@ function decorateProductWithPromotion(product) {
   return decorateProductWithCommercialPrice(product);
 }
 
+function withProductReviewAlias(product = {}) {
+  const productReviews = Array.isArray(product.productReviews) ? product.productReviews : [];
+  const reviews = Array.isArray(product.reviews) ? product.reviews : productReviews;
+
+  return {
+    ...product,
+    reviews,
+  };
+}
+
 function canSellWithoutStock(status = "") {
   const normalized = normalizeProductKey(status);
 
@@ -198,7 +208,7 @@ function hasSellableStock(product = {}) {
 }
 
 function decorateProductForStorefront(product = {}) {
-  const decorated = decorateProductWithPromotion(product);
+  const decorated = withProductReviewAlias(decorateProductWithPromotion(product));
   const sellableVariants = getSellableVariants(decorated);
 
   if (!sellableVariants.length) return decorated;
@@ -551,7 +561,7 @@ export async function listAdminProducts(req, res, next) {
       take: 500,
     });
 
-    res.json({ success: true, products });
+    res.json({ success: true, products: products.map(withProductReviewAlias) });
   } catch (err) {
     next(err);
   }
@@ -574,7 +584,7 @@ export async function createAdminProduct(req, res, next) {
       });
     });
 
-    res.status(201).json({ success: true, product });
+    res.status(201).json({ success: true, product: withProductReviewAlias(product) });
   } catch (err) {
     next(err);
   }
@@ -597,7 +607,7 @@ export async function updateAdminProduct(req, res, next) {
       });
     });
 
-    res.json({ success: true, product });
+    res.json({ success: true, product: withProductReviewAlias(product) });
   } catch (err) {
     next(err);
   }
@@ -613,7 +623,7 @@ export async function deleteAdminProduct(req, res, next) {
       include: productInclude(),
     });
 
-    res.json({ success: true, product, message: "Product deactivated." });
+    res.json({ success: true, product: withProductReviewAlias(product), message: "Product deactivated." });
   } catch (err) {
     next(err);
   }
@@ -896,7 +906,7 @@ export async function setAdminProductGroups(req, res, next) {
       });
     });
 
-    res.json({ success: true, product });
+    res.json({ success: true, product: withProductReviewAlias(product) });
   } catch (err) {
     next(err);
   }
