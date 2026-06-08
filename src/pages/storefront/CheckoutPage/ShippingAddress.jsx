@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useFormikContext, Field, ErrorMessage } from "formik";
 import { MapPin } from "lucide-react";
 import usePlacesAutocomplete from "use-places-autocomplete";
-
+import { hcmData } from "../../../data/hcmdata";
 // 🇻🇳 Dữ liệu danh mục Quận/Huyện và Phường/Xã cố định tại TP.HCM (Chạy Offline Free)
 const hcmData = {
   "Quận 1": ["Phường Bến Nghé", "Phường Bến Thành", "Phường Phạm Ngũ Lão", "Phường Nguyễn Cư Trinh"],

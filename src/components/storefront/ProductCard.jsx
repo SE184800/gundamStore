@@ -1,10 +1,11 @@
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { Eye, Heart, Minus, Plus, ShoppingCart, Star, X, Zap } from "lucide-react";
 import { formatCurrency } from "../../utils/format";
 import { resolveText, useI18n } from "../../i18n";
 import { addProductToCart, forceCartBadgeSync, saveBuyNowDraft, validateCartStock } from "../../services/CartService";
 import { addMyWishlistItem, hasAccountToken } from "../../services/AccountApiService";
+import Toast from "../../utils/Toast";
 
 function getImage(product) {
   return (
@@ -32,6 +33,13 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
   const [wishlistSaved, setWishlistSaved] = useState(false);
   const [wishlistMessage, setWishlistMessage] = useState("");
 
+  // 🟢 ĐÃ THÊM: Khai báo State quản lý cấu hình thông báo Toast để tránh crash ứng dụng
+  const [toastConfig, setToastConfig] = useState({
+    show: false,
+    type: "success",
+    message: ""
+  });
+
   const name = resolveText(product?.name, lang, t("product.defaultName"));
   const short = resolveText(product?.short, lang, t("product.defaultShort"));
   const desc = resolveText(product?.description, lang, short);
@@ -44,6 +52,7 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
   const isOutOfStock = !isPreorder && stock <= 0;
   const maxQty = isPreorder ? 99 : Math.max(1, stock);
   const outOfStockLabel = lang === "en" ? "Out of stock" : "Hết hàng";
+
   const wishlistCopy = {
     loginRequired: lang === "en" ? "Please sign in to save wishlist." : "Vui lòng đăng nhập để lưu yêu thích.",
     saved: lang === "en" ? "Saved to wishlist." : "Đã lưu vào yêu thích.",
@@ -83,12 +92,14 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
     }
 
     forceCartBadgeSync();
+
     setToastConfig({
       show: true,
       type: "success",
       message: `Đã thêm sản phẩm vào giỏ hàng thành công!`
     });
-    // ⏳ TỰ ĐỘNG ẨN: Sau 2.5 giây tự động tắt Toast
+
+    // Sau 2.5 giây tự động tắt Toast ẩn đi
     setTimeout(() => {
       setToastConfig((prev) => ({ ...prev, show: false }));
     }, 2500);
@@ -203,7 +214,9 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
 
           <div className="mb-3 flex items-center justify-between text-sm">
             <span className="font-semibold text-slate-500">{product?.scale || "1/144"}</span>
-            <span className="font-black text-blue-700">{isOutOfStock ? outOfStockLabel : isPreorder ? t("product.preorder") : resolveText(product?.status || t("product.inStock"), lang)}</span>
+            <span className="font-black text-blue-700">
+              {isOutOfStock ? outOfStockLabel : isPreorder ? t("product.preorder") : resolveText(product?.status || t("product.inStock"), lang)}
+            </span>
           </div>
 
           <div className="mb-4 flex items-end justify-between">
@@ -227,9 +240,7 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
           {wishlistMessage && (
             <div
               data-wishlist-card-message="true"
-              className={`mb-3 rounded-2xl px-3 py-2 text-xs font-black ${wishlistSaved
-                  ? "bg-emerald-50 text-emerald-700"
-                  : "bg-amber-50 text-amber-700"
+              className={`mb-3 rounded-2xl px-3 py-2 text-xs font-black ${wishlistSaved ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"
                 }`}
             >
               {wishlistMessage}
@@ -283,6 +294,7 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
         </div>
       </article>
 
+      {/* 🟢 ĐÃ SỬA: Sắp xếp lại thẻ đóng mở an toàn cho Portal QuickView */}
       {quickOpen &&
         createPortal(
           <div className="mobile-quickview-backdrop fixed inset-0 z-[999999] flex items-end justify-center bg-slate-950/70 p-0 backdrop-blur-md sm:items-start sm:p-4 sm:pt-6">
@@ -391,9 +403,7 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
 
                 {wishlistMessage && (
                   <div
-                    className={`mt-3 rounded-2xl px-4 py-3 text-sm font-black ${wishlistSaved
-                        ? "bg-emerald-50 text-emerald-700"
-                        : "bg-amber-50 text-amber-700"
+                    className={`mt-3 rounded-2xl px-4 py-3 text-sm font-black ${wishlistSaved ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"
                       }`}
                   >
                     {wishlistMessage}
@@ -404,6 +414,8 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
           </div>,
           document.body
         )}
+
+      {/* Portal thông báo Toast động khi thêm hàng thành công */}
       {createPortal(
         <Toast
           show={toastConfig.show}

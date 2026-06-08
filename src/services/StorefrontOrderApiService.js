@@ -168,7 +168,7 @@ export function buildCreateOrderPayload({
 }
 
 export async function createStorefrontOrderApi(payload) {
-  const data = await apiRequest("/api/orders", {
+  const data = await apiRequest("/orders", {
     method: "POST",
     body: JSON.stringify(payload),
     token: getStoredAccountToken(),
@@ -183,7 +183,7 @@ export async function createStorefrontOrderApi(payload) {
 
 
 export async function getMyStorefrontOrdersApi() {
-  const data = await apiRequest("/api/orders/my", {
+  const data = await apiRequest("/orders/my", {
     token: getStoredAccountToken(),
   });
 
@@ -199,7 +199,7 @@ export async function getMyStorefrontOrderByIdApi(id = "") {
     throw new Error("Order id is required.");
   }
 
-  const data = await apiRequest(`/api/orders/my/${encodeURIComponent(cleanId)}`, {
+  const data = await apiRequest(`/orders/my/${encodeURIComponent(cleanId)}`, {
     token: getStoredAccountToken(),
   });
 
@@ -218,7 +218,7 @@ export async function cancelMyStorefrontOrderApi(id = "", payload = {}) {
     throw new Error("Order id is required.");
   }
 
-  const data = await apiRequest(`/api/orders/my/${encodeURIComponent(cleanId)}/cancel`, {
+  const data = await apiRequest(`/orders/my/${encodeURIComponent(cleanId)}/cancel`, {
     method: "PATCH",
     token: getStoredAccountToken(),
     body: JSON.stringify({

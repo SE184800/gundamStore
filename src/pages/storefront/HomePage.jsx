@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import Toast from "../../utils/Toast";
 import {
   ArrowRight,
   Box,
@@ -515,8 +516,8 @@ function HeroV3Bento({ banners, lang, actions, settings }) {
                 type="button"
                 onClick={() => goToBanner(index)}
                 className={`image-first-thumb relative h-[86px] min-w-[148px] overflow-hidden rounded-2xl border text-left shadow-sm transition ${activeIndex === index
-                    ? "border-blue-600 ring-4 ring-blue-100"
-                    : "border-slate-200 hover:border-blue-300"
+                  ? "border-blue-600 ring-4 ring-blue-100"
+                  : "border-slate-200 hover:border-blue-300"
                   }`}
                 aria-label={`Banner ${index + 1}`}
               >

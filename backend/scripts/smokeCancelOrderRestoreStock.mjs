@@ -135,7 +135,7 @@ async function run() {
 
     console.log("✅ Customer login works");
 
-    const create = await api("/api/orders", {
+    const create = await api("/orders", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -173,7 +173,7 @@ async function run() {
 
     console.log("✅ Stock decremented after order create");
 
-    const cancel = await api(`/api/orders/my/${encodeURIComponent(orderId)}/cancel`, {
+    const cancel = await api(`/orders/my/${encodeURIComponent(orderId)}/cancel`, {
       method: "PATCH",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -204,7 +204,7 @@ async function run() {
 
     console.log("✅ Restore inventory log created once");
 
-    const secondCancel = await api(`/api/orders/my/${encodeURIComponent(orderId)}/cancel`, {
+    const secondCancel = await api(`/orders/my/${encodeURIComponent(orderId)}/cancel`, {
       method: "PATCH",
       headers: {
         Authorization: `Bearer ${token}`,

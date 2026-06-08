@@ -20,6 +20,6 @@ export default function AdminProtectedRoute({ children }) {
   if (!canAccessAdminPath(location.pathname)) {
     return <Navigate to="/admin/access-denied" replace state={{ from: location.pathname }} />;
   }
-
+  console.log("🚀 Đã chạy qua cổng bảo vệ Admin thành công!");
   return children;
 }

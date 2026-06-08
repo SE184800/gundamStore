@@ -1,22 +1,13 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useFormikContext, Field, ErrorMessage } from "formik";
 import { MapPin } from "lucide-react";
-
+import { hcmData } from "../../../data/hcmdata";
 // 🇻🇳 Dữ liệu mẫu cấu trúc Quận/Huyện và Phường/Xã tại TP.HCM (Cậu có thể mở rộng thêm nếu cần)
-const hcmData = {
-  "Quận 1": ["Phường Bến Nghé", "Phường Bến Thành", "Phường Phạm Ngũ Lão", "Phường Nguyễn Cư Trinh"],
-  "Quận 3": ["Phường Võ Thị Sáu", "Phường 1", "Phường 2", "Phường 3"],
-  "Quận Bình Thạnh": ["Phường 25", "Phường 26", "Phường 27", "Phường Hàng Xanh"],
-  "Thành phố Thủ Đức": ["Phường Linh Trung", "Phường Linh Xuân", "Phường Bình Thọ", "Phường Thảo Điền"],
-  "Quận 10": ["Phường 1", "Phường 2", "Phường 12", "Phường 14"]
-};
 
 export default function AddressDropdownForm({ t }) {
   const { values, errors, touched, setFieldValue } = useFormikContext();
-  const [districts] = useState(Object.keys(hcmData));
+  const districts = useMemo(() => Object.keys(hcmData), []);
   const [wards, setWards] = useState([]);
-
-  // State cục bộ lưu phân cấp để tiện xử lý nối chuỗi địa chỉ
   const [selectedDistrict, setSelectedDistrict] = useState("");
   const [selectedWard, setSelectedWard] = useState("");
   const [detailAddress, setDetailAddress] = useState("");

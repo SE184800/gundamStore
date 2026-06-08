@@ -3,7 +3,7 @@ import { apiRequest } from "./ApiClient";
 export const authService = {
   async login(email, password) {
     try {
-      const data = await apiRequest("/api/auth/login", {
+      const data = await apiRequest("/auth/login", {
         method: "POST",
         token: "",
         body: JSON.stringify({

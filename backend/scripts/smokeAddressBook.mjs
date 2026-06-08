@@ -88,7 +88,7 @@ async function run() {
 
   console.log("✅ Customer login works");
 
-  const createFirst = await api("/api/account/addresses", {
+  const createFirst = await api("/account/addresses", {
     method: "POST",
     headers: { Authorization: `Bearer ${token}` },
     body: JSON.stringify({
@@ -111,7 +111,7 @@ async function run() {
 
   console.log("✅ Created default address");
 
-  const createSecond = await api("/api/account/addresses", {
+  const createSecond = await api("/account/addresses", {
     method: "POST",
     headers: { Authorization: `Bearer ${token}` },
     body: JSON.stringify({
@@ -134,7 +134,7 @@ async function run() {
 
   console.log("✅ Created second address");
 
-  const setDefault = await api(`/api/account/addresses/${encodeURIComponent(secondId)}/default`, {
+  const setDefault = await api(`/account/addresses/${encodeURIComponent(secondId)}/default`, {
     method: "PATCH",
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -143,7 +143,7 @@ async function run() {
     throw new Error(`Set default failed HTTP ${setDefault.response.status}`);
   }
 
-  const list = await api("/api/account/addresses", {
+  const list = await api("/account/addresses", {
     headers: { Authorization: `Bearer ${token}` },
   });
 
@@ -157,7 +157,7 @@ async function run() {
 
   console.log("✅ Default address uniqueness works");
 
-  const update = await api(`/api/account/addresses/${encodeURIComponent(secondId)}`, {
+  const update = await api(`/account/addresses/${encodeURIComponent(secondId)}`, {
     method: "PATCH",
     headers: { Authorization: `Bearer ${token}` },
     body: JSON.stringify({
@@ -172,7 +172,7 @@ async function run() {
 
   console.log("✅ Updated address");
 
-  const remove = await api(`/api/account/addresses/${encodeURIComponent(firstId)}`, {
+  const remove = await api(`/account/addresses/${encodeURIComponent(firstId)}`, {
     method: "DELETE",
     headers: { Authorization: `Bearer ${token}` },
   });

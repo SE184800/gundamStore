@@ -166,7 +166,7 @@ async function run() {
 
     console.log("✅ Customer/admin login works");
 
-    const create = await api("/api/orders", {
+    const create = await api("/orders", {
       method: "POST",
       headers: { Authorization: `Bearer ${customerToken}` },
       body: JSON.stringify({
@@ -191,7 +191,7 @@ async function run() {
 
     console.log("✅ Order created");
 
-    const adminList = await api("/api/orders/admin", {
+    const adminList = await api("/orders/admin", {
       headers: { Authorization: `Bearer ${adminToken}` },
     });
 
@@ -203,7 +203,7 @@ async function run() {
 
     console.log("✅ Admin can list backend orders");
 
-    const confirmed = await api(`/api/orders/admin/${encodeURIComponent(orderId)}/status`, {
+    const confirmed = await api(`/orders/admin/${encodeURIComponent(orderId)}/status`, {
       method: "PATCH",
       headers: { Authorization: `Bearer ${adminToken}` },
       body: JSON.stringify({
@@ -218,7 +218,7 @@ async function run() {
 
     console.log("✅ Admin can update order status");
 
-    const paid = await api(`/api/orders/admin/${encodeURIComponent(orderId)}/payment`, {
+    const paid = await api(`/orders/admin/${encodeURIComponent(orderId)}/payment`, {
       method: "PATCH",
       headers: { Authorization: `Bearer ${adminToken}` },
       body: JSON.stringify({
@@ -236,7 +236,7 @@ async function run() {
 
     console.log("✅ Admin can update payment");
 
-    const shipping = await api(`/api/orders/admin/${encodeURIComponent(orderId)}/shipping`, {
+    const shipping = await api(`/orders/admin/${encodeURIComponent(orderId)}/shipping`, {
       method: "PATCH",
       headers: { Authorization: `Bearer ${adminToken}` },
       body: JSON.stringify({

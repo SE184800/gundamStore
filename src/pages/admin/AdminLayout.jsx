@@ -1,5 +1,5 @@
-import { NavLink, Outlet, useLocation } from "react-router-dom";
-import { useEffect } from "react";
+import React, { useEffect } from "react";
+import { NavLink, Outlet, useLocation, Link } from "react-router-dom"; // 🟢 ĐÃ THÊM: Import Link để điều hướng SPA an toàn
 import {
   Activity,
   Bell,
@@ -126,7 +126,6 @@ const copy = {
   },
 };
 
-
 function AdminDomTranslator({ lang }) {
   useEffect(() => {
     translateDomTree(document.body, lang);
@@ -244,7 +243,7 @@ export default function AdminLayout() {
         <aside className="hidden border-r border-slate-200 bg-white lg:block">
           <AdminLogo t={t} />
 
-          <nav className="px-3 py-4">
+          <nav className="px-3 py-4 h-[calc(100vh-64px)] overflow-y-auto">
             <NavGroup title={t.dashboard}>
               <NavItem to="/admin" exact icon={LayoutDashboard} label={t.dashboard} />
             </NavGroup>
@@ -317,7 +316,6 @@ export default function AdminLayout() {
                   <input className="w-56 bg-transparent px-2 text-sm outline-none" placeholder={t.search} />
                 </div>
 
-
                 <div className="flex rounded-md border border-slate-300 bg-slate-50 p-1">
                   {["vi", "en"].map((item) => (
                     <button
@@ -325,8 +323,8 @@ export default function AdminLayout() {
                       type="button"
                       onClick={() => setLang(item)}
                       className={`rounded px-3 py-1.5 text-xs font-black uppercase transition ${lang === item
-                        ? "bg-blue-700 text-white shadow-sm"
-                        : "text-slate-500 hover:bg-white hover:text-slate-900"
+                          ? "bg-blue-700 text-white shadow-sm"
+                          : "text-slate-500 hover:bg-white hover:text-slate-900"
                         }`}
                     >
                       {item.toUpperCase()}
@@ -338,17 +336,20 @@ export default function AdminLayout() {
                   <Bell size={18} />
                 </button>
 
-                <a
-                  href="/"
+                {/* 🟢 ĐÃ SỬA: Chuyển sang dùng Link của React Router để không bị nhảy reload cứng vỡ luồng SPA */}
+                <Link
+                  to="/"
+                  target="_blank"
                   className="rounded-md bg-blue-700 px-3 py-2 text-xs font-black text-white hover:bg-blue-800"
                 >
                   {t.viewStore}
-                </a>
+                </Link>
               </div>
             </div>
           </header>
 
           <div className="admin-content p-4 lg:p-6">
+            {/* 🟢 Khóa phòng chống crash: Bảo vệ giao diện nếu outlet con render rỗng */}
             <Outlet />
           </div>
         </main>

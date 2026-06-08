@@ -1,8 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { MapPin, Truck, CreditCard, ShieldCheck, AlertCircle } from "lucide-react";
-import { getCheckoutDraft, clearCheckoutDraft, clearCartItems } from "../../services/CartService";
+import {
+  getCheckoutDraft,
+  clearCheckoutDraft,
+  clearCartItems,
+} from "../../services/CartService";
 import { applyVoucher } from "../../services/VoucherService";
+import { validateStorefrontVoucherApi } from "../../services/StorefrontVoucherApiService";
 import { createOrder } from "../../services/OrderService";
 import { getStock } from "../../services/InventoryService";
 import {
@@ -23,11 +28,8 @@ import {
   getShippingMethod,
 } from "../../constants/orderConfig";
 import { useLang } from "../../store/CmsStore";
-import { Formik, Form } from "formik";
-import * as Yup from "yup";
-import ShippingAddressForm from "./CheckoutPage/ShippingAddress";
+
 const money = (n) => (Number(n) || 0).toLocaleString("vi-VN") + "đ";
-const phoneRegExp = /^(0|\+84)(3|5|7|8|9)\d{8}$/;
 
 function getCopy(lang) {
   return {
@@ -53,6 +55,9 @@ function getCopy(lang) {
     discount: lang === "en" ? "Discount" : "Giảm giá",
     shippingDiscount: lang === "en" ? "Shipping discount" : "Giảm phí ship",
     voucher: lang === "en" ? "Voucher" : "Voucher",
+    voucherPlaceholder: lang === "en" ? "Enter voucher code" : "Nhập mã voucher",
+    applyVoucher: lang === "en" ? "Apply" : "Áp dụng",
+    voucherApplied: lang === "en" ? "Voucher applied." : "Đã áp dụng voucher.",
     total: lang === "en" ? "Total payment" : "Tổng thanh toán",
     placeOrder: lang === "en" ? "Place order" : "Đặt hàng",
     validationTitle: lang === "en" ? "Please check your information" : "Vui lòng kiểm tra thông tin",
@@ -116,6 +121,10 @@ export default function CheckoutPage() {
   const [errors, setErrors] = useState([]);
   const [placingOrder, setPlacingOrder] = useState(false);
   const [apiNotice, setApiNotice] = useState("");
+  const [voucherInput, setVoucherInput] = useState("");
+  const [appliedVoucher, setAppliedVoucher] = useState(null);
+  const [voucherMessage, setVoucherMessage] = useState("");
+  const [voucherBusy, setVoucherBusy] = useState(false);
 
   const [customer, setCustomer] = useState({
     name: "",
@@ -128,41 +137,21 @@ export default function CheckoutPage() {
     shippingMethod: "FAST",
   });
 
-  const validationSchema = Yup.object().shape({
-    name: Yup.string()
-      .required(t.requiredName)
-      .min(2, t.invalidName)
-      .matches(/^[^[0-9!@#$%^&*(),.?":{}|<>]+$/, lang === "en" ? "Name cannot contain numbers or special characters." : "Họ tên không được chứa số hoặc ký tự đặc biệt."),
+  const [savedAddresses, setSavedAddresses] = useState([]);
+  const [selectedAddressId, setSelectedAddressId] = useState("");
 
-    phone: Yup.string()
-      .required(t.requiredPhone)
-      .matches(phoneRegExp, t.invalidPhone),
+  function applySavedAddress(address) {
+    if (!address) return;
 
-    email: Yup.string()
-      .email(lang === "en" ? "Invalid email address." : "Địa chỉ email không đúng định dạng.")
-      .nullable(),
-
-    province: Yup.string()
-      .required(lang === "en" ? "Province/City is required." : "Vui lòng nhập Tỉnh/Thành phố."),
-
-    address: Yup.string()
-      .required(t.requiredAddress)
-      .min(8, t.invalidAddress)
-      // Bắt buộc phải có khoảng trắng thể hiện việc nhập đầy đủ tên đường + số nhà
-      .test("has-space", lang === "en" ? "Please enter a valid street address." : "Vui lòng nhập địa chỉ cụ thể (bao gồm cả tên đường và số nhà).", value => /\s/.test(value || "")),
-  });
-
-  // Giá trị khởi tạo cho Formik (Được gán từ state customer cũ của cậu)
-  const initialValues = {
-    name: "",
-    phone: "",
-    email: "",
-    address: "",
-    province: "Hồ Chí Minh",
-    note: "",
-    paymentMethod: "COD",
-    shippingMethod: draft?.shippingMethod || "FAST",
-  };
+    setSelectedAddressId(address.id || "");
+    setCustomer((prev) => ({
+      ...prev,
+      name: address.receiver || prev.name,
+      phone: address.phone || prev.phone,
+      address: address.address || prev.address,
+      province: address.city || prev.province || "Hồ Chí Minh",
+    }));
+  }
 
   useEffect(() => {
     let alive = true;
@@ -252,6 +241,18 @@ export default function CheckoutPage() {
     }
 
     const shippingFee = Number(selectedShipping?.fee || 0);
+
+    if (appliedVoucher?.code) {
+      return {
+        subtotal,
+        shippingFee,
+        discount: Number(appliedVoucher.discount) || 0,
+        shippingDiscount: Number(appliedVoucher.shippingDiscount) || 0,
+        total: Math.max(0, subtotal + shippingFee - (Number(appliedVoucher.discount) || 0) - (Number(appliedVoucher.shippingDiscount) || 0)),
+        voucherCode: appliedVoucher.code,
+      };
+    }
+
     const voucher = applyVoucher(draft.voucherCode || "", subtotal, shippingFee);
 
     return {
@@ -262,7 +263,7 @@ export default function CheckoutPage() {
       total: Math.max(0, subtotal + shippingFee - (Number(voucher.discount) || 0) - (Number(voucher.shippingDiscount) || 0)),
       voucherCode: voucher.valid ? draft.voucherCode : "",
     };
-  }, [draft, selectedShipping]);
+  }, [draft, selectedShipping, appliedVoucher]);
 
   if (!draft) {
     return (
@@ -282,30 +283,119 @@ export default function CheckoutPage() {
     );
   }
 
-  async function handleFormikSubmit(values) {
+  async function applyBackendVoucher() {
+    const code = String(voucherInput || "").trim().toUpperCase();
+
+    if (!code) {
+      setAppliedVoucher(null);
+      setVoucherMessage("");
+      return;
+    }
+
+    setVoucherBusy(true);
+    setVoucherMessage("");
+
+    try {
+      const subtotal = Number(draft?.subtotal || 0);
+      const shippingFee = Number(selectedShipping?.fee || 0);
+      const result = await validateStorefrontVoucherApi({
+        code,
+        subtotal,
+        shippingFee,
+        items: draft?.items || [],
+        customerPhone: customer.phone,
+      });
+
+      setAppliedVoucher({
+        code: result.code,
+        discount: Number(result.discount || 0),
+        shippingDiscount: Number(result.shippingDiscount || 0),
+        voucher: result.voucher || null,
+      });
+      setVoucherMessage(result.message || t.voucherApplied);
+      setDraft((prev) => prev ? { ...prev, voucherCode: result.code } : prev);
+    } catch (error) {
+      setAppliedVoucher(null);
+      setVoucherMessage(error?.message || "Voucher invalid.");
+      setDraft((prev) => prev ? { ...prev, voucherCode: "" } : prev);
+    } finally {
+      setVoucherBusy(false);
+    }
+  }
+
+  function validateCustomer() {
+    const nextErrors = [];
+    const name = sanitizeText(customer.name, 80);
+    const phone = normalizePhone(customer.phone);
+    const address = sanitizeText(customer.address, 180);
+    const note = sanitizeText(customer.note, 300);
+
+    if (!name) nextErrors.push(t.requiredName);
+    else if (name.length < 2) nextErrors.push(t.invalidName);
+
+    if (!phone) nextErrors.push(t.requiredPhone);
+    else if (!isValidVietnamPhone(phone)) nextErrors.push(t.invalidPhone);
+
+    if (!address) nextErrors.push(t.requiredAddress);
+    else if (address.length < 8) nextErrors.push(t.invalidAddress);
+
+    if (note.length > 280) nextErrors.push(t.invalidNote);
+
+    setErrors(nextErrors);
+    return nextErrors.length === 0;
+  }
+
+  function validateDraftStock() {
+    if (isPreorder) return true;
+
+    const invalidItem = (draft.items || []).find((item) => {
+      const stock = getStock(item.backendProductId || item.productId || item.id);
+      return (Number(item.quantity) || 1) > Number(stock?.available || 0);
+    });
+
+    if (!invalidItem) return true;
+
+    const stock = getStock(invalidItem.backendProductId || invalidItem.productId || invalidItem.id);
+    setErrors([
+      lang === "en"
+        ? `${getItemName(invalidItem, lang)} only has ${Number(stock?.available || 0)} item(s) available.`
+        : `${getItemName(invalidItem, lang)} chỉ còn ${Number(stock?.available || 0)} sản phẩm trong kho.`,
+    ]);
+
+    return false;
+  }
+
+  async function submitOrder() {
     if (placingOrder) return;
+    if (!validateCustomer()) return;
+    if (!validateDraftStock()) return;
 
     setPlacingOrder(true);
     setApiNotice("");
 
     const cleanCustomer = {
-      name: sanitizeText(values.name, 80),
-      phone: normalizePhone(values.phone),
-      email: sanitizeText(values.email || "", 120),
-      address: sanitizeText(values.address, 180),
-      province: sanitizeText(values.province || "Hồ Chí Minh", 80),
-      note: sanitizeText(values.note, 280),
-      paymentMethod: values.paymentMethod,
-      shippingMethod: values.shippingMethod,
+      name: sanitizeText(customer.name, 80),
+      phone: normalizePhone(customer.phone),
+      email: sanitizeText(customer.email || "", 120),
+      address: sanitizeText(customer.address, 180),
+      province: sanitizeText(customer.province || "Hồ Chí Minh", 80),
+      note: sanitizeText(customer.note, 280),
+      paymentMethod: customer.paymentMethod,
+      shippingMethod: customer.shippingMethod,
     };
 
     try {
       if (!isPreorder) {
-        const apiPayload = buildCreateOrderPayload({
-          customer: cleanCustomer,
-          draft,
-          pricing,
-        });
+        const apiPayload = {
+          ...buildCreateOrderPayload({
+            customer: cleanCustomer,
+            draft,
+            pricing,
+          }),
+          voucherCode: pricing.voucherCode || "",
+          discount: pricing.discount,
+          shippingDiscount: pricing.shippingDiscount,
+        };
 
         const apiOrder = await createStorefrontOrderApi(apiPayload);
         const mappedOrder = mapBackendOrderForStorefront(apiOrder);
@@ -318,6 +408,7 @@ export default function CheckoutPage() {
         navigate(`/order-success/${mappedOrder.orderCode || mappedOrder.id}`);
         return;
       }
+
       const order = createOrder({
         orderType: ORDER_TYPE.PREORDER,
         preorder: draft.preorder || null,
@@ -389,268 +480,322 @@ export default function CheckoutPage() {
 
   return (
     <StorefrontShell>
-      <Formik
-        initialValues={{
-          name: "",
-          phone: "",
-          email: "",
-          address: "",
-          province: "Hồ Chí Minh",
-          note: "",
-          paymentMethod: "COD",
-          shippingMethod: customer.shippingMethod,
-        }}
-        enableReinitialize={true}
-        validationSchema={validationSchema}
-        onSubmit={handleFormikSubmit}
-      >
-        {({ values, setFieldValue, errors, touched }) => {
-          // 🟢 ĐÃ SỬA CÚ PHÁP: Chuyển sang dấu ngoặc nhọn để chứa useEffect hợp lệ
-          const [showErrors, setShowErrors] = useState(false);
+      <main className="min-h-screen bg-[#F5F7FB] px-4 py-6 md:px-6 md:py-8">
+        <div className="mx-auto max-w-7xl">
+          <p className="text-sm font-black uppercase tracking-[0.2em] text-blue-600">
+            {t.eyebrow}
+          </p>
+          <h1 className="mt-2 text-3xl font-black text-slate-950 md:text-4xl">
+            {t.title}
+          </h1>
+          <p className="mt-2 text-sm font-semibold text-slate-500">{t.reviewHint}</p>
 
-          useEffect(() => {
-            const hasErrors = Object.keys(errors).length > 0;
-            const hasTouched = Object.keys(touched).length > 0;
 
-            if (hasErrors && hasTouched) {
-              setShowErrors(true);
-
-              const timer = setTimeout(() => {
-                setShowErrors(false);
-              }, 2000);
-
-              return () => clearTimeout(timer);
-            } else {
-              setShowErrors(false);
-            }
-          }, [errors, touched]);
-
-          return (
-            <Form>
-              <main className="min-h-screen bg-[#F5F7FB] px-4 py-6 md:px-6 md:py-8">
-                <div className="mx-auto max-w-7xl">
-                  <p className="text-sm font-black uppercase tracking-[0.2em] text-blue-600">
-                    {t.eyebrow}
-                  </p>
-                  <h1 className="mt-2 text-3xl font-black text-slate-950 md:text-4xl">
-                    {t.title}
-                  </h1>
-                  <p className="mt-2 text-sm font-semibold text-slate-500">{t.reviewHint}</p>
-
-                  {isPreorder && (
-                    <div className="mt-5 rounded-3xl border border-amber-100 bg-amber-50 p-5">
-                      <div className="text-sm font-black uppercase tracking-[0.2em] text-amber-700">
-                        Pre-order deposit
-                      </div>
-                      <div className="mt-2 grid gap-3 text-sm font-semibold text-amber-900 md:grid-cols-3">
-                        <div>
-                          <span className="block text-amber-700">Full amount</span>
-                          <b>{money(draft.preorder?.fullAmount || draft.subtotal)}</b>
-                        </div>
-                        <div>
-                          <span className="block text-amber-700">Deposit now</span>
-                          <b className="text-red-600">{money(draft.preorder?.depositAmount || pricing.total)}</b>
-                        </div>
-                        <div>
-                          <span className="block text-amber-700">Remaining</span>
-                          <b>{money(draft.preorder?.remainingAmount || 0)}</b>
-                        </div>
-                      </div>
-                      <p className="mt-3 text-xs font-bold leading-5 text-amber-700">
-                        ETA: {draft.preorder?.eta || "-"} · Shipping fee will be confirmed when the item arrives.
-                      </p>
-                    </div>
-                  )}
-
-                  {/* {showErrors && (
-                    <div className="mt-5 rounded-3xl border border-red-100 bg-red-50 p-4 text-red-700 animate-in fade-in slide-in-from-top-4 duration-300">
-                      <div className="flex items-center gap-2 font-black">
-                        <AlertCircle size={18} />
-                        {t.validationTitle}
-                      </div>
-                      <ul className="mt-2 list-disc space-y-1 pl-6 text-sm font-semibold">
-                        {Object.keys(errors).map(
-                          (key) =>
-                            touched[key] &&
-                            errors[key] && (
-                              <li key={key} className="animate-pulse">
-                                {errors[key]}
-                              </li>
-                            )
-                        )}
-                      </ul>
-                    </div>
-                  )} */}
-
-                  {apiNotice && (
-                    <div className="mt-5 rounded-3xl border border-amber-100 bg-amber-50 p-4 text-sm font-black text-amber-700">
-                      {apiNotice}
-                    </div>
-                  )}
-
-                  <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_430px]">
-                    <section className="space-y-6">
-
-                      <ShippingAddressForm t={t} />
-
-                      <div className="rounded-3xl bg-white p-6 shadow-sm">
-                        <h2 className="flex items-center gap-2 text-xl font-black">
-                          <Truck size={22} /> {t.shippingTitle}
-                        </h2>
-
-                        <div className="mt-5 grid gap-4 md:grid-cols-2">
-                          {SHIPPING_METHODS.map((method) => (
-                            <label
-                              key={method.value}
-                              className={`cursor-pointer rounded-2xl border p-4 hover:border-blue-500 ${values.shippingMethod === method.value ? "border-blue-500 ring-2 ring-blue-100" : ""
-                                }`}
-                            >
-                              <input
-                                type="radio"
-                                name="shippingMethod"
-                                checked={values.shippingMethod === method.value}
-                                onChange={() => {
-                                  setFieldValue("shippingMethod", method.value);
-                                  setCustomer((prev) => ({ ...prev, shippingMethod: method.value }));
-                                }}
-                                className="mr-2"
-                              />
-                              <b>{getLocalized(method.label, lang)}</b>
-                              <span className="ml-2 font-black text-red-500">{money(method.fee)}</span>
-                              <p className="mt-1 text-sm text-slate-500">
-                                {getLocalized(method.desc, lang)}
-                              </p>
-                            </label>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className="rounded-3xl bg-white p-6 shadow-sm">
-                        <h2 className="flex items-center gap-2 text-xl font-black">
-                          <CreditCard size={22} /> {t.paymentTitle}
-                        </h2>
-
-                        <div className="mt-5 grid gap-4 md:grid-cols-3">
-                          {PAYMENT_METHODS.map((method) => (
-                            <label
-                              key={method.value}
-                              className={`cursor-pointer rounded-2xl border p-4 hover:border-blue-500 ${values.paymentMethod === method.value ? "border-blue-500 ring-2 ring-blue-100" : ""
-                                }`}
-                            >
-                              <input
-                                type="radio"
-                                name="paymentMethod"
-                                checked={values.paymentMethod === method.value}
-                                onChange={() => setFieldValue("paymentMethod", method.value)}
-                                className="mr-2"
-                              />
-                              <b>{getLocalized(method.label, lang)}</b>
-                            </label>
-                          ))}
-                        </div>
-
-                        <textarea
-                          name="note"
-                          value={values.note}
-                          onChange={(e) => setFieldValue("note", e.target.value)}
-                          placeholder={t.note}
-                          rows={4}
-                          className="mt-5 w-full rounded-2xl border px-4 py-3 outline-none focus:border-blue-500"
-                        />
-                      </div>
-                    </section>
-
-                    <aside className="h-fit rounded-3xl bg-white p-6 shadow-sm lg:sticky lg:top-24">
-                      <h2 className="text-xl font-black">{t.summary}</h2>
-
-                      <div className="mt-5 max-h-80 space-y-4 overflow-y-auto pr-2">
-                        {draft.items.map((item) => {
-                          const itemName = getItemName(item, lang);
-
-                          return (
-                            <div key={item.id} className="flex gap-3">
-                              <img
-                                src={item.image}
-                                alt={itemName}
-                                loading="lazy"
-                                className="h-16 w-16 rounded-2xl bg-slate-100 object-cover"
-                              />
-                              <div className="flex-1">
-                                <div className="font-bold">{itemName}</div>
-                                <div className="mt-1 text-sm text-slate-500">
-                                  x{item.quantity || 1}
-                                </div>
-                              </div>
-                              <b className="text-red-500">
-                                {money((item.price || 0) * (item.quantity || 1))}
-                              </b>
-                            </div>
-                          );
-                        })}
-                      </div>
-
-                      <div className="mt-5 rounded-2xl bg-blue-50 p-4 text-sm font-bold text-blue-700">
-                        <ShieldCheck size={16} className="mr-1 inline" />
-                        {t.saved}
-                      </div>
-
-                      <div className="mt-5 space-y-3 text-sm">
-                        <div className="flex justify-between">
-                          <span>{t.subtotal}</span>
-                          <b>{money(pricing.subtotal)}</b>
-                        </div>
-
-                        <div className="flex justify-between">
-                          <span>{t.shippingFee}</span>
-                          <b>{money(pricing.shippingFee)}</b>
-                        </div>
-
-                        <div className="flex justify-between text-green-600">
-                          <span>{t.discount}</span>
-                          <b>-{money(pricing.discount)}</b>
-                        </div>
-
-                        <div className="flex justify-between text-green-600">
-                          <span>{t.shippingDiscount}</span>
-                          <b>-{money(pricing.shippingDiscount)}</b>
-                        </div>
-
-                        {pricing.voucherCode && (
-                          <div className="flex justify-between text-blue-600">
-                            <span>{t.voucher}</span>
-                            <b>{pricing.voucherCode}</b>
-                          </div>
-                        )}
-
-                        <div className="flex justify-between border-t pt-4 text-xl font-black">
-                          <span>{t.total}</span>
-                          <span className="text-red-500">{money(pricing.total)}</span>
-                        </div>
-                      </div>
-
-                      <button
-                        type="submit"
-                        disabled={placingOrder}
-                        className="mt-6 w-full rounded-2xl bg-blue-600 py-4 font-black text-white shadow-lg hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        {placingOrder ? t.placing : t.placeOrder}
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => navigate("/cart")}
-                        className="mt-3 w-full rounded-2xl border py-4 font-black text-slate-700 hover:bg-slate-50"
-                      >
-                        {t.backCart}
-                      </button>
-                    </aside>
-                  </div>
+          {isPreorder && (
+            <div className="mt-5 rounded-3xl border border-amber-100 bg-amber-50 p-5">
+              <div className="text-sm font-black uppercase tracking-[0.2em] text-amber-700">
+                {t.preorderDeposit}
+              </div>
+              <div className="mt-2 grid gap-3 text-sm font-semibold text-amber-900 md:grid-cols-3">
+                <div>
+                  <span className="block text-amber-700">{t.preorderFullAmount}</span>
+                  <b>{money(draft.preorder?.fullAmount || draft.subtotal)}</b>
                 </div>
-              </main>
-            </Form>
-          );
-        }}
-      </Formik>
+                <div>
+                  <span className="block text-amber-700">{t.preorderDepositNow}</span>
+                  <b className="text-red-600">{money(draft.preorder?.depositAmount || pricing.total)}</b>
+                </div>
+                <div>
+                  <span className="block text-amber-700">{t.preorderRemaining}</span>
+                  <b>{money(draft.preorder?.remainingAmount || 0)}</b>
+                </div>
+              </div>
+              <p className="mt-3 text-xs font-bold leading-5 text-amber-700">
+                ETA: {draft.preorder?.eta || "-"} · {t.preorderShippingHint}
+              </p>
+            </div>
+          )}
+
+          {errors.length > 0 && (
+            <div className="mt-5 rounded-3xl border border-red-100 bg-red-50 p-4 text-red-700">
+              <div className="flex items-center gap-2 font-black">
+                <AlertCircle size={18} />
+                {t.validationTitle}
+              </div>
+              <ul className="mt-2 list-disc space-y-1 pl-6 text-sm font-semibold">
+                {errors.map((error) => (
+                  <li key={error}>{error}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {apiNotice && (
+            <div className="mt-5 rounded-3xl border border-amber-100 bg-amber-50 p-4 text-sm font-black text-amber-700">
+              {apiNotice}
+            </div>
+          )}
+
+          <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_430px]">
+            <section className="space-y-6">
+              <div className="rounded-3xl bg-white p-6 shadow-sm">
+                <h2 className="flex items-center gap-2 text-xl font-black">
+                  <MapPin size={22} /> {t.addressTitle}
+                </h2>
+
+                {savedAddresses.length > 0 && (
+                  <div data-checkout-address-book="true" className="mt-5 rounded-2xl border border-blue-100 bg-blue-50 p-4">
+                    <div className="text-sm font-black text-blue-800">{t.savedAddresses}</div>
+                    <div className="mt-3 grid gap-3 md:grid-cols-2">
+                      {savedAddresses.map((address) => (
+                        <button
+                          key={address.id}
+                          type="button"
+                          onClick={() => applySavedAddress(address)}
+                          className={`rounded-2xl border p-4 text-left text-sm transition ${selectedAddressId === address.id
+                            ? "border-blue-500 bg-white ring-2 ring-blue-100"
+                            : "border-blue-100 bg-white/70 hover:border-blue-300"
+                            }`}
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <b className="text-slate-950">{address.label || t.chooseSavedAddress}</b>
+                            {address.isDefault && (
+                              <span className="rounded-full bg-amber-50 px-2 py-1 text-[11px] font-black text-amber-700">
+                                {t.defaultAddress}
+                              </span>
+                            )}
+                          </div>
+                          <div className="mt-2 font-bold text-slate-700">
+                            {address.receiver} · {address.phone}
+                          </div>
+                          <div className="mt-1 text-xs font-semibold leading-5 text-slate-500">
+                            {[address.address, address.ward, address.district, address.city].filter(Boolean).join(", ")}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="mt-5 grid gap-4 md:grid-cols-2">
+                  <input
+                    value={customer.name}
+                    onChange={(e) => setCustomer({ ...customer, name: e.target.value })}
+                    placeholder={t.name}
+                    className="rounded-2xl border px-4 py-3 outline-none focus:border-blue-500"
+                  />
+
+                  <input
+                    value={customer.phone}
+                    onChange={(e) => setCustomer({ ...customer, phone: e.target.value })}
+                    placeholder={t.phone}
+                    inputMode="tel"
+                    className="rounded-2xl border px-4 py-3 outline-none focus:border-blue-500"
+                  />
+
+                  <input
+                    value={customer.email}
+                    onChange={(e) => setCustomer({ ...customer, email: e.target.value })}
+                    placeholder={t.email}
+                    inputMode="email"
+                    className="rounded-2xl border px-4 py-3 outline-none focus:border-blue-500"
+                  />
+
+                  <input
+                    value={customer.province}
+                    onChange={(e) => setCustomer({ ...customer, province: e.target.value })}
+                    placeholder={t.province}
+                    className="rounded-2xl border px-4 py-3 outline-none focus:border-blue-500"
+                  />
+
+                  <input
+                    value={customer.address}
+                    onChange={(e) => setCustomer({ ...customer, address: e.target.value })}
+                    placeholder={t.address}
+                    className="rounded-2xl border px-4 py-3 outline-none focus:border-blue-500"
+                  />
+                </div>
+              </div>
+
+              <div className="rounded-3xl bg-white p-6 shadow-sm">
+                <h2 className="flex items-center gap-2 text-xl font-black">
+                  <Truck size={22} /> {t.shippingTitle}
+                </h2>
+
+                <div className="mt-5 grid gap-4 md:grid-cols-2">
+                  {SHIPPING_METHODS.map((method) => (
+                    <label
+                      key={method.value}
+                      className={`cursor-pointer rounded-2xl border p-4 hover:border-blue-500 ${customer.shippingMethod === method.value ? "border-blue-500 ring-2 ring-blue-100" : ""
+                        }`}
+                    >
+                      <input
+                        type="radio"
+                        name="shipping"
+                        checked={customer.shippingMethod === method.value}
+                        onChange={() => setCustomer({ ...customer, shippingMethod: method.value })}
+                        className="mr-2"
+                      />
+                      <b>{getLocalized(method.label, lang)}</b>
+                      <span className="ml-2 font-black text-red-500">{money(method.fee)}</span>
+                      <p className="mt-1 text-sm text-slate-500">
+                        {getLocalized(method.desc, lang)}
+                      </p>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="rounded-3xl bg-white p-6 shadow-sm">
+                <h2 className="flex items-center gap-2 text-xl font-black">
+                  <CreditCard size={22} /> {t.paymentTitle}
+                </h2>
+
+                <div className="mt-5 grid gap-4 md:grid-cols-3">
+                  {PAYMENT_METHODS.map((method) => (
+                    <label
+                      key={method.value}
+                      className={`cursor-pointer rounded-2xl border p-4 hover:border-blue-500 ${customer.paymentMethod === method.value ? "border-blue-500 ring-2 ring-blue-100" : ""
+                        }`}
+                    >
+                      <input
+                        type="radio"
+                        name="payment"
+                        checked={customer.paymentMethod === method.value}
+                        onChange={() =>
+                          setCustomer({ ...customer, paymentMethod: method.value })
+                        }
+                        className="mr-2"
+                      />
+                      <b>{getLocalized(method.label, lang)}</b>
+                    </label>
+                  ))}
+                </div>
+
+                <textarea
+                  value={customer.note}
+                  onChange={(e) => setCustomer({ ...customer, note: e.target.value })}
+                  placeholder={t.note}
+                  rows={4}
+                  className="mt-5 w-full rounded-2xl border px-4 py-3 outline-none focus:border-blue-500"
+                />
+              </div>
+            </section>
+
+            <aside className="h-fit rounded-3xl bg-white p-6 shadow-sm lg:sticky lg:top-24">
+              <h2 className="text-xl font-black">{t.summary}</h2>
+
+              <div className="mt-5 max-h-80 space-y-4 overflow-y-auto pr-2">
+                {draft.items.map((item) => {
+                  const itemName = getItemName(item, lang);
+
+                  return (
+                    <div key={item.id} className="flex gap-3">
+                      <img
+                        src={item.image}
+                        alt={itemName}
+                        loading="lazy"
+                        className="h-16 w-16 rounded-2xl bg-slate-100 object-cover"
+                      />
+                      <div className="flex-1">
+                        <div className="font-bold">{itemName}</div>
+                        <div className="mt-1 text-sm text-slate-500">
+                          x{item.quantity || 1}
+                        </div>
+                      </div>
+                      <b className="text-red-500">
+                        {money((item.price || 0) * (item.quantity || 1))}
+                      </b>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="mt-5 rounded-2xl bg-blue-50 p-4 text-sm font-bold text-blue-700">
+                <ShieldCheck size={16} className="mr-1 inline" />
+                {t.saved}
+              </div>
+
+              {/* CHECKOUT_VOUCHER_INPUT */}
+              {!isPreorder && (
+                <div className="mt-5 rounded-2xl border border-blue-100 bg-blue-50 p-4">
+                  <div className="mb-2 text-sm font-black text-blue-800">{t.voucher}</div>
+                  <div className="flex gap-2">
+                    <input
+                      value={voucherInput}
+                      onChange={(event) => setVoucherInput(event.target.value.toUpperCase())}
+                      placeholder={t.voucherPlaceholder}
+                      className="min-w-0 flex-1 rounded-xl border border-blue-100 bg-white px-3 py-2 text-sm font-bold outline-none focus:border-blue-400"
+                    />
+                    <button
+                      type="button"
+                      disabled={voucherBusy}
+                      onClick={() => void applyBackendVoucher()}
+                      className="rounded-xl bg-blue-700 px-4 py-2 text-xs font-black text-white disabled:opacity-50"
+                    >
+                      {voucherBusy ? "..." : t.applyVoucher}
+                    </button>
+                  </div>
+                  {voucherMessage && (
+                    <div className={`mt-2 text-xs font-black ${appliedVoucher ? "text-emerald-700" : "text-red-600"}`}>
+                      {voucherMessage}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="mt-5 space-y-3 text-sm">
+                <div className="flex justify-between">
+                  <span>{t.subtotal}</span>
+                  <b>{money(pricing.subtotal)}</b>
+                </div>
+
+                <div className="flex justify-between">
+                  <span>{t.shippingFee}</span>
+                  <b>{money(pricing.shippingFee)}</b>
+                </div>
+
+                <div className="flex justify-between text-green-600">
+                  <span>{t.discount}</span>
+                  <b>-{money(pricing.discount)}</b>
+                </div>
+
+                <div className="flex justify-between text-green-600">
+                  <span>{t.shippingDiscount}</span>
+                  <b>-{money(pricing.shippingDiscount)}</b>
+                </div>
+
+                {pricing.voucherCode && (
+                  <div className="flex justify-between text-blue-600">
+                    <span>{t.voucher}</span>
+                    <b>{pricing.voucherCode}</b>
+                  </div>
+                )}
+
+                <div className="flex justify-between border-t pt-4 text-xl font-black">
+                  <span>{t.total}</span>
+                  <span className="text-red-500">{money(pricing.total)}</span>
+                </div>
+              </div>
+
+              <button
+                onClick={submitOrder}
+                disabled={placingOrder}
+                className="mt-6 w-full rounded-2xl bg-blue-600 py-4 font-black text-white shadow-lg hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {placingOrder ? t.placing : t.placeOrder}
+              </button>
+
+              <button
+                onClick={() => navigate("/cart")}
+                className="mt-3 w-full rounded-2xl border py-4 font-black text-slate-700 hover:bg-slate-50"
+              >
+                {t.backCart}
+              </button>
+            </aside>
+          </div>
+        </div>
+      </main>
     </StorefrontShell>
   );
 }

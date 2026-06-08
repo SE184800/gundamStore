@@ -40,7 +40,7 @@ async function createOrder(product) {
     ],
   };
 
-  const response = await fetch(`${BACKEND_URL}/api/orders`, {
+  const response = await fetch(`${BACKEND_URL}/orders`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
