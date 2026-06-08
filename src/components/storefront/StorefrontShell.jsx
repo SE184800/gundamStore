@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import HeaderCart from "../layout/HeaderCart";
 import { useCms } from "../../store/CmsStore";
 import { useI18n } from "../../i18n";
 import { User, ChevronDown, Settings, Heart, LogOut, Globe } from "lucide-react";
-
 export default function StorefrontShell({ children }) {
   const { state, actions } = useCms();
   const { t, lang, setLang } = useI18n();
@@ -178,6 +177,11 @@ export default function StorefrontShell({ children }) {
           <div>
             <h3 className="font-black">{t.payment || "Thanh toán"}</h3>
             <p className="mt-2 text-sm text-slate-500">COD • Banking • Momo</p>
+            <div className="mt-3 grid gap-2 text-sm font-bold text-blue-700">
+              <Link to="/payment-guide">{t.paymentGuide}</Link>
+              <Link to="/order-lookup">{t.orderLookup}</Link>
+              <Link to="/account">{t.account}</Link>
+            </div>
           </div>
         </div>
       </footer>

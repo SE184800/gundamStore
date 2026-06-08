@@ -20,6 +20,7 @@ import {
   listAdminProducts,
   listAdminSuppliers,
   listStorefrontProducts,
+  listStorefrontProductCategories,
   setAdminProductGroups,
   updateAdminProduct,
   updateAdminProductPrice,
@@ -27,6 +28,12 @@ import {
   updateAdminProductGroup,
   updateAdminSupplier,
 } from "../controllers/productController.js";
+import {
+  commitAdminProductImportCsv,
+  downloadAdminProductImportTemplateCsv,
+  exportAdminProductsCsv,
+  previewAdminProductImportCsv,
+} from "../controllers/productBulkController.js";
 import { requireAuth, requirePermission } from "../middleware/auth.js";
 
 const router = express.Router();
@@ -35,6 +42,10 @@ const requireProductRead = [requireAuth, requirePermission("products:read")];
 const requireProductUpdate = [requireAuth, requirePermission("products:update")];
 
 router.get("/admin/reference", ...requireProductRead, getAdminCatalogReference);
+router.get("/admin/import-template", ...requireProductRead, downloadAdminProductImportTemplateCsv);
+router.get("/admin/export", ...requireProductRead, exportAdminProductsCsv);
+router.post("/admin/import-preview", ...requireProductUpdate, previewAdminProductImportCsv);
+router.post("/admin/import-commit", ...requireProductUpdate, commitAdminProductImportCsv);
 
 
 
@@ -68,6 +79,7 @@ router.post("/admin", ...requireProductUpdate, createAdminProduct);
 router.patch("/admin/:id", ...requireProductUpdate, updateAdminProduct);
 router.delete("/admin/:id", ...requireProductUpdate, deleteAdminProduct);
 
+router.get("/categories", listStorefrontProductCategories);
 router.get("/", listStorefrontProducts);
 router.get("/:key", getStorefrontProductByKey);
 

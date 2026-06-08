@@ -18,6 +18,7 @@ const PreOrderPage = lazy(() => import("./pages/storefront/PreOrderPage"));
 const BuildGuidePage = lazy(() => import("./pages/storefront/BuildGuidePage"));
 const CommunityGalleryPage = lazy(() => import("./pages/storefront/CommunityGalleryPage"));
 const OrderLookupPage = lazy(() => import("./pages/storefront/OrderLookupPage"));
+const AccountDashboardPage = lazy(() => import("./pages/storefront/AccountDashboardPage"));
 const AccountProfilePage = lazy(() => import("./pages/storefront/AccountProfilePage"));
 const MyOrdersPage = lazy(() => import("./pages/storefront/MyOrdersPage"));
 const OrderDetailPage = lazy(() => import("./pages/storefront/OrderDetailPage"));
@@ -35,6 +36,8 @@ const CartPage = lazy(() => import("./pages/storefront/CartPage"));
 const CheckoutPage = lazy(() => import("./pages/storefront/CheckoutPage"));
 const OrderSuccessPage = lazy(() => import("./pages/storefront/OrderSuccessPage"));
 
+const StorefrontSupportPage = lazy(() => import("./pages/storefront/StorefrontSupportPage"));
+const PolicyPage = lazy(() => import("./pages/storefront/PolicyPage"));
 const AdminLoginPage = lazy(() => import("./pages/admin/AdminLoginPage"));
 const AdminAccessDeniedPage = lazy(() => import("./pages/admin/AdminAccessDeniedPage"));
 const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
@@ -58,16 +61,21 @@ const AdminInventoryStockCount = lazy(() => import("./pages/admin/AdminInventory
 const AdminInventoryAdjustments = lazy(() => import("./pages/admin/AdminInventoryAdjustments"));
 const AdminInventoryTransactions = lazy(() => import("./pages/admin/AdminInventoryTransactions"));
 const AdminPromotions = lazy(() => import("./pages/admin/AdminPromotions"));
+const AdminVouchers = lazy(() => import("./pages/admin/AdminVouchers"));
 const AdminCategories = lazy(() => import("./pages/admin/AdminCategories"));
 const AdminProductCategoryMapping = lazy(() => import("./pages/admin/AdminProductCategoryMapping"));
 const AdminProductDisplayMapping = lazy(() => import("./pages/admin/AdminProductDisplayMapping"));
 const AdminOrders = lazy(() => import("./pages/admin/AdminOrders"));
+const AdminFulfillment = lazy(() => import("./pages/admin/AdminFulfillment"));
+const AdminCustomers = lazy(() => import("./pages/admin/AdminCustomers"));
 const AdminChats = lazy(() => import("./pages/admin/AdminChats"));
 const AdminReviews = lazy(() => import("./pages/admin/AdminReviews"));
 const AdminCommunityGallery = lazy(() => import("./pages/admin/AdminCommunityGallery"));
 const AdminRestockAlerts = lazy(() => import("./pages/admin/AdminRestockAlerts"));
 const AdminComplaints = lazy(() => import("./pages/admin/AdminComplaints"));
 const AdminAnalytics = lazy(() => import("./pages/admin/AdminAnalytics"));
+const AdminAuditLogs = lazy(() => import("./pages/admin/AdminAuditLogs"));
+const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
 const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
 const AdminQaHelper = lazy(() => import("./pages/admin/AdminQaHelper"));
 const AdminCommunication = lazy(() => import("./pages/admin/AdminCommunication"));
@@ -119,16 +127,14 @@ export default function App() {
           <Route path="/community-gallery" element={<CommunityGalleryPage />} />
           <Route path="/order-lookup" element={<OrderLookupPage />} />
           <Route path="/profile" element={<AccountProfilePage />} />
-          <Route path="/account" element={<AccountProfilePage />} />
+          <Route path="/account" element={<AccountDashboardPage />} />
           <Route path="/account/profile" element={<AccountProfilePage />} />
           <Route path="/orders" element={<MyOrdersPage />} />
           <Route path="/orders/:id" element={<OrderDetailPage />} />
           <Route path="/wishlist" element={<WishlistPage />} />
           <Route path="/favorites" element={<WishlistPage />} />
           <Route path="/compare" element={<ComparePage />} />
-          <Route path="/faq" element={<FAQPage />} />
-          <Route path="/return-policy" element={<ReturnPolicyPage />} />
-          <Route path="/contact" element={<ContactPage />} />
+          <Route path="/return-policy" element={<PolicyPage pageKey="return-policy" />} />
 
           {/* Content & Blogs */}
           <Route path="/news" element={<NewsPage />} />
@@ -141,6 +147,15 @@ export default function App() {
           <Route path="/cart" element={<CartPage />} />
           <Route path="/checkout" element={<CheckoutPage />} />
           <Route path="/order-success/:id" element={<OrderSuccessPage />} />
+
+          {/* Support & Trust Pages */}
+          <Route path="/contact" element={<StorefrontSupportPage defaultType="COMPLAINT" />} />
+          <Route path="/support" element={<StorefrontSupportPage defaultType="COMPLAINT" />} />
+          <Route path="/return-request" element={<StorefrontSupportPage defaultType="RETURN" />} />
+          <Route path="/shipping-policy" element={<PolicyPage pageKey="shipping-policy" />} />
+          <Route path="/payment-guide" element={<PolicyPage pageKey="payment-guide" />} />
+          <Route path="/warranty" element={<PolicyPage pageKey="warranty" />} />
+          <Route path="/faq" element={<PolicyPage pageKey="faq" />} />
 
           {/* 🔐 Admin Module (Grouped & Protected) */}
           <Route path="/admin/login" element={<AdminLoginPage />} />
@@ -181,18 +196,23 @@ export default function App() {
             <Route path="inventory/stock-count" element={<AdminInventoryStockCount />} />
             <Route path="inventory/transactions" element={<AdminInventoryTransactions />} />
             <Route path="promotions" element={<AdminPromotions />} />
+            <Route path="vouchers" element={<AdminVouchers />} />
             <Route path="categories" element={<AdminCategories />} />
             <Route path="product-category-mapping" element={<AdminProductCategoryMapping />} />
             <Route path="product-display-mapping" element={<AdminProductDisplayMapping />} />
 
             {/* Customer Operations */}
             <Route path="orders" element={<AdminOrders />} />
+            <Route path="fulfillment" element={<AdminFulfillment />} />
+            <Route path="customers" element={<AdminCustomers />} />
             <Route path="chats" element={<AdminChats />} />
             <Route path="reviews" element={<AdminReviews />} />
             <Route path="community-gallery" element={<AdminCommunityGallery />} />
             <Route path="restock-alerts" element={<AdminRestockAlerts />} />
             <Route path="complaints" element={<AdminComplaints />} />
             <Route path="analytics" element={<AdminAnalytics />} />
+            <Route path="audit-logs" element={<AdminAuditLogs />} />
+            <Route path="users" element={<AdminUsers />} />
             <Route path="settings" element={<AdminSettings />} />
             <Route path="qa-helper" element={<AdminQaHelper />} />
           </Route>

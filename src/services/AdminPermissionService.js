@@ -1,47 +1,58 @@
 import { ADMIN_ROLES, getCurrentAdmin } from "./AdminAuthService";
 
 export const ADMIN_PERMISSIONS = {
-  VIEW_DASHBOARD: "view_dashboard",
-  VIEW_REPORTS: "view_reports",
+  VIEW_DASHBOARD: "reports:read",
+  VIEW_REPORTS: "reports:read",
+  VIEW_ANALYTICS: "reports:read",
 
-  MANAGE_CMS: "manage_cms",
-  MANAGE_NEWS_EVENTS: "manage_news_events",
-  MANAGE_PRODUCTS: "manage_products",
-  MANAGE_PRICING_INVENTORY: "manage_pricing_inventory",
-  MANAGE_PROMOTIONS: "manage_promotions",
+  MANAGE_CMS: "settings:update",
+  MANAGE_NEWS_EVENTS: "settings:update",
 
-  MANAGE_ORDERS: "manage_orders",
-  MANAGE_CUSTOMER_SERVICE: "manage_customer_service",
-  MANAGE_COMMUNITY: "manage_community",
+  MANAGE_PRODUCTS: "products:update",
+  READ_PRODUCTS: "products:read",
 
-  VIEW_ANALYTICS: "view_analytics",
-  MANAGE_SETTINGS: "manage_settings",
-  MANAGE_QA_HELPER: "manage_qa_helper",
-  MANAGE_SYSTEM: "manage_system",
+  MANAGE_PRICING_INVENTORY: "products:update",
+  READ_PROMOTIONS: "promotions:read",
+  MANAGE_PROMOTIONS: "promotions:update",
+
+  MANAGE_ORDERS: "orders:update",
+  READ_ORDERS: "orders:read",
+
+  MANAGE_CUSTOMER_SERVICE: "orders:update",
+  MANAGE_COMMUNITY: "orders:update",
+
+  MANAGE_SETTINGS: "settings:update",
+  READ_SETTINGS: "settings:read",
+
+  MANAGE_QA_HELPER: "settings:update",
+  MANAGE_SYSTEM: "settings:update",
+
+  MANAGE_USERS: "users:update",
+  READ_USERS: "users:read",
+  MANAGE_ROLES: "roles:update",
+  READ_ROLES: "roles:read",
 };
 
 const ROLE_PERMISSIONS = {
-  [ADMIN_ROLES.ADMIN]: Object.values(ADMIN_PERMISSIONS),
+  [ADMIN_ROLES.SUPER_ADMIN]: ["*"],
+  [ADMIN_ROLES.ADMIN]: ["*"],
 
   [ADMIN_ROLES.MANAGER]: [
     ADMIN_PERMISSIONS.VIEW_DASHBOARD,
     ADMIN_PERMISSIONS.VIEW_REPORTS,
-    ADMIN_PERMISSIONS.MANAGE_CMS,
-    ADMIN_PERMISSIONS.MANAGE_NEWS_EVENTS,
+    ADMIN_PERMISSIONS.VIEW_ANALYTICS,
     ADMIN_PERMISSIONS.MANAGE_PRODUCTS,
     ADMIN_PERMISSIONS.MANAGE_PRICING_INVENTORY,
+    ADMIN_PERMISSIONS.READ_PROMOTIONS,
     ADMIN_PERMISSIONS.MANAGE_PROMOTIONS,
     ADMIN_PERMISSIONS.MANAGE_ORDERS,
     ADMIN_PERMISSIONS.MANAGE_CUSTOMER_SERVICE,
-    ADMIN_PERMISSIONS.MANAGE_COMMUNITY,
-    ADMIN_PERMISSIONS.VIEW_ANALYTICS,
   ],
 
   [ADMIN_ROLES.STAFF]: [
     ADMIN_PERMISSIONS.VIEW_DASHBOARD,
-    ADMIN_PERMISSIONS.MANAGE_ORDERS,
+    ADMIN_PERMISSIONS.READ_ORDERS,
     ADMIN_PERMISSIONS.MANAGE_CUSTOMER_SERVICE,
-    ADMIN_PERMISSIONS.MANAGE_COMMUNITY,
   ],
 };
 
@@ -49,6 +60,7 @@ export const ADMIN_ROUTE_PERMISSIONS = {
   "/admin": ADMIN_PERMISSIONS.VIEW_DASHBOARD,
   "/admin/reports": ADMIN_PERMISSIONS.VIEW_REPORTS,
   "/admin/analytics": ADMIN_PERMISSIONS.VIEW_ANALYTICS,
+  "/admin/audit-logs": ADMIN_PERMISSIONS.VIEW_REPORTS,
 
   "/admin/cms": ADMIN_PERMISSIONS.MANAGE_CMS,
   "/admin/cms/pages": ADMIN_PERMISSIONS.MANAGE_CMS,
@@ -80,9 +92,12 @@ export const ADMIN_ROUTE_PERMISSIONS = {
   "/admin/inventory/stock-count": ADMIN_PERMISSIONS.MANAGE_PRICING_INVENTORY,
   "/admin/inventory/transactions": ADMIN_PERMISSIONS.MANAGE_PRICING_INVENTORY,
 
-  "/admin/promotions": ADMIN_PERMISSIONS.MANAGE_PROMOTIONS,
+  "/admin/promotions": ADMIN_PERMISSIONS.READ_PROMOTIONS,
+  "/admin/vouchers": ADMIN_PERMISSIONS.READ_PROMOTIONS,
 
   "/admin/orders": ADMIN_PERMISSIONS.MANAGE_ORDERS,
+  "/admin/fulfillment": ADMIN_PERMISSIONS.MANAGE_ORDERS,
+  "/admin/customers": ADMIN_PERMISSIONS.READ_ORDERS,
   "/admin/restock-alerts": ADMIN_PERMISSIONS.MANAGE_ORDERS,
 
   "/admin/chats": ADMIN_PERMISSIONS.MANAGE_CUSTOMER_SERVICE,
@@ -92,6 +107,7 @@ export const ADMIN_ROUTE_PERMISSIONS = {
 
   "/admin/community-gallery": ADMIN_PERMISSIONS.MANAGE_COMMUNITY,
 
+  "/admin/users": ADMIN_PERMISSIONS.READ_USERS,
   "/admin/settings": ADMIN_PERMISSIONS.MANAGE_SETTINGS,
   "/admin/qa-helper": ADMIN_PERMISSIONS.MANAGE_QA_HELPER,
 };
@@ -119,17 +135,35 @@ export function getRolePermissions(role = "") {
   return ROLE_PERMISSIONS[role] || [];
 }
 
+export function getCurrentPermissions() {
+  const current = getCurrentAdmin();
+  if (!current) return [];
+
+  const roleCode = current.roleCode || current.role;
+  const backendPermissions = current.permissions || current.role?.permissions || [];
+  const fallbackPermissions = getRolePermissions(roleCode);
+
+  return Array.from(new Set([...backendPermissions, ...fallbackPermissions]));
+}
+
 export function hasPermission(permission) {
   if (!permission) return false;
 
   const current = getCurrentAdmin();
   if (!current) return false;
 
-  return getRolePermissions(current.role).includes(permission);
+  const roleCode = String(current.roleCode || current.role || "").toUpperCase();
+  const permissions = getCurrentPermissions();
+
+  if (roleCode === "ADMIN" || roleCode === "SUPER_ADMIN") return true;
+  if (permissions.includes("*")) return true;
+
+  return permissions.includes(permission);
 }
 
 export function canAccessAdminPath(pathname = "") {
   const permission = resolveRoutePermission(pathname);
+  if (!permission) return false;
   return hasPermission(permission);
 }
 

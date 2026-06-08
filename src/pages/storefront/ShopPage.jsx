@@ -12,6 +12,10 @@ import {
 import PageShell from "../../components/common/PageShell";
 import ProductCard from "../../components/storefront/ProductCard";
 import { useCms, useLang } from "../../store/CmsStore";
+import {
+  getStorefrontCategoriesFromApi,
+  getStorefrontProductsForStorefront,
+} from "../../services/StorefrontProductApiService";
 
 const text = {
   vi: {
@@ -120,6 +124,15 @@ function normalizeText(value = "") {
   return String(value || "").toLowerCase().trim();
 }
 
+function hasCommercialDiscount(product = {}) {
+  const finalPrice = Number(product.finalPrice || product.effectivePrice || product.price || 0);
+  const compareAtPrice = Number(product.compareAtPrice || product.oldPrice || product.originalPrice || 0);
+
+  return Boolean(product.activePromotion) ||
+    Number(product.discountAmount || 0) > 0 ||
+    (finalPrice > 0 && compareAtPrice > finalPrice);
+}
+
 function getProductSearchText(product, lang) {
   return [
     getProductName(product, lang),
@@ -170,7 +183,7 @@ function getStockStatus(product) {
   const status = normalizeText(product.status);
 
   if (status.includes("pre")) return "preorder";
-  if (status.includes("sale")) return "sale";
+  if (hasCommercialDiscount(product)) return "sale";
   if (stock <= 0 || status.includes("out")) return "outOfStock";
   return "inStock";
 }
@@ -336,7 +349,7 @@ function ProductFilterContent({
 }
 
 export default function ShopPage() {
-  const { state, actions } = useCms();
+  const { actions } = useCms();
   const [lang] = useLang();
   const t = text[lang];
 
@@ -354,6 +367,9 @@ export default function ShopPage() {
   const [view, setView] = useState("grid");
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [dbProducts, setDbProducts] = useState([]);
+  const [dbCategories, setDbCategories] = useState([]);
+  const [catalogError, setCatalogError] = useState("");
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -361,15 +377,40 @@ export default function ShopPage() {
     if (keyword) setQuery(keyword.slice(0, 80));
   }, []);
 
+  useEffect(() => {
+    let alive = true;
+
+    Promise.all([
+      getStorefrontProductsForStorefront(),
+      getStorefrontCategoriesFromApi(),
+    ])
+      .then(([products, categories]) => {
+        if (!alive) return;
+        setDbProducts(products || []);
+        setDbCategories(categories || []);
+        setCatalogError("");
+      })
+      .catch((error) => {
+        if (!alive) return;
+        setDbProducts([]);
+        setDbCategories([]);
+        setCatalogError(error?.message || "Storefront catalog sync skipped.");
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, []);
+
   const activeCategories = useMemo(() => {
-    return [...(state.categories || [])]
+    return [...(dbCategories || [])]
       .filter((item) => item.active !== false)
-      .sort((a, b) => Number(a.sort || 0) - Number(b.sort || 0));
-  }, [state.categories]);
+      .sort((a, b) => Number(a.sortOrder || item.sort || 0) - Number(b.sortOrder || b.sort || 0));
+  }, [dbCategories]);
 
   const baseProducts = useMemo(() => {
-    return (state.products || []).filter((product) => product.active !== false);
-  }, [state.products]);
+    return (dbProducts || []).filter((product) => product.active !== false);
+  }, [dbProducts]);
 
   const grades = useMemo(() => {
     return getUniqueOptions(baseProducts, (product) => product.grade, DEFAULT_GRADES);
@@ -414,7 +455,10 @@ export default function ShopPage() {
 
     if (filters.category !== "all") {
       result = result.filter((product) =>
-        isProductInCategory(product.id, filters.category, state.productCategoryMappings || [])
+        product.categoryId === filters.category ||
+        product.category?.id === filters.category ||
+        product.category?.slug === filters.category ||
+        product.category?.code === filters.category
       );
     }
 
@@ -471,7 +515,7 @@ export default function ShopPage() {
     filters,
     sort,
     lang,
-    state.productCategoryMappings,
+    dbProducts,
   ]);
 
   const visibleProducts = useMemo(() => {
@@ -508,6 +552,12 @@ export default function ShopPage() {
   return (
     <PageShell>
       <section className="shop-mobile-shell mx-auto max-w-[1440px] px-4 py-5 lg:px-8">
+        {catalogError && (
+          <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-black text-amber-800">
+            {catalogError}
+          </div>
+        )}
+
         <div className="mb-4 flex flex-wrap items-center gap-2 text-sm font-bold text-slate-500">
           <span>{t.home}</span>
           <ChevronRight size={16} />

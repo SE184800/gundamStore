@@ -22,6 +22,28 @@ const registerSchema = z.object({
     .regex(/[0-9]/, "Mật khẩu phải chứa ít nhất 1 chữ số")
     .regex(/[^A-Za-z0-9]/, "Mật khẩu phải chứa ít nhất 1 ký tự đặc biệt"),
 });
+async function writeAuthAudit({ actorId = null, action = "AUTH_EVENT", email = "", success = false, reason = "", req = null }) {
+  try {
+    await prisma.auditLog.create({
+      data: {
+        actorId,
+        action,
+        entity: "Auth",
+        entityId: actorId || email || null,
+        metadata: {
+          email,
+          success,
+          reason,
+          ip: req?.ip || "",
+          userAgent: req?.headers?.["user-agent"] || "",
+        },
+      },
+    });
+  } catch {
+    // Auth audit should not block login/logout.
+  }
+}
+
 function safeUser(user) {
   return {
     id: user.id,
@@ -55,12 +77,29 @@ export async function login(req, res, next) {
     });
 
     if (!user || !user.active) {
+      await writeAuthAudit({
+        action: "ADMIN_LOGIN_FAILED",
+        email: body.email.toLowerCase(),
+        success: false,
+        reason: "USER_NOT_FOUND_OR_INACTIVE",
+        req,
+      });
+
       return res.status(401).json({ success: false, message: "Invalid email or password" });
     }
 
     const valid = await verifyPassword(body.password, user.passwordHash);
 
     if (!valid) {
+      await writeAuthAudit({
+        actorId: user.id,
+        action: "ADMIN_LOGIN_FAILED",
+        email: user.email,
+        success: false,
+        reason: "INVALID_PASSWORD",
+        req,
+      });
+
       return res.status(401).json({ success: false, message: "Invalid email or password" });
     }
 
@@ -72,6 +111,14 @@ export async function login(req, res, next) {
       env.jwtSecret,
       { expiresIn: env.jwtExpiresIn || "1d" }
     );
+
+    await writeAuthAudit({
+      actorId: user.id,
+      action: "ADMIN_LOGIN_SUCCESS",
+      email: user.email,
+      success: true,
+      req,
+    });
 
     res.json({
       success: true,
@@ -169,6 +216,14 @@ export async function me(req, res) {
 }
 
 export async function logout(req, res) {
+  await writeAuthAudit({
+    actorId: req.user?.id || null,
+    action: "ADMIN_LOGOUT",
+    email: req.user?.email || "",
+    success: true,
+    req,
+  });
+
   res.json({
     success: true,
     message: "Logged out on client side",

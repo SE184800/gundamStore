@@ -63,8 +63,11 @@ const copy = {
     stockCount: "Kiểm tồn",
     inventoryTransactions: "Lịch sử giao dịch",
     promotions: "Khuyến mãi",
+    vouchers: "Voucher / Coupon",
     sales: "Bán hàng & đơn hàng",
     orders: "Đơn hàng",
+    fulfillment: "Xử lý giao hàng",
+    customers: "Khách hàng / CRM",
     restockAlerts: "Báo hàng / Restock",
     customerService: "Chăm sóc khách hàng",
     communication: "Quản lý liên lạc",
@@ -74,6 +77,8 @@ const copy = {
     complaints: "Khiếu nại",
     system: "Hệ thống",
     analytics: "Phân tích",
+    auditLogs: "Nhật ký hoạt động",
+    adminUsers: "Người dùng & phân quyền",
     settings: "Cài đặt",
     viewStore: "Xem cửa hàng",
     search: "Tìm trong admin...",
@@ -109,8 +114,11 @@ const copy = {
     stockCount: "Stock Count",
     inventoryTransactions: "Transactions",
     promotions: "Promotions",
+    vouchers: "Vouchers / Coupons",
     sales: "Sales & Orders",
     orders: "Orders",
+    fulfillment: "Fulfillment",
+    customers: "Customers / CRM",
     restockAlerts: "Restock Alerts",
     customerService: "Customer Service",
     chats: "Chats",
@@ -119,6 +127,8 @@ const copy = {
     complaints: "Complaints",
     system: "System",
     analytics: "Analytics",
+    auditLogs: "Audit Logs",
+    adminUsers: "Users & Roles",
     settings: "Settings",
     viewStore: "View Store",
     search: "Search admin...",
@@ -214,7 +224,10 @@ function getPageTitle(pathname, t) {
   if (pathname.includes("/admin/inventory/stock-count")) return t.stockCount;
   if (pathname.includes("/admin/inventory/receipts")) return t.inventoryReceipts;
   if (pathname.includes("/admin/inventory")) return t.inventory;
+  if (pathname.includes("/admin/vouchers")) return t.vouchers;
   if (pathname.includes("/admin/promotions")) return t.promotions;
+  if (pathname.includes("/admin/fulfillment")) return t.fulfillment;
+  if (pathname.includes("/admin/customers")) return t.customers;
   if (pathname.includes("/admin/orders")) return t.orders;
   if (pathname.includes("/admin/restock-alerts")) return t.restockAlerts;
   if (pathname.includes("/admin/news")) return t.news;
@@ -224,6 +237,8 @@ function getPageTitle(pathname, t) {
   if (pathname.includes("/admin/community-gallery")) return t.gallery;
   if (pathname.includes("/admin/communication")) return t.communication;
   if (pathname.includes("/admin/complaints")) return t.complaints;
+  if (pathname.includes("/admin/users")) return t.adminUsers;
+  if (pathname.includes("/admin/audit-logs")) return t.auditLogs;
   if (pathname.includes("/admin/analytics")) return t.analytics;
   if (pathname.includes("/admin/settings")) return t.settings;
   if (pathname.includes("/admin/qa-helper")) return t.qaHelper;
@@ -279,10 +294,13 @@ export default function AdminLayout() {
             <NavGroup title={t.pricingOperations}>
               <NavItem to="/admin/pricing" icon={WalletCards} label={t.pricing} />
               <NavItem to="/admin/promotions" icon={Percent} label={t.promotions} />
+              <NavItem to="/admin/vouchers" icon={WalletCards} label={t.vouchers} />
             </NavGroup>
 
             <NavGroup title={t.sales}>
               <NavItem to="/admin/orders" icon={ShoppingCart} label={t.orders} />
+              <NavItem to="/admin/fulfillment" icon={Truck} label={t.fulfillment} />
+              <NavItem to="/admin/customers" icon={Users} label={t.customers} />
               <NavItem to="/admin/restock-alerts" icon={Bell} label={t.restockAlerts} />
             </NavGroup>
 
@@ -296,6 +314,8 @@ export default function AdminLayout() {
 
             <NavGroup title={t.system}>
               <NavItem to="/admin/analytics" icon={Activity} label={t.analytics} />
+              <NavItem to="/admin/audit-logs" icon={History} label={t.auditLogs} />
+              <NavItem to="/admin/users" icon={Users} label={t.adminUsers} />
               <NavItem to="/admin/settings" icon={Settings} label={t.settings} />
               <NavItem to="/admin/qa-helper" icon={TestTube2} label={t.qaHelper} />
             </NavGroup>

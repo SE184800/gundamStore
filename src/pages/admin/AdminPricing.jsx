@@ -10,6 +10,7 @@ import {
   deactivateSellingPriceApi,
   getPricingProductsApi,
   getSellingPricesApi,
+  recomputeEffectivePricesApi,
   updateSellingPriceApi,
 } from "../../services/AdminPricingRealApiService";
 
@@ -32,6 +33,36 @@ function isEffective(row) {
   return start <= now && (!end || now <= end);
 }
 
+const PRICING_TABS = [
+  { id: "current", label: "Current prices" },
+  { id: "scheduled", label: "Scheduled prices" },
+  { id: "history", label: "Price history" },
+  { id: "missing", label: "Missing price" },
+];
+
+function hasEffectivePrice(product = {}, history = []) {
+  const rows = history.length ? history : product.prices || [];
+  return rows.some(isEffective);
+}
+
+function hasScheduledPrice(product = {}, history = []) {
+  const rows = history.length ? history : product.prices || [];
+  const now = new Date();
+
+  return rows.some((row) => row?.active && new Date(row.startDate) > now);
+}
+
+function getPricingTabMatch(product = {}, tab = "current", priceByProduct = new Map()) {
+  const history = priceByProduct.get(product.id) || [];
+
+  if (tab === "current") return hasEffectivePrice(product, history);
+  if (tab === "scheduled") return hasScheduledPrice(product, history);
+  if (tab === "history") return history.length > 0 || (product.prices || []).length > 0;
+  if (tab === "missing") return Number(product.price || 0) <= 0 && !hasEffectivePrice(product, history);
+
+  return true;
+}
+
 const emptyDraft = {
   id: "",
   productId: "",
@@ -52,10 +83,13 @@ export default function AdminPricing() {
   const [products, setProducts] = useState([]);
   const [prices, setPrices] = useState([]);
   const [query, setQuery] = useState("");
+  const [pricingTab, setPricingTab] = useState("current");
+  const [recomputeMessage, setRecomputeMessage] = useState("");
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [draft, setDraft] = useState(emptyDraft);
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState("");
+  const [autoOpenProductId, setAutoOpenProductId] = useState("");
 
   async function reload() {
     setLoading(true);
@@ -85,13 +119,22 @@ export default function AdminPricing() {
   }
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const productId = params.get("productId") || "";
+    setAutoOpenProductId(productId);
     void reload();
   }, []);
 
   const rows = useMemo(() => {
     const q = query.trim().toLowerCase();
 
-    return products.filter((item) =>
+    let result = products;
+
+    if (autoOpenProductId) {
+      result = result.filter((item) => item.id === autoOpenProductId);
+    }
+
+    return result.filter((item) =>
       !q ||
       [item.sku, item.slug, item.nameVi, item.nameEn, item.category?.nameVi, item.supplier?.name]
         .filter(Boolean)
@@ -99,7 +142,7 @@ export default function AdminPricing() {
         .toLowerCase()
         .includes(q)
     );
-  }, [products, query]);
+  }, [products, query, autoOpenProductId]);
 
   const priceByProduct = useMemo(() => {
     const map = new Map();
@@ -113,14 +156,29 @@ export default function AdminPricing() {
     return map;
   }, [prices]);
 
+  useEffect(() => {
+    if (!autoOpenProductId || drawerOpen || !products.length) return;
+
+    const product = products.find((item) => item.id === autoOpenProductId);
+
+    if (product) {
+      console.info("ADMIN_PRICING_AUTO_OPEN", product.sku);
+      openCreate(product);
+      setQuery(product.sku || product.slug || product.nameVi || "");
+      setAutoOpenProductId("");
+    }
+  }, [autoOpenProductId, drawerOpen, products]);
+
   const summary = useMemo(() => {
     return {
       products: products.length,
       withCost: products.filter((item) => Number(item.avgCost || 0) > 0).length,
       priceRows: prices.length,
       effective: prices.filter(isEffective).length,
+      scheduled: prices.filter((row) => row?.active && new Date(row.startDate) > new Date()).length,
+      missing: products.filter((item) => Number(item.price || 0) <= 0 && !(priceByProduct.get(item.id) || []).some(isEffective)).length,
     };
-  }, [products, prices]);
+  }, [products, prices, priceByProduct]);
 
   function calcSuggested(baseCost, marginPercent) {
     return Math.round(Number(baseCost || 0) * (1 + Number(marginPercent || 0) / 100));
@@ -188,6 +246,18 @@ export default function AdminPricing() {
     });
   }
 
+  async function recomputeEffectivePrices() {
+    setRecomputeMessage("");
+
+    try {
+      const result = await recomputeEffectivePricesApi();
+      setRecomputeMessage(`Recomputed ${result.syncedCount || 0} product(s).`);
+      await reload();
+    } catch (error) {
+      setRecomputeMessage(error?.message || "Recompute effective prices failed.");
+    }
+  }
+
   async function save() {
     try {
       const payload = {
@@ -233,17 +303,25 @@ export default function AdminPricing() {
         title="Giá bán theo giá vốn bình quân"
         desc="Giá vốn bình quân lấy từ transaction nhập hàng. Admin thiết lập margin, hệ thống tính giá đề xuất và duyệt giá bán chính thức."
         action={
-          <button
-            onClick={() => void reload()}
-            className="rounded-md border border-slate-300 bg-white px-4 py-2 text-xs font-black text-slate-700 hover:bg-slate-50"
-          >
-            <RefreshCcw size={15} className="mr-1 inline" />
-            Refresh
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => void recomputeEffectivePrices()}
+              className="rounded-md bg-blue-700 px-4 py-2 text-xs font-black text-white hover:bg-blue-800"
+            >
+              Recompute effective prices
+            </button>
+            <button
+              onClick={() => void reload()}
+              className="rounded-md border border-slate-300 bg-white px-4 py-2 text-xs font-black text-slate-700 hover:bg-slate-50"
+            >
+              <RefreshCcw size={15} className="mr-1 inline" />
+              Refresh
+            </button>
+          </div>
         }
       />
 
-      <section className="mb-4 grid gap-4 md:grid-cols-4">
+      <section className="mb-4 grid gap-4 md:grid-cols-6">
         <div className="rounded-3xl bg-white p-5 shadow-sm">
           <p className="text-xs font-black uppercase text-slate-400">Products</p>
           <p className="mt-2 text-2xl font-black">{summary.products}</p>
@@ -260,11 +338,25 @@ export default function AdminPricing() {
           <p className="text-xs font-black uppercase text-slate-400">Effective today</p>
           <p className="mt-2 text-2xl font-black text-emerald-600">{summary.effective}</p>
         </div>
+        <div className="rounded-3xl bg-white p-5 shadow-sm">
+          <p className="text-xs font-black uppercase text-slate-400">Scheduled</p>
+          <p className="mt-2 text-2xl font-black text-amber-600">{summary.scheduled}</p>
+        </div>
+        <div className="rounded-3xl bg-white p-5 shadow-sm">
+          <p className="text-xs font-black uppercase text-slate-400">Missing price</p>
+          <p className="mt-2 text-2xl font-black text-red-600">{summary.missing}</p>
+        </div>
       </section>
 
       <section className="mb-4 rounded-3xl border border-emerald-100 bg-emerald-50 p-4 text-sm font-bold text-emerald-800">
         Pricing = Avg Cost + Margin · {loading ? "Loading..." : `${products.length} products`}
       </section>
+
+      {autoOpenProductId && (
+        <section className="mb-4 rounded-3xl border border-blue-100 bg-blue-50 p-4 text-sm font-bold text-blue-800">
+          Đang mở sản phẩm vừa tạo để thiết lập giá bán...
+        </section>
+      )}
 
       {apiError && (
         <section className="mb-4 rounded-3xl border border-red-100 bg-red-50 p-4 text-sm font-bold text-red-700">
@@ -272,7 +364,29 @@ export default function AdminPricing() {
         </section>
       )}
 
+      {recomputeMessage && (
+        <section className="mb-4 rounded-3xl border border-blue-100 bg-blue-50 p-4 text-sm font-bold text-blue-800">
+          {recomputeMessage}
+        </section>
+      )}
+
       <section className="mb-4 rounded-md border border-slate-200 bg-white p-4">
+        <div className="mb-4 flex flex-wrap gap-2">
+          {PRICING_TABS.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setPricingTab(tab.id)}
+              className={`rounded-full px-4 py-2 text-xs font-black transition ${
+                pricingTab === tab.id
+                  ? "bg-blue-700 text-white"
+                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}

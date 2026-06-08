@@ -6,5 +6,7 @@ Disallow: /checkout
 Disallow: /cart
 Disallow: /orders
 Disallow: /order-success
+Disallow: /account
+Disallow: /profile
 
 Sitemap: /sitemap.xml

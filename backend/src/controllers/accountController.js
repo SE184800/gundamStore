@@ -39,6 +39,151 @@ function mapWishlistItem(item) {
   };
 }
 
+function mapAccountOrder(order = {}) {
+  const latestShipment = Array.isArray(order.shipments) && order.shipments.length
+    ? [...order.shipments].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))[0]
+    : null;
+
+  return {
+    id: order.id,
+    orderNo: order.orderNo,
+    status: order.status,
+    paymentStatus: order.paymentStatus,
+    paymentMethod: order.paymentMethod,
+    subtotal: order.subtotal,
+    shippingFee: order.shippingFee,
+    discount: order.discount,
+    shippingDiscount: order.shippingDiscount,
+    voucherCode: order.voucherCode || "",
+    total: order.total,
+    createdAt: order.createdAt,
+    updatedAt: order.updatedAt,
+    customerName: order.customerName,
+    customerPhone: order.customerPhone,
+    customerEmail: order.customerEmail,
+    customerAddress: order.customerAddress,
+    items: order.items || [],
+    latestShipment,
+    shipments: order.shipments || [],
+    complaintTickets: order.complaintTickets || [],
+  };
+}
+
+function isActiveOrder(order = {}) {
+  return !["COMPLETED", "CANCELLED", "REFUNDED"].includes(String(order.status || "").toUpperCase());
+}
+
+function isOpenTicket(ticket = {}) {
+  return !["RESOLVED", "CLOSED", "REJECTED"].includes(String(ticket.status || "").toUpperCase());
+}
+
+export async function getMyAccountDashboard(req, res, next) {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      include: {
+        profile: true,
+        addresses: {
+          orderBy: [{ isDefault: "desc" }, { updatedAt: "desc" }],
+        },
+        wishlistItems: {
+          orderBy: [{ createdAt: "desc" }],
+          take: 8,
+          include: { product: true },
+        },
+        orders: {
+          orderBy: [{ createdAt: "desc" }],
+          take: 12,
+          include: {
+            items: true,
+            payments: true,
+            shipments: {
+              orderBy: [{ createdAt: "desc" }],
+            },
+            complaintTickets: {
+              orderBy: [{ createdAt: "desc" }],
+              select: {
+                id: true,
+                ticketNo: true,
+                type: true,
+                issue: true,
+                status: true,
+                priority: true,
+                refundAmount: true,
+                refundStatus: true,
+                returnTracking: true,
+                createdAt: true,
+                updatedAt: true,
+              },
+            },
+          },
+        },
+        productReviews: {
+          orderBy: [{ createdAt: "desc" }],
+          take: 8,
+          include: {
+            product: {
+              select: {
+                id: true,
+                sku: true,
+                slug: true,
+                nameVi: true,
+                nameEn: true,
+                imageUrl: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    const orders = (user.orders || []).map(mapAccountOrder);
+    const tickets = orders.flatMap((order) =>
+      (order.complaintTickets || []).map((ticket) => ({
+        ...ticket,
+        orderId: order.id,
+        orderNo: order.orderNo,
+      }))
+    );
+
+    const totalSpent = orders
+      .filter((order) => !["CANCELLED", "REFUNDED"].includes(String(order.status || "").toUpperCase()))
+      .reduce((sum, order) => sum + Number(order.total || 0), 0);
+
+    return res.json({
+      success: true,
+      dashboard: {
+        account: safeProfile(user),
+        defaultAddress: mapAddress((user.addresses || [])[0]),
+        summary: {
+          totalOrders: orders.length,
+          activeOrders: orders.filter(isActiveOrder).length,
+          completedOrders: orders.filter((order) => order.status === "COMPLETED").length,
+          openTickets: tickets.filter(isOpenTicket).length,
+          wishlistCount: user.wishlistItems?.length || 0,
+          reviewCount: user.productReviews?.length || 0,
+          totalSpent,
+        },
+        recentOrders: orders.slice(0, 6),
+        activeOrders: orders.filter(isActiveOrder).slice(0, 6),
+        supportTickets: tickets.slice(0, 8),
+        wishlist: (user.wishlistItems || []).map(mapWishlistItem),
+        reviews: user.productReviews || [],
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+
 function cleanText(value = "", max = 255) {
   return String(value || "")
     .replace(/[<>]/g, "")

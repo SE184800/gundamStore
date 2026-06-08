@@ -76,6 +76,28 @@ export function mapBackendProductForAdmin(product = {}) {
     groups,
     groupItems,
 
+    variants: Array.isArray(product.variants)
+      ? product.variants.map((variant) => ({
+          id: variant.id,
+          productId: variant.productId,
+          sku: variant.sku || "",
+          barcode: variant.barcode || "",
+          nameVi: variant.nameVi || "",
+          nameEn: variant.nameEn || variant.nameVi || "",
+          option1Name: variant.option1Name || "",
+          option1Value: variant.option1Value || "",
+          option2Name: variant.option2Name || "",
+          option2Value: variant.option2Value || "",
+          price: Number(variant.price || 0),
+          oldPrice: Number(variant.oldPrice || 0),
+          stock: Number(variant.stock || 0),
+          imageUrl: variant.imageUrl || "",
+          active: variant.active !== false,
+          status: variant.status || "inStock",
+          sortOrder: Number(variant.sortOrder || 0),
+        }))
+      : [],
+
     source: "backend",
     backendRaw: product,
     createdAt: product.createdAt,
@@ -176,6 +198,27 @@ function toBackendPayload(product = {}) {
 
     categoryId: product.categoryId || null,
     supplierId: product.supplierId || null,
+
+    variants: Array.isArray(product.variants)
+      ? product.variants.map((variant, index) => ({
+          id: variant.id || "",
+          sku: variant.sku || "",
+          barcode: variant.barcode || "",
+          nameVi: variant.nameVi || "",
+          nameEn: variant.nameEn || variant.nameVi || "",
+          option1Name: variant.option1Name || "",
+          option1Value: variant.option1Value || "",
+          option2Name: variant.option2Name || "",
+          option2Value: variant.option2Value || "",
+          price: Number(variant.price || 0),
+          oldPrice: Number(variant.oldPrice || 0),
+          stock: Number(variant.stock || 0),
+          imageUrl: variant.imageUrl || "",
+          active: variant.active !== false,
+          status: variant.status || "inStock",
+          sortOrder: Number(variant.sortOrder ?? index),
+        }))
+      : [],
   };
 }
 
@@ -228,4 +271,72 @@ export async function setAdminProductGroupsApi(productId, groupIds = []) {
   }
 
   return mapBackendProductForAdmin(data.product);
+}
+
+function downloadCsvText(filename = "products.csv", text = "") {
+  const blob = new Blob([text], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+
+  link.href = url;
+  link.download = filename;
+
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+
+  URL.revokeObjectURL(url);
+}
+
+export async function downloadAdminProductImportTemplateCsv() {
+  const text = await apiRequest("/api/products/admin/import-template", {
+    method: "GET",
+    headers: {
+      Accept: "text/csv",
+    },
+  });
+
+  downloadCsvText("product-import-template.csv", text);
+  return text;
+}
+
+export async function exportAdminProductsCsv() {
+  const text = await apiRequest("/api/products/admin/export", {
+    method: "GET",
+    headers: {
+      Accept: "text/csv",
+    },
+  });
+
+  downloadCsvText("products-export.csv", text);
+  return text;
+}
+
+export async function previewAdminProductImportCsv(csvText = "") {
+  const data = await apiRequest("/api/products/admin/import-preview", {
+    method: "POST",
+    body: JSON.stringify({ csvText }),
+  });
+
+  if (!data?.success) {
+    throw new Error(data?.message || "Import preview failed.");
+  }
+
+  return data;
+}
+
+export async function commitAdminProductImportCsv(csvText = "", mode = "upsert") {
+  const data = await apiRequest("/api/products/admin/import-commit", {
+    method: "POST",
+    body: JSON.stringify({ csvText, mode }),
+  });
+
+  if (!data?.success) {
+    const message = data?.message || "Import commit failed.";
+    const error = new Error(message);
+    error.data = data;
+    throw error;
+  }
+
+  return data;
 }

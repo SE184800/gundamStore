@@ -22,6 +22,15 @@ function getProductUrl(product) {
   return `/product/${product?.slug || product?.id || ""}`;
 }
 
+function hasCommercialDiscount(product = {}) {
+  const finalPrice = Number(product.finalPrice || product.effectivePrice || product.price || 0);
+  const compareAtPrice = Number(product.compareAtPrice || product.oldPrice || product.originalPrice || 0);
+
+  return Boolean(product.activePromotion) ||
+    Number(product.discountAmount || 0) > 0 ||
+    (finalPrice > 0 && compareAtPrice > finalPrice);
+}
+
 export default function ProductCard({ product, lang: langProp, actions, badge, onAddToCart }) {
   const i18n = useI18n();
   const lang = langProp || i18n.lang;
@@ -44,8 +53,11 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
   const short = resolveText(product?.short, lang, t("product.defaultShort"));
   const desc = resolveText(product?.description, lang, short);
   const image = getImage(product);
-  const price = product?.price || 0;
-  const oldPrice = product?.oldPrice || product?.originalPrice;
+  const price = Number(product?.finalPrice || product?.effectivePrice || product?.price || 0);
+  const commercialDiscount = hasCommercialDiscount(product);
+  const oldPrice = commercialDiscount
+    ? Number(product?.compareAtPrice || product?.oldPrice || product?.originalPrice || 0)
+    : Number(product?.oldPrice || product?.originalPrice || 0);
   const stock = Number(product?.stock ?? 0);
   const detailUrl = getProductUrl(product);
   const isPreorder = String(product?.status || "").toLowerCase().includes("pre");
@@ -165,6 +177,13 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
             {badge && (
               <div className="absolute left-3 top-3 z-10 rounded-lg bg-blue-700 px-2.5 py-1 text-[11px] font-black text-white">
                 {badge}
+              </div>
+            )}
+
+            {/* COMMERCIAL_SALE_BADGE */}
+            {commercialDiscount && (
+              <div className={`absolute left-3 z-10 rounded-lg bg-red-600 px-2.5 py-1 text-[11px] font-black text-white ${badge ? "top-11" : "top-3"}`}>
+                Sale
               </div>
             )}
 

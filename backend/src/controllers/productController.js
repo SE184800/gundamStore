@@ -1,4 +1,5 @@
 import { prisma } from "../config/prisma.js";
+import { decorateProductWithCommercialPrice } from "../services/commercialPriceResolver.js";
 
 const PRODUCT_KEY_ALIASES = {
   "prod-action-base-5": { sku: "ACTION-BASE-5-CLEAR", slug: "action-base-5-clear" },
@@ -39,6 +40,14 @@ function productInclude() {
     images: {
       where: { active: true },
       orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+    },
+    variants: {
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+    },
+    reviews: {
+      where: { status: "APPROVED" },
+      orderBy: [{ verifiedPurchase: "desc" }, { createdAt: "desc" }],
+      take: 50,
     },
     groupItems: {
       include: { group: true },
@@ -131,34 +140,125 @@ function calculatePromotionPrice(product, promotion) {
 }
 
 function decorateProductWithPromotion(product) {
-  const productWithPrice = decorateProductWithEffectiveSellingPrice(product);
+  return decorateProductWithCommercialPrice(product);
+}
 
-  const promotions = (productWithPrice.promotionProducts || [])
-    .map((item) => item.promotion)
-    .filter((promotion) => isPromotionActive(promotion))
-    .map((promotion) => calculatePromotionPrice(productWithPrice, promotion))
+function canSellWithoutStock(status = "") {
+  const normalized = normalizeProductKey(status);
+
+  return normalized === "preorder" || normalized === "comingsoon";
+}
+
+function getSellableVariants(product = {}) {
+  return (product.variants || [])
+    .filter((variant) => {
+      return (
+        variant.active !== false &&
+        Number(variant.price || 0) > 0 &&
+        (Number(variant.stock || 0) > 0 || canSellWithoutStock(variant.status))
+      );
+    })
     .sort((a, b) => {
-      if (b.priority !== a.priority) return b.priority - a.priority;
-      return b.discountAmount - a.discountAmount;
+      const sortDiff = Number(a.sortOrder || 0) - Number(b.sortOrder || 0);
+      if (sortDiff !== 0) return sortDiff;
+      return Number(a.price || 0) - Number(b.price || 0);
     });
+}
 
-  const activePromotion = promotions[0] || null;
+function getSellableVariantInputs(variants = []) {
+  return (Array.isArray(variants) ? variants : [])
+    .filter((variant) => {
+      const status = String(variant?.status || "inStock").trim();
+      const normalizedStatus = normalizeProductKey(status);
 
-  if (!activePromotion) {
-    return {
-      ...productWithPrice,
-      activePromotion: null,
-      effectivePrice: Number(productWithPrice.price || 0),
-      compareAtPrice: Number(productWithPrice.oldPrice || 0),
-    };
-  }
+      return (
+        variant &&
+        variant.active !== false &&
+        normalizedStatus !== "inactive" &&
+        normalizedStatus !== "draft" &&
+        Number(variant.price || 0) > 0 &&
+        (Number(variant.stock || 0) > 0 || canSellWithoutStock(status))
+      );
+    });
+}
+
+function hasActiveVariantInputs(variants = []) {
+  return (Array.isArray(variants) ? variants : []).some((variant) => {
+    const normalizedStatus = normalizeProductKey(variant?.status || "");
+    return variant && variant.active !== false && normalizedStatus !== "inactive";
+  });
+}
+
+function hasSellableVariantInputs(variants = []) {
+  return getSellableVariantInputs(variants).length > 0;
+}
+
+function hasSellableStock(product = {}) {
+  return Number(product.stock || 0) > 0 || canSellWithoutStock(product.status) || getSellableVariants(product).length > 0;
+}
+
+function decorateProductForStorefront(product = {}) {
+  const decorated = decorateProductWithPromotion(product);
+  const sellableVariants = getSellableVariants(decorated);
+
+  if (!sellableVariants.length) return decorated;
+
+  const firstVariant = sellableVariants[0];
 
   return {
-    ...productWithPrice,
-    activePromotion,
-    effectivePrice: activePromotion.effectivePrice,
-    compareAtPrice: Number(productWithPrice.price || 0),
+    ...decorated,
+    variants: sellableVariants,
+    hasVariants: true,
+    sellable: true,
+    price: Number(firstVariant.price || 0),
+    finalPrice: Number(firstVariant.price || 0),
+    oldPrice: Number(firstVariant.oldPrice || 0),
+    compareAtPrice: Number(firstVariant.oldPrice || 0),
+    stock: sellableVariants.reduce((sum, variant) => sum + Number(variant.stock || 0), 0),
+    notSellableReason: "",
   };
+}
+
+function isStorefrontSellableProduct(product = {}) {
+  if (product.hasVariants && getSellableVariants(product).length > 0) return true;
+
+  return product.sellable && Number(product.finalPrice || product.price || 0) > 0 && hasSellableStock(product);
+}
+
+function applyAdminProductPublishGuard(payload = {}, source = {}) {
+  const sourceVariants = Array.isArray(source.variants) ? source.variants : [];
+  const hasVariantRows = hasActiveVariantInputs(sourceVariants);
+  const hasSellableVariantRows = hasSellableVariantInputs(sourceVariants);
+
+  if (hasVariantRows) {
+    if (payload.active !== false && !hasSellableVariantRows) {
+      payload.active = false;
+      payload.status = "draft";
+      payload.publishBlockedReason = "At least one active variant with price > 0 and sellable stock is required.";
+    }
+
+    return payload;
+  }
+
+  const hasPrice = Number(payload.price || 0) > 0;
+  const hasStock = Number(payload.stock || 0) > 0;
+  const allowNoStock = canSellWithoutStock(payload.status);
+
+  if (!hasPrice) {
+    payload.price = 0;
+    payload.oldPrice = 0;
+    payload.active = false;
+    payload.status = "draft";
+    return payload;
+  }
+
+  if (payload.active !== false && !hasStock && !allowNoStock) {
+    payload.active = false;
+    payload.status = "draft";
+    return payload;
+  }
+
+  return payload;
 }
 
 
@@ -275,18 +375,122 @@ async function syncProductImages(tx, productId, body = {}) {
   });
 }
 
+function sanitizeVariantInput(raw = {}, product = {}) {
+  const sku = String(raw.sku || "").trim().toUpperCase();
+  const nameVi = String(raw.nameVi || raw.name?.vi || raw.option1Value || product.nameVi || "").trim();
+  const nameEn = String(raw.nameEn || raw.name?.en || nameVi).trim();
+  const status = String(raw.status || "inStock").trim() || "inStock";
+
+  if (!sku) {
+    const error = new Error("Variant SKU is required.");
+    error.status = 400;
+    throw error;
+  }
+
+  if (!nameVi) {
+    const error = new Error("Variant Vietnamese name is required.");
+    error.status = 400;
+    throw error;
+  }
+
+  const payload = {
+    sku,
+    barcode: String(raw.barcode || "").trim() || null,
+    nameVi,
+    nameEn: nameEn || nameVi,
+    option1Name: String(raw.option1Name || "").trim() || null,
+    option1Value: String(raw.option1Value || "").trim() || null,
+    option2Name: String(raw.option2Name || "").trim() || null,
+    option2Value: String(raw.option2Value || "").trim() || null,
+    price: intValue(raw.price, 0),
+    oldPrice: intValue(raw.oldPrice, 0),
+    stock: intValue(raw.stock, 0),
+    imageUrl: String(raw.imageUrl || "").trim() || null,
+    active: raw.active !== false,
+    status,
+    sortOrder: intValue(raw.sortOrder, 0),
+  };
+
+  applyAdminProductPublishGuard(payload);
+  return payload;
+}
+
+async function syncProductVariants(tx, productId, body = {}, product = {}) {
+  if (!Array.isArray(body.variants)) return;
+
+  const keepIds = [];
+
+  for (const raw of body.variants) {
+    const payload = sanitizeVariantInput(raw, product);
+
+    if (raw.id) {
+      const updated = await tx.productVariant.update({
+        where: { id: raw.id },
+        data: payload,
+      });
+      keepIds.push(updated.id);
+      continue;
+    }
+
+    const existing = await tx.productVariant.findUnique({
+      where: { sku: payload.sku },
+    });
+
+    if (existing) {
+      if (existing.productId !== productId) {
+        const error = new Error(`Variant SKU ${payload.sku} already belongs to another product.`);
+        error.status = 409;
+        throw error;
+      }
+
+      const updated = await tx.productVariant.update({
+        where: { id: existing.id },
+        data: payload,
+      });
+      keepIds.push(updated.id);
+      continue;
+    }
+
+    const created = await tx.productVariant.create({
+      data: {
+        ...payload,
+        productId,
+      },
+    });
+
+    keepIds.push(created.id);
+  }
+
+  await tx.productVariant.updateMany({
+    where: {
+      productId,
+      id: { notIn: keepIds.length ? keepIds : ["__none__"] },
+    },
+    data: {
+      active: false,
+      status: "inactive",
+    },
+  });
+}
+
 export async function listStorefrontProducts(req, res, next) {
   try {
     const products = await prisma.product.findMany({
-      where: { active: true },
+      where: {
+        active: true,
+      },
       include: productInclude(),
       orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
       take: 200,
     });
 
+    const sellableProducts = products
+      .map(decorateProductForStorefront)
+      .filter(isStorefrontSellableProduct);
+
     res.json({
       success: true,
-      products: products.map(decorateProductWithPromotion),
+      products: sellableProducts,
     });
   } catch (err) {
     next(err);
@@ -311,11 +515,16 @@ export async function getStorefrontProductByKey(req, res, next) {
     if (alias?.slug) orConditions.push({ slug: alias.slug });
 
     const product = await prisma.product.findFirst({
-      where: { active: true, OR: orConditions },
+      where: {
+        active: true,
+        OR: orConditions,
+      },
       include: productInclude(),
     });
 
-    if (!product) {
+    const decoratedProduct = product ? decorateProductForStorefront(product) : null;
+
+    if (!decoratedProduct || !isStorefrontSellableProduct(decoratedProduct)) {
       return res.status(404).json({
         success: false,
         message: "Product not found",
@@ -327,7 +536,7 @@ export async function getStorefrontProductByKey(req, res, next) {
 
     res.json({
       success: true,
-      product: decorateProductWithPromotion(product),
+      product: decoratedProduct,
     });
   } catch (err) {
     next(err);
@@ -352,9 +561,12 @@ export async function createAdminProduct(req, res, next) {
   try {
     const payload = sanitizeAdminProductInput(req.body);
 
+    applyAdminProductPublishGuard(payload, req.body);
+
     const product = await prisma.$transaction(async (tx) => {
       const created = await tx.product.create({ data: payload });
       await syncProductImages(tx, created.id, req.body);
+      await syncProductVariants(tx, created.id, req.body, created);
 
       return tx.product.findUnique({
         where: { id: created.id },
@@ -372,10 +584,12 @@ export async function updateAdminProduct(req, res, next) {
   try {
     const id = String(req.params.id || "").trim();
     const payload = sanitizeAdminProductInput(req.body);
+    applyAdminProductPublishGuard(payload, req.body);
 
     const product = await prisma.$transaction(async (tx) => {
-      await tx.product.update({ where: { id }, data: payload });
+      const updatedProduct = await tx.product.update({ where: { id }, data: payload });
       await syncProductImages(tx, id, req.body);
+      await syncProductVariants(tx, id, req.body, updatedProduct);
 
       return tx.product.findUnique({
         where: { id },
@@ -429,6 +643,23 @@ function sanitizeCategoryInput(body = {}) {
     active: body.active !== false,
     sortOrder: intValue(body.sortOrder, 0),
   };
+}
+
+
+export async function listStorefrontProductCategories(req, res, next) {
+  try {
+    const categories = await prisma.productCategory.findMany({
+      where: { active: true },
+      orderBy: [{ sortOrder: "asc" }, { nameVi: "asc" }],
+    });
+
+    res.json({
+      success: true,
+      categories,
+    });
+  } catch (err) {
+    next(err);
+  }
 }
 
 export async function listAdminProductCategories(req, res, next) {

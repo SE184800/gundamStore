@@ -11,13 +11,22 @@ import { requireAuth } from "./middleware/auth.js";
 import healthRoutes from "./routes/healthRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
+import reportRoutes from "./routes/reportRoutes.js";
+import auditRoutes from "./routes/auditRoutes.js";
+import adminUserRoutes from "./routes/adminUserRoutes.js";
+import dashboardRoutes from "./routes/dashboardRoutes.js";
+import fulfillmentRoutes from "./routes/fulfillmentRoutes.js";
 import accountRoutes from "./routes/accountRoutes.js";
 import productRoutes from "./routes/productRoutes.js";
 // 🟢 Giữ nguyên các tuyến đường mới kéo từ sandbox về
 import inventoryRoutes from "./routes/inventoryRoutes.js";
 import pricingRoutes from "./routes/pricingRoutes.js";
 import promotionRoutes from "./routes/promotionRoutes.js";
+import voucherRoutes from "./routes/voucherRoutes.js";
 import restockAlertRoutes from "./routes/restockAlertRoutes.js";
+import reviewRoutes from "./routes/reviewRoutes.js";
+import complaintRoutes from "./routes/complaintRoutes.js";
+import customerRoutes from "./routes/customerRoutes.js";
 import { publicBannerRouter, adminBannerRouter } from "./routes/bannerRoutes.js";
 
 const app = express();
@@ -78,19 +87,37 @@ app.use([
   "/api/admin",
   "/api/products/admin",
   "/api/orders/admin",
+  "/api/reports/admin",
+  "/api/audit/admin",
+  "/api/admin-users",
+  "/api/dashboard/admin",
+  "/api/fulfillment/admin",
+  "/api/vouchers/admin",
+  "/api/reviews/admin",
+  "/api/complaints/admin",
+  "/api/customers/admin",
   "/api/inventory",
   "/api/purchase-receipts",
 ], requireAuth, requireAdminRole);
 
 app.use("/api/auth", authRoutes);
 app.use("/api/orders", orderRoutes);
+app.use("/api/reports", reportRoutes);
+app.use("/api/audit", auditRoutes);
+app.use("/api/admin-users", adminUserRoutes);
+app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/fulfillment", fulfillmentRoutes);
 app.use("/api/account", accountRoutes);
 app.use("/api/products", productRoutes);
 // 🟢 Kích hoạt các tuyến đường mới
 app.use("/api/inventory", inventoryRoutes);
 app.use("/api/pricing", pricingRoutes);
 app.use("/api/promotions", promotionRoutes);
+app.use("/api/vouchers", voucherRoutes);
 app.use("/api/restock-alerts", restockAlertRoutes);
+app.use("/api/reviews", reviewRoutes);
+app.use("/api/complaints", complaintRoutes);
+app.use("/api/customers", customerRoutes);
 app.use("/api/banners", publicBannerRouter);
 app.use("/api/admin/banners", adminBannerRouter);
 

@@ -10,12 +10,32 @@ const GROUP_COLLECTION_ALIASES = {
   TOOLS: "tools",
 };
 
-function cacheBackendProducts(products = []) {
+async function publicJsonRequest(path) {
+  const response = await fetch(`/api${path}`, {
+    method: "GET",
+    headers: {
+      Accept: "application/json",
+    },
+  });
+
+  let data = null;
+
   try {
-    localStorage.setItem("gundam-backend-products-cache", JSON.stringify(products));
+    data = await response.json();
   } catch {
-    // ignore storage issues
+    data = null;
   }
+
+  if (!response.ok) {
+    throw new Error(data?.message || `Public catalog API failed: ${response.status}`);
+  }
+
+  return data;
+}
+
+function cacheBackendProducts(products = []) {
+  // Product master data must come from backend DB, not localStorage.
+  return products;
 }
 
 function normalize(value = "") {
@@ -272,9 +292,7 @@ export function enrichProductsWithBackendIds(localProducts = [], backendProducts
 }
 
 export async function getStorefrontProductsFromApi() {
-  const data = await apiRequest("/products", {
-    token: "",
-  });
+  const data = await publicJsonRequest("/products");
 
   const products = Array.isArray(data?.products)
     ? data.products
@@ -286,14 +304,11 @@ export async function getStorefrontProductsFromApi() {
     throw new Error("Storefront product sync skipped.");
   }
 
-  cacheBackendProducts(products);
   return products;
 }
 
 export async function getStorefrontProductByKeyFromApi(key = "") {
-  const data = await apiRequest(`/products/${encodeURIComponent(key)}`, {
-    token: "",
-  });
+  const data = await publicJsonRequest(`/products/${encodeURIComponent(key)}`);
 
   if (!data?.success || !data.product) {
     throw new Error("Backend did not return product detail.");
@@ -351,4 +366,78 @@ export function mergeLocalProductWithBackendProduct(localProduct = {}, backendPr
     source: "local+backend-detail",
     backendRaw: backendProduct,
   };
+}
+
+export function dedupeStorefrontProducts(products = []) {
+  const seen = new Set();
+
+  return (products || []).filter((product) => {
+    const key = String(product.backendProductId || product.id || product.sku || product.slug || "").trim();
+    if (!key) return false;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return product.active !== false;
+  });
+}
+
+export async function getStorefrontProductsForStorefront() {
+  const backendProducts = await getStorefrontProductsFromApi();
+
+  return dedupeStorefrontProducts(
+    backendProducts.map(mapBackendProductToStorefront)
+  );
+}
+
+export async function getStorefrontProductDetailForStorefront(key = "") {
+  const backendProduct = await getStorefrontProductByKeyFromApi(key);
+  return mapBackendProductToStorefront(backendProduct);
+}
+
+export function mapBackendCategoryToStorefront(category = {}) {
+  const id = category.id || category.slug || category.code;
+
+  return {
+    id,
+    backendCategoryId: category.id,
+    code: category.code,
+    slug: category.slug,
+    name: {
+      vi: category.nameVi || category.name?.vi || category.name || category.code || id,
+      en: category.nameEn || category.name?.en || category.nameVi || category.name || category.code || id,
+    },
+    label: category.nameVi || category.nameEn || category.code || id,
+    description: category.description || "",
+    imageUrl: category.imageUrl || category.image || category.mainImage || "",
+    image: category.imageUrl || category.image || category.mainImage || "",
+    icon: category.icon || category.imageUrl || "",
+    mainImage: category.imageUrl || category.mainImage || "",
+    altText: category.altText || category.nameVi || category.nameEn || "",
+    active: category.active !== false,
+    sortOrder: Number(category.sortOrder || 0),
+    sort: Number(category.sortOrder || 0),
+    source: "backend",
+  };
+}
+
+export async function getStorefrontCategoriesFromApi() {
+  const data = await publicJsonRequest("/products/categories");
+
+  const categories = Array.isArray(data?.categories)
+    ? data.categories
+    : Array.isArray(data?.data)
+      ? data.data
+      : [];
+
+  if (!data?.success || !Array.isArray(categories)) {
+    throw new Error("Storefront category sync skipped.");
+  }
+
+  return categories
+    .map(mapBackendCategoryToStorefront)
+    .filter((category) => category.active !== false)
+    .sort(
+      (a, b) =>
+        Number(a.sortOrder || 0) - Number(b.sortOrder || 0) ||
+        String(a.label || "").localeCompare(String(b.label || ""))
+    );
 }
