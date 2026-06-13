@@ -28,7 +28,6 @@ import {
   getStorefrontProductsForStorefront,
 } from "../../services/StorefrontProductApiService";
 import { getStorefrontHomeBannersFromApi } from "../../services/BannerApiService";
-import { getSafeHref } from "../../utils/urlSafety";
 
 const copy = {
   vi: {
@@ -407,7 +406,9 @@ function BannerMedia({ banner, lang, className = "", imageClassName = "" }) {
     </picture>
   );
 }
-
+function bannerHref(banner = {}) {
+  return getSafeHref(banner.ctaUrl || banner.link || banner.href || "/shop", "/shop");
+}
 function ImageOnlyBannerLink({ banner, lang, actions, className = "", mediaClassName = "" }) {
   return (
     <a
@@ -871,16 +872,7 @@ export default function HomePage() {
       alive = false;
     };
   }, []);
-
   const categories = state.categories || [];
-  const heroBanners = backendHero.banners.length
-    ? backendHero.banners
-    : (state?.publishedHero?.banners || banners);
-  const resolvedHeroSettings =
-    backendHero.heroSettings ||
-    state?.publishedHero?.heroSettings ||
-    state?.heroSettings;
-
   useEffect(() => {
     actions.track("page_view", { page: "/" });
   }, []);

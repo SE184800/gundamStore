@@ -67,10 +67,19 @@ export default function Login() {
     triggerToast("info", t.submitting);
 
     const res = await actions.login({ email: username.trim(), password });
-
+    console.log("Cục RES khi login thành công:", res);
     if (res.success) {
       triggerToast("success", t.success);
-      setTimeout(() => navigate("/"), 1000);
+      const userRoleId = res.user?.roleId || res.user?.roleID || res.user?.role?.id;
+      console.log("roleID: ", userRoleId);
+      const ADMIN_ROLE_ID = "cmpjmrwgo00069tpliz4pjinx";
+      setTimeout(() => {
+        if (userRoleId === ADMIN_ROLE_ID) {
+          navigate("/admin");
+        } else {
+          navigate("/");
+        }
+      }, 1000);
     } else {
       triggerToast("error", res.message || t.failed);
     }

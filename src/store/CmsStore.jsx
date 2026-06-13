@@ -142,8 +142,7 @@ export function CmsProvider({ children }) {
 
           // 2. 🛠️ ĐÃ FIX: Đổi từ 'set' của Zustand sang 'setState' chuẩn của Context
           setState((prev) => ({ ...prev, user: res.user }));
-
-          return { success: true };
+          return res;
         }
 
         return { success: false, message: res.message || "Tài khoản hoặc mật khẩu không đúng!" };
