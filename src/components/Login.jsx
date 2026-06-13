@@ -4,6 +4,7 @@ import { Eye, EyeOff, Lock, User } from "lucide-react";
 import Logo from "./common/Logo";
 import Toast from "../utils/Toast";
 import { useCms, useLang } from "../store/CmsStore";
+import { setStoredAdminToken } from "../services/ApiClient";
 
 const copy = {
   vi: {
@@ -73,9 +74,24 @@ export default function Login() {
       const userRoleId = res.user?.roleId || res.user?.roleID || res.user?.role?.id;
       console.log("roleID: ", userRoleId);
       const ADMIN_ROLE_ID = "cmpjmrwgo00069tpliz4pjinx";
+      if (userRoleId === ADMIN_ROLE_ID) {
+        // 🟢 SỬA TẠI ĐÂY: Đồng bộ dữ liệu Admin theo cơ chế chuẩn hóa của AdminAuthService
+        // Ghi nhận đầy đủ chuỗi token và thông tin user gốc từ BE truyền sang
+        const now = new Date().toISOString();
+        setStoredAdminToken(res.token);
+        localStorage.setItem("gundam-admin-auth", JSON.stringify({
+          token: res.token,
+          admin: res.user,
+          loggedInAt: now,
+          lastActiveAt: now,
+        }));
+
+        // 3. Ép ghi khay user độc lập
+        localStorage.setItem("gundam-admin-user", JSON.stringify(res.user));
+      }
       setTimeout(() => {
         if (userRoleId === ADMIN_ROLE_ID) {
-          navigate("/admin");
+          window.location.href = "/admin";
         } else {
           navigate("/");
         }

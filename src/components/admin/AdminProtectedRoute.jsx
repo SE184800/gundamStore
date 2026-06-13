@@ -22,7 +22,6 @@ export default function AdminProtectedRoute({ children }) {
     async function verifySession() {
       const currentAdmin = getCurrentAdmin();
       const token = getStoredAdminToken();
-
       if (!currentAdmin || !token || isAdminSessionExpired()) {
         logoutAdmin();
         if (!cancelled) {
@@ -36,12 +35,12 @@ export default function AdminProtectedRoute({ children }) {
         await refreshCurrentAdminFromApi();
         touchAdminSession();
         const freshAdmin = getCurrentAdmin();
-        const roleId = freshAdmin?.roleId || freshAdmin?.roleID || freshAdmin?.role?.id;
+        console.log("account: ", freshAdmin);
+        const role = freshAdmin?.role || freshAdmin?.roleCode;
+        console.log("role id: ", role);
+        const ADMIN_ROLE = "ADMIN"; // <-- Dán đầy đủ chuỗi ID dòng ADMIN trong ảnh vào đây nhé
 
-        // 🚨 CHÚ Ý KHÚC NÀY: Thay vì [1, 2, 3], cậu điền chuỗi ID của quyền ADMIN lấy từ bảng dữ liệu của cậu vào đây
-        const ADMIN_ROLE_ID = "cmpjmrwgo00069tpliz4pj..."; // <-- Dán đầy đủ chuỗi ID dòng ADMIN trong ảnh vào đây nhé
-
-        const isAuthorizedAdmin = roleId === ADMIN_ROLE_ID;
+        const isAuthorizedAdmin = role === ADMIN_ROLE;
 
         if (!isAuthorizedAdmin) {
           if (!cancelled) {

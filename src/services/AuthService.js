@@ -25,7 +25,7 @@ export const authService = {
 
   async register(name, email, password) {
     try {
-      const data = await apiRequest("/api/auth/register", {
+      const data = await apiRequest("/auth/register", {
         method: "POST",
         token: "",
         body: JSON.stringify({

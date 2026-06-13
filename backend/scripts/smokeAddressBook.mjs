@@ -72,7 +72,7 @@ async function run() {
     },
   });
 
-  const login = await api("/api/auth/login", {
+  const login = await api("/auth/login", {
     method: "POST",
     body: JSON.stringify({
       email: "customer@gundam.local",

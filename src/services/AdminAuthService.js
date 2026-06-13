@@ -207,7 +207,7 @@ export function isAdminSessionExpired() {
 }
 
 export async function refreshCurrentAdminFromApi() {
-  const data = await apiRequest("/api/auth/me");
+  const data = await apiRequest("/auth/me");
   const user = data?.user || null;
 
   if (!user) {
