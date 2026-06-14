@@ -7,6 +7,7 @@ import * as Yup from "yup";
 import Logo from "./common/Logo";
 import Toast from "../utils/Toast";
 import TermsModal from "./common/TermsModal";
+import AuthLayout from "./layout/AuthLayout";
 export default function Register() {
   const { actions } = useCms();
   const navigate = useNavigate();
@@ -34,7 +35,7 @@ export default function Register() {
       .email("Định dạng Email không hợp lệ")
       .required("Vui lòng nhập địa chỉ Email"),
     password: Yup.string()
-      .min(6, "Mật khẩu phải từ 6 ký tự trở lên")
+      .min(8, "Mật khẩu phải từ 8 ký tự trở lên")
       .matches(/[A-Z]/, "Mật khẩu phải chứa ít nhất 1 chữ cái viết hoa")
       .matches(/[0-9]/, "Mật khẩu phải chứa ít nhất 1 chữ số")
       .matches(/[^A-Za-z0-9]/, "Mật khẩu phải chứa ít nhất 1 ký tự đặc biệt")
@@ -78,14 +79,11 @@ export default function Register() {
   });
 
   return (
-    <div className="relative flex min-h-[calc(100vh-64px)] items-center justify-center bg-slate-50 px-4 py-12">
-
-      {/* 🍞 TOAST ĐỒNG NHẤT HỆ THỐNG */}
+    <>
       <Toast show={toast.show} type={toast.type} message={toast.message} />
-      <TermsModal isOpen={isTermsOpen} onClose={() => setIsTermsOpen(false)} />
-      {/* KHUNG BOX CONTAINER */}
-      <div className="w-full max-w-[440px] rounded-[32px] border border-slate-200 bg-white p-8 shadow-xl">
-
+      <AuthLayout>
+        <TermsModal isOpen={isTermsOpen} onClose={() => setIsTermsOpen(false)} />
+        {/* KHUNG BOX CONTAINER */}
         {/* LOGO VÀ TIÊU ĐỀ THƯƠNG HIỆU */}
         <div className="flex flex-col items-center text-center">
           <div className="flex h-[120px] w-[120px] items-center justify-center rounded-2xl bg-slate-50 p-2 shadow-sm">
@@ -247,8 +245,7 @@ export default function Register() {
             Đăng nhập ngay
           </Link>
         </div>
-
-      </div>
-    </div>
+      </AuthLayout>
+    </>
   );
 }

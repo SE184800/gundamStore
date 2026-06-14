@@ -5,7 +5,7 @@ import Logo from "./common/Logo";
 import Toast from "../utils/Toast";
 import { useCms, useLang } from "../store/CmsStore";
 import { setStoredAdminToken } from "../services/ApiClient";
-
+import AuthLayout from "./layout/AuthLayout";
 const copy = {
   vi: {
     subtitle: "Hệ thống phân phối Model Kit & Gunpla chuyên nghiệp",
@@ -104,10 +104,9 @@ export default function Login() {
     navigate("/forgot-password");
   }
   return (
-    <div className="relative flex min-h-[calc(100vh-64px)] items-center justify-center bg-slate-50 px-4 py-12">
+    <>
       <Toast show={toast.show} type={toast.type} message={toast.message} />
-
-      <div className="w-full max-w-[440px] rounded-[32px] border border-slate-200 bg-white p-8 shadow-xl">
+      <AuthLayout>
         <div className="flex flex-col items-center text-center">
           <div className="flex h-[160px] w-[160px] items-center justify-center rounded-2xl bg-slate-50 p-2 shadow-sm">
             <Logo className="h-full w-full object-contain" />
@@ -172,7 +171,7 @@ export default function Login() {
             {t.register}
           </Link>
         </div>
-      </div>
-    </div>
+      </AuthLayout>
+    </>
   );
 }

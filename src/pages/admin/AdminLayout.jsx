@@ -343,8 +343,8 @@ export default function AdminLayout() {
                       type="button"
                       onClick={() => setLang(item)}
                       className={`rounded px-3 py-1.5 text-xs font-black uppercase transition ${lang === item
-                          ? "bg-blue-700 text-white shadow-sm"
-                          : "text-slate-500 hover:bg-white hover:text-slate-900"
+                        ? "bg-blue-700 text-white shadow-sm"
+                        : "text-slate-500 hover:bg-white hover:text-slate-900"
                         }`}
                     >
                       {item.toUpperCase()}

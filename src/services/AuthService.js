@@ -60,4 +60,7 @@ export const authService = {
       };
     }
   },
+  async logout() {
+    await apiRequest("/auth/logout", { method: "POST" });
+  }
 };

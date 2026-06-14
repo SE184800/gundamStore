@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Mail, ArrowLeft } from "lucide-react";
 import Toast from "../utils/Toast";
 import { useCms } from "../store/CmsStore";
+import AuthLayout from "./layout/AuthLayout";
 
 export default function ForgotPassword() {
   const { actions } = useCms();
@@ -38,10 +39,9 @@ export default function ForgotPassword() {
   }
 
   return (
-    <div className="relative flex min-h-[calc(100vh-64px)] items-center justify-center bg-slate-50 px-4 py-12">
+    <>
       <Toast show={toast.show} type={toast.type} message={toast.message} />
-
-      <div className="w-full max-w-[440px] rounded-[32px] border border-slate-200 bg-white p-8 shadow-xl">
+      <AuthLayout>
         <div className="text-center">
           <h2 className="text-2xl font-black text-slate-900">Quên mật khẩu?</h2>
           <p className="mt-2 text-xs font-semibold text-slate-400">
@@ -79,7 +79,7 @@ export default function ForgotPassword() {
             <ArrowLeft size={14} /> Quay lại Đăng nhập
           </Link>
         </div>
-      </div>
-    </div>
+      </AuthLayout>
+    </>
   );
 }

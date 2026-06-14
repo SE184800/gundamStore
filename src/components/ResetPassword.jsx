@@ -5,6 +5,7 @@ import Toast from "../utils/Toast";
 import { useCms } from "../store/CmsStore";
 import { useFormik } from "formik";
 import * as Yup from "yup";
+import AuthLayout from "./layout/AuthLayout";
 export default function ResetPassword() {
   const { actions } = useCms();
   const navigate = useNavigate();
@@ -18,7 +19,7 @@ export default function ResetPassword() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const validationSchema = Yup.object({
     password: Yup.string()
-      .min(6, "Mật khẩu phải từ 6 ký tự trở lên")
+      .min(8, "Mật khẩu phải từ 8 ký tự trở lên")
       .matches(/[A-Z]/, "Mật khẩu phải chứa ít nhất 1 chữ cái viết hoa")
       .matches(/[0-9]/, "Mật khẩu phải chứa ít nhất 1 chữ số")
       .matches(/[^A-Za-z0-9]/, "Mật khẩu phải chứa ít nhất 1 ký tự đặc biệt")
@@ -78,10 +79,9 @@ export default function ResetPassword() {
   });
 
   return (
-    <div className="relative flex min-h-[calc(100vh-64px)] items-center justify-center bg-slate-50 px-4 py-12">
+    <>
       <Toast show={toast.show} type={toast.type} message={toast.message} />
-
-      <div className="w-full max-w-[440px] rounded-[32px] border border-slate-200 bg-white p-8 shadow-xl">
+      <AuthLayout>
         <div className="text-center">
           <h2 className="text-2xl font-black text-slate-900">Đặt lại mật khẩu</h2>
           <p className="mt-2 text-xs font-semibold text-slate-400">Nhập mật khẩu mới cho tài khoản của bạn.</p>
@@ -163,7 +163,7 @@ export default function ResetPassword() {
             Cập nhật mật khẩu
           </button>
         </form>
-      </div>
-    </div>
+      </AuthLayout>
+    </>
   );
 }
