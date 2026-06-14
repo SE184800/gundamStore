@@ -387,6 +387,6 @@ export async function logout(req, res) {
 
   res.json({
     success: true,
-    message: "Logged out on client side",
+    message: "Đăng xuất thành công !",
   });
 }

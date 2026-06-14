@@ -14,7 +14,7 @@ const authRateLimit = createRateLimit({
 router.post("/register", authRateLimit, register);
 router.post("/login", authRateLimit, login);
 router.get("/me", requireAuth, me);
-router.post("/logout", requireAuth, logout);
+router.post("/logout", logout);
 router.post("/forgot-password", authRateLimit, forgotPassword);
 router.post("/reset-password", authRateLimit, resetPassword);
 router.get("/validate-reset-token", validateResetToken);
