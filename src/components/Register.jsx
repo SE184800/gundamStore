@@ -17,7 +17,6 @@ export default function Register() {
   const [isTermsOpen, setIsTermsOpen] = useState(false);
   // State quản lý hệ thống thông báo Toast (Dành cho lỗi hệ thống hoặc lỗi trùng email từ BE)
   const [toast, setToast] = useState({ show: false, type: "", message: "" });
-
   const triggerToast = (type, message) => {
     setToast({ show: true, type, message });
     setTimeout(() => setToast({ show: false, type: "", message: "" }), 3000);

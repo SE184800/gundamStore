@@ -100,7 +100,9 @@ export default function Login() {
       triggerToast("error", res.message || t.failed);
     }
   }
-
+  function handleForgotPassword() {
+    navigate("/forgot-password");
+  }
   return (
     <div className="relative flex min-h-[calc(100vh-64px)] items-center justify-center bg-slate-50 px-4 py-12">
       <Toast show={toast.show} type={toast.type} message={toast.message} />
@@ -149,7 +151,7 @@ export default function Login() {
           <div className="flex items-center justify-end pt-1">
             <button
               type="button"
-              onClick={() => window.alert(t.forgotMessage)}
+              onClick={() => handleForgotPassword()}
               className="text-xs font-black text-blue-600 transition hover:text-blue-800 hover:underline"
             >
               {t.forgot}

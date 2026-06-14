@@ -7,7 +7,8 @@ import Register from "./components/Register.jsx";
 import AddToCartBridge from "./components/cart/AddToCartBridge";
 import Login from "./components/Login"; // Route Login mới tinh của bạn
 import AdminProtectedRoute from "./components/admin/AdminProtectedRoute";
-
+import ForgotPassword from "./components/ForgotPassword.jsx";
+import ResetPassword from "./components/ResetPassword.jsx";
 // 🛠️ DANH SÁCH LAZY LOADING (Đã dọn dẹp sạch sẽ, không bị trùng với import tĩnh)
 const HomePage = lazy(() => import("./pages/storefront/HomePage"));
 const ShopPage = lazy(() => import("./pages/storefront/ShopPage"));
@@ -114,7 +115,8 @@ export default function App() {
           <Route path="/shop" element={<ShopPage />} />
           <Route path="/accessories" element={<AccessoriesPage />} />
           <Route path="/promotions" element={<PromotionsPage />} />
-
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           {/* Campaign Collections */}
           <Route path="/flash-sale" element={<CampaignCollectionPage type="flash-sale" />} />
           <Route path="/restock" element={<CampaignCollectionPage type="restock" />} />

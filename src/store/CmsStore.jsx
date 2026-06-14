@@ -157,6 +157,35 @@ export function CmsProvider({ children }) {
         return { success: false, message: error.message };
       }
     },
+    requestResetPassword: async (email) => {
+      try {
+        // 🟢 GỌI QUA SERVICE CHUẨN PATTERN:
+        const res = await authService.forgotPassword(email);
+        return res?.data || res;
+      } catch (error) {
+        console.error("❌ LỖI FORGOT PASSWORD STORE:", error);
+        return { success: false, message: error.message };
+      }
+    },
+
+    executeResetPassword: async ({ token, password }) => {
+      try {
+        // 🟢 GỌI QUA SERVICE CHUẨN PATTERN:
+        const res = await authService.resetPassword(token, password);
+        return res?.data || res;
+      } catch (error) {
+        console.error("❌ LỖI CẬP NHẬT MẬT KHẨU STORE:", error);
+        return { success: false, message: error.message };
+      }
+    },
+    checkResetToken: async (token) => {
+      try {
+        const res = await authService.validateResetToken(token);
+        return res?.data || res; // Trả về { valid: true/false }
+      } catch (error) {
+        return { valid: false };
+      }
+    },
     // 🛠️ ĐÃ CẬP NHẬT: Hàm logout chuẩn cú pháp React Context API
     logout: () => {
       clearStoredAccountToken();
