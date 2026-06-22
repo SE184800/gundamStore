@@ -6,7 +6,7 @@ import { resolveText, useI18n } from "../../i18n";
 import { addProductToCart, forceCartBadgeSync, saveBuyNowDraft, validateCartStock } from "../../services/CartService";
 import { addMyWishlistItem, hasAccountToken } from "../../services/AccountApiService";
 import Toast from "../../utils/Toast";
-
+import { useCms } from "../../store/CmsStore";
 function getImage(product) {
   return (
     product?.media?.card ||
@@ -35,7 +35,7 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
   const i18n = useI18n();
   const lang = langProp || i18n.lang;
   const t = i18n.t;
-
+  const { state, action } = useCms();
   const [quickOpen, setQuickOpen] = useState(false);
   const [qty, setQty] = useState(1);
   const [wishlistSaving, setWishlistSaving] = useState(false);
@@ -85,12 +85,32 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
   function addCart(e) {
     e?.preventDefault?.();
     e?.stopPropagation?.();
-
-    if (isOutOfStock) {
-      alert(outOfStockLabel);
+    if (!state?.user) {
+      setToastConfig({
+        show: true,
+        type: "error",
+        message: `Vui lòng đăng nhập để tiếp tục`
+      });
+      setTimeout(() => {
+        setToastConfig((prev) => ({ ...prev, show: false }));
+      }, 2500);
       return false;
     }
-
+    if (isOutOfStock) {
+      setToastConfig({
+        show: true,
+        type: "error",
+        message: outOfStockLabel
+      });
+      setTimeout(() => {
+        setToastConfig((prev) => ({ ...prev, show: false }));
+      }, 2500);
+      return false;
+    }
+    console.log("=== DEBUG GIỎ HÀNG ===");
+    console.log("Sản phẩm gốc (Product Object):", product);
+    console.log("Số lượng muốn thêm (qty):", qty, "Kiểu dữ liệu:", typeof qty);
+    console.log("Kết quả chạy hàm validate:", validateCartStock(product, qty));
     const validation = validateCartStock(product, qty);
     if (!validation.ok) {
       showCartError(validation);
@@ -123,9 +143,26 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
   function buyNow(e) {
     e?.preventDefault?.();
     e?.stopPropagation?.();
-
+    if (!state?.user) {
+      setToastConfig({
+        show: true,
+        type: "error",
+        message: `Vui lòng đăng nhập để tiếp tục`
+      });
+      setTimeout(() => {
+        setToastConfig((prev) => ({ ...prev, show: false }));
+      }, 2500);
+      return false;
+    }
     if (isOutOfStock) {
-      alert(outOfStockLabel);
+      setToastConfig({
+        show: true,
+        type: "error",
+        message: outOfStockLabel
+      });
+      setTimeout(() => {
+        setToastConfig((prev) => ({ ...prev, show: false }));
+      }, 2500);
       return;
     }
 
@@ -194,8 +231,8 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
               disabled={wishlistSaving}
               title={wishlistSaved ? wishlistCopy.titleSaved : wishlistCopy.titleSave}
               className={`absolute right-3 top-3 z-10 flex h-10 w-10 items-center justify-center rounded-full border bg-white/90 shadow-lg backdrop-blur transition hover:scale-110 ${wishlistSaved
-                  ? "border-red-100 text-red-600"
-                  : "border-white/70 text-slate-500 hover:border-red-100 hover:text-red-600"
+                ? "border-red-100 text-red-600"
+                : "border-white/70 text-slate-500 hover:border-red-100 hover:text-red-600"
                 } ${wishlistSaving ? "cursor-not-allowed opacity-60" : ""}`}
             >
               <Heart size={18} fill={wishlistSaved ? "currentColor" : "none"} />
@@ -272,6 +309,19 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
+
+                // 🟢 RÀNG BUỘC PHÒNG THỦ: Kiểm tra trạng thái đăng nhập của User
+                if (!state?.user) {
+                  setToastConfig({
+                    show: true,
+                    type: "error",
+                    message: "Vui lòng đăng nhập để tiếp tục"
+                  });
+                  setTimeout(() => {
+                    setToastConfig((prev) => ({ ...prev, show: false }));
+                  }, 2500);
+                  return; // Phanh gấp luồng chạy, chặn không cho chuyển hướng
+                }
                 window.location.href = detailUrl;
               }}
               className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-red-600 to-rose-500 px-4 py-3 text-sm font-black uppercase tracking-wide text-white shadow-lg shadow-red-200 transition hover:-translate-y-0.5 hover:brightness-110"
@@ -391,8 +441,8 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
                     disabled={isOutOfStock}
                     aria-disabled={isOutOfStock}
                     className={`flex min-h-12 flex-1 items-center justify-center gap-2 rounded-2xl px-6 py-4 text-sm font-black shadow-lg transition ${isOutOfStock
-                        ? "cursor-not-allowed bg-slate-200 text-slate-500 shadow-none"
-                        : "bg-blue-700 text-white shadow-blue-100 hover:bg-blue-800"
+                      ? "cursor-not-allowed bg-slate-200 text-slate-500 shadow-none"
+                      : "bg-blue-700 text-white shadow-blue-100 hover:bg-blue-800"
                       }`}
                   >
                     <ShoppingCart size={18} />
@@ -412,8 +462,8 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
                     disabled={wishlistSaving}
                     title={wishlistSaved ? wishlistCopy.titleSaved : wishlistCopy.titleSave}
                     className={`rounded-2xl border p-4 transition ${wishlistSaved
-                        ? "border-red-100 bg-red-50 text-red-600"
-                        : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                      ? "border-red-100 bg-red-50 text-red-600"
+                      : "border-slate-200 text-slate-600 hover:bg-slate-50"
                       } ${wishlistSaving ? "cursor-not-allowed opacity-60" : ""}`}
                   >
                     <Heart size={18} fill={wishlistSaved ? "currentColor" : "none"} />

@@ -144,8 +144,8 @@ export function validateCartStock(product, quantity = 1, products = []) {
   const requestQty = Math.max(1, Number(quantity) || 1);
   const stock = getStock(item.backendProductId || item.productId || item.id || product?.id);
   const available = item.variantId
-    ? Number(product?.stock ?? item.stock ?? 0)
-    : Number(stock?.available ?? product?.stock ?? 0);
+    ? Number(product?.stock || item.stock || 0)
+    : Number(stock?.available || product?.stock || 0);
 
   if (available <= 0) {
     return { ok: false, reason: "OUT_OF_STOCK", available, currentQty, requestQty, item };
