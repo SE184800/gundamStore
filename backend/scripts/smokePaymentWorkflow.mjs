@@ -168,7 +168,7 @@ async function run() {
 
     console.log("✅ Customer/admin login works");
 
-    const create = await api("/api/orders", {
+    const create = await api("/orders", {
       method: "POST",
       headers: { Authorization: `Bearer ${customerToken}` },
       body: JSON.stringify({
@@ -199,7 +199,7 @@ async function run() {
 
     console.log("✅ Order created with initial payment record");
 
-    const paid = await api(`/api/orders/admin/${encodeURIComponent(orderId)}/payment`, {
+    const paid = await api(`/orders/admin/${encodeURIComponent(orderId)}/payment`, {
       method: "PATCH",
       headers: { Authorization: `Bearer ${adminToken}` },
       body: JSON.stringify({
@@ -241,7 +241,7 @@ async function run() {
 
     console.log("✅ Payment audit log created");
 
-    const customerDetail = await api(`/api/orders/my/${encodeURIComponent(orderId)}`, {
+    const customerDetail = await api(`/orders/my/${encodeURIComponent(orderId)}`, {
       headers: { Authorization: `Bearer ${customerToken}` },
     });
 

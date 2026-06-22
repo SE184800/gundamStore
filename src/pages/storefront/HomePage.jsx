@@ -1,8 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
+import Toast from "../../utils/Toast";
 import {
   ArrowRight,
   Box,
   CheckCircle2,
+  ChevronLeft,
   ChevronRight,
   Clock,
   Crown,
@@ -25,37 +27,7 @@ import {
   getStorefrontCategoriesFromApi,
   getStorefrontProductsForStorefront,
 } from "../../services/StorefrontProductApiService";
-
-
-function getHeroTextStyles(banner = {}) {
-  const fontFamily =
-    banner.fontFamily === "serif"
-      ? "Georgia, serif"
-      : banner.fontFamily === "mono"
-      ? "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace"
-      : "system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif";
-
-  return {
-    heading: {
-      display: banner.showHeading === false ? "none" : undefined,
-      color: banner.headingColor || undefined,
-      fontSize: banner.headingSize ? `${Number(banner.headingSize)}px` : undefined,
-      fontFamily,
-    },
-    title: {
-      display: banner.showTitle === false ? "none" : undefined,
-      color: banner.titleColor || undefined,
-      fontSize: banner.titleSize ? `${Number(banner.titleSize)}px` : undefined,
-      fontFamily,
-    },
-    subtitle: {
-      display: banner.showSubtitle === false ? "none" : undefined,
-      color: banner.subtitleColor || undefined,
-      fontSize: banner.subtitleSize ? `${Number(banner.subtitleSize)}px` : undefined,
-      fontFamily,
-    },
-  };
-}
+import { getStorefrontHomeBannersFromApi } from "../../services/BannerApiService";
 
 const copy = {
   vi: {
@@ -183,14 +155,6 @@ function text(value, lang, fallback = "") {
   return value[lang] || value.vi || value.en || translateStaticText(fallback, lang);
 }
 
-function bannerHref(banner = {}) {
-  return getSafeHref(banner.ctaUrl || banner.link || "/shop", "/shop");
-}
-
-function productName(product, lang) {
-  return text(product.name, lang, product.title || "Gundam Model Kit");
-}
-
 function statusOf(product) {
   return String(product.status || "").toLowerCase();
 }
@@ -240,7 +204,6 @@ function productMatchesSource(product, source) {
 
   return true;
 }
-
 
 function collectionKeyMatchesSource(collectionKey, source) {
   const key = String(collectionKey || "").toLowerCase();
@@ -321,48 +284,18 @@ function mergeCmsSections(homeSections) {
     .sort((a, b) => Number(a.sort || 0) - Number(b.sort || 0));
 }
 
-function GundamVisual({ tone = "blue", imageUrl, large = false }) {
-  const toneMap = {
-    blue: "from-blue-950 via-blue-600 to-sky-100",
-    cyan: "from-cyan-900 via-cyan-500 to-blue-100",
-    slate: "from-slate-950 via-slate-500 to-slate-100",
-    red: "from-red-950 via-red-500 to-orange-100",
-    gold: "from-amber-800 via-yellow-400 to-slate-50",
-    violet: "from-violet-950 via-violet-500 to-fuchsia-100",
-    sky: "from-sky-900 via-sky-500 to-blue-100",
-  };
-
-  if (imageUrl) {
-    return (
-      <div className="relative h-full overflow-hidden rounded-2xl bg-slate-100">
-        <img src={imageUrl} alt="" className="h-full w-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-tr from-slate-950/20 via-transparent to-white/20" />
-      </div>
-    );
-  }
-
-  return (
-    <div className={`relative h-full overflow-hidden rounded-2xl bg-gradient-to-br ${toneMap[tone] || toneMap.blue}`}>
-      <div
-        className="absolute inset-0 opacity-35"
-        style={{
-          backgroundImage:
-            "linear-gradient(rgba(255,255,255,0.38) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.38) 1px, transparent 1px)",
-          backgroundSize: large ? "28px 28px" : "18px 18px",
-        }}
-      />
-      <div className="absolute -right-8 -top-8 h-28 w-28 rounded-full bg-white/40 blur-2xl" />
-      <div className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rotate-[-8deg] rounded-[1.7rem] bg-white/90 shadow-2xl ${large ? "h-48 w-32" : "h-20 w-14"}`}>
-        <div className={`absolute left-1/2 -translate-x-1/2 rounded-xl bg-red-500 ${large ? "top-6 h-10 w-10" : "top-3 h-6 w-6"}`} />
-        <div className={`absolute rounded-full bg-slate-950 ${large ? "bottom-6 left-5 h-16 w-5" : "bottom-3 left-2 h-8 w-2.5"}`} />
-        <div className={`absolute rounded-full bg-slate-950 ${large ? "bottom-6 right-5 h-16 w-5" : "bottom-3 right-2 h-8 w-2.5"}`} />
-        <div className={`absolute -rotate-45 rounded-full bg-yellow-300 ${large ? "-left-20 top-24 h-6 w-32" : "-left-6 top-9 h-2.5 w-12"}`} />
-        <div className={`absolute rotate-45 rounded-full bg-cyan-300 ${large ? "-right-20 top-24 h-6 w-32" : "-right-6 top-9 h-2.5 w-12"}`} />
-      </div>
-    </div>
+function hasBannerMedia(banner = {}) {
+  return Boolean(
+    banner.videoUrl ||
+    banner.mainImage ||
+    banner.imageUrl ||
+    banner.mediaUrl ||
+    banner.image ||
+    banner.desktopImage ||
+    banner.mobileImage ||
+    banner.tabletImage
   );
 }
-
 
 function isLiveHomepageBanner(banner = {}) {
   const isActive = banner.active !== false;
@@ -421,18 +354,18 @@ function getHeroBanners(banners = [], settings = {}) {
   return activeBanners.length
     ? activeBanners
     : [
-        {
-          id: "fallback-hero",
-          titleInternal: "Gundam hero banner",
-          altText: "Gundam Store banner",
-          imageUrl: "/images/banners/banner-1.jpg",
-          ctaUrl: "/shop",
-          active: true,
-          status: "Live",
-          priority: 1,
-          fitMode: "cover",
-        },
-      ];
+      {
+        id: "fallback-hero",
+        titleInternal: "Gundam hero banner",
+        altText: "Gundam Store banner",
+        imageUrl: "/images/banners/banner-1.jpg",
+        ctaUrl: "/shop",
+        active: true,
+        status: "Live",
+        priority: 1,
+        fitMode: "cover",
+      },
+    ];
 }
 
 function BannerMedia({ banner, lang, className = "", imageClassName = "" }) {
@@ -473,7 +406,9 @@ function BannerMedia({ banner, lang, className = "", imageClassName = "" }) {
     </picture>
   );
 }
-
+function bannerHref(banner = {}) {
+  return getSafeHref(banner.ctaUrl || banner.link || banner.href || "/shop", "/shop");
+}
 function ImageOnlyBannerLink({ banner, lang, actions, className = "", mediaClassName = "" }) {
   return (
     <a
@@ -593,11 +528,10 @@ function HeroV3Bento({ banners, lang, actions, settings }) {
                 key={banner.id || index}
                 type="button"
                 onClick={() => goToBanner(index)}
-                className={`image-first-thumb relative h-[86px] min-w-[148px] overflow-hidden rounded-2xl border text-left shadow-sm transition ${
-                  activeIndex === index
-                    ? "border-blue-600 ring-4 ring-blue-100"
-                    : "border-slate-200 hover:border-blue-300"
-                }`}
+                className={`image-first-thumb relative h-[86px] min-w-[148px] overflow-hidden rounded-2xl border text-left shadow-sm transition ${activeIndex === index
+                  ? "border-blue-600 ring-4 ring-blue-100"
+                  : "border-slate-200 hover:border-blue-300"
+                  }`}
                 aria-label={`Banner ${index + 1}`}
               >
                 <BannerMedia banner={banner} lang={lang} className="h-full w-full" />
@@ -664,9 +598,8 @@ function HeroV2Classic({ banners, lang, actions, settings }) {
                 key={item.id || index}
                 type="button"
                 onClick={() => goToBanner(index)}
-                className={`h-2.5 rounded-full transition ${
-                  activeIndex === index ? "w-12 bg-blue-700" : "w-2.5 bg-slate-300 hover:bg-blue-400"
-                }`}
+                className={`h-2.5 rounded-full transition ${activeIndex === index ? "w-12 bg-blue-700" : "w-2.5 bg-slate-300 hover:bg-blue-400"
+                  }`}
                 aria-label={`Banner ${index + 1}`}
               />
             ))}
@@ -730,8 +663,20 @@ function CategorySidebar({ categories, lang }) {
   };
 
   return (
-    <aside className="image-first-category-wrap rounded-[28px] border border-slate-200 bg-white p-3 shadow-sm sm:p-4">
-      <div className="image-first-category-grid grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-2">
+    <aside className="w-full bg-transparent lg:bg-white p-0 lg:p-5 border-0 lg:border border-slate-200 rounded-none lg:rounded-[28px] shadow-none lg:shadow-sm">
+      <div className="mb-3 lg:mb-4 px-3 lg:px-0">
+        <div className="text-[10px] lg:text-xs font-black uppercase tracking-[0.22em] text-blue-700">
+          Category
+        </div>
+        <h3 className="mt-0.5 text-base lg:text-xl font-black text-slate-950">
+          {lang === "vi" ? "Dòng sản phẩm" : "Product lines"}
+        </h3>
+        <p className="mt-1 text-xs font-semibold leading-5 text-slate-500 hidden lg:block">
+          {lang === "vi" ? "Danh mục các phân khúc của sản phẩm Gundam" : "Category list for Gundam toy figure"}
+        </p>
+      </div>
+
+      <div className="flex flex-nowrap gap-3 w-full overflow-x-auto pb-4 pt-1 px-3 lg:px-0 scrollbar-none snap-x snap-mandatory lg:grid lg:grid-cols-2 lg:gap-3 lg:overflow-x-visible lg:pb-0">
         {list.map((category, index) => {
           const fullName = text(category.name, lang, category.label || category.code || "Category");
           const image = getCategoryImage(category, index);
@@ -743,7 +688,7 @@ function CategorySidebar({ categories, lang }) {
               href={href}
               title={category.titleInternal || fullName}
               aria-label={category.altText || fullName}
-              className="group block overflow-hidden rounded-2xl border border-slate-200 bg-white transition hover:-translate-y-1 hover:border-blue-300 hover:shadow-xl"
+              className="group block w-[95px] max-w-[95px] md:w-full md:max-w-none shrink-0 snap-start overflow-hidden rounded-2xl border border-slate-200 bg-white transition hover:-translate-y-1 hover:border-blue-300 hover:shadow-xl lg:w-full lg:max-w-none lg:shrink"
             >
               <div className="aspect-square w-full overflow-hidden bg-gradient-to-br from-slate-100 to-blue-50">
                 <img
@@ -752,6 +697,11 @@ function CategorySidebar({ categories, lang }) {
                   className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
                   loading="lazy"
                 />
+              </div>
+              <div className="p-2 lg:p-3 text-center">
+                <div className="text-xs lg:text-sm font-black leading-tight text-slate-950 group-hover:text-blue-700 truncate">
+                  {fullName}
+                </div>
               </div>
             </a>
           );
@@ -859,6 +809,7 @@ export default function HomePage() {
   });
   const { state, actions } = useCms();
   const lang = state.settings?.lang || "vi";
+
   const banners = useMemo(() => {
     const active = (state.banners || [])
       .filter((banner) => banner.active !== false)
@@ -921,16 +872,9 @@ export default function HomePage() {
       alive = false;
     };
   }, []);
-
-  const categories = useMemo(() => {
-    return backendCategories.length
-      ? backendCategories
-      : deriveCategoriesFromProducts(backendProducts);
-  }, [backendCategories, backendProducts]);
-
+  const categories = state.categories || [];
   useEffect(() => {
     actions.track("page_view", { page: "/" });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
@@ -951,13 +895,8 @@ export default function HomePage() {
         <Hero banners={(state?.publishedHero?.banners || banners)} lang={lang} actions={actions} heroSettings={(state?.publishedHero?.heroSettings || state?.heroSettings)} />
         <TrustStrip lang={lang} />
 
-        <main className="mx-auto grid max-w-[1200px] gap-4 px-4 pb-8 lg:grid-cols-[190px_1fr]">
-          {catalogDebug.error && (
-                    <div className="mb-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-black text-amber-800">
-                      DB catalog debug: products={catalogDebug.products}, categories={catalogDebug.categories}, error={catalogDebug.error}
-                    </div>
-                  )}
-                  <CategorySidebar categories={categories} lang={lang} />
+        <main className="mx-auto grid max-w-[1200px] gap-4 px-4 pb-8 lg:grid-cols-[300px_1fr]">
+          <CategorySidebar categories={categories.length ? categories : fallbackCategories} lang={lang} />
 
           <div className="space-y-4">
             {sections.map((section, index) => (

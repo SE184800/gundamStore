@@ -43,6 +43,7 @@ import {
   getStorefrontProductDetailForStorefront,
   getStorefrontProductsForStorefront,
 } from "../../services/StorefrontProductApiService";
+import { getStorefrontProductReviewsApi } from "../../services/StorefrontReviewApiService";
 import {
   ORDER_TYPE,
   PAYMENT_STATUS,
@@ -579,11 +580,10 @@ function ProductInfo({ product, lang, actions, onPreorder }) {
                   type="button"
                   disabled={variant.active === false}
                   onClick={() => setSelectedVariantId(variant.id)}
-                  className={`flex items-center gap-3 rounded-2xl border p-3 text-left transition ${
-                    selected
+                  className={`flex items-center gap-3 rounded-2xl border p-3 text-left transition ${selected
                       ? "border-blue-500 bg-white ring-4 ring-blue-100"
                       : "border-blue-100 bg-white/70 hover:bg-white"
-                  } ${disabled ? "opacity-60" : ""}`}
+                    } ${disabled ? "opacity-60" : ""}`}
                 >
                   <div className="h-14 w-14 overflow-hidden rounded-xl bg-slate-100">
                     {variant.imageUrl ? (
@@ -642,11 +642,10 @@ function ProductInfo({ product, lang, actions, onPreorder }) {
           <p className="mt-3 text-xs leading-5 text-violet-800/80">{t.preorderNote}</p>
         </div>
       ) : (
-        <div className={`mt-5 flex items-center gap-2 rounded-2xl border p-4 text-sm font-black ${
-          isOutOfStock
+        <div className={`mt-5 flex items-center gap-2 rounded-2xl border p-4 text-sm font-black ${isOutOfStock
             ? "border-slate-200 bg-slate-50 text-slate-600"
             : "border-emerald-100 bg-emerald-50 text-emerald-700"
-        }`}>
+          }`}>
           <CheckCircle2 size={18} /> {isOutOfStock ? t.outOfStock : `${t.stock}: ${stock}`}
         </div>
       )}
@@ -671,11 +670,10 @@ function ProductInfo({ product, lang, actions, onPreorder }) {
             <button
               onClick={handleAddToCart}
               disabled={isOutOfStock}
-              className={`rounded-2xl px-5 py-3 text-sm font-black shadow-lg ${
-                isOutOfStock
+              className={`rounded-2xl px-5 py-3 text-sm font-black shadow-lg ${isOutOfStock
                   ? "cursor-not-allowed bg-slate-200 text-slate-500 shadow-none"
                   : "bg-blue-700 text-white shadow-blue-200 hover:bg-blue-800"
-              }`}
+                }`}
             >
               <ShoppingCart className="mr-2 inline" size={17} />
               {isOutOfStock ? t.soldOut : t.addToCart}
@@ -683,11 +681,10 @@ function ProductInfo({ product, lang, actions, onPreorder }) {
             <button
               onClick={handleBuyNow}
               disabled={isOutOfStock}
-              className={`rounded-2xl px-5 py-3 text-sm font-black shadow-lg ${
-                isOutOfStock
+              className={`rounded-2xl px-5 py-3 text-sm font-black shadow-lg ${isOutOfStock
                   ? "cursor-not-allowed bg-slate-200 text-slate-500 shadow-none"
                   : "bg-slate-950 text-white shadow-slate-200 hover:bg-slate-800"
-              }`}
+                }`}
             >
               <Zap className="mr-2 inline" size={17} />
               {isOutOfStock ? t.soldOut : t.buyNow}
@@ -750,11 +747,10 @@ function ProductInfo({ product, lang, actions, onPreorder }) {
         <button
           onClick={handleWishlist}
           disabled={wishlistBusy}
-          className={`rounded-2xl border px-4 py-3 text-sm font-black shadow-sm disabled:cursor-not-allowed disabled:opacity-60 ${
-            wishlistSaved
+          className={`rounded-2xl border px-4 py-3 text-sm font-black shadow-sm disabled:cursor-not-allowed disabled:opacity-60 ${wishlistSaved
               ? "border-pink-200 bg-pink-50 text-pink-700"
               : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-          }`}
+            }`}
         >
           <Heart className="mr-2 inline" size={16} fill={wishlistSaved ? "currentColor" : "none"} />
           {wishlistSaved ? t.saved : t.favorite}
@@ -767,11 +763,10 @@ function ProductInfo({ product, lang, actions, onPreorder }) {
         )}
         <button
           onClick={handleCompare}
-          className={`rounded-2xl border px-4 py-3 text-sm font-black shadow-sm ${
-            compareSaved
+          className={`rounded-2xl border px-4 py-3 text-sm font-black shadow-sm ${compareSaved
               ? "border-cyan-200 bg-cyan-50 text-cyan-700"
               : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-          }`}
+            }`}
         >
           <GitCompareArrows className="mr-2 inline" size={16} />
           {compareSaved ? t.compared : t.compare}
@@ -1270,9 +1265,8 @@ export default function ProductDetailPage() {
                   <button
                     key={`${image || "visual"}-${index}`}
                     onClick={() => setActiveImage(index)}
-                    className={`h-28 overflow-hidden rounded-2xl border bg-white p-1 shadow-sm transition ${
-                      activeImage === index ? "border-blue-500 ring-4 ring-blue-100" : "border-slate-200 hover:border-blue-200"
-                    }`}
+                    className={`h-28 overflow-hidden rounded-2xl border bg-white p-1 shadow-sm transition ${activeImage === index ? "border-blue-500 ring-4 ring-blue-100" : "border-slate-200 hover:border-blue-200"
+                      }`}
                   >
                     <GundamVisual imageUrl={image} tone={product.tone || ["blue", "cyan", "slate", "red"][index] || "blue"} />
                   </button>
@@ -1321,7 +1315,7 @@ export default function ProductDetailPage() {
           product={product}
           reviews={productReviews}
           lang={lang}
-          onSubmitted={() => getStorefrontProductReviewsApi(product.slug || product.id).then((rows) => setProductReviews(rows || [])).catch(() => {})}
+          onSubmitted={() => getStorefrontProductReviewsApi(product.slug || product.id).then((rows) => setProductReviews(rows || [])).catch(() => { })}
         />
 
         <section className="mx-auto max-w-[1440px] px-4 py-4 lg:px-8">

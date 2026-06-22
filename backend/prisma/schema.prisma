@@ -68,7 +68,8 @@ model User {
   complaintTickets   ComplaintTicket[]
   productReviews     ProductReview[]
   customerNotes      CustomerNote[]
-
+  resetPasswordToken   String?   @unique
+  resetPasswordExpires DateTime?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

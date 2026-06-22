@@ -207,9 +207,9 @@ export function saveOrderSuccessSnapshot(order = {}, contact = {}) {
   const mappedOrder = order.source === "backend" || order.backendRaw
     ? order
     : {
-        ...order,
-        source: order.source || "local",
-      };
+      ...order,
+      source: order.source || "local",
+    };
 
   const lookup = {
     phone: cleanContact(contact.phone || order.customer?.phone || ""),
@@ -245,7 +245,7 @@ function buildPublicOrderPath(id = "", lookup = {}) {
   if (lookup.email) params.set("email", cleanContact(lookup.email));
 
   const query = params.toString();
-  return `/api/orders/public/${encodeURIComponent(id)}${query ? `?${query}` : ""}`;
+  return `/orders/public/${encodeURIComponent(id)}${query ? `?${query}` : ""}`;
 }
 
 export async function getStorefrontOrderByIdFromApi(id = "", lookup = {}) {

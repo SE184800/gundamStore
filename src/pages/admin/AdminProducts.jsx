@@ -254,23 +254,23 @@ function normalizeDraft(product = {}) {
 
     variants: Array.isArray(product.variants)
       ? product.variants.map((variant, index) => ({
-          id: variant.id || "",
-          sku: variant.sku || "",
-          barcode: variant.barcode || "",
-          nameVi: variant.nameVi || "",
-          nameEn: variant.nameEn || variant.nameVi || "",
-          option1Name: variant.option1Name || "",
-          option1Value: variant.option1Value || "",
-          option2Name: variant.option2Name || "",
-          option2Value: variant.option2Value || "",
-          price: Number(variant.price || 0),
-          oldPrice: Number(variant.oldPrice || 0),
-          stock: Number(variant.stock || 0),
-          imageUrl: variant.imageUrl || "",
-          active: variant.active !== false,
-          status: variant.status || "inStock",
-          sortOrder: Number(variant.sortOrder ?? index),
-        }))
+        id: variant.id || "",
+        sku: variant.sku || "",
+        barcode: variant.barcode || "",
+        nameVi: variant.nameVi || "",
+        nameEn: variant.nameEn || variant.nameVi || "",
+        option1Name: variant.option1Name || "",
+        option1Value: variant.option1Value || "",
+        option2Name: variant.option2Name || "",
+        option2Value: variant.option2Value || "",
+        price: Number(variant.price || 0),
+        oldPrice: Number(variant.oldPrice || 0),
+        stock: Number(variant.stock || 0),
+        imageUrl: variant.imageUrl || "",
+        active: variant.active !== false,
+        status: variant.status || "inStock",
+        sortOrder: Number(variant.sortOrder ?? index),
+      }))
       : [],
 
     specsText: formatSpecsText(product.specs),
@@ -380,9 +380,8 @@ function VariantEditor({ draft, setDraft }) {
         {variants.map((variant, index) => (
           <div
             key={variant.id || index}
-            className={`rounded-3xl border bg-white p-4 shadow-sm ${
-              variant.active === false ? "border-slate-200 opacity-60" : "border-blue-100"
-            }`}
+            className={`rounded-3xl border bg-white p-4 shadow-sm ${variant.active === false ? "border-slate-200 opacity-60" : "border-blue-100"
+              }`}
           >
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <div className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
@@ -816,27 +815,27 @@ function getPublishChecklistItems(product = {}) {
 
   const commercial = hasVariants
     ? [
-        {
-          key: "variant",
-          label: "At least 1 sellable variant",
-          ok: hasSellableVariant,
-          missing: "Missing sellable variant",
-        },
-      ]
+      {
+        key: "variant",
+        label: "At least 1 sellable variant",
+        ok: hasSellableVariant,
+        missing: "Missing sellable variant",
+      },
+    ]
     : [
-        {
-          key: "price",
-          label: "Selling price > 0",
-          ok: Number(product.price || 0) > 0,
-          missing: "Missing price",
-        },
-        {
-          key: "stock",
-          label: "Stock > 0 or Pre-order / Coming soon",
-          ok: Number(product.stock || 0) > 0 || allowNoStock,
-          missing: "Missing stock",
-        },
-      ];
+      {
+        key: "price",
+        label: "Selling price > 0",
+        ok: Number(product.price || 0) > 0,
+        missing: "Missing price",
+      },
+      {
+        key: "stock",
+        label: "Stock > 0 or Pre-order / Coming soon",
+        ok: Number(product.stock || 0) > 0 || allowNoStock,
+        missing: "Missing stock",
+      },
+    ];
 
   return [
     ...common,
@@ -862,9 +861,8 @@ function PublishReadinessChecklist({ draft }) {
   const ready = isPublishReady(draft);
 
   return (
-    <section className={`rounded-3xl border p-4 ${
-      ready ? "border-emerald-100 bg-emerald-50" : "border-amber-100 bg-amber-50"
-    }`}>
+    <section className={`rounded-3xl border p-4 ${ready ? "border-emerald-100 bg-emerald-50" : "border-amber-100 bg-amber-50"
+      }`}>
       <div className={`text-sm font-black ${ready ? "text-emerald-800" : "text-amber-800"}`}>
         Publish readiness checklist
       </div>
@@ -878,13 +876,12 @@ function PublishReadinessChecklist({ draft }) {
         {items.map((item) => (
           <div
             key={item.key}
-            className={`flex items-center justify-between rounded-2xl px-3 py-2 text-xs font-black ${
-              item.ok
+            className={`flex items-center justify-between rounded-2xl px-3 py-2 text-xs font-black ${item.ok
                 ? "bg-white text-emerald-700"
                 : item.optional
                   ? "bg-white text-slate-500"
                   : "bg-red-50 text-red-600"
-            }`}
+              }`}
           >
             <span>{item.label}</span>
             <span>{item.ok ? "✓ Ready" : item.missing}</span>
@@ -1460,10 +1457,10 @@ export default function AdminProducts() {
         }
       />
 
-      <section className="mb-4 rounded-3xl border border-emerald-100 bg-emerald-50 p-4">
+      {/* <section className="mb-4 rounded-3xl border border-emerald-100 bg-emerald-50 p-4">
         <div className="text-sm font-black text-emerald-800">{t.backendSource}</div>
         <p className="mt-1 text-sm font-semibold text-emerald-700/80">{t.backendDesc}</p>
-      </section>
+      </section> */}
 
       <ProductBulkImportExportPanel onImported={reload} />
 
@@ -1504,11 +1501,10 @@ export default function AdminProducts() {
               key={tab.id}
               type="button"
               onClick={() => setProductTab(tab.id)}
-              className={`rounded-full px-4 py-2 text-xs font-black transition ${
-                productTab === tab.id
+              className={`rounded-full px-4 py-2 text-xs font-black transition ${productTab === tab.id
                   ? "bg-blue-700 text-white"
                   : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-              }`}
+                }`}
             >
               {tab.label}
             </button>
@@ -1609,11 +1605,10 @@ export default function AdminProducts() {
                         <button
                           type="button"
                           onClick={() => void toggleProductPublish(product)}
-                          className={`rounded-md px-3 py-2 text-xs font-black ${
-                            product.active === false || ["inactive", "draft"].includes(String(product.status || "").toLowerCase())
+                          className={`rounded-md px-3 py-2 text-xs font-black ${product.active === false || ["inactive", "draft"].includes(String(product.status || "").toLowerCase())
                               ? "border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
                               : "border border-slate-300 bg-slate-100 text-slate-600 hover:bg-slate-200"
-                          }`}
+                            }`}
                         >
                           {product.active === false || ["inactive", "draft"].includes(String(product.status || "").toLowerCase())
                             ? "Publish"
@@ -1713,11 +1708,10 @@ export default function AdminProducts() {
 
                     <td className="px-4 py-3">
                       <div
-                        className={`inline-flex rounded-full px-3 py-1 text-[11px] font-black ${
-                          product.active !== false
+                        className={`inline-flex rounded-full px-3 py-1 text-[11px] font-black ${product.active !== false
                             ? "bg-emerald-50 text-emerald-700"
                             : "bg-slate-100 text-slate-500"
-                        }`}
+                          }`}
                       >
                         {product.status || "inStock"}
                       </div>

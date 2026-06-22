@@ -3,8 +3,9 @@ import Header from "./Header";
 import Footer from "./Footer";
 import FloatingChat from "./FloatingChat";
 import { translateDomTree, useI18n } from "../../i18n";
+import { useCms } from "../../store/CmsStore";
 
-function LanguageDomTranslator() {
+export function LanguageDomTranslator() {
   const { lang } = useI18n();
 
   useEffect(() => {
@@ -29,6 +30,8 @@ function LanguageDomTranslator() {
 }
 
 export default function PageShell({ children, withFooter = true }) {
+  const { state } = useCms();
+  const lang = state?.settings?.lang || "vi";
   return (
     <div className="min-h-screen bg-[#f6f9fd] text-slate-900">
       <LanguageDomTranslator />
@@ -47,7 +50,7 @@ export default function PageShell({ children, withFooter = true }) {
         />
       </div>
 
-      <Header />
+      <Header user={state?.user} lang={lang} />
       <main className="relative z-10">{children}</main>
       {withFooter && <Footer />}
       <FloatingChat />

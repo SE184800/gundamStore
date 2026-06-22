@@ -169,11 +169,10 @@ function AccountSidebar({ user, wishlistCount, onLogout, t }) {
               <Link
                 key={item.label}
                 to={item.href}
-                className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-black ${
-                  item.active
-                    ? "bg-blue-50 text-blue-700"
-                    : "text-slate-600 hover:bg-slate-50 hover:text-blue-700"
-                }`}
+                className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-black ${item.active
+                  ? "bg-blue-50 text-blue-700"
+                  : "text-slate-600 hover:bg-slate-50 hover:text-blue-700"
+                  }`}
               >
                 <Icon size={18} />
                 {item.label}
@@ -233,9 +232,8 @@ function ProductRow({ product, lang, t, removing, onRemove, onAddToCart }) {
           )}
 
           <span
-            className={`rounded-full px-3 py-1 text-xs font-black ${
-              stock > 0 ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"
-            }`}
+            className={`rounded-full px-3 py-1 text-xs font-black ${stock > 0 ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"
+              }`}
           >
             {stock > 0 ? t.inStock : t.outOfStock}
           </span>
@@ -259,11 +257,10 @@ function ProductRow({ product, lang, t, removing, onRemove, onAddToCart }) {
           type="button"
           onClick={onAddToCart}
           disabled={stock <= 0}
-          className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl px-4 text-sm font-black text-white shadow-lg ${
-            stock <= 0
-              ? "cursor-not-allowed bg-slate-400"
-              : "bg-blue-700 shadow-blue-100 hover:bg-blue-800"
-          }`}
+          className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl px-4 text-sm font-black text-white shadow-lg ${stock <= 0
+            ? "cursor-not-allowed bg-slate-400"
+            : "bg-blue-700 shadow-blue-100 hover:bg-blue-800"
+            }`}
         >
           <ShoppingCart size={17} />
           {t.addToCart}
@@ -281,11 +278,10 @@ function ProductRow({ product, lang, t, removing, onRemove, onAddToCart }) {
           type="button"
           onClick={onRemove}
           disabled={removing}
-          className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border px-4 text-sm font-black ${
-            removing
-              ? "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400"
-              : "border-red-100 bg-white text-red-600 hover:bg-red-50"
-          }`}
+          className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border px-4 text-sm font-black ${removing
+            ? "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400"
+            : "border-red-100 bg-white text-red-600 hover:bg-red-50"
+            }`}
         >
           {removing ? <Loader2 size={17} className="animate-spin" /> : <Trash2 size={17} />}
           {t.remove}
@@ -411,7 +407,6 @@ export default function WishlistPage() {
 
   function logout() {
     actions.logout?.();
-    localStorage.removeItem("gundam_token");
     window.location.href = "/";
   }
 

@@ -460,9 +460,9 @@ export default function CheckoutPage() {
       if (!isPreorder) {
         setErrors([
           error?.message ||
-            (lang === "en"
-              ? "Cannot create backend order. Please check product mapping or stock."
-              : "Không thể tạo đơn backend. Vui lòng kiểm tra mapping sản phẩm hoặc tồn kho."),
+          (lang === "en"
+            ? "Cannot create backend order. Please check product mapping or stock."
+            : "Không thể tạo đơn backend. Vui lòng kiểm tra mapping sản phẩm hoặc tồn kho."),
         ]);
         setApiNotice("");
         return;
@@ -573,11 +573,10 @@ export default function CheckoutPage() {
                           key={address.id}
                           type="button"
                           onClick={() => applySavedAddress(address)}
-                          className={`rounded-2xl border p-4 text-left text-sm transition ${
-                            selectedAddressId === address.id
-                              ? "border-blue-500 bg-white ring-2 ring-blue-100"
-                              : "border-blue-100 bg-white/70 hover:border-blue-300"
-                          }`}
+                          className={`rounded-2xl border p-4 text-left text-sm transition ${selectedAddressId === address.id
+                            ? "border-blue-500 bg-white ring-2 ring-blue-100"
+                            : "border-blue-100 bg-white/70 hover:border-blue-300"
+                            }`}
                         >
                           <div className="flex items-center justify-between gap-2">
                             <b className="text-slate-950">{address.label || t.chooseSavedAddress}</b>
@@ -648,9 +647,8 @@ export default function CheckoutPage() {
                   {SHIPPING_METHODS.map((method) => (
                     <label
                       key={method.value}
-                      className={`cursor-pointer rounded-2xl border p-4 hover:border-blue-500 ${
-                        customer.shippingMethod === method.value ? "border-blue-500 ring-2 ring-blue-100" : ""
-                      }`}
+                      className={`cursor-pointer rounded-2xl border p-4 hover:border-blue-500 ${customer.shippingMethod === method.value ? "border-blue-500 ring-2 ring-blue-100" : ""
+                        }`}
                     >
                       <input
                         type="radio"
@@ -678,9 +676,8 @@ export default function CheckoutPage() {
                   {PAYMENT_METHODS.map((method) => (
                     <label
                       key={method.value}
-                      className={`cursor-pointer rounded-2xl border p-4 hover:border-blue-500 ${
-                        customer.paymentMethod === method.value ? "border-blue-500 ring-2 ring-blue-100" : ""
-                      }`}
+                      className={`cursor-pointer rounded-2xl border p-4 hover:border-blue-500 ${customer.paymentMethod === method.value ? "border-blue-500 ring-2 ring-blue-100" : ""
+                        }`}
                     >
                       <input
                         type="radio"

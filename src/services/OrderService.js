@@ -106,15 +106,15 @@ export function createOrder(payload) {
 
   const preorder = isPreorder
     ? {
-        status: payload.preorder?.status || PREORDER_STATUS.DEPOSIT_PENDING,
-        eta: payload.preorder?.eta || "",
-        fullAmount: Number(payload.preorder?.fullAmount || subtotal || 0),
-        depositRate: Number(payload.preorder?.depositRate || 0.3),
-        depositAmount: Number(payload.preorder?.depositAmount || payload.total || 0),
-        remainingAmount: Number(payload.preorder?.remainingAmount || 0),
-        depositStatus: payload.preorder?.depositStatus || PAYMENT_STATUS.UNPAID,
-        balanceStatus: payload.preorder?.balanceStatus || PAYMENT_STATUS.UNPAID,
-      }
+      status: payload.preorder?.status || PREORDER_STATUS.DEPOSIT_PENDING,
+      eta: payload.preorder?.eta || "",
+      fullAmount: Number(payload.preorder?.fullAmount || subtotal || 0),
+      depositRate: Number(payload.preorder?.depositRate || 0.3),
+      depositAmount: Number(payload.preorder?.depositAmount || payload.total || 0),
+      remainingAmount: Number(payload.preorder?.remainingAmount || 0),
+      depositStatus: payload.preorder?.depositStatus || PAYMENT_STATUS.UNPAID,
+      balanceStatus: payload.preorder?.balanceStatus || PAYMENT_STATUS.UNPAID,
+    }
     : null;
 
   const total = isPreorder
@@ -199,28 +199,28 @@ export function updateOrderStatus(orderId, status, note = "", options = {}) {
   const nextOrders = orders.map((order) =>
     order.id === currentOrder.id
       ? {
-          ...order,
-          status,
-          updatedAt: now,
-          cancelRequest:
-            status === ORDER_STATUS.CANCELLED
-              ? {
-                  ...(order.cancelRequest || {}),
-                  status: "Approved",
-                  resolvedAt: now,
-                  reason: note || order.cancelRequest?.reason || "",
-                }
-              : order.cancelRequest,
-          timeline: [
-            ...(order.timeline || []),
-            {
-              status,
-              time: now,
-              title: `Cập nhật: ${getOrderStatusLabel(status, "vi")}`,
-              note: note || `Đơn hàng chuyển sang trạng thái ${getOrderStatusLabel(status, "vi")}.`,
-            },
-          ],
-        }
+        ...order,
+        status,
+        updatedAt: now,
+        cancelRequest:
+          status === ORDER_STATUS.CANCELLED
+            ? {
+              ...(order.cancelRequest || {}),
+              status: "Approved",
+              resolvedAt: now,
+              reason: note || order.cancelRequest?.reason || "",
+            }
+            : order.cancelRequest,
+        timeline: [
+          ...(order.timeline || []),
+          {
+            status,
+            time: now,
+            title: `Cập nhật: ${getOrderStatusLabel(status, "vi")}`,
+            note: note || `Đơn hàng chuyển sang trạng thái ${getOrderStatusLabel(status, "vi")}.`,
+          },
+        ],
+      }
       : order
   );
 
@@ -232,10 +232,10 @@ export function updatePaymentStatus(orderId, paymentStatus) {
   const orders = getOrders().map((order) =>
     order.id === orderId || order.orderCode === orderId
       ? {
-          ...order,
-          paymentStatus,
-          updatedAt: new Date().toISOString(),
-        }
+        ...order,
+        paymentStatus,
+        updatedAt: new Date().toISOString(),
+      }
       : order
   );
 
@@ -249,25 +249,25 @@ export function requestCancelOrder(orderId, reason = "", note = "") {
   const orders = getOrders().map((order) =>
     order.id === orderId || order.orderCode === orderId
       ? {
-          ...order,
-          cancelRequest: {
-            requested: true,
-            reason,
-            note,
-            status: "Pending",
-            requestedAt: now,
+        ...order,
+        cancelRequest: {
+          requested: true,
+          reason,
+          note,
+          status: "Pending",
+          requestedAt: now,
+        },
+        updatedAt: now,
+        timeline: [
+          ...(order.timeline || []),
+          {
+            status: order.status,
+            time: now,
+            title: "Yêu cầu hủy đơn",
+            note: note || reason || "Khách hàng đã gửi yêu cầu hủy đơn.",
           },
-          updatedAt: now,
-          timeline: [
-            ...(order.timeline || []),
-            {
-              status: order.status,
-              time: now,
-              title: "Yêu cầu hủy đơn",
-              note: note || reason || "Khách hàng đã gửi yêu cầu hủy đơn.",
-            },
-          ],
-        }
+        ],
+      }
       : order
   );
 
@@ -287,22 +287,22 @@ export function updateOrderShipping(orderId, shippingInfo = {}) {
   const orders = getOrders().map((order) =>
     order.id === orderId || order.orderCode === orderId
       ? {
-          ...order,
-          shippingInfo: {
-            ...(order.shippingInfo || {}),
-            ...shippingInfo,
+        ...order,
+        shippingInfo: {
+          ...(order.shippingInfo || {}),
+          ...shippingInfo,
+        },
+        updatedAt: now,
+        timeline: [
+          ...(order.timeline || []),
+          {
+            status: order.status,
+            time: now,
+            title: "Cập nhật vận chuyển",
+            note: `Carrier: ${shippingInfo.carrier || "-"}, Tracking: ${shippingInfo.trackingCode || "-"}`,
           },
-          updatedAt: now,
-          timeline: [
-            ...(order.timeline || []),
-            {
-              status: order.status,
-              time: now,
-              title: "Cập nhật vận chuyển",
-              note: `Carrier: ${shippingInfo.carrier || "-"}, Tracking: ${shippingInfo.trackingCode || "-"}`,
-            },
-          ],
-        }
+        ],
+      }
       : order
   );
 
@@ -314,10 +314,10 @@ export function updateOrderAdminNote(orderId, adminNote = "") {
   const orders = getOrders().map((order) =>
     order.id === orderId || order.orderCode === orderId
       ? {
-          ...order,
-          adminNote,
-          updatedAt: new Date().toISOString(),
-        }
+        ...order,
+        adminNote,
+        updatedAt: new Date().toISOString(),
+      }
       : order
   );
 
@@ -339,11 +339,11 @@ function mapBackendOrderForStorefront(order = {}) {
     },
     items: Array.isArray(order.items)
       ? order.items.map((item) => ({
-          ...item,
-          qty: item.quantity,
-          quantity: item.quantity,
-          productName: item.name,
-        }))
+        ...item,
+        qty: item.quantity,
+        quantity: item.quantity,
+        productName: item.name,
+      }))
       : [],
     total: Number(order.total || 0),
     subtotal: Number(order.subtotal || 0),
@@ -365,7 +365,7 @@ export async function lookupPublicOrderFromApi(orderCode = "", { phone = "", ema
   if (email) params.set("email", String(email).trim());
 
   const queryString = params.toString();
-  const path = `/api/orders/public/${encodeURIComponent(cleanCode)}${queryString ? `?${queryString}` : ""}`;
+  const path = `/orders/public/${encodeURIComponent(cleanCode)}${queryString ? `?${queryString}` : ""}`;
 
   const data = await apiRequest(path, {
     token: "",
@@ -430,25 +430,25 @@ export function requestReturnOrder(orderId, reason = "", note = "") {
   const orders = getOrders().map((item) =>
     item.id === order.id || item.orderCode === order.id
       ? {
-          ...item,
-          returnRequest: {
-            requested: true,
-            reason,
-            note,
-            status: "Pending",
-            requestedAt: now,
+        ...item,
+        returnRequest: {
+          requested: true,
+          reason,
+          note,
+          status: "Pending",
+          requestedAt: now,
+        },
+        updatedAt: now,
+        timeline: [
+          ...(item.timeline || []),
+          {
+            status: item.status,
+            time: now,
+            title: "Yêu cầu trả hàng/hoàn tiền",
+            note: note || reason || "Khách hàng đã gửi yêu cầu trả hàng/hoàn tiền.",
           },
-          updatedAt: now,
-          timeline: [
-            ...(item.timeline || []),
-            {
-              status: item.status,
-              time: now,
-              title: "Yêu cầu trả hàng/hoàn tiền",
-              note: note || reason || "Khách hàng đã gửi yêu cầu trả hàng/hoàn tiền.",
-            },
-          ],
-        }
+        ],
+      }
       : item
   );
 
@@ -602,27 +602,27 @@ export function requestPreorderBalancePayment(orderId, note = "") {
   const orders = getOrders().map((item) =>
     item.id === order.id || item.orderCode === order.id
       ? {
-          ...item,
-          preorder: {
-            ...(item.preorder || {}),
-            balancePaymentRequest: {
-              requested: true,
-              status: "Pending",
-              note,
-              requestedAt: now,
-            },
+        ...item,
+        preorder: {
+          ...(item.preorder || {}),
+          balancePaymentRequest: {
+            requested: true,
+            status: "Pending",
+            note,
+            requestedAt: now,
           },
-          updatedAt: now,
-          timeline: [
-            ...(item.timeline || []),
-            {
-              status: item.status,
-              time: now,
-              title: "Khách báo đã thanh toán phần còn lại",
-              note: note || "Khách hàng đã gửi xác nhận thanh toán phần còn lại cho đơn pre-order.",
-            },
-          ],
-        }
+        },
+        updatedAt: now,
+        timeline: [
+          ...(item.timeline || []),
+          {
+            status: item.status,
+            time: now,
+            title: "Khách báo đã thanh toán phần còn lại",
+            note: note || "Khách hàng đã gửi xác nhận thanh toán phần còn lại cho đơn pre-order.",
+          },
+        ],
+      }
       : item
   );
 
@@ -647,40 +647,40 @@ export function resolvePreorderBalancePayment(orderId, decision = "Rejected", ad
   const orders = getOrders().map((item) =>
     item.id === order.id || item.orderCode === order.id
       ? {
-          ...item,
-          status:
-            approved && item.status === ORDER_STATUS.PLACED
-              ? ORDER_STATUS.CONFIRMED
-              : item.status,
-          preorder: {
-            ...(item.preorder || {}),
-            status: approved ? PREORDER_STATUS.BALANCE_PAID : item.preorder?.status,
-            balanceStatus: approved ? PAYMENT_STATUS.PAID : item.preorder?.balanceStatus,
-            balanceConfirmedAt: approved ? now : item.preorder?.balanceConfirmedAt,
-            balancePaymentRequest: {
-              ...(item.preorder?.balancePaymentRequest || {}),
-              status: approved ? "Approved" : "Rejected",
-              resolvedAt: now,
-              adminNote,
-            },
+        ...item,
+        status:
+          approved && item.status === ORDER_STATUS.PLACED
+            ? ORDER_STATUS.CONFIRMED
+            : item.status,
+        preorder: {
+          ...(item.preorder || {}),
+          status: approved ? PREORDER_STATUS.BALANCE_PAID : item.preorder?.status,
+          balanceStatus: approved ? PAYMENT_STATUS.PAID : item.preorder?.balanceStatus,
+          balanceConfirmedAt: approved ? now : item.preorder?.balanceConfirmedAt,
+          balancePaymentRequest: {
+            ...(item.preorder?.balancePaymentRequest || {}),
+            status: approved ? "Approved" : "Rejected",
+            resolvedAt: now,
+            adminNote,
           },
-          updatedAt: now,
-          timeline: [
-            ...(item.timeline || []),
-            {
-              status: approved ? ORDER_STATUS.CONFIRMED : item.status,
-              time: now,
-              title: approved
-                ? "Admin xác nhận thanh toán phần còn lại"
-                : "Admin từ chối xác nhận thanh toán phần còn lại",
-              note:
-                adminNote ||
-                (approved
-                  ? "Admin đã xác nhận khách thanh toán phần còn lại cho đơn pre-order."
-                  : "Admin đã từ chối xác nhận thanh toán phần còn lại."),
-            },
-          ],
-        }
+        },
+        updatedAt: now,
+        timeline: [
+          ...(item.timeline || []),
+          {
+            status: approved ? ORDER_STATUS.CONFIRMED : item.status,
+            time: now,
+            title: approved
+              ? "Admin xác nhận thanh toán phần còn lại"
+              : "Admin từ chối xác nhận thanh toán phần còn lại",
+            note:
+              adminNote ||
+              (approved
+                ? "Admin đã xác nhận khách thanh toán phần còn lại cho đơn pre-order."
+                : "Admin đã từ chối xác nhận thanh toán phần còn lại."),
+          },
+        ],
+      }
       : item
   );
 

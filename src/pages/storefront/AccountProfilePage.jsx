@@ -219,11 +219,10 @@ function AccountSidebar({ profile, wishlistCount, onLogout, menuItems, t }) {
             <Link
               key={item.href}
               to={item.href}
-              className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-black ${
-                item.active
-                  ? "bg-blue-50 text-blue-700"
-                  : "text-slate-600 hover:bg-slate-50 hover:text-blue-700"
-              }`}
+              className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-black ${item.active
+                ? "bg-blue-50 text-blue-700"
+                : "text-slate-600 hover:bg-slate-50 hover:text-blue-700"
+                }`}
             >
               <Icon size={18} />
               {item.label}
@@ -328,7 +327,6 @@ export default function AccountProfilePage() {
 
   function logout() {
     actions.logout?.();
-    localStorage.removeItem("gundam_token");
     window.location.href = "/";
   }
 
@@ -392,7 +390,7 @@ export default function AccountProfilePage() {
 
                 <div className="mt-5 grid gap-4 md:grid-cols-2">
                   <Input label={t.fullName} value={profile.name} onChange={(value) => patch("name", value)} />
-                  <Input label="Email" value={profile.email} onChange={() => {}} />
+                  <Input label="Email" value={profile.email} onChange={() => { }} />
                   <Input label={t.phone} value={profile.phone} onChange={(value) => patch("phone", value)} />
                   <Input label={t.birthday} type="date" value={profile.birthday} onChange={(value) => patch("birthday", value)} />
 
@@ -431,11 +429,10 @@ export default function AccountProfilePage() {
                     type="button"
                     disabled={saving || !hasToken}
                     onClick={saveProfile}
-                    className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-black text-white shadow-lg ${
-                      saving || !hasToken
-                        ? "cursor-not-allowed bg-slate-400"
-                        : "bg-blue-700 shadow-blue-100 hover:bg-blue-800"
-                    }`}
+                    className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-black text-white shadow-lg ${saving || !hasToken
+                      ? "cursor-not-allowed bg-slate-400"
+                      : "bg-blue-700 shadow-blue-100 hover:bg-blue-800"
+                      }`}
                   >
                     {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
                     {saving ? t.saving : t.save}

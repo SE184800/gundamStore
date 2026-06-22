@@ -78,24 +78,24 @@ export function mapBackendProductForAdmin(product = {}) {
 
     variants: Array.isArray(product.variants)
       ? product.variants.map((variant) => ({
-          id: variant.id,
-          productId: variant.productId,
-          sku: variant.sku || "",
-          barcode: variant.barcode || "",
-          nameVi: variant.nameVi || "",
-          nameEn: variant.nameEn || variant.nameVi || "",
-          option1Name: variant.option1Name || "",
-          option1Value: variant.option1Value || "",
-          option2Name: variant.option2Name || "",
-          option2Value: variant.option2Value || "",
-          price: Number(variant.price || 0),
-          oldPrice: Number(variant.oldPrice || 0),
-          stock: Number(variant.stock || 0),
-          imageUrl: variant.imageUrl || "",
-          active: variant.active !== false,
-          status: variant.status || "inStock",
-          sortOrder: Number(variant.sortOrder || 0),
-        }))
+        id: variant.id,
+        productId: variant.productId,
+        sku: variant.sku || "",
+        barcode: variant.barcode || "",
+        nameVi: variant.nameVi || "",
+        nameEn: variant.nameEn || variant.nameVi || "",
+        option1Name: variant.option1Name || "",
+        option1Value: variant.option1Value || "",
+        option2Name: variant.option2Name || "",
+        option2Value: variant.option2Value || "",
+        price: Number(variant.price || 0),
+        oldPrice: Number(variant.oldPrice || 0),
+        stock: Number(variant.stock || 0),
+        imageUrl: variant.imageUrl || "",
+        active: variant.active !== false,
+        status: variant.status || "inStock",
+        sortOrder: Number(variant.sortOrder || 0),
+      }))
       : [],
 
     source: "backend",
@@ -114,7 +114,7 @@ function cacheBackendProducts(products = []) {
 }
 
 export async function getAdminProductsFromApi() {
-  const data = await apiRequest("/api/products/admin");
+  const data = await apiRequest("/products/admin");
 
   if (!data?.success || !Array.isArray(data.products)) {
     throw new Error("Backend did not return valid products.");
@@ -126,7 +126,7 @@ export async function getAdminProductsFromApi() {
 }
 
 export async function getAdminCatalogReferenceApi() {
-  const data = await apiRequest("/api/products/admin/reference");
+  const data = await apiRequest("/products/admin/reference");
 
   if (!data?.success) {
     throw new Error("Backend did not return catalog reference.");
@@ -201,29 +201,29 @@ function toBackendPayload(product = {}) {
 
     variants: Array.isArray(product.variants)
       ? product.variants.map((variant, index) => ({
-          id: variant.id || "",
-          sku: variant.sku || "",
-          barcode: variant.barcode || "",
-          nameVi: variant.nameVi || "",
-          nameEn: variant.nameEn || variant.nameVi || "",
-          option1Name: variant.option1Name || "",
-          option1Value: variant.option1Value || "",
-          option2Name: variant.option2Name || "",
-          option2Value: variant.option2Value || "",
-          price: Number(variant.price || 0),
-          oldPrice: Number(variant.oldPrice || 0),
-          stock: Number(variant.stock || 0),
-          imageUrl: variant.imageUrl || "",
-          active: variant.active !== false,
-          status: variant.status || "inStock",
-          sortOrder: Number(variant.sortOrder ?? index),
-        }))
+        id: variant.id || "",
+        sku: variant.sku || "",
+        barcode: variant.barcode || "",
+        nameVi: variant.nameVi || "",
+        nameEn: variant.nameEn || variant.nameVi || "",
+        option1Name: variant.option1Name || "",
+        option1Value: variant.option1Value || "",
+        option2Name: variant.option2Name || "",
+        option2Value: variant.option2Value || "",
+        price: Number(variant.price || 0),
+        oldPrice: Number(variant.oldPrice || 0),
+        stock: Number(variant.stock || 0),
+        imageUrl: variant.imageUrl || "",
+        active: variant.active !== false,
+        status: variant.status || "inStock",
+        sortOrder: Number(variant.sortOrder ?? index),
+      }))
       : [],
   };
 }
 
 export async function createAdminProductApi(product = {}) {
-  const data = await apiRequest("/api/products/admin", {
+  const data = await apiRequest("/products/admin", {
     method: "POST",
     body: JSON.stringify(toBackendPayload(product)),
   });
@@ -236,7 +236,7 @@ export async function createAdminProductApi(product = {}) {
 }
 
 export async function updateAdminProductApi(productId, product = {}) {
-  const data = await apiRequest(`/api/products/admin/${encodeURIComponent(productId)}`, {
+  const data = await apiRequest(`/products/admin/${encodeURIComponent(productId)}`, {
     method: "PATCH",
     body: JSON.stringify(toBackendPayload(product)),
   });
@@ -249,7 +249,7 @@ export async function updateAdminProductApi(productId, product = {}) {
 }
 
 export async function deactivateAdminProductApi(productId) {
-  const data = await apiRequest(`/api/products/admin/${encodeURIComponent(productId)}`, {
+  const data = await apiRequest(`/products/admin/${encodeURIComponent(productId)}`, {
     method: "DELETE",
   });
 
@@ -261,7 +261,7 @@ export async function deactivateAdminProductApi(productId) {
 }
 
 export async function setAdminProductGroupsApi(productId, groupIds = []) {
-  const data = await apiRequest(`/api/products/admin/products/${encodeURIComponent(productId)}/groups`, {
+  const data = await apiRequest(`/products/admin/products/${encodeURIComponent(productId)}/groups`, {
     method: "PUT",
     body: JSON.stringify({ groupIds }),
   });
@@ -289,7 +289,7 @@ function downloadCsvText(filename = "products.csv", text = "") {
 }
 
 export async function downloadAdminProductImportTemplateCsv() {
-  const text = await apiRequest("/api/products/admin/import-template", {
+  const text = await apiRequest("/products/admin/import-template", {
     method: "GET",
     headers: {
       Accept: "text/csv",
@@ -301,7 +301,7 @@ export async function downloadAdminProductImportTemplateCsv() {
 }
 
 export async function exportAdminProductsCsv() {
-  const text = await apiRequest("/api/products/admin/export", {
+  const text = await apiRequest("/products/admin/export", {
     method: "GET",
     headers: {
       Accept: "text/csv",
@@ -313,7 +313,7 @@ export async function exportAdminProductsCsv() {
 }
 
 export async function previewAdminProductImportCsv(csvText = "") {
-  const data = await apiRequest("/api/products/admin/import-preview", {
+  const data = await apiRequest("/products/admin/import-preview", {
     method: "POST",
     body: JSON.stringify({ csvText }),
   });
@@ -326,7 +326,7 @@ export async function previewAdminProductImportCsv(csvText = "") {
 }
 
 export async function commitAdminProductImportCsv(csvText = "", mode = "upsert") {
-  const data = await apiRequest("/api/products/admin/import-commit", {
+  const data = await apiRequest("/products/admin/import-commit", {
     method: "POST",
     body: JSON.stringify({ csvText, mode }),
   });

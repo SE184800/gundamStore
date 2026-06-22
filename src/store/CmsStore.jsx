@@ -1,5 +1,5 @@
 import { authService } from "../services/AuthService";
-import { clearStoredAccountToken, setStoredAccountToken } from "../services/ApiClient";
+import { clearStoredAccountToken, setStoredAccountToken, clearStoredAdminSession } from "../services/ApiClient";
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 import {
   enrichProductsWithBackendIds,
@@ -142,8 +142,7 @@ export function CmsProvider({ children }) {
 
           // 2. 🛠️ ĐÃ FIX: Đổi từ 'set' của Zustand sang 'setState' chuẩn của Context
           setState((prev) => ({ ...prev, user: res.user }));
-
-          return { success: true };
+          return res;
         }
 
         return { success: false, message: res.message || "Tài khoản hoặc mật khẩu không đúng!" };
@@ -158,11 +157,55 @@ export function CmsProvider({ children }) {
         return { success: false, message: error.message };
       }
     },
-    // 🛠️ ĐÃ CẬP NHẬT: Hàm logout chuẩn cú pháp React Context API
+    requestResetPassword: async (email) => {
+      try {
+        // 🟢 GỌI QUA SERVICE CHUẨN PATTERN:
+        const res = await authService.forgotPassword(email);
+        return res?.data || res;
+      } catch (error) {
+        console.error("❌ LỖI FORGOT PASSWORD STORE:", error);
+        return { success: false, message: error.message };
+      }
+    },
+
+    executeResetPassword: async ({ token, password }) => {
+      try {
+        // 🟢 GỌI QUA SERVICE CHUẨN PATTERN:
+        const res = await authService.resetPassword(token, password);
+        return res?.data || res;
+      } catch (error) {
+        console.error("❌ LỖI CẬP NHẬT MẬT KHẨU STORE:", error);
+        return { success: false, message: error.message };
+      }
+    },
+    checkResetToken: async (token) => {
+      try {
+        const res = await authService.validateResetToken(token);
+        return res?.data || res; // Trả về { valid: true/false }
+      } catch (error) {
+        return { valid: false };
+      }
+    },
+
     logout: () => {
       clearStoredAccountToken();
-      // 🛠️ ĐÃ FIX: Đổi từ 'set' sang 'setState' để tránh sập ứng dụng khi bấm Đăng xuất
+      clearStoredAdminSession();
+      localStorage.removeItem("gundam_token");
+      console.log("Bắt đầu xóa:");
+      // Ép State user về null ngay lập tức để React re-render lộ 2 nút Đăng nhập/Đăng ký
       setState((prev) => ({ ...prev, user: null }));
+      console.log("Đang xóa");
+      // 2. 🔵 LUỒNG BẤT ĐỒNG BỘ: Bắn request ngầm xuống Backend để hủy session
+      // Không dùng từ khóa 'await' ở đây, để JavaScript không đóng băng hàm này lại
+      authService.logout()
+        .then(() => {
+          console.log("Backend đã hủy session thành công");
+
+        })
+        .catch((error) => {
+          console.error("Backend hủy session thất bại nhưng Frontend đã sạch", error);
+        });
+      console.log("Xóa thành công");
     },
     saveProduct(product) {
       setState((prev) => {

@@ -59,7 +59,7 @@ function dedupeCart(cart = []) {
         backendProductId: current.backendProductId || item.backendProductId,
         productId: current.productId || item.productId || current.backendProductId || item.backendProductId,
         quantity: (Number(current.quantity) || 1) + (Number(item.quantity) || 1),
-        selected: true,
+        selected: item.selected !== undefined ? item.selected : (current.selected !== undefined ? current.selected : true),
         price: Number(item.price) > 0 ? item.price : current.price,
       };
       return acc;
@@ -149,8 +149,8 @@ export function validateCartStock(product, quantity = 1, products = []) {
     : null;
 
   const available = item.variantId
-    ? productStock
-    : cachedStock ?? productStock;
+    ? Number(product?.stock || item.stock || 0)
+    : Number(stock?.available || product?.stock || 0);
 
   if (available <= 0) {
     return { ok: false, reason: "OUT_OF_STOCK", available, currentQty, requestQty, item };
@@ -192,18 +192,18 @@ export function addProductToCart(product, quantity = 1, products = []) {
 
   const next = found
     ? cart.map((row) =>
-        sameItem(row, found)
-          ? {
-              ...row,
-              ...item,
-              id: row.id || item.id,
-              backendProductId: row.backendProductId || item.backendProductId,
-              productId: row.productId || item.productId || row.backendProductId || item.backendProductId,
-              quantity: (Number(row.quantity) || 1) + item.quantity,
-              selected: true,
-            }
-          : row
-      )
+      sameItem(row, found)
+        ? {
+          ...row,
+          ...item,
+          id: row.id || item.id,
+          backendProductId: row.backendProductId || item.backendProductId,
+          productId: row.productId || item.productId || row.backendProductId || item.backendProductId,
+          quantity: (Number(row.quantity) || 1) + item.quantity,
+          selected: true,
+        }
+        : row
+    )
     : [item, ...cart];
 
   return saveCart(next, products);

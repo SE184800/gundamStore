@@ -113,7 +113,7 @@ async function run() {
   }
 
   try {
-    const { response, data } = await request("/api/orders/public/SMOKE-NOT-FOUND?phone=0900000000");
+    const { response, data } = await request("s/public/SMOKE-NOT-FOUND?phone=0900000000");
 
     if (response.status === 404 && data?.success === false) {
       pass("Public order lookup invalid order returns 404", data?.message || "");
@@ -125,7 +125,7 @@ async function run() {
   }
 
   try {
-    const { response, data } = await request("/api/orders/public/SMOKE-NOT-FOUND");
+    const { response, data } = await request("s/public/SMOKE-NOT-FOUND");
 
     if (response.status === 400 && data?.success === false) {
       pass("Public order lookup requires phone/email", data?.message || "");
@@ -168,7 +168,7 @@ async function run() {
         ],
       };
 
-      const result = await request("/api/orders", {
+      const result = await request("s", {
         method: "POST",
         body: JSON.stringify(payload),
       });
@@ -192,7 +192,7 @@ async function run() {
 
   if (token) {
     try {
-      const { response, data } = await request("/api/account/me", {
+      const { response, data } = await request("/account/me", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -208,7 +208,7 @@ async function run() {
     }
 
     try {
-      const { response, data } = await request("/api/account/me", {
+      const { response, data } = await request("/account/me", {
         method: "PATCH",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -242,7 +242,7 @@ async function run() {
       if (!product) {
         pass("Wishlist API add/list/remove works", "Skipped because no product exists");
       } else {
-        const addResult = await request("/api/account/wishlist", {
+        const addResult = await request("/account/wishlist", {
           method: "POST",
           headers: {
             Authorization: `Bearer ${token}`,
@@ -252,7 +252,7 @@ async function run() {
           }),
         });
 
-        const listResult = await request("/api/account/wishlist", {
+        const listResult = await request("/account/wishlist", {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -261,7 +261,7 @@ async function run() {
         const items = listResult.data?.items || [];
         const found = items.some((item) => item.productId === product.id);
 
-        const removeResult = await request(`/api/account/wishlist/${encodeURIComponent(product.id)}`, {
+        const removeResult = await request(`/account/wishlist/${encodeURIComponent(product.id)}`, {
           method: "DELETE",
           headers: {
             Authorization: `Bearer ${token}`,

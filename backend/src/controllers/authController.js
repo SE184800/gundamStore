@@ -4,6 +4,9 @@ import { prisma } from "../config/prisma.js";
 import { env } from "../config/env.js";
 import { verifyPassword } from "../utils/password.js";
 import bcrypt from "bcryptjs/dist/bcrypt.js";
+import crypto from "crypto";
+import { hashPassword } from "../utils/password.js";
+import nodemailer from 'nodemailer';
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
@@ -58,7 +61,162 @@ function safeUser(user) {
       : null,
   };
 }
+export async function validateResetToken(req, res, next) {
+  try {
+    const { token } = req.query; // Lấy token từ query params của GET request
+    if (!token) return res.status(400).json({ valid: false });
 
+    const resetPasswordToken = crypto.createHash("sha256").update(token).digest("hex");
+
+    const user = await prisma.user.findFirst({
+      where: {
+        resetPasswordToken,
+        resetPasswordExpires: { gt: new Date() },
+      },
+    });
+
+    if (!user) {
+      return res.json({ valid: false, message: "Token không hợp lệ hoặc đã hết hạn!" });
+    }
+
+    res.json({ valid: true });
+  } catch (err) {
+    next(err);
+  }
+}
+export async function forgotPassword(req, res, next) {
+  try {
+    const { email } = req.body;
+    const FRONTEND = process.env.FRONTEND_ORIGIN;
+    // 1. Tìm user theo Email
+    const user = await prisma.user.findUnique({
+      where: { email: email.toLowerCase() },
+    });
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: "Email không tồn tại trên hệ thống!" });
+    }
+
+    // 2. Tạo Token khôi phục ngẫu nhiên và đặt hạn hết hạn (Ví dụ: 5 phút)
+    const resetToken = crypto.randomBytes(32).toString("hex");
+    const resetPasswordToken = crypto.createHash("sha256").update(resetToken).digest("hex");
+    const resetPasswordExpires = new Date(Date.now() + 5 * 60 * 1000); // 5 phút sau
+
+    // 3. Cập nhật Token tạm thời vào bảng User bằng Prisma
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        resetPasswordToken, // Đảm bảo cậu đã tạo trường String này trong Schema Prisma
+        resetPasswordExpires, // Đảm bảo cậu đã tạo trường DateTime này trong Schema Prisma
+      },
+    });
+
+    // 4. Tạo đường link Reset gửi về Email
+    const resetUrl = `${FRONTEND}/reset-password?token=${resetToken}`;
+
+    const transporter = nodemailer.createTransport({
+      host: process.env.EMAIL_HOST,
+      port: 465, // Sử dụng cổng bảo mật SSL
+      secure: true,
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_APP_PASSWORD,
+      },
+    });
+
+    // 🟢 2. THIẾT KẾ NỘI DUNG EMAIL GỬI ĐI (CÓ SẴN BUTTON ĐẸP MẮT)
+    const mailOptions = {
+      from: `"Gundam Store VN" <${process.env.EMAIL_USER}>`,
+      to: user.email,
+      subject: "🔒 Khôi phục mật khẩu tài khoản của bạn",
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; rounded: 16px;">
+          <h2 style="color: #1e3a8a; text-align: center;">Yêu Cầu Đặt Lại Mật Khẩu</h2>
+          <p>Xin chào <strong>${user.name || "Bbuilder"}</strong>,</p>
+          <p>Hệ thống nhận được yêu cầu khôi phục mật khẩu từ tài khoản của bạn. Vui lòng bấm vào nút bấm bên dưới để tiến hành đặt lại mật khẩu mới. Liên kết này sẽ <strong>hết hạn sau 15 phút</strong>.</p>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${resetUrl}" style="background-color: #1d4ed8; color: white; padding: 12px 24px; text-decoration: none; border-radius: 12px; font-weight: bold; display: inline-block;">
+              Đặt lại mật khẩu ngay
+            </a>
+          </div>
+          
+          <p style="font-size: 12px; color: #64748b;">Nếu nút bấm phía trên không hoạt động, bạn có thể sao chép và dán đường dẫn này vào trình duyệt: <br> ${resetUrl}</p>
+          <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;">
+          <p style="font-size: 11px; color: #94a3b8; text-align: center;">Nếu bạn không yêu cầu hành động này, vui lòng bỏ qua email này để giữ an toàn cho tài khoản.</p>
+        </div>
+      `,
+    };
+
+    // 🟢 3. TIẾN HÀNH KÍCH NỔ LỆNH GỬI MAIL CHẠY NGẦM
+    await transporter.sendMail(mailOptions);
+    res.json({
+      success: true,
+      message: "Yêu cầu khôi phục mật khẩu đã được xử lý thành công!",
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+export async function resetPassword(req, res, next) {
+  try {
+    const { token, password } = req.body;
+
+    if (!token || !password) {
+      return res.status(400).json({ success: false, message: "Vui lòng nhập đầy đủ thông tin!" });
+    }
+
+    // 1. Mã hóa ngược lại chuỗi token nhận từ FE để so khớp với DB
+    const resetPasswordToken = crypto.createHash("sha256").update(token).digest("hex");
+
+    // 2. Tìm User có Token trùng khớp và Token đó PHẢI CÒN HẠN (resetPasswordExpires > Giờ hiện tại)
+    const user = await prisma.user.findFirst({
+      where: {
+        resetPasswordToken,
+        resetPasswordExpires: {
+          gt: new Date(), // Viết theo chuẩn Prisma: Greater Than (Lớn hơn thời gian hiện tại)
+        },
+      },
+    });
+    if (!user) {
+      return res.status(400).json({ success: false, message: "Liên kết khôi phục đã hết hạn hoặc không hợp lệ!" });
+    }
+    const isSameAsOld = await verifyPassword(password, user.passwordHash);
+    if (isSameAsOld) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          resetPasswordToken: null,   // Xóa token
+          resetPasswordExpires: null, // Xóa thời gian hết hạn
+        },
+      });
+      return res.status(400).json({
+        success: false,
+        code: "PASSWORD_ALREADY_USED", // Gửi thêm mã code định danh để Front-end dễ bắt bài
+        message: "Mật khẩu mới không được trùng với mật khẩu cũ hiện tại của tài khoản!"
+      });
+    }
+    // 3. Mã hóa mật khẩu mới (Cậu dùng hàm băm password sẵn có của dự án cậu nhé, ví dụ: hashPassword)
+    const hashedPassword = await hashPassword(password); // Hoặc bcrypt.hash(password, 10)
+
+    // 4. Cập nhật mật khẩu mới và XÓA SẠCH Token tạm đi để không cho xài lại lần 2
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        passwordHash: hashedPassword,
+        resetPasswordToken: null,   // Reset về null
+        resetPasswordExpires: null, // Reset về null
+      },
+    });
+
+    res.json({
+      success: true,
+      message: "Mật khẩu của bạn đã được cập nhật thành công!",
+    });
+  } catch (err) {
+    next(err);
+  }
+}
 export async function login(req, res, next) {
   try {
     const body = loginSchema.parse(req.body);
@@ -123,7 +281,10 @@ export async function login(req, res, next) {
     res.json({
       success: true,
       token,
-      user: safeUser(user),
+      user: {
+        ...safeUser(user),
+        roleId: user.roleId || user.role?.id,
+      }
     });
   } catch (err) {
     next(err);
@@ -226,6 +387,6 @@ export async function logout(req, res) {
 
   res.json({
     success: true,
-    message: "Logged out on client side",
+    message: "Đăng xuất thành công !",
   });
 }

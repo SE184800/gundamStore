@@ -1,11 +1,12 @@
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { Eye, Heart, Minus, Plus, ShoppingCart, Star, X, Zap } from "lucide-react";
 import { formatCurrency } from "../../utils/format";
 import { resolveText, useI18n } from "../../i18n";
 import { addProductToCart, forceCartBadgeSync, saveBuyNowDraft, validateCartStock } from "../../services/CartService";
 import { addMyWishlistItem, hasAccountToken } from "../../services/AccountApiService";
-
+import Toast from "../../utils/Toast";
+import { useCms } from "../../store/CmsStore";
 function getImage(product) {
   return (
     product?.media?.card ||
@@ -34,12 +35,19 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
   const i18n = useI18n();
   const lang = langProp || i18n.lang;
   const t = i18n.t;
-
+  const { state, action } = useCms();
   const [quickOpen, setQuickOpen] = useState(false);
   const [qty, setQty] = useState(1);
   const [wishlistSaving, setWishlistSaving] = useState(false);
   const [wishlistSaved, setWishlistSaved] = useState(false);
   const [wishlistMessage, setWishlistMessage] = useState("");
+
+  // 🟢 ĐÃ THÊM: Khai báo State quản lý cấu hình thông báo Toast để tránh crash ứng dụng
+  const [toastConfig, setToastConfig] = useState({
+    show: false,
+    type: "success",
+    message: ""
+  });
 
   const name = resolveText(product?.name, lang, t("product.defaultName"));
   const short = resolveText(product?.short, lang, t("product.defaultShort"));
@@ -56,6 +64,7 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
   const isOutOfStock = !isPreorder && stock <= 0;
   const maxQty = isPreorder ? 99 : Math.max(1, stock);
   const outOfStockLabel = lang === "en" ? "Out of stock" : "Hết hàng";
+
   const wishlistCopy = {
     loginRequired: lang === "en" ? "Please sign in to save wishlist." : "Vui lòng đăng nhập để lưu yêu thích.",
     saved: lang === "en" ? "Saved to wishlist." : "Đã lưu vào yêu thích.",
@@ -76,12 +85,32 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
   function addCart(e) {
     e?.preventDefault?.();
     e?.stopPropagation?.();
-
-    if (isOutOfStock) {
-      alert(outOfStockLabel);
+    if (!state?.user) {
+      setToastConfig({
+        show: true,
+        type: "error",
+        message: `Vui lòng đăng nhập để tiếp tục`
+      });
+      setTimeout(() => {
+        setToastConfig((prev) => ({ ...prev, show: false }));
+      }, 2500);
       return false;
     }
-
+    if (isOutOfStock) {
+      setToastConfig({
+        show: true,
+        type: "error",
+        message: outOfStockLabel
+      });
+      setTimeout(() => {
+        setToastConfig((prev) => ({ ...prev, show: false }));
+      }, 2500);
+      return false;
+    }
+    console.log("=== DEBUG GIỎ HÀNG ===");
+    console.log("Sản phẩm gốc (Product Object):", product);
+    console.log("Số lượng muốn thêm (qty):", qty, "Kiểu dữ liệu:", typeof qty);
+    console.log("Kết quả chạy hàm validate:", validateCartStock(product, qty));
     const validation = validateCartStock(product, qty);
     if (!validation.ok) {
       showCartError(validation);
@@ -96,6 +125,17 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
 
     forceCartBadgeSync();
 
+    setToastConfig({
+      show: true,
+      type: "success",
+      message: `Đã thêm sản phẩm vào giỏ hàng thành công!`
+    });
+
+    // Sau 2.5 giây tự động tắt Toast ẩn đi
+    setTimeout(() => {
+      setToastConfig((prev) => ({ ...prev, show: false }));
+    }, 2500);
+
     actions?.track?.("add_to_cart", { productId: product?.id, qty });
     return true;
   }
@@ -103,9 +143,26 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
   function buyNow(e) {
     e?.preventDefault?.();
     e?.stopPropagation?.();
-
+    if (!state?.user) {
+      setToastConfig({
+        show: true,
+        type: "error",
+        message: `Vui lòng đăng nhập để tiếp tục`
+      });
+      setTimeout(() => {
+        setToastConfig((prev) => ({ ...prev, show: false }));
+      }, 2500);
+      return false;
+    }
     if (isOutOfStock) {
-      alert(outOfStockLabel);
+      setToastConfig({
+        show: true,
+        type: "error",
+        message: outOfStockLabel
+      });
+      setTimeout(() => {
+        setToastConfig((prev) => ({ ...prev, show: false }));
+      }, 2500);
       return;
     }
 
@@ -173,11 +230,10 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
               onClick={addWishlist}
               disabled={wishlistSaving}
               title={wishlistSaved ? wishlistCopy.titleSaved : wishlistCopy.titleSave}
-              className={`absolute right-3 top-3 z-10 flex h-10 w-10 items-center justify-center rounded-full border bg-white/90 shadow-lg backdrop-blur transition hover:scale-110 ${
-                wishlistSaved
-                  ? "border-red-100 text-red-600"
-                  : "border-white/70 text-slate-500 hover:border-red-100 hover:text-red-600"
-              } ${wishlistSaving ? "cursor-not-allowed opacity-60" : ""}`}
+              className={`absolute right-3 top-3 z-10 flex h-10 w-10 items-center justify-center rounded-full border bg-white/90 shadow-lg backdrop-blur transition hover:scale-110 ${wishlistSaved
+                ? "border-red-100 text-red-600"
+                : "border-white/70 text-slate-500 hover:border-red-100 hover:text-red-600"
+                } ${wishlistSaving ? "cursor-not-allowed opacity-60" : ""}`}
             >
               <Heart size={18} fill={wishlistSaved ? "currentColor" : "none"} />
             </button>
@@ -214,7 +270,9 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
 
           <div className="mb-3 flex items-center justify-between text-sm">
             <span className="font-semibold text-slate-500">{product?.scale || "1/144"}</span>
-            <span className="font-black text-blue-700">{isOutOfStock ? outOfStockLabel : isPreorder ? t("product.preorder") : resolveText(product?.status || t("product.inStock"), lang)}</span>
+            <span className="font-black text-blue-700">
+              {isOutOfStock ? outOfStockLabel : isPreorder ? t("product.preorder") : resolveText(product?.status || t("product.inStock"), lang)}
+            </span>
           </div>
 
           <div className="mb-4 flex items-end justify-between">
@@ -238,11 +296,8 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
           {wishlistMessage && (
             <div
               data-wishlist-card-message="true"
-              className={`mb-3 rounded-2xl px-3 py-2 text-xs font-black ${
-                wishlistSaved
-                  ? "bg-emerald-50 text-emerald-700"
-                  : "bg-amber-50 text-amber-700"
-              }`}
+              className={`mb-3 rounded-2xl px-3 py-2 text-xs font-black ${wishlistSaved ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"
+                }`}
             >
               {wishlistMessage}
             </div>
@@ -254,6 +309,19 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
+
+                // 🟢 RÀNG BUỘC PHÒNG THỦ: Kiểm tra trạng thái đăng nhập của User
+                if (!state?.user) {
+                  setToastConfig({
+                    show: true,
+                    type: "error",
+                    message: "Vui lòng đăng nhập để tiếp tục"
+                  });
+                  setTimeout(() => {
+                    setToastConfig((prev) => ({ ...prev, show: false }));
+                  }, 2500);
+                  return; // Phanh gấp luồng chạy, chặn không cho chuyển hướng
+                }
                 window.location.href = detailUrl;
               }}
               className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-red-600 to-rose-500 px-4 py-3 text-sm font-black uppercase tracking-wide text-white shadow-lg shadow-red-200 transition hover:-translate-y-0.5 hover:brightness-110"
@@ -295,6 +363,7 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
         </div>
       </article>
 
+      {/* 🟢 ĐÃ SỬA: Sắp xếp lại thẻ đóng mở an toàn cho Portal QuickView */}
       {quickOpen &&
         createPortal(
           <div className="mobile-quickview-backdrop fixed inset-0 z-[999999] flex items-end justify-center bg-slate-950/70 p-0 backdrop-blur-md sm:items-start sm:p-4 sm:pt-6">
@@ -371,11 +440,10 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
                     onClick={isOutOfStock ? undefined : addCart}
                     disabled={isOutOfStock}
                     aria-disabled={isOutOfStock}
-                    className={`flex min-h-12 flex-1 items-center justify-center gap-2 rounded-2xl px-6 py-4 text-sm font-black shadow-lg transition ${
-                      isOutOfStock
-                        ? "cursor-not-allowed bg-slate-200 text-slate-500 shadow-none"
-                        : "bg-blue-700 text-white shadow-blue-100 hover:bg-blue-800"
-                    }`}
+                    className={`flex min-h-12 flex-1 items-center justify-center gap-2 rounded-2xl px-6 py-4 text-sm font-black shadow-lg transition ${isOutOfStock
+                      ? "cursor-not-allowed bg-slate-200 text-slate-500 shadow-none"
+                      : "bg-blue-700 text-white shadow-blue-100 hover:bg-blue-800"
+                      }`}
                   >
                     <ShoppingCart size={18} />
                     {isOutOfStock ? outOfStockLabel : t("product.addToCart")}
@@ -393,11 +461,10 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
                     onClick={addWishlist}
                     disabled={wishlistSaving}
                     title={wishlistSaved ? wishlistCopy.titleSaved : wishlistCopy.titleSave}
-                    className={`rounded-2xl border p-4 transition ${
-                      wishlistSaved
-                        ? "border-red-100 bg-red-50 text-red-600"
-                        : "border-slate-200 text-slate-600 hover:bg-slate-50"
-                    } ${wishlistSaving ? "cursor-not-allowed opacity-60" : ""}`}
+                    className={`rounded-2xl border p-4 transition ${wishlistSaved
+                      ? "border-red-100 bg-red-50 text-red-600"
+                      : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                      } ${wishlistSaving ? "cursor-not-allowed opacity-60" : ""}`}
                   >
                     <Heart size={18} fill={wishlistSaved ? "currentColor" : "none"} />
                   </button>
@@ -405,11 +472,8 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
 
                 {wishlistMessage && (
                   <div
-                    className={`mt-3 rounded-2xl px-4 py-3 text-sm font-black ${
-                      wishlistSaved
-                        ? "bg-emerald-50 text-emerald-700"
-                        : "bg-amber-50 text-amber-700"
-                    }`}
+                    className={`mt-3 rounded-2xl px-4 py-3 text-sm font-black ${wishlistSaved ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"
+                      }`}
                   >
                     {wishlistMessage}
                   </div>
@@ -419,6 +483,16 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
           </div>,
           document.body
         )}
+
+      {/* Portal thông báo Toast động khi thêm hàng thành công */}
+      {createPortal(
+        <Toast
+          show={toastConfig.show}
+          type={toastConfig.type}
+          message={toastConfig.message}
+        />,
+        document.body
+      )}
     </>
   );
 }

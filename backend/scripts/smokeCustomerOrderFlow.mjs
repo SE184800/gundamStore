@@ -116,15 +116,15 @@ async function run() {
 
     console.log("✅ Customer login works");
 
-    const unauthList = await api("/api/orders/my");
+    const unauthList = await api("/orders/my");
 
     if (unauthList.response.status !== 401) {
-      throw new Error(`Expected /api/orders/my without token to be 401, got ${unauthList.response.status}`);
+      throw new Error(`Expected /orders/my without token to be 401, got ${unauthList.response.status}`);
     }
 
     console.log("✅ My orders requires authentication");
 
-    const create = await api("/api/orders", {
+    const create = await api("/orders", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -168,7 +168,7 @@ async function run() {
 
     console.log("✅ Order customerId is correct");
 
-    const list = await api("/api/orders/my", {
+    const list = await api("/orders/my", {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -177,12 +177,12 @@ async function run() {
     const foundInList = (list.data?.orders || []).some((item) => item.id === orderId);
 
     if (!list.response.ok || !foundInList) {
-      throw new Error(`Created order not found in /api/orders/my`);
+      throw new Error(`Created order not found in /orders/my`);
     }
 
     console.log("✅ My orders list includes created order");
 
-    const detail = await api(`/api/orders/my/${encodeURIComponent(orderId)}`, {
+    const detail = await api(`/orders/my/${encodeURIComponent(orderId)}`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },

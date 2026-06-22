@@ -3,7 +3,7 @@ import { apiRequest } from "./ApiClient";
 export const authService = {
   async login(email, password) {
     try {
-      const data = await apiRequest("/api/auth/login", {
+      const data = await apiRequest("/auth/login", {
         method: "POST",
         token: "",
         body: JSON.stringify({
@@ -22,10 +22,25 @@ export const authService = {
       };
     }
   },
+  validateResetToken: (token) =>
+    apiRequest(`/auth/validate-reset-token?token=${token}`, { method: "GET", token: "" }),
+  forgotPassword: (email) =>
+    apiRequest("/auth/forgot-password", {
+      method: "POST",
+      token: "", // Mồi chuỗi rỗng để tránh lỗi đọc 'env' trong ApiClient
+      body: JSON.stringify({ email })
+    }),
 
+  // 🟢 2. Hàm thực thi đổi mật khẩu mới
+  resetPassword: (token, password) =>
+    apiRequest("/auth/reset-password", {
+      method: "POST",
+      token: "", // Mồi chuỗi rỗng để tránh lỗi đọc 'env' trong ApiClient
+      body: JSON.stringify({ token, password })
+    }),
   async register(name, email, password) {
     try {
-      const data = await apiRequest("/api/auth/register", {
+      const data = await apiRequest("/auth/register", {
         method: "POST",
         token: "",
         body: JSON.stringify({
@@ -45,4 +60,7 @@ export const authService = {
       };
     }
   },
+  async logout() {
+    await apiRequest("/auth/logout", { method: "POST" });
+  }
 };

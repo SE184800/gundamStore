@@ -12,12 +12,12 @@ export function hasAccountToken() {
 }
 
 export async function getMyAccount() {
-  const data = await accountRequest("/api/account/me");
+  const data = await accountRequest("/account/me");
   return data.account;
 }
 
 export async function updateMyAccount(payload = {}) {
-  const data = await accountRequest("/api/account/me", {
+  const data = await accountRequest("/account/me", {
     method: "PATCH",
     body: JSON.stringify(payload),
   });
@@ -26,12 +26,12 @@ export async function updateMyAccount(payload = {}) {
 }
 
 export async function getMyAddresses() {
-  const data = await accountRequest("/api/account/addresses");
+  const data = await accountRequest("/account/addresses");
   return data.addresses || [];
 }
 
 export async function createMyAddress(payload = {}) {
-  const data = await accountRequest("/api/account/addresses", {
+  const data = await accountRequest("/account/addresses", {
     method: "POST",
     body: JSON.stringify(payload),
   });
@@ -40,7 +40,7 @@ export async function createMyAddress(payload = {}) {
 }
 
 export async function updateMyAddress(id, payload = {}) {
-  const data = await accountRequest(`/api/account/addresses/${encodeURIComponent(id)}`, {
+  const data = await accountRequest(`/account/addresses/${encodeURIComponent(id)}`, {
     method: "PATCH",
     body: JSON.stringify(payload),
   });
@@ -49,13 +49,13 @@ export async function updateMyAddress(id, payload = {}) {
 }
 
 export async function deleteMyAddress(id) {
-  return accountRequest(`/api/account/addresses/${encodeURIComponent(id)}`, {
+  return accountRequest(`/account/addresses/${encodeURIComponent(id)}`, {
     method: "DELETE",
   });
 }
 
 export async function setDefaultMyAddress(id) {
-  const data = await accountRequest(`/api/account/addresses/${encodeURIComponent(id)}/default`, {
+  const data = await accountRequest(`/account/addresses/${encodeURIComponent(id)}/default`, {
     method: "PATCH",
   });
 
@@ -63,7 +63,7 @@ export async function setDefaultMyAddress(id) {
 }
 
 export async function getMyWishlist() {
-  const data = await accountRequest("/api/account/wishlist");
+  const data = await accountRequest("/account/wishlist");
   return data.items || [];
 }
 
@@ -72,12 +72,12 @@ export async function addMyWishlistItem(product) {
     typeof product === "string"
       ? { productId: product }
       : {
-          productId: product?.backendProductId || product?.productId || product?.id,
-          sku: product?.sku,
-          slug: product?.slug,
-        };
+        productId: product?.backendProductId || product?.productId || product?.id,
+        sku: product?.sku,
+        slug: product?.slug,
+      };
 
-  const data = await accountRequest("/api/account/wishlist", {
+  const data = await accountRequest("/account/wishlist", {
     method: "POST",
     body: JSON.stringify(payload),
   });
@@ -86,7 +86,7 @@ export async function addMyWishlistItem(product) {
 }
 
 export async function removeMyWishlistItem(productId) {
-  const data = await accountRequest(`/api/account/wishlist/${encodeURIComponent(productId)}`, {
+  const data = await accountRequest(`/account/wishlist/${encodeURIComponent(productId)}`, {
     method: "DELETE",
   });
 
@@ -94,7 +94,7 @@ export async function removeMyWishlistItem(productId) {
 }
 
 export async function clearMyWishlistApi() {
-  const data = await accountRequest("/api/account/wishlist", {
+  const data = await accountRequest("/account/wishlist", {
     method: "DELETE",
   });
 

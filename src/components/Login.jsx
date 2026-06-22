@@ -4,7 +4,8 @@ import { Eye, EyeOff, Lock, User } from "lucide-react";
 import Logo from "./common/Logo";
 import Toast from "../utils/Toast";
 import { useCms, useLang } from "../store/CmsStore";
-
+import { setStoredAdminToken } from "../services/ApiClient";
+import AuthLayout from "./layout/AuthLayout";
 const copy = {
   vi: {
     subtitle: "Hệ thống phân phối Model Kit & Gunpla chuyên nghiệp",
@@ -67,20 +68,45 @@ export default function Login() {
     triggerToast("info", t.submitting);
 
     const res = await actions.login({ email: username.trim(), password });
-
+    console.log("Cục RES khi login thành công:", res);
     if (res.success) {
       triggerToast("success", t.success);
-      setTimeout(() => navigate("/"), 1000);
+      const userRoleId = res.user?.roleId || res.user?.roleID || res.user?.role?.id;
+      console.log("roleID: ", userRoleId);
+      const ADMIN_ROLE_ID = "cmpjmrwgo00069tpliz4pjinx";
+      if (userRoleId === ADMIN_ROLE_ID) {
+        // 🟢 SỬA TẠI ĐÂY: Đồng bộ dữ liệu Admin theo cơ chế chuẩn hóa của AdminAuthService
+        // Ghi nhận đầy đủ chuỗi token và thông tin user gốc từ BE truyền sang
+        const now = new Date().toISOString();
+        setStoredAdminToken(res.token);
+        localStorage.setItem("gundam-admin-auth", JSON.stringify({
+          token: res.token,
+          admin: res.user,
+          loggedInAt: now,
+          lastActiveAt: now,
+        }));
+
+        // 3. Ép ghi khay user độc lập
+        localStorage.setItem("gundam-admin-user", JSON.stringify(res.user));
+      }
+      setTimeout(() => {
+        if (userRoleId === ADMIN_ROLE_ID) {
+          window.location.href = "/admin";
+        } else {
+          navigate("/");
+        }
+      }, 1000);
     } else {
       triggerToast("error", res.message || t.failed);
     }
   }
-
+  function handleForgotPassword() {
+    navigate("/forgot-password");
+  }
   return (
-    <div className="relative flex min-h-[calc(100vh-64px)] items-center justify-center bg-slate-50 px-4 py-12">
+    <>
       <Toast show={toast.show} type={toast.type} message={toast.message} />
-
-      <div className="w-full max-w-[440px] rounded-[32px] border border-slate-200 bg-white p-8 shadow-xl">
+      <AuthLayout>
         <div className="flex flex-col items-center text-center">
           <div className="flex h-[160px] w-[160px] items-center justify-center rounded-2xl bg-slate-50 p-2 shadow-sm">
             <Logo className="h-full w-full object-contain" />
@@ -124,7 +150,7 @@ export default function Login() {
           <div className="flex items-center justify-end pt-1">
             <button
               type="button"
-              onClick={() => window.alert(t.forgotMessage)}
+              onClick={() => handleForgotPassword()}
               className="text-xs font-black text-blue-600 transition hover:text-blue-800 hover:underline"
             >
               {t.forgot}
@@ -145,7 +171,7 @@ export default function Login() {
             {t.register}
           </Link>
         </div>
-      </div>
-    </div>
+      </AuthLayout>
+    </>
   );
 }
