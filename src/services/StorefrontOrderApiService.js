@@ -162,6 +162,8 @@ export function buildCreateOrderPayload({
       productId: normalizeProductId(item),
       sku: normalizeSku(item),
       slug: normalizeSlug(item),
+      variantId: item.variantId || item.backendVariantId || "",
+      variantSku: item.variantSku || "",
       quantity: Number(item.quantity) || 1,
     })),
   };

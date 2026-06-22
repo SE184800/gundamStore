@@ -163,6 +163,7 @@ export function mapBackendProductToStorefront(product = {}) {
   const groups = getBackendGroups(product);
   const effectivePrice = Number(product.effectivePrice ?? product.price) || 0;
   const compareAtPrice = Number(product.compareAtPrice ?? product.oldPrice ?? 0);
+  const variants = Array.isArray(product.variants) ? product.variants : [];
 
   return {
     id: product.id,
@@ -189,6 +190,8 @@ export function mapBackendProductToStorefront(product = {}) {
     stock: Number(product.stock) || 0,
     status: product.status || (Number(product.stock) > 0 ? "inStock" : "outOfStock"),
     active: product.active !== false,
+    variants,
+    hasVariants: variants.length > 0,
 
     imageUrl,
     images: Array.isArray(product.images)
@@ -260,6 +263,8 @@ export function enrichProductsWithBackendIds(localProducts = [], backendProducts
       stock: backend.stock,
       status: backend.status,
       active: backend.active,
+      variants: backend.variants || [],
+      hasVariants: Boolean(backend.hasVariants),
 
       imageUrl: backend.imageUrl || localProduct.imageUrl,
       images: backend.images?.length ? backend.images : localProduct.images || [],
@@ -341,6 +346,8 @@ export function mergeLocalProductWithBackendProduct(localProduct = {}, backendPr
     stock: backend.stock,
     status: backend.status,
     active: backend.active,
+    variants: backend.variants || [],
+    hasVariants: Boolean(backend.hasVariants),
 
     imageUrl: backend.imageUrl || localProduct.imageUrl,
     images: backend.images?.length ? backend.images : localProduct.images || [],

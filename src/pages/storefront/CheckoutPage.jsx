@@ -345,21 +345,42 @@ export default function CheckoutPage() {
     return nextErrors.length === 0;
   }
 
+  function getReliableCheckoutAvailableStock(item = {}) {
+    const stock = getStock(item.backendProductId || item.productId || item.id);
+    const cachedStock = stock?.source && stock.source !== "missing"
+      ? Number(stock.available || 0)
+      : null;
+
+    const itemStock = Number(item.stock ?? item.availableStock ?? 0);
+
+    // Local inventory cache is not source of truth. If cache is missing and the
+    // cart item has no reliable stock snapshot, do not block checkout here.
+    // Backend create order will validate DB stock and return the real result.
+    if (cachedStock !== null) return cachedStock;
+    if (itemStock > 0) return itemStock;
+
+    return null;
+  }
+
   function validateDraftStock() {
     if (isPreorder) return true;
 
     const invalidItem = (draft.items || []).find((item) => {
-      const stock = getStock(item.backendProductId || item.productId || item.id);
-      return (Number(item.quantity) || 1) > Number(stock?.available || 0);
+      const available = getReliableCheckoutAvailableStock(item);
+
+      if (available === null) return false;
+
+      return (Number(item.quantity) || 1) > available;
     });
 
     if (!invalidItem) return true;
 
-    const stock = getStock(invalidItem.backendProductId || invalidItem.productId || invalidItem.id);
+    const available = getReliableCheckoutAvailableStock(invalidItem);
+
     setErrors([
       lang === "en"
-        ? `${getItemName(invalidItem, lang)} only has ${Number(stock?.available || 0)} item(s) available.`
-        : `${getItemName(invalidItem, lang)} chỉ còn ${Number(stock?.available || 0)} sản phẩm trong kho.`,
+        ? `${getItemName(invalidItem, lang)} only has ${Number(available || 0)} item(s) available.`
+        : `${getItemName(invalidItem, lang)} chỉ còn ${Number(available || 0)} sản phẩm trong kho.`,
     ]);
 
     return false;

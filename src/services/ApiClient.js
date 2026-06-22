@@ -8,6 +8,17 @@ export function getApiBaseUrl() {
   return String(baseUrl || "").replace(/\/$/, "");
 }
 
+function buildApiUrl(baseUrl = "", path = "") {
+  const cleanBase = String(baseUrl || "").replace(/\/$/, "");
+  const cleanPath = String(path || "").startsWith("/") ? String(path || "") : `/${path}`;
+
+  if (cleanBase.endsWith("/api") && cleanPath.startsWith("/api/")) {
+    return `${cleanBase}${cleanPath.slice(4)}`;
+  }
+
+  return `${cleanBase}${cleanPath}`;
+}
+
 export function getStoredAdminToken() {
   try {
     const directToken = localStorage.getItem(ADMIN_TOKEN_KEY) || "";
@@ -86,7 +97,7 @@ export async function apiRequest(path, options = {}) {
     headers.Authorization = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${baseUrl}${path}`, {
+  const response = await fetch(buildApiUrl(baseUrl, path), {
     ...options,
     headers,
   });
