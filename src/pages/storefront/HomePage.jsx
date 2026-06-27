@@ -431,7 +431,7 @@ function ImageOnlyBannerLink({ banner, lang, actions, className = "", mediaClass
   );
 }
 
-function Hero({ banners, lang, actions, heroSettings }) {
+function Hero({ banners, lang, actions, heroSettings, loading = false, error = "" }) {
   const settings = {
     layout: "v2",
     autoplay: true,
@@ -822,17 +822,40 @@ export default function HomePage() {
   const { state, actions } = useCms();
   const lang = state.settings?.lang || "vi";
 
-  const banners = useMemo(() => {
-    const active = (state.banners || [])
-      .filter((banner) => banner.active !== false)
-      .sort((a, b) => Number(a.sort || 0) - Number(b.sort || 0));
-    const hero = active.filter((banner) => String(banner.placement || "").includes("hero"));
-    return hero.length ? hero : active;
-  }, [state.banners]);
+  const [dbBanners, setDbBanners] = useState([]);
+  const [dbHeroSettings, setDbHeroSettings] = useState(null);
+  const [bannerApiReady, setBannerApiReady] = useState(false);
+  const [bannerApiError, setBannerApiError] = useState("");
 
   const sections = useMemo(() => mergeCmsSections(state.homeSections), [state.homeSections]);
   const products = backendProducts;
 
+
+  useEffect(() => {
+    let alive = true;
+
+    getStorefrontHomeBannersFromApi()
+      .then(({ banners = [], heroSettings = null }) => {
+        if (!alive) return;
+        setDbBanners(Array.isArray(banners) ? banners : []);
+        setDbHeroSettings(heroSettings || null);
+        setBannerApiError("");
+      })
+      .catch((error) => {
+        if (!alive) return;
+        setDbBanners([]);
+        setDbHeroSettings(null);
+        setBannerApiError(error?.message || "Cannot load homepage banners.");
+      })
+      .finally(() => {
+        if (!alive) return;
+        setBannerApiReady(true);
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -904,7 +927,14 @@ export default function HomePage() {
           />
         </div>
 
-        <Hero banners={(state?.publishedHero?.banners || banners)} lang={lang} actions={actions} heroSettings={(state?.publishedHero?.heroSettings || state?.heroSettings)} />
+        <Hero
+          banners={dbBanners}
+          lang={lang}
+          actions={actions}
+          heroSettings={dbHeroSettings || state?.heroSettings}
+          loading={!bannerApiReady}
+          error={bannerApiError}
+        />
         <TrustStrip lang={lang} />
 
         <main className="mx-auto grid max-w-[1200px] gap-4 px-4 pb-8 lg:grid-cols-[300px_1fr]">
