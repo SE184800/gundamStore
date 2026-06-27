@@ -33,6 +33,8 @@ export default function ForgotPassword() {
     if (res.success) {
       triggerToast("success", "Link khôi phục đã được gửi vào Email của bạn!");
       setEmail("");
+      setTimeout({
+      })
     } else {
       triggerToast("error", res.message || "Email không tồn tại trên hệ thống!");
     }
