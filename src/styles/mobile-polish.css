@@ -315,3 +315,214 @@ body {
     grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
   }
 }
+
+/* Mobile density tuning - make storefront feel lighter and less oversized */
+@media (max-width: 640px) {
+  /* Global mobile scale */
+  body {
+    font-size: 14px;
+  }
+
+  /* Header / top navigation */
+  header .h-20 {
+    height: 58px !important;
+  }
+
+  header .h-11 {
+    height: 38px !important;
+  }
+
+  header .w-11 {
+    width: 38px !important;
+  }
+
+  header .rounded-2xl {
+    border-radius: 14px !important;
+  }
+
+  header .px-4 {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+
+  header .gap-3 {
+    gap: 8px !important;
+  }
+
+  header .text-xl {
+    font-size: 15px !important;
+    line-height: 20px !important;
+  }
+
+  /* Homepage hero smaller on mobile */
+  .image-first-hero {
+    padding-top: 8px !important;
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+  }
+
+  .image-first-hero .image-first-banner-link {
+    height: 190px !important;
+    border-radius: 18px !important;
+  }
+
+  .image-first-hero .image-first-banner-link img,
+  .image-first-hero .image-first-banner-link video {
+    min-height: 190px !important;
+    max-height: 210px !important;
+  }
+
+  .image-first-hero .rounded-\[24px\],
+  .image-first-hero .rounded-\[34px\] {
+    border-radius: 18px !important;
+  }
+
+  /* Trust strip compact */
+  .image-first-hero + section {
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
+  }
+
+  /* Main homepage compact */
+  main {
+    gap: 10px !important;
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+  }
+
+  /* Category row smaller */
+  aside h3 {
+    font-size: 15px !important;
+    line-height: 20px !important;
+  }
+
+  aside p {
+    font-size: 11px !important;
+  }
+
+  aside a {
+    width: 78px !important;
+    max-width: 78px !important;
+    border-radius: 14px !important;
+  }
+
+  aside a .p-2,
+  aside a .p-3 {
+    padding: 6px !important;
+  }
+
+  aside a .text-xs,
+  aside a .text-sm {
+    font-size: 11px !important;
+  }
+
+  /* Product section compact */
+  .home-mobile-product-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 9px !important;
+  }
+
+  .home-mobile-product-grid > * {
+    min-width: 0 !important;
+  }
+
+  section.rounded-2xl {
+    border-radius: 16px !important;
+  }
+
+  section.p-4 {
+    padding: 10px !important;
+  }
+
+  section h2 {
+    font-size: 16px !important;
+    line-height: 21px !important;
+  }
+
+  /* Product card compact */
+  .product-card-mobile {
+    border-radius: 15px !important;
+  }
+
+  .product-card-mobile .p-3,
+  .product-card-mobile .sm\:p-4 {
+    padding: 8px !important;
+  }
+
+  .product-card-mobile h3 {
+    min-height: 34px !important;
+    font-size: 12px !important;
+    line-height: 17px !important;
+  }
+
+  .product-card-mobile .text-sm {
+    font-size: 11px !important;
+  }
+
+  .product-card-mobile .text-base,
+  .product-card-mobile .sm\:text-lg {
+    font-size: 13px !important;
+    line-height: 18px !important;
+  }
+
+  .product-card-mobile button {
+    min-height: 34px !important;
+    border-radius: 12px !important;
+    padding: 7px 8px !important;
+    font-size: 10px !important;
+  }
+
+  .product-card-mobile [data-wishlist-card-button="true"] {
+    width: 32px !important;
+    height: 32px !important;
+    right: 8px !important;
+    top: 8px !important;
+  }
+
+  .product-card-mobile svg {
+    width: 14px !important;
+    height: 14px !important;
+  }
+
+  /* Floating buttons smaller */
+  .fixed.bottom-5.right-5,
+  .fixed.bottom-5.left-5 {
+    transform: scale(0.82);
+    transform-origin: bottom right;
+  }
+
+  /* Quick view smaller */
+  .mobile-quickview-panel {
+    max-height: 88vh !important;
+    border-radius: 20px 20px 0 0 !important;
+  }
+
+  .mobile-quickview-panel h2 {
+    font-size: 19px !important;
+    line-height: 24px !important;
+  }
+
+  .mobile-quickview-panel .p-5 {
+    padding: 14px !important;
+  }
+}
+
+@media (max-width: 390px) {
+  .image-first-hero .image-first-banner-link {
+    height: 170px !important;
+  }
+
+  .image-first-hero .image-first-banner-link img,
+  .image-first-hero .image-first-banner-link video {
+    min-height: 170px !important;
+    max-height: 190px !important;
+  }
+
+  .home-mobile-product-grid {
+    gap: 8px !important;
+  }
+
+  .product-card-mobile h3 {
+    font-size: 11.5px !important;
+  }
+}
