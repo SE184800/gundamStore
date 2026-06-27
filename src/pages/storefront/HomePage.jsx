@@ -317,7 +317,7 @@ function getBannerBaseImage(banner = {}) {
     banner.mediaUrl ||
     banner.image ||
     banner.desktopImage ||
-    "/images/banners/banner-1.jpg"
+    ""
   );
 }
 
@@ -346,26 +346,34 @@ function bannerFitClass(banner = {}) {
 
 function getHeroBanners(banners = [], settings = {}) {
   const maxBanners = Number(settings.maxBanners || 5);
-  const activeBanners = (Array.isArray(banners) ? banners : [])
+
+  return (Array.isArray(banners) ? banners : [])
     .filter(isLiveHomepageBanner)
+    .filter(hasBannerMedia)
     .sort((a, b) => Number(a.priority || 99) - Number(b.priority || 99))
     .slice(0, maxBanners);
+}
 
-  return activeBanners.length
-    ? activeBanners
-    : [
-      {
-        id: "fallback-hero",
-        titleInternal: "Gundam hero banner",
-        altText: "Gundam Store banner",
-        imageUrl: "/images/banners/banner-1.jpg",
-        ctaUrl: "/shop",
-        active: true,
-        status: "Live",
-        priority: 1,
-        fitMode: "cover",
-      },
-    ];
+function NoBannerConfigured({ lang }) {
+  return (
+    <section className="mx-auto max-w-[1440px] px-4 pt-4 lg:px-8">
+      <div className="flex min-h-[280px] items-center justify-center rounded-[28px] border border-dashed border-slate-300 bg-white text-center shadow-sm">
+        <div className="px-6">
+          <div className="text-sm font-black uppercase tracking-[0.24em] text-slate-400">
+            {lang === "en" ? "Homepage Banner" : "Banner trang chủ"}
+          </div>
+          <h1 className="mt-3 text-2xl font-black text-slate-800">
+            {lang === "en" ? "No banner configured" : "Chưa cấu hình banner"}
+          </h1>
+          <p className="mt-2 text-sm font-semibold text-slate-500">
+            {lang === "en"
+              ? "Please create and publish a Live banner in Admin CMS."
+              : "Vui lòng tạo banner trong Admin CMS và chuyển trạng thái Live để hiển thị."}
+          </p>
+        </div>
+      </div>
+    </section>
+  );
 }
 
 function BannerMedia({ banner, lang, className = "", imageClassName = "" }) {
@@ -434,6 +442,10 @@ function Hero({ banners, lang, actions, heroSettings }) {
 
   const safeBanners = getHeroBanners(banners, settings);
 
+  if (!safeBanners.length) {
+    return <NoBannerConfigured lang={lang} />;
+  }
+
   if (settings.layout === "v3") {
     return (
       <HeroV3Bento
@@ -459,7 +471,7 @@ function HeroV3Bento({ banners, lang, actions, settings }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [paused, setPaused] = useState(false);
 
-  const safeBanners = banners.length ? banners : getHeroBanners([], settings);
+  const safeBanners = banners;
   const activeBanner = safeBanners[activeIndex] || safeBanners[0];
   const sideOne = safeBanners[(activeIndex + 1) % safeBanners.length] || activeBanner;
   const sideTwo = safeBanners[(activeIndex + 2) % safeBanners.length] || activeBanner;
@@ -557,7 +569,7 @@ function HeroV2Classic({ banners, lang, actions, settings }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [paused, setPaused] = useState(false);
 
-  const safeBanners = banners.length ? banners : getHeroBanners([], settings);
+  const safeBanners = banners;
   const activeBanner = safeBanners[activeIndex] || safeBanners[0];
   const interval = Number(settings.interval || 4500);
 
