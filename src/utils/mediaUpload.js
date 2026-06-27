@@ -14,6 +14,11 @@ const VIDEO_MIME_TYPES = new Set([
 export const MEDIA_UPLOAD_LIMITS = {
   image: 2 * 1024 * 1024,
   video: 10 * 1024 * 1024,
+
+  // Banner artwork is usually wider/larger than product thumbnails.
+  // Keep this for SIT/admin convenience. Production should store files in object storage.
+  bannerImage: 8 * 1024 * 1024,
+  bannerVideo: 25 * 1024 * 1024,
 };
 
 function formatBytes(bytes = 0) {
@@ -63,7 +68,9 @@ export function validateMediaFile(file, options = {}) {
 
   const limit =
     options.maxSizeBytes ||
-    (isVideo ? MEDIA_UPLOAD_LIMITS.video : MEDIA_UPLOAD_LIMITS.image);
+    (mediaKind === "banner"
+      ? (isVideo ? MEDIA_UPLOAD_LIMITS.bannerVideo : MEDIA_UPLOAD_LIMITS.bannerImage)
+      : (isVideo ? MEDIA_UPLOAD_LIMITS.video : MEDIA_UPLOAD_LIMITS.image));
 
   if (Number(file.size || 0) > limit) {
     return {

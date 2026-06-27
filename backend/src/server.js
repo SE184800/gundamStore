@@ -78,7 +78,7 @@ app.use(
   })
 );
 
-app.use(express.json({ limit: "16mb" }));
+app.use(express.json({ limit: process.env.JSON_BODY_LIMIT || "32mb" }));
 app.use(morgan(env.isProduction ? "combined" : "dev"));
 
 app.use("/health", healthRoutes);

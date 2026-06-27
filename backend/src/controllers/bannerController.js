@@ -4,6 +4,7 @@ const HERO_SETTING_ID = "homepage";
 const VALID_STATUSES = new Set(["Live", "Draft", "Scheduled", "Inactive"]);
 const VALID_FIT_MODES = new Set(["cover", "contain"]);
 const VALID_MEDIA_TYPES = new Set(["image", "gif", "video"]);
+const BANNER_MEDIA_TEXT_LIMIT = 20_000_000;
 
 function cleanText(value = "", max = 2000) {
   return String(value || "").trim().slice(0, max);
@@ -113,9 +114,9 @@ function normalizeBannerInput(body = {}, { current = null } = {}) {
     ...(body || {}),
   };
 
-  const mainImage = cleanText(merged.mainImage || merged.imageUrl || "", 1_000_000);
-  const imageUrl = cleanText(merged.imageUrl || mainImage, 1_000_000);
-  const videoUrl = cleanText(merged.videoUrl || "", 1_000_000);
+  const mainImage = cleanText(merged.mainImage || merged.imageUrl || "", BANNER_MEDIA_TEXT_LIMIT);
+  const imageUrl = cleanText(merged.imageUrl || mainImage, BANNER_MEDIA_TEXT_LIMIT);
+  const videoUrl = cleanText(merged.videoUrl || "", BANNER_MEDIA_TEXT_LIMIT);
   const cta = normalizeSafeCtaUrl(merged.ctaUrl || "/shop", {
     fallback: "/shop",
     rejectUnsafe: true,
@@ -154,9 +155,9 @@ function normalizeBannerInput(body = {}, { current = null } = {}) {
       mediaType,
       mainImage,
       imageUrl,
-      mobileImage: cleanText(merged.mobileImage || "", 1_000_000) || null,
-      tabletImage: cleanText(merged.tabletImage || "", 1_000_000) || null,
-      desktopImage: cleanText(merged.desktopImage || "", 1_000_000) || null,
+      mobileImage: cleanText(merged.mobileImage || "", BANNER_MEDIA_TEXT_LIMIT) || null,
+      tabletImage: cleanText(merged.tabletImage || "", BANNER_MEDIA_TEXT_LIMIT) || null,
+      desktopImage: cleanText(merged.desktopImage || "", BANNER_MEDIA_TEXT_LIMIT) || null,
       videoUrl: videoUrl || null,
       ctaUrl: cta.value,
       status,
