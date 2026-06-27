@@ -143,6 +143,11 @@ export function validateCartStock(product, quantity = 1, products = []) {
   const currentQty = Number(found?.quantity || 0);
   const requestQty = Math.max(1, Number(quantity) || 1);
   const stock = getStock(item.backendProductId || item.productId || item.id || product?.id);
+  const productStock = Number(product?.stock ?? item.stock ?? 0);
+  const cachedStock = stock?.source && stock.source !== "missing"
+    ? Number(stock.available || 0)
+    : null;
+
   const available = item.variantId
     ? Number(product?.stock || item.stock || 0)
     : Number(stock?.available || product?.stock || 0);

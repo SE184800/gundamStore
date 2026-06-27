@@ -45,7 +45,7 @@ export default function HeaderCart() {
 
   return (
     <>
-      <Toast show={toastConfig.show} type={toastConfig.type} message={toastConfig.message} />,
+      <Toast show={toastConfig.show} type={toastConfig.type} message={toastConfig.message} />
       <Link
         to="/cart"
         onClick={(e) => {
