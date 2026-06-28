@@ -23,11 +23,10 @@ import { useCms } from "../../store/CmsStore";
 import { translateStaticText } from "../../i18n";
 import { getSafeHref } from "../../utils/urlSafety";
 import ProductCard from "../../components/storefront/ProductCard";
-// import {
-//   getStorefrontCategoriesFromApi,
-//   getStorefrontProductsForStorefront,
-// } from "../../services/StorefrontProductApiService";
-import { getSapoStorefrontProducts } from "../../services/sapoStorefrontService";
+import {
+  getStorefrontCategoriesFromApi,
+  getStorefrontProductsForStorefront,
+} from "../../services/StorefrontProductApiService";
 import { getStorefrontHomeBannersFromApi } from "../../services/BannerApiService";
 
 const copy = {
@@ -875,87 +874,51 @@ export default function HomePage() {
       alive = false;
     };
   }, []);
-
-  // useEffect(() => {
-  //   let alive = true;
-
-  //   Promise.allSettled([
-  //     getStorefrontProductsForStorefront(),
-  //     getStorefrontCategoriesFromApi(),
-  //   ]).then(([productsResult, categoriesResult]) => {
-  //     if (!alive) return;
-
-  //     const products =
-  //       productsResult.status === "fulfilled" && Array.isArray(productsResult.value)
-  //         ? productsResult.value
-  //         : [];
-
-  //     const categoriesFromApi =
-  //       categoriesResult.status === "fulfilled" && Array.isArray(categoriesResult.value)
-  //         ? categoriesResult.value
-  //         : [];
-
-  //     const derivedCategories = categoriesFromApi.length
-  //       ? categoriesFromApi
-  //       : deriveCategoriesFromProducts(products);
-
-  //     setBackendProducts(products);
-  //     setBackendCategories(derivedCategories);
-
-  //     const error =
-  //       productsResult.status === "rejected"
-  //         ? productsResult.reason?.message || "Product API failed"
-  //         : categoriesResult.status === "rejected"
-  //           ? categoriesResult.reason?.message || "Category API failed"
-  //           : "";
-
-  //     setCatalogDebug({
-  //       products: products.length,
-  //       categories: derivedCategories.length,
-  //       error,
-  //     });
-
-  //     console.info("[DB-SOT homepage catalog]", {
-  //       products: products.length,
-  //       categories: derivedCategories.length,
-  //       error,
-  //     });
-  //   });
-
-  //   return () => {
-  //     alive = false;
-  //   };
-  // }, []);
   useEffect(() => {
     let alive = true;
 
-    // Lấy trước 50 sản phẩm từ Sapo để phân bổ vào các Section (Hàng mới, Bán chạy...)
-    getSapoStorefrontProducts(50)
-      .then((sapoProducts) => {
-        if (!alive) return;
+    Promise.allSettled([
+      getStorefrontProductsForStorefront(),
+      getStorefrontCategoriesFromApi(),
+    ]).then(([productsResult, categoriesResult]) => {
+      if (!alive) return;
 
-        // 1. Đổ mảng sản phẩm Sapo vào state
-        setBackendProducts(sapoProducts);
+      const products =
+        productsResult.status === "fulfilled" && Array.isArray(productsResult.value)
+          ? productsResult.value
+          : [];
 
-        // 2. Tự động trích xuất Danh mục sản phẩm (Category) từ chính dữ liệu sản phẩm Sapo trả về
-        const derivedCategories = deriveCategoriesFromProducts(sapoProducts);
-        setBackendCategories(derivedCategories);
+      const categoriesFromApi =
+        categoriesResult.status === "fulfilled" && Array.isArray(categoriesResult.value)
+          ? categoriesResult.value
+          : [];
 
-        // Cấu hình log debug hỗ trợ kiểm tra tiến trình đồng bộ
-        setCatalogDebug({
-          products: sapoProducts.length,
-          categories: derivedCategories.length,
-          error: "",
-        });
-      })
-      .catch((error) => {
-        if (!alive) return;
-        console.error("❌ Thất bại khi đồng bộ danh mục Sapo trên Trang chủ:", error);
-        setCatalogDebug((prev) => ({
-          ...prev,
-          error: error?.message || "Sapo API Connection Failed",
-        }));
+      const derivedCategories = categoriesFromApi.length
+        ? categoriesFromApi
+        : deriveCategoriesFromProducts(products);
+
+      setBackendProducts(products);
+      setBackendCategories(derivedCategories);
+
+      const error =
+        productsResult.status === "rejected"
+          ? productsResult.reason?.message || "Product API failed"
+          : categoriesResult.status === "rejected"
+            ? categoriesResult.reason?.message || "Category API failed"
+            : "";
+
+      setCatalogDebug({
+        products: products.length,
+        categories: derivedCategories.length,
+        error,
       });
+
+      console.info("[DB-SOT homepage catalog]", {
+        products: products.length,
+        categories: derivedCategories.length,
+        error,
+      });
+    });
 
     return () => {
       alive = false;

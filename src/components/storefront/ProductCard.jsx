@@ -49,32 +49,22 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
     message: ""
   });
 
-  const firstVariant = product?.variants?.edges?.[0]?.node || product?.variants?.[0] || {};
-  const firstImage = product?.images?.edges?.[0]?.node?.src || product?.images?.[0]?.src || product?.imageUrl;
-
-  // Tạo một object ảo bọc lại cấu trúc cũ để không làm lỗi hàm kiểm tra giảm giá hasCommercialDiscount của cậu
-  const resolvedProduct = {
-    ...product,
-    price: firstVariant.price || product?.price || 0,
-    compareAtPrice: firstVariant.compareAtPrice || product?.compareAtPrice || product?.oldPrice || 0,
-    stock: firstVariant.inventory_quantity !== undefined ? firstVariant.inventory_quantity : (product?.stock ?? 0)
-  };
-  const name = resolveText(product?.title || product?.name, lang, t("product.defaultName"));
+  const name = resolveText(product?.name, lang, t("product.defaultName"));
   const short = resolveText(product?.short, lang, t("product.defaultShort"));
   const desc = resolveText(product?.description, lang, short);
-  const image = firstImage || "/images/products/hi-nu.jpg";
-  const price = Number(firstVariant.price || product?.finalPrice || product?.effectivePrice || product?.price || 0);
-  const commercialDiscount = hasCommercialDiscount(resolvedProduct);
+  const image = getImage(product);
+  const price = Number(product?.finalPrice || product?.effectivePrice || product?.price || 0);
+  const commercialDiscount = hasCommercialDiscount(product);
   const oldPrice = commercialDiscount
-    ? Number(firstVariant.compareAtPrice || product?.compareAtPrice || product?.oldPrice || 0)
-    : Number(product?.oldPrice || 0);
-  // Số lượng tồn kho lấy từ Sapo, nếu Sapo không trả về số lượng thì dùng availableForSale để check trạng thái
-  const stock = firstVariant.inventory_quantity !== undefined ? Number(firstVariant.inventory_quantity) : Number(product?.stock ?? 0);
-  const detailUrl = `/product/${product?.handle || product?.slug || product?.id || ""}`;
+    ? Number(product?.compareAtPrice || product?.oldPrice || product?.originalPrice || 0)
+    : Number(product?.oldPrice || product?.originalPrice || 0);
+  const stock = Number(product?.stock ?? 0);
+  const detailUrl = getProductUrl(product);
   const isPreorder = String(product?.status || "").toLowerCase().includes("pre");
-  const isOutOfStock = firstVariant.availableForSale !== undefined ? !firstVariant.availableForSale : (!isPreorder && stock <= 0);
+  const isOutOfStock = !isPreorder && stock <= 0;
   const maxQty = isPreorder ? 99 : Math.max(1, stock);
   const outOfStockLabel = lang === "en" ? "Out of stock" : "Hết hàng";
+
   const wishlistCopy = {
     loginRequired: lang === "en" ? "Please sign in to save wishlist." : "Vui lòng đăng nhập để lưu yêu thích.",
     saved: lang === "en" ? "Saved to wishlist." : "Đã lưu vào yêu thích.",
