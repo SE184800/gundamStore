@@ -14,6 +14,19 @@ export default defineConfig({
         target: "http://127.0.0.1:4800",
         changeOrigin: true,
       },
+      '/sapo-admin-api': {
+        target: 'https://gundamstorevn.mysapo.net',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/sapo-admin-api/, ''),
+        configure: (proxy) => {
+          // Sử dụng tài khoản Admin API thật cậu vừa chụp
+          const basicAuthHeader = 'Basic NzVkYjZmODJjM2MzNDY1NGJhOGFkYjE5MzVlMGMwN2U6NDRkMGNlNzM3ZDQ1NDFmMzhiNmM4MWVlMzJiYzRlNw==';
+
+          proxy.on('proxyReq', (proxyReq) => {
+            proxyReq.setHeader('Authorization', basicAuthHeader);
+          });
+        },
+      },
     },
   },
   build: {
