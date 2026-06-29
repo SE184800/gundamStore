@@ -1,7 +1,7 @@
-import { apiRequest } from "./ApiClient";
+﻿import { apiRequest } from "./ApiClient";
 
 export async function getStorefrontHomeBannersFromApi() {
-  const data = await apiRequest("/banners/home", {
+  const data = await apiRequest("/api/banners/home", {
     token: "",
   });
 
@@ -53,3 +53,4 @@ export async function updateAdminHeroSettings(payload) {
 
   return data?.heroSettings || null;
 }
+

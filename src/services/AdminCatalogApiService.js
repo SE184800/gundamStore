@@ -1,4 +1,4 @@
-import { apiRequest } from "./ApiClient";
+﻿import { apiRequest } from "./ApiClient";
 import {
   getAdminCatalogReferenceApi,
   getAdminProductsFromApi,
@@ -26,7 +26,7 @@ function normalizeCategoryPayload(category = {}) {
 }
 
 export async function getAdminCategoriesApi() {
-  const data = await apiRequest("/products/admin/categories");
+  const data = await apiRequest("/api/products/admin/categories");
 
   if (!data?.success || !Array.isArray(data.categories)) {
     throw new Error("Backend did not return categories.");
@@ -36,7 +36,7 @@ export async function getAdminCategoriesApi() {
 }
 
 export async function createAdminCategoryApi(category) {
-  const data = await apiRequest("/products/admin/categories", {
+  const data = await apiRequest("/api/products/admin/categories", {
     method: "POST",
     body: JSON.stringify(normalizeCategoryPayload(category)),
   });
@@ -49,7 +49,7 @@ export async function createAdminCategoryApi(category) {
 }
 
 export async function updateAdminCategoryApi(id, category) {
-  const data = await apiRequest(`/products/admin/categories/${encodeURIComponent(id)}`, {
+  const data = await apiRequest(`/api/products/admin/categories/${encodeURIComponent(id)}`, {
     method: "PATCH",
     body: JSON.stringify(normalizeCategoryPayload(category)),
   });
@@ -62,7 +62,7 @@ export async function updateAdminCategoryApi(id, category) {
 }
 
 export async function deleteAdminCategoryApi(id) {
-  const data = await apiRequest(`/products/admin/categories/${encodeURIComponent(id)}`, {
+  const data = await apiRequest(`/api/products/admin/categories/${encodeURIComponent(id)}`, {
     method: "DELETE",
   });
 
@@ -87,7 +87,7 @@ function normalizeSupplierPayload(supplier = {}) {
 }
 
 export async function getAdminSuppliersApi() {
-  const data = await apiRequest("/products/admin/suppliers");
+  const data = await apiRequest("/api/products/admin/suppliers");
 
   if (!data?.success || !Array.isArray(data.suppliers)) {
     throw new Error("Backend did not return suppliers.");
@@ -97,7 +97,7 @@ export async function getAdminSuppliersApi() {
 }
 
 export async function createAdminSupplierApi(supplier) {
-  const data = await apiRequest("/products/admin/suppliers", {
+  const data = await apiRequest("/api/products/admin/suppliers", {
     method: "POST",
     body: JSON.stringify(normalizeSupplierPayload(supplier)),
   });
@@ -110,7 +110,7 @@ export async function createAdminSupplierApi(supplier) {
 }
 
 export async function updateAdminSupplierApi(id, supplier) {
-  const data = await apiRequest(`/products/admin/suppliers/${encodeURIComponent(id)}`, {
+  const data = await apiRequest(`/api/products/admin/suppliers/${encodeURIComponent(id)}`, {
     method: "PATCH",
     body: JSON.stringify(normalizeSupplierPayload(supplier)),
   });
@@ -123,7 +123,7 @@ export async function updateAdminSupplierApi(id, supplier) {
 }
 
 export async function deleteAdminSupplierApi(id) {
-  const data = await apiRequest(`/products/admin/suppliers/${encodeURIComponent(id)}`, {
+  const data = await apiRequest(`/api/products/admin/suppliers/${encodeURIComponent(id)}`, {
     method: "DELETE",
   });
 
@@ -147,7 +147,7 @@ function normalizeGroupPayload(group = {}) {
 }
 
 export async function getAdminGroupsApi() {
-  const data = await apiRequest("/products/admin/groups");
+  const data = await apiRequest("/api/products/admin/groups");
 
   if (!data?.success || !Array.isArray(data.groups)) {
     throw new Error("Backend did not return groups.");
@@ -157,7 +157,7 @@ export async function getAdminGroupsApi() {
 }
 
 export async function createAdminGroupApi(group) {
-  const data = await apiRequest("/products/admin/groups", {
+  const data = await apiRequest("/api/products/admin/groups", {
     method: "POST",
     body: JSON.stringify(normalizeGroupPayload(group)),
   });
@@ -170,7 +170,7 @@ export async function createAdminGroupApi(group) {
 }
 
 export async function updateAdminGroupApi(id, group) {
-  const data = await apiRequest(`/products/admin/groups/${encodeURIComponent(id)}`, {
+  const data = await apiRequest(`/api/products/admin/groups/${encodeURIComponent(id)}`, {
     method: "PATCH",
     body: JSON.stringify(normalizeGroupPayload(group)),
   });
@@ -183,7 +183,7 @@ export async function updateAdminGroupApi(id, group) {
 }
 
 export async function deleteAdminGroupApi(id) {
-  const data = await apiRequest(`/products/admin/groups/${encodeURIComponent(id)}`, {
+  const data = await apiRequest(`/api/products/admin/groups/${encodeURIComponent(id)}`, {
     method: "DELETE",
   });
 
@@ -196,7 +196,7 @@ export async function deleteAdminGroupApi(id) {
 
 export async function getAdminInventoryLogsApi(productId = "") {
   const query = productId ? `?productId=${encodeURIComponent(productId)}` : "";
-  const data = await apiRequest(`/products/admin/inventory-logs${query}`);
+  const data = await apiRequest(`/api/products/admin/inventory-logs${query}`);
 
   if (!data?.success || !Array.isArray(data.logs)) {
     throw new Error("Backend did not return inventory logs.");
@@ -206,7 +206,7 @@ export async function getAdminInventoryLogsApi(productId = "") {
 }
 
 export async function adjustAdminProductInventoryApi(productId, payload = {}) {
-  const data = await apiRequest(`/products/admin/${encodeURIComponent(productId)}/inventory-adjust`, {
+  const data = await apiRequest(`/api/products/admin/${encodeURIComponent(productId)}/inventory-adjust`, {
     method: "POST",
     body: JSON.stringify({
       delta: Number(payload.delta || 0),
@@ -224,7 +224,7 @@ export async function adjustAdminProductInventoryApi(productId, payload = {}) {
 
 export async function getAdminProductPricesApi(productId = "") {
   const query = productId ? `?productId=${encodeURIComponent(productId)}` : "";
-  const data = await apiRequest(`/products/admin/prices${query}`);
+  const data = await apiRequest(`/api/products/admin/prices${query}`);
 
   if (!data?.success || !Array.isArray(data.prices)) {
     throw new Error("Backend did not return product prices.");
@@ -234,7 +234,7 @@ export async function getAdminProductPricesApi(productId = "") {
 }
 
 export async function createAdminProductPriceApi(productId, payload = {}) {
-  const data = await apiRequest(`/products/admin/${encodeURIComponent(productId)}/prices`, {
+  const data = await apiRequest(`/api/products/admin/${encodeURIComponent(productId)}/prices`, {
     method: "POST",
     body: JSON.stringify({
       price: Number(payload.price || 0),
@@ -254,7 +254,7 @@ export async function createAdminProductPriceApi(productId, payload = {}) {
 }
 
 export async function updateAdminProductPriceApi(priceId, payload = {}) {
-  const data = await apiRequest(`/products/admin/prices/${encodeURIComponent(priceId)}`, {
+  const data = await apiRequest(`/api/products/admin/prices/${encodeURIComponent(priceId)}`, {
     method: "PATCH",
     body: JSON.stringify({
       price: Number(payload.price || 0),
@@ -274,7 +274,7 @@ export async function updateAdminProductPriceApi(priceId, payload = {}) {
 }
 
 export async function deactivateAdminProductPriceApi(priceId) {
-  const data = await apiRequest(`/products/admin/prices/${encodeURIComponent(priceId)}`, {
+  const data = await apiRequest(`/api/products/admin/prices/${encodeURIComponent(priceId)}`, {
     method: "DELETE",
   });
 
@@ -284,3 +284,4 @@ export async function deactivateAdminProductPriceApi(priceId) {
 
   return data.price;
 }
+

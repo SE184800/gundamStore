@@ -1,4 +1,4 @@
-import {
+﻿import {
   apiRequest,
   clearStoredAdminSession,
   clearStoredAdminToken,
@@ -110,7 +110,7 @@ function normalizeAdminUser(user = {}) {
 }
 
 export async function loginAdmin({ email, password }) {
-  const data = await apiRequest("/auth/login", {
+  const data = await apiRequest("/api/auth/login", {
     method: "POST",
     token: "",
     body: JSON.stringify({ email, password }),
@@ -207,7 +207,7 @@ export function isAdminSessionExpired() {
 }
 
 export async function refreshCurrentAdminFromApi() {
-  const data = await apiRequest("/auth/me");
+  const data = await apiRequest("/api/auth/me");
   const user = data?.user || null;
 
   if (!user) {
@@ -241,3 +241,4 @@ export function logoutAdmin() {
   clearStoredAdminToken();
   clearStoredAdminSession();
 }
+

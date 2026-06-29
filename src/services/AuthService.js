@@ -1,9 +1,9 @@
-import { apiRequest } from "./ApiClient";
+﻿import { apiRequest } from "./ApiClient";
 
 export const authService = {
   async login(email, password) {
     try {
-      const data = await apiRequest("/auth/login", {
+      const data = await apiRequest("/api/auth/login", {
         method: "POST",
         token: "",
         body: JSON.stringify({
@@ -18,29 +18,29 @@ export const authService = {
 
       return {
         success: false,
-        message: error?.message || "Có lỗi hệ thống xảy ra!",
+        message: error?.message || "CÃ³ lá»—i há»‡ thá»‘ng xáº£y ra!",
       };
     }
   },
   validateResetToken: (token) =>
-    apiRequest(`/auth/validate-reset-token?token=${token}`, { method: "GET", token: "" }),
+    apiRequest(`/api/auth/validate-reset-token?token=${token}`, { method: "GET", token: "" }),
   forgotPassword: (email) =>
-    apiRequest("/auth/forgot-password", {
+    apiRequest("/api/auth/forgot-password", {
       method: "POST",
-      token: "", // Mồi chuỗi rỗng để tránh lỗi đọc 'env' trong ApiClient
+      token: "", // Má»“i chuá»—i rá»—ng Ä‘á»ƒ trÃ¡nh lá»—i Ä‘á»c 'env' trong ApiClient
       body: JSON.stringify({ email })
     }),
 
-  // 🟢 2. Hàm thực thi đổi mật khẩu mới
+  // ðŸŸ¢ 2. HÃ m thá»±c thi Ä‘á»•i máº­t kháº©u má»›i
   resetPassword: (token, password) =>
-    apiRequest("/auth/reset-password", {
+    apiRequest("/api/auth/reset-password", {
       method: "POST",
-      token: "", // Mồi chuỗi rỗng để tránh lỗi đọc 'env' trong ApiClient
+      token: "", // Má»“i chuá»—i rá»—ng Ä‘á»ƒ trÃ¡nh lá»—i Ä‘á»c 'env' trong ApiClient
       body: JSON.stringify({ token, password })
     }),
   async register(name, email, password) {
     try {
-      const data = await apiRequest("/auth/register", {
+      const data = await apiRequest("/api/auth/register", {
         method: "POST",
         token: "",
         body: JSON.stringify({
@@ -56,11 +56,12 @@ export const authService = {
 
       return {
         success: false,
-        message: error?.message || "Có lỗi hệ thống xảy ra!",
+        message: error?.message || "CÃ³ lá»—i há»‡ thá»‘ng xáº£y ra!",
       };
     }
   },
   async logout() {
-    await apiRequest("/auth/logout", { method: "POST" });
+    await apiRequest("/api/auth/logout", { method: "POST" });
   }
 };
+
