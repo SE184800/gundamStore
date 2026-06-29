@@ -1,9 +1,66 @@
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import HeaderCart from "../layout/HeaderCart";
 import { useCms } from "../../store/CmsStore";
 import { useI18n } from "../../i18n";
-import { User, ChevronDown, Settings, Heart, LogOut, Globe } from "lucide-react";
+import { User, ChevronDown, Settings, Heart, LogOut, Globe, Home, Package, ShoppingCart, ClipboardList } from "lucide-react";
+function MobileBottomTabs({ lang = "vi", isLoggedIn = false }) {
+  const location = useLocation();
+
+  const tabs = [
+    {
+      to: "/",
+      label: lang === "en" ? "Home" : "Home",
+      icon: Home,
+      match: (pathname) => pathname === "/",
+    },
+    {
+      to: "/shop",
+      label: lang === "en" ? "Shop" : "Sản phẩm",
+      icon: Package,
+      match: (pathname) => pathname.startsWith("/shop") || pathname.startsWith("/product"),
+    },
+    {
+      to: "/cart",
+      label: lang === "en" ? "Cart" : "Giỏ hàng",
+      icon: ShoppingCart,
+      match: (pathname) => pathname.startsWith("/cart") || pathname.startsWith("/checkout"),
+    },
+    {
+      to: "/orders",
+      label: lang === "en" ? "Orders" : "Đơn hàng",
+      icon: ClipboardList,
+      match: (pathname) => pathname.startsWith("/orders") || pathname.startsWith("/order-lookup"),
+    },
+    {
+      to: isLoggedIn ? "/account" : "/login",
+      label: lang === "en" ? "Account" : "Tài khoản",
+      icon: User,
+      match: (pathname) => pathname.startsWith("/account") || pathname.startsWith("/profile") || pathname.startsWith("/login"),
+    },
+  ];
+
+  return (
+    <nav className="mobile-bottom-tabs md:hidden" aria-label="Mobile bottom navigation">
+      {tabs.map((tab) => {
+        const Icon = tab.icon;
+        const active = tab.match(location.pathname);
+
+        return (
+          <Link
+            key={tab.to}
+            to={tab.to}
+            className={`mobile-bottom-tab-item ${active ? "is-active" : ""}`}
+          >
+            <Icon size={18} />
+            <span>{tab.label}</span>
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
+
 export default function StorefrontShell({ children }) {
   const { state, actions } = useCms();
   const { t, lang, setLang } = useI18n();
@@ -161,6 +218,8 @@ export default function StorefrontShell({ children }) {
       </header>
 
       {children}
+
+      <MobileBottomTabs lang={lang} isLoggedIn={Boolean(state?.user)} />
 
       <footer className="mt-10 border-t bg-white">
         <div className="mx-auto grid max-w-7xl gap-6 px-6 py-8 md:grid-cols-3">
