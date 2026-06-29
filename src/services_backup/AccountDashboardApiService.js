@@ -1,8 +1,8 @@
-﻿import { apiRequest, getStoredAccountToken } from "./ApiClient";
+import { apiRequest, getStoredAccountToken } from "./ApiClient";
 import { mapBackendOrderForStorefront } from "./StorefrontOrderLookupApiService";
 
 export async function getMyAccountDashboardApi() {
-  const data = await apiRequest("/api/account/api/dashboard", {
+  const data = await apiRequest("/api/account/dashboard", {
     token: getStoredAccountToken(),
   });
 
@@ -16,4 +16,3 @@ export async function getMyAccountDashboardApi() {
     activeOrders: (data.dashboard.activeOrders || []).map(mapBackendOrderForStorefront),
   };
 }
-

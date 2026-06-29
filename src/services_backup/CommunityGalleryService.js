@@ -1,15 +1,15 @@
-﻿const COMMUNITY_GALLERY_KEY = "gundam-community-gallery";
+const COMMUNITY_GALLERY_KEY = "gundam-community-gallery";
 
 const seedGallery = [
   {
     id: "gal-seed-1",
-    title: "RG Hi-Î½ Gundam clean build",
+    title: "RG Hi-ν Gundam clean build",
     builderName: "Builder Kai",
     grade: "RG",
     series: "UC",
-    productName: "RG Hi-Î½ Gundam",
+    productName: "RG Hi-ν Gundam",
     imageUrl: "/images/products/hi-nu.jpg",
-    caption: "Clean build, panel line nháº¹, giá»¯ mÃ u nguyÃªn báº£n.",
+    caption: "Clean build, panel line nhẹ, giữ màu nguyên bản.",
     status: "Approved",
     createdAt: "2026-05-01T10:00:00.000Z",
   },
@@ -20,8 +20,8 @@ const seedGallery = [
     grade: "MGEX",
     series: "SEED",
     productName: "MGEX Strike Freedom",
-    imageUrl: "/images/api/banners/banner-2.jpg",
-    caption: "TrÆ°ng bÃ y cÃ¹ng action base vÃ  Ã¡nh sÃ¡ng vÃ ng.",
+    imageUrl: "/images/banners/banner-2.jpg",
+    caption: "Trưng bày cùng action base và ánh sáng vàng.",
     status: "Approved",
     createdAt: "2026-05-02T10:00:00.000Z",
   },
@@ -64,15 +64,15 @@ export function submitGalleryBuild(payload = {}) {
   const caption = sanitize(payload.caption, 500);
 
   if (!title || title.length < 3) {
-    throw new Error("Vui lÃ²ng nháº­p tiÃªu Ä‘á» bÃ i Ä‘Äƒng.");
+    throw new Error("Vui lòng nhập tiêu đề bài đăng.");
   }
 
   if (!builderName || builderName.length < 2) {
-    throw new Error("Vui lÃ²ng nháº­p tÃªn builder.");
+    throw new Error("Vui lòng nhập tên builder.");
   }
 
   if (!imageUrl || !/^https?:\/\//.test(imageUrl) && !imageUrl.startsWith("/")) {
-    throw new Error("Vui lÃ²ng nháº­p URL hÃ¬nh áº£nh há»£p lá»‡.");
+    throw new Error("Vui lòng nhập URL hình ảnh hợp lệ.");
   }
 
   const rows = readRows();
@@ -125,4 +125,3 @@ export function getGallerySummary() {
     rejected: rows.filter((row) => row.status === "Rejected").length,
   };
 }
-

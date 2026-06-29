@@ -1,4 +1,4 @@
-﻿import { ADMIN_ROLES, getCurrentAdmin } from "./AdminAuthService";
+import { ADMIN_ROLES, getCurrentAdmin } from "./AdminAuthService";
 
 export const ADMIN_PERMISSIONS = {
   VIEW_DASHBOARD: "reports:read",
@@ -58,14 +58,14 @@ const ROLE_PERMISSIONS = {
 
 export const ADMIN_ROUTE_PERMISSIONS = {
   "/admin": ADMIN_PERMISSIONS.VIEW_DASHBOARD,
-  "/admin/api/reports": ADMIN_PERMISSIONS.VIEW_REPORTS,
+  "/admin/reports": ADMIN_PERMISSIONS.VIEW_REPORTS,
   "/admin/analytics": ADMIN_PERMISSIONS.VIEW_ANALYTICS,
   "/admin/audit-logs": ADMIN_PERMISSIONS.VIEW_REPORTS,
 
   "/admin/cms": ADMIN_PERMISSIONS.MANAGE_CMS,
   "/admin/cms/pages": ADMIN_PERMISSIONS.MANAGE_CMS,
   "/admin/cms/home-builder": ADMIN_PERMISSIONS.MANAGE_CMS,
-  "/admin/cms/api/banners": ADMIN_PERMISSIONS.MANAGE_CMS,
+  "/admin/cms/banners": ADMIN_PERMISSIONS.MANAGE_CMS,
   "/admin/cms/navigation": ADMIN_PERMISSIONS.MANAGE_CMS,
   "/admin/cms/media": ADMIN_PERMISSIONS.MANAGE_CMS,
   "/admin/cms/theme-seo": ADMIN_PERMISSIONS.MANAGE_SYSTEM,
@@ -73,7 +73,7 @@ export const ADMIN_ROUTE_PERMISSIONS = {
   "/admin/news": ADMIN_PERMISSIONS.MANAGE_NEWS_EVENTS,
   "/admin/events": ADMIN_PERMISSIONS.MANAGE_NEWS_EVENTS,
   "/admin/home-builder": ADMIN_PERMISSIONS.MANAGE_CMS,
-  "/admin/api/banners": ADMIN_PERMISSIONS.MANAGE_CMS,
+  "/admin/banners": ADMIN_PERMISSIONS.MANAGE_CMS,
 
   "/admin/products": ADMIN_PERMISSIONS.MANAGE_PRODUCTS,
   "/admin/product-categories": ADMIN_PERMISSIONS.MANAGE_PRODUCTS,
@@ -85,24 +85,24 @@ export const ADMIN_ROUTE_PERMISSIONS = {
   "/admin/product-display-mapping": ADMIN_PERMISSIONS.MANAGE_PRODUCTS,
 
   "/admin/pricing-inventory": ADMIN_PERMISSIONS.MANAGE_PRICING_INVENTORY,
-  "/admin/api/pricing": ADMIN_PERMISSIONS.MANAGE_PRICING_INVENTORY,
-  "/admin/api/inventory": ADMIN_PERMISSIONS.MANAGE_PRICING_INVENTORY,
-  "/admin/api/inventory/receipts": ADMIN_PERMISSIONS.MANAGE_PRICING_INVENTORY,
-  "/admin/api/inventory/adjustments": ADMIN_PERMISSIONS.MANAGE_PRICING_INVENTORY,
-  "/admin/api/inventory/stock-count": ADMIN_PERMISSIONS.MANAGE_PRICING_INVENTORY,
-  "/admin/api/inventory/transactions": ADMIN_PERMISSIONS.MANAGE_PRICING_INVENTORY,
+  "/admin/pricing": ADMIN_PERMISSIONS.MANAGE_PRICING_INVENTORY,
+  "/admin/inventory": ADMIN_PERMISSIONS.MANAGE_PRICING_INVENTORY,
+  "/admin/inventory/receipts": ADMIN_PERMISSIONS.MANAGE_PRICING_INVENTORY,
+  "/admin/inventory/adjustments": ADMIN_PERMISSIONS.MANAGE_PRICING_INVENTORY,
+  "/admin/inventory/stock-count": ADMIN_PERMISSIONS.MANAGE_PRICING_INVENTORY,
+  "/admin/inventory/transactions": ADMIN_PERMISSIONS.MANAGE_PRICING_INVENTORY,
 
-  "/admin/api/promotions": ADMIN_PERMISSIONS.READ_PROMOTIONS,
-  "/admin/api/vouchers": ADMIN_PERMISSIONS.READ_PROMOTIONS,
+  "/admin/promotions": ADMIN_PERMISSIONS.READ_PROMOTIONS,
+  "/admin/vouchers": ADMIN_PERMISSIONS.READ_PROMOTIONS,
 
-  "/admin/api/orders": ADMIN_PERMISSIONS.MANAGE_ORDERS,
-  "/admin/api/fulfillment": ADMIN_PERMISSIONS.MANAGE_ORDERS,
-  "/admin/api/customers": ADMIN_PERMISSIONS.READ_ORDERS,
-  "/admin/api/restock-alerts": ADMIN_PERMISSIONS.MANAGE_ORDERS,
+  "/admin/orders": ADMIN_PERMISSIONS.MANAGE_ORDERS,
+  "/admin/fulfillment": ADMIN_PERMISSIONS.MANAGE_ORDERS,
+  "/admin/customers": ADMIN_PERMISSIONS.READ_ORDERS,
+  "/admin/restock-alerts": ADMIN_PERMISSIONS.MANAGE_ORDERS,
 
   "/admin/chats": ADMIN_PERMISSIONS.MANAGE_CUSTOMER_SERVICE,
-  "/admin/api/reviews": ADMIN_PERMISSIONS.MANAGE_CUSTOMER_SERVICE,
-  "/admin/api/complaints": ADMIN_PERMISSIONS.MANAGE_CUSTOMER_SERVICE,
+  "/admin/reviews": ADMIN_PERMISSIONS.MANAGE_CUSTOMER_SERVICE,
+  "/admin/complaints": ADMIN_PERMISSIONS.MANAGE_CUSTOMER_SERVICE,
   "/admin/communication": ADMIN_PERMISSIONS.MANAGE_CUSTOMER_SERVICE,
 
   "/admin/community-gallery": ADMIN_PERMISSIONS.MANAGE_COMMUNITY,
@@ -170,4 +170,3 @@ export function canAccessAdminPath(pathname = "") {
 export function getPermissionLabel(permission) {
   return Object.entries(ADMIN_PERMISSIONS).find(([, value]) => value === permission)?.[0] || permission;
 }
-

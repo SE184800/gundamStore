@@ -1,4 +1,4 @@
-﻿import { apiRequest } from "./ApiClient";
+import { apiRequest } from "./ApiClient";
 import {
   ORDER_STATUS,
   ORDER_TYPE,
@@ -66,8 +66,8 @@ function buildOrderTimeline(order = {}, shipment = null) {
     {
       status: ORDER_STATUS.PLACED,
       time: order.createdAt,
-      title: "ÄÃ£ Ä‘áº·t hÃ ng",
-      note: "ÄÆ¡n hÃ ng Ä‘Ã£ Ä‘Æ°á»£c ghi nháº­n trÃªn há»‡ thá»‘ng.",
+      title: "Đã đặt hàng",
+      note: "Đơn hàng đã được ghi nhận trên hệ thống.",
     },
   ];
 
@@ -75,8 +75,8 @@ function buildOrderTimeline(order = {}, shipment = null) {
     rows.push({
       status: ORDER_STATUS.CONFIRMED,
       time: order.confirmedAt || order.updatedAt,
-      title: "ÄÃ£ xÃ¡c nháº­n",
-      note: "Shop Ä‘Ã£ xÃ¡c nháº­n Ä‘Æ¡n hÃ ng.",
+      title: "Đã xác nhận",
+      note: "Shop đã xác nhận đơn hàng.",
     });
   }
 
@@ -84,8 +84,8 @@ function buildOrderTimeline(order = {}, shipment = null) {
     rows.push({
       status: ORDER_STATUS.PACKING,
       time: shipment?.createdAt || order.updatedAt,
-      title: "Äang Ä‘Ã³ng gÃ³i",
-      note: "ÄÆ¡n hÃ ng Ä‘ang Ä‘Æ°á»£c chuáº©n bá»‹.",
+      title: "Đang đóng gói",
+      note: "Đơn hàng đang được chuẩn bị.",
     });
   }
 
@@ -93,8 +93,8 @@ function buildOrderTimeline(order = {}, shipment = null) {
     rows.push({
       status: ORDER_STATUS.SHIPPING,
       time: shipment?.updatedAt || order.updatedAt,
-      title: "Äang giao hÃ ng",
-      note: [shipment?.carrier, shipment?.trackingCode].filter(Boolean).join(" Â· ") || "ÄÆ¡n hÃ ng Ä‘Ã£ bÃ n giao váº­n chuyá»ƒn.",
+      title: "Đang giao hàng",
+      note: [shipment?.carrier, shipment?.trackingCode].filter(Boolean).join(" · ") || "Đơn hàng đã bàn giao vận chuyển.",
     });
   }
 
@@ -102,8 +102,8 @@ function buildOrderTimeline(order = {}, shipment = null) {
     rows.push({
       status: ORDER_STATUS.DELIVERED,
       time: order.updatedAt,
-      title: "ÄÃ£ giao hÃ ng",
-      note: "ÄÆ¡n hÃ ng Ä‘Ã£ Ä‘Æ°á»£c giao.",
+      title: "Đã giao hàng",
+      note: "Đơn hàng đã được giao.",
     });
   }
 
@@ -111,8 +111,8 @@ function buildOrderTimeline(order = {}, shipment = null) {
     rows.push({
       status: ORDER_STATUS.COMPLETED,
       time: order.updatedAt,
-      title: "HoÃ n táº¥t",
-      note: "ÄÆ¡n hÃ ng Ä‘Ã£ hoÃ n táº¥t.",
+      title: "Hoàn tất",
+      note: "Đơn hàng đã hoàn tất.",
     });
   }
 
@@ -120,8 +120,8 @@ function buildOrderTimeline(order = {}, shipment = null) {
     rows.push({
       status,
       time: order.cancelledAt || order.updatedAt,
-      title: order.status === "CANCELLED" ? "ÄÃ£ há»§y" : "ÄÃ£ hoÃ n tiá»n",
-      note: order.cancelReason || "ÄÆ¡n hÃ ng Ä‘Ã£ á»Ÿ tráº¡ng thÃ¡i cuá»‘i.",
+      title: order.status === "CANCELLED" ? "Đã hủy" : "Đã hoàn tiền",
+      note: order.cancelReason || "Đơn hàng đã ở trạng thái cuối.",
     });
   }
 
@@ -245,7 +245,7 @@ function buildPublicOrderPath(id = "", lookup = {}) {
   if (lookup.email) params.set("email", cleanContact(lookup.email));
 
   const query = params.toString();
-  return `/api/orders/public/${encodeURIComponent(id)}${query ? `?${query}` : ""}`;
+  return `/orders/public/${encodeURIComponent(id)}${query ? `?${query}` : ""}`;
 }
 
 export async function getStorefrontOrderByIdFromApi(id = "", lookup = {}) {
@@ -259,4 +259,3 @@ export async function getStorefrontOrderByIdFromApi(id = "", lookup = {}) {
 
   return mapBackendOrderForStorefront(data.order);
 }
-

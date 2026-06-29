@@ -1,4 +1,4 @@
-﻿import { apiRequest } from "./ApiClient";
+import { apiRequest } from "./ApiClient";
 import {
   ORDER_STATUS,
   ORDER_TYPE,
@@ -141,7 +141,7 @@ export function mapBackendOrder(order = {}) {
 }
 
 export async function getAdminOrdersFromApi() {
-  const data = await apiRequest("/api/orders/admin");
+  const data = await apiRequest("/orders/admin");
 
   if (!data?.success || !Array.isArray(data.orders)) {
     throw new Error("Backend did not return valid orders.");
@@ -151,7 +151,7 @@ export async function getAdminOrdersFromApi() {
 }
 
 export async function updateAdminOrderStatusApi(orderId, status, note = "") {
-  const data = await apiRequest(`/api/orders/admin/${orderId}/status`, {
+  const data = await apiRequest(`/orders/admin/${orderId}/status`, {
     method: "PATCH",
     body: JSON.stringify({
       status: toBackendOrderStatus(status),
@@ -167,7 +167,7 @@ export async function updateAdminOrderStatusApi(orderId, status, note = "") {
 }
 
 export async function updateAdminOrderPaymentApi(orderId, paymentStatus, options = {}) {
-  const data = await apiRequest(`/api/orders/admin/${orderId}/payment`, {
+  const data = await apiRequest(`/orders/admin/${orderId}/payment`, {
     method: "PATCH",
     body: JSON.stringify({
       paymentStatus: toBackendPaymentStatus(paymentStatus),
@@ -186,7 +186,7 @@ export async function updateAdminOrderPaymentApi(orderId, paymentStatus, options
 }
 
 export async function updateAdminOrderShippingApi(orderId, shippingInfo = {}) {
-  const data = await apiRequest(`/api/orders/admin/${orderId}/shipping`, {
+  const data = await apiRequest(`/orders/admin/${orderId}/shipping`, {
     method: "PATCH",
     body: JSON.stringify({
       carrier: shippingInfo.carrier || "",
@@ -204,4 +204,3 @@ export async function updateAdminOrderShippingApi(orderId, shippingInfo = {}) {
 
   return mapBackendOrder(data.order);
 }
-

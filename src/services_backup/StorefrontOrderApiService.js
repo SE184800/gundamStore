@@ -1,4 +1,4 @@
-﻿import { apiRequest, getStoredAccountToken } from "./ApiClient";
+import { apiRequest, getStoredAccountToken } from "./ApiClient";
 import { mapBackendOrderForStorefront } from "./StorefrontOrderLookupApiService";
 
 const PRODUCT_ALIASES = {
@@ -105,7 +105,7 @@ function getProductAlias(item = {}) {
     };
   }
 
-  if (searchText.includes("hi-v") || searchText.includes("hi-Î½") || searchText.includes("hi-nu")) {
+  if (searchText.includes("hi-v") || searchText.includes("hi-ν") || searchText.includes("hi-nu")) {
     return {
       sku: "RG-HINU-144-BD",
       slug: "rg-1-144-hi-nu-gundam",
@@ -170,7 +170,7 @@ export function buildCreateOrderPayload({
 }
 
 export async function createStorefrontOrderApi(payload) {
-  const data = await apiRequest("/api/orders", {
+  const data = await apiRequest("/orders", {
     method: "POST",
     body: JSON.stringify(payload),
     token: getStoredAccountToken(),
@@ -185,7 +185,7 @@ export async function createStorefrontOrderApi(payload) {
 
 
 export async function getMyStorefrontOrdersApi() {
-  const data = await apiRequest("/api/orders/my", {
+  const data = await apiRequest("/orders/my", {
     token: getStoredAccountToken(),
   });
 
@@ -201,7 +201,7 @@ export async function getMyStorefrontOrderByIdApi(id = "") {
     throw new Error("Order id is required.");
   }
 
-  const data = await apiRequest(`/api/orders/my/${encodeURIComponent(cleanId)}`, {
+  const data = await apiRequest(`/orders/my/${encodeURIComponent(cleanId)}`, {
     token: getStoredAccountToken(),
   });
 
@@ -220,7 +220,7 @@ export async function cancelMyStorefrontOrderApi(id = "", payload = {}) {
     throw new Error("Order id is required.");
   }
 
-  const data = await apiRequest(`/api/orders/my/${encodeURIComponent(cleanId)}/cancel`, {
+  const data = await apiRequest(`/orders/my/${encodeURIComponent(cleanId)}/cancel`, {
     method: "PATCH",
     token: getStoredAccountToken(),
     body: JSON.stringify({
@@ -235,4 +235,3 @@ export async function cancelMyStorefrontOrderApi(id = "", payload = {}) {
 
   return mapBackendOrderForStorefront(data.order);
 }
-

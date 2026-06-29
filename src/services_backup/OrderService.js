@@ -1,4 +1,4 @@
-﻿import { apiRequest } from "./ApiClient";
+import { apiRequest } from "./ApiClient";
 import { normalizeItems, calcSubtotal } from "./PricingService";
 import { reduceStock, restoreStock, logOrderStockReservation, logOrderStockRestore } from "./InventoryService";
 import {
@@ -150,10 +150,10 @@ export function createOrder(payload) {
       {
         status: payload.status || ORDER_STATUS.PLACED,
         time: now,
-        title: isPreorder ? "Táº¡o Ä‘Æ¡n pre-order" : "Äáº·t hÃ ng thÃ nh cÃ´ng",
+        title: isPreorder ? "Tạo đơn pre-order" : "Đặt hàng thành công",
         note: isPreorder
-          ? `KhÃ¡ch hÃ ng Ä‘Ã£ táº¡o Ä‘Æ¡n pre-order. Tiá»n cá»c: ${preorder.depositAmount.toLocaleString("vi-VN")}Ä‘.`
-          : "KhÃ¡ch hÃ ng Ä‘Ã£ táº¡o Ä‘Æ¡n hÃ ng.",
+          ? `Khách hàng đã tạo đơn pre-order. Tiền cọc: ${preorder.depositAmount.toLocaleString("vi-VN")}đ.`
+          : "Khách hàng đã tạo đơn hàng.",
       },
     ],
 
@@ -188,7 +188,7 @@ export function updateOrderStatus(orderId, status, note = "", options = {}) {
   const force = options.force === true;
 
   if (!force && !canTransitionOrderStatus(currentStatus, status)) {
-    throw new Error(`Invalid status transition: ${currentStatus} â†’ ${status}`);
+    throw new Error(`Invalid status transition: ${currentStatus} → ${status}`);
   }
 
   if (status === ORDER_STATUS.CANCELLED && currentStatus !== ORDER_STATUS.CANCELLED) {
@@ -216,8 +216,8 @@ export function updateOrderStatus(orderId, status, note = "", options = {}) {
           {
             status,
             time: now,
-            title: `Cáº­p nháº­t: ${getOrderStatusLabel(status, "vi")}`,
-            note: note || `ÄÆ¡n hÃ ng chuyá»ƒn sang tráº¡ng thÃ¡i ${getOrderStatusLabel(status, "vi")}.`,
+            title: `Cập nhật: ${getOrderStatusLabel(status, "vi")}`,
+            note: note || `Đơn hàng chuyển sang trạng thái ${getOrderStatusLabel(status, "vi")}.`,
           },
         ],
       }
@@ -263,8 +263,8 @@ export function requestCancelOrder(orderId, reason = "", note = "") {
           {
             status: order.status,
             time: now,
-            title: "YÃªu cáº§u há»§y Ä‘Æ¡n",
-            note: note || reason || "KhÃ¡ch hÃ ng Ä‘Ã£ gá»­i yÃªu cáº§u há»§y Ä‘Æ¡n.",
+            title: "Yêu cầu hủy đơn",
+            note: note || reason || "Khách hàng đã gửi yêu cầu hủy đơn.",
           },
         ],
       }
@@ -298,7 +298,7 @@ export function updateOrderShipping(orderId, shippingInfo = {}) {
           {
             status: order.status,
             time: now,
-            title: "Cáº­p nháº­t váº­n chuyá»ƒn",
+            title: "Cập nhật vận chuyển",
             note: `Carrier: ${shippingInfo.carrier || "-"}, Tracking: ${shippingInfo.trackingCode || "-"}`,
           },
         ],
@@ -365,7 +365,7 @@ export async function lookupPublicOrderFromApi(orderCode = "", { phone = "", ema
   if (email) params.set("email", String(email).trim());
 
   const queryString = params.toString();
-  const path = `/api/orders/public/${encodeURIComponent(cleanCode)}${queryString ? `?${queryString}` : ""}`;
+  const path = `/orders/public/${encodeURIComponent(cleanCode)}${queryString ? `?${queryString}` : ""}`;
 
   const data = await apiRequest(path, {
     token: "",
@@ -410,7 +410,7 @@ export function cancelOrderDirectly(orderId, reason = "", note = "") {
   return updateOrderStatus(
     order.id,
     ORDER_STATUS.CANCELLED,
-    note || reason || "KhÃ¡ch hÃ ng Ä‘Ã£ há»§y Ä‘Æ¡n.",
+    note || reason || "Khách hàng đã hủy đơn.",
     { force: false }
   );
 }
@@ -444,8 +444,8 @@ export function requestReturnOrder(orderId, reason = "", note = "") {
           {
             status: item.status,
             time: now,
-            title: "YÃªu cáº§u tráº£ hÃ ng/hoÃ n tiá»n",
-            note: note || reason || "KhÃ¡ch hÃ ng Ä‘Ã£ gá»­i yÃªu cáº§u tráº£ hÃ ng/hoÃ n tiá»n.",
+            title: "Yêu cầu trả hàng/hoàn tiền",
+            note: note || reason || "Khách hàng đã gửi yêu cầu trả hàng/hoàn tiền.",
           },
         ],
       }
@@ -507,8 +507,8 @@ export function confirmPreorderDeposit(orderId, adminNote = "") {
       paymentStatus: PAYMENT_STATUS.PAID,
       status: order.status === ORDER_STATUS.PLACED ? ORDER_STATUS.CONFIRMED : order.status,
     }),
-    "XÃ¡c nháº­n cá»c pre-order",
-    adminNote || "Admin Ä‘Ã£ xÃ¡c nháº­n tiá»n cá»c pre-order."
+    "Xác nhận cọc pre-order",
+    adminNote || "Admin đã xác nhận tiền cọc pre-order."
   );
 }
 
@@ -527,8 +527,8 @@ export function updatePreorderEta(orderId, eta = "", adminNote = "") {
         eta: cleanEta,
       },
     }),
-    "Cáº­p nháº­t ETA pre-order",
-    adminNote || `ETA má»›i: ${cleanEta}`
+    "Cập nhật ETA pre-order",
+    adminNote || `ETA mới: ${cleanEta}`
   );
 }
 
@@ -541,8 +541,8 @@ export function markPreorderWaitingArrival(orderId, adminNote = "") {
         status: PREORDER_STATUS.WAITING_ARRIVAL,
       },
     }),
-    "Pre-order Ä‘ang chá» hÃ ng vá»",
-    adminNote || "ÄÆ¡n pre-order Ä‘Ã£ chuyá»ƒn sang tráº¡ng thÃ¡i chá» hÃ ng vá»."
+    "Pre-order đang chờ hàng về",
+    adminNote || "Đơn pre-order đã chuyển sang trạng thái chờ hàng về."
   );
 }
 
@@ -556,8 +556,8 @@ export function markPreorderReadyForBalance(orderId, adminNote = "") {
         readyForBalanceAt: new Date().toISOString(),
       },
     }),
-    "HÃ ng pre-order Ä‘Ã£ vá»",
-    adminNote || "HÃ ng Ä‘Ã£ vá», cáº§n thÃ´ng bÃ¡o khÃ¡ch thanh toÃ¡n pháº§n cÃ²n láº¡i."
+    "Hàng pre-order đã về",
+    adminNote || "Hàng đã về, cần thông báo khách thanh toán phần còn lại."
   );
 }
 
@@ -573,8 +573,8 @@ export function confirmPreorderBalance(orderId, adminNote = "") {
       },
       status: order.status === ORDER_STATUS.PLACED ? ORDER_STATUS.CONFIRMED : order.status,
     }),
-    "XÃ¡c nháº­n thanh toÃ¡n pháº§n cÃ²n láº¡i",
-    adminNote || "Admin Ä‘Ã£ xÃ¡c nháº­n khÃ¡ch thanh toÃ¡n pháº§n cÃ²n láº¡i."
+    "Xác nhận thanh toán phần còn lại",
+    adminNote || "Admin đã xác nhận khách thanh toán phần còn lại."
   );
 }
 
@@ -618,8 +618,8 @@ export function requestPreorderBalancePayment(orderId, note = "") {
           {
             status: item.status,
             time: now,
-            title: "KhÃ¡ch bÃ¡o Ä‘Ã£ thanh toÃ¡n pháº§n cÃ²n láº¡i",
-            note: note || "KhÃ¡ch hÃ ng Ä‘Ã£ gá»­i xÃ¡c nháº­n thanh toÃ¡n pháº§n cÃ²n láº¡i cho Ä‘Æ¡n pre-order.",
+            title: "Khách báo đã thanh toán phần còn lại",
+            note: note || "Khách hàng đã gửi xác nhận thanh toán phần còn lại cho đơn pre-order.",
           },
         ],
       }
@@ -671,13 +671,13 @@ export function resolvePreorderBalancePayment(orderId, decision = "Rejected", ad
             status: approved ? ORDER_STATUS.CONFIRMED : item.status,
             time: now,
             title: approved
-              ? "Admin xÃ¡c nháº­n thanh toÃ¡n pháº§n cÃ²n láº¡i"
-              : "Admin tá»« chá»‘i xÃ¡c nháº­n thanh toÃ¡n pháº§n cÃ²n láº¡i",
+              ? "Admin xác nhận thanh toán phần còn lại"
+              : "Admin từ chối xác nhận thanh toán phần còn lại",
             note:
               adminNote ||
               (approved
-                ? "Admin Ä‘Ã£ xÃ¡c nháº­n khÃ¡ch thanh toÃ¡n pháº§n cÃ²n láº¡i cho Ä‘Æ¡n pre-order."
-                : "Admin Ä‘Ã£ tá»« chá»‘i xÃ¡c nháº­n thanh toÃ¡n pháº§n cÃ²n láº¡i."),
+                ? "Admin đã xác nhận khách thanh toán phần còn lại cho đơn pre-order."
+                : "Admin đã từ chối xác nhận thanh toán phần còn lại."),
           },
         ],
       }
@@ -687,4 +687,3 @@ export function resolvePreorderBalancePayment(orderId, decision = "Rejected", ad
   saveOrders(orders);
   return orders;
 }
-

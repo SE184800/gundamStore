@@ -1,7 +1,7 @@
-﻿import { apiRequest } from "./ApiClient";
+import { apiRequest } from "./ApiClient";
 
 export async function getStorefrontProductReviewsApi(key = "") {
-  const data = await apiRequest(`/api/reviews/product/${encodeURIComponent(key)}`, {
+  const data = await apiRequest(`/reviews/product/${encodeURIComponent(key)}`, {
     token: "",
   });
 
@@ -13,7 +13,7 @@ export async function getStorefrontProductReviewsApi(key = "") {
 }
 
 export async function createStorefrontReviewApi(payload = {}) {
-  const data = await apiRequest("/api/reviews", {
+  const data = await apiRequest("/reviews", {
     method: "POST",
     token: "",
     body: JSON.stringify(payload),
@@ -25,4 +25,3 @@ export async function createStorefrontReviewApi(payload = {}) {
 
   return data.review;
 }
-
