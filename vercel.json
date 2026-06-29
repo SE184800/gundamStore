@@ -4,7 +4,11 @@
   "outputDirectory": "dist",
   "rewrites": [
     {
-      "source": "/((?!assets/|images/|favicon.ico|robots.txt|sitemap.xml).*)",
+      "source": "/api/(.*)",
+      "destination": "https://gundam-store-team.onrender.com/api/$1"
+    },
+    {
+      "source": "/((?!assets/|public/|images/|favicon.ico|robots.txt|sitemap.xml).*)",
       "destination": "/index.html"
     }
   ],
