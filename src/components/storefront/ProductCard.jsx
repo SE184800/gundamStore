@@ -398,11 +398,11 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
                     SKU: {product?.sku || "-"}
                   </span>
                 </div>
-
-                <p className="mt-5 text-base font-semibold leading-7 text-slate-600">
-                  {desc}
-                </p>
-
+                <div className="whitespace-pre-line text-gray-700">
+                  <p className="mt-5 text-base font-semibold leading-7 text-slate-600">
+                    {desc}
+                  </p>
+                </div>
                 <div className="my-6 border-t border-slate-200" />
 
                 <div className="flex items-end gap-3">
