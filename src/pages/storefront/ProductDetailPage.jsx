@@ -560,7 +560,9 @@ function ProductInfo({ product, lang, actions, onPreorder }) {
       </div>
 
       <h1 className="mt-4 text-3xl font-black leading-tight text-slate-950 lg:text-4xl">{productName(product, lang)}</h1>
-      <p className="mt-3 text-sm leading-6 text-slate-600">{productDesc(product, lang, t.defaultDesc)}</p>
+      <p className="mt-3 text-sm leading-6 text-slate-600 whitespace-pre-line">
+        {productDesc(product, lang, t.defaultDesc)}
+      </p>
 
       {/* VARIANT_SELECTOR_START */}
       {variants.length > 0 && (
@@ -581,8 +583,8 @@ function ProductInfo({ product, lang, actions, onPreorder }) {
                   disabled={variant.active === false}
                   onClick={() => setSelectedVariantId(variant.id)}
                   className={`flex items-center gap-3 rounded-2xl border p-3 text-left transition ${selected
-                      ? "border-blue-500 bg-white ring-4 ring-blue-100"
-                      : "border-blue-100 bg-white/70 hover:bg-white"
+                    ? "border-blue-500 bg-white ring-4 ring-blue-100"
+                    : "border-blue-100 bg-white/70 hover:bg-white"
                     } ${disabled ? "opacity-60" : ""}`}
                 >
                   <div className="h-14 w-14 overflow-hidden rounded-xl bg-slate-100">
@@ -643,8 +645,8 @@ function ProductInfo({ product, lang, actions, onPreorder }) {
         </div>
       ) : (
         <div className={`mt-5 flex items-center gap-2 rounded-2xl border p-4 text-sm font-black ${isOutOfStock
-            ? "border-slate-200 bg-slate-50 text-slate-600"
-            : "border-emerald-100 bg-emerald-50 text-emerald-700"
+          ? "border-slate-200 bg-slate-50 text-slate-600"
+          : "border-emerald-100 bg-emerald-50 text-emerald-700"
           }`}>
           <CheckCircle2 size={18} /> {isOutOfStock ? t.outOfStock : `${t.stock}: ${stock}`}
         </div>
@@ -671,8 +673,8 @@ function ProductInfo({ product, lang, actions, onPreorder }) {
               onClick={handleAddToCart}
               disabled={isOutOfStock}
               className={`rounded-2xl px-5 py-3 text-sm font-black shadow-lg ${isOutOfStock
-                  ? "cursor-not-allowed bg-slate-200 text-slate-500 shadow-none"
-                  : "bg-blue-700 text-white shadow-blue-200 hover:bg-blue-800"
+                ? "cursor-not-allowed bg-slate-200 text-slate-500 shadow-none"
+                : "bg-blue-700 text-white shadow-blue-200 hover:bg-blue-800"
                 }`}
             >
               <ShoppingCart className="mr-2 inline" size={17} />
@@ -682,8 +684,8 @@ function ProductInfo({ product, lang, actions, onPreorder }) {
               onClick={handleBuyNow}
               disabled={isOutOfStock}
               className={`rounded-2xl px-5 py-3 text-sm font-black shadow-lg ${isOutOfStock
-                  ? "cursor-not-allowed bg-slate-200 text-slate-500 shadow-none"
-                  : "bg-slate-950 text-white shadow-slate-200 hover:bg-slate-800"
+                ? "cursor-not-allowed bg-slate-200 text-slate-500 shadow-none"
+                : "bg-slate-950 text-white shadow-slate-200 hover:bg-slate-800"
                 }`}
             >
               <Zap className="mr-2 inline" size={17} />
@@ -748,8 +750,8 @@ function ProductInfo({ product, lang, actions, onPreorder }) {
           onClick={handleWishlist}
           disabled={wishlistBusy}
           className={`rounded-2xl border px-4 py-3 text-sm font-black shadow-sm disabled:cursor-not-allowed disabled:opacity-60 ${wishlistSaved
-              ? "border-pink-200 bg-pink-50 text-pink-700"
-              : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+            ? "border-pink-200 bg-pink-50 text-pink-700"
+            : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
             }`}
         >
           <Heart className="mr-2 inline" size={16} fill={wishlistSaved ? "currentColor" : "none"} />
@@ -764,8 +766,8 @@ function ProductInfo({ product, lang, actions, onPreorder }) {
         <button
           onClick={handleCompare}
           className={`rounded-2xl border px-4 py-3 text-sm font-black shadow-sm ${compareSaved
-              ? "border-cyan-200 bg-cyan-50 text-cyan-700"
-              : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+            ? "border-cyan-200 bg-cyan-50 text-cyan-700"
+            : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
             }`}
         >
           <GitCompareArrows className="mr-2 inline" size={16} />
@@ -1285,7 +1287,10 @@ export default function ProductDetailPage() {
 
             <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
               <h2 className="mb-4 text-xl font-black text-slate-950">{t.descTitle}</h2>
-              <p className="text-sm leading-7 text-slate-600">{productDesc(product, lang, t.defaultDesc)}</p>
+              {/* Thêm class whitespace-pre-line vào đây */}
+              <p className="text-sm leading-7 text-slate-600 whitespace-pre-line">
+                {productDesc(product, lang, t.defaultDesc)}
+              </p>
             </div>
 
             <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
