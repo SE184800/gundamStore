@@ -1,9 +1,10 @@
-import { useEffect } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import Header from "./Header";
 import Footer from "./Footer";
-import FloatingChat from "./FloatingChat";
 import { translateDomTree, useI18n } from "../../i18n";
 import { useCms } from "../../store/CmsStore";
+
+const FloatingChat = lazy(() => import("./FloatingChat"));
 
 export function LanguageDomTranslator() {
   const { lang } = useI18n();
@@ -27,6 +28,47 @@ export function LanguageDomTranslator() {
   }, [lang]);
 
   return null;
+}
+
+function DeferredFloatingChat() {
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    const pathname = window.location.pathname || "";
+    if (pathname.startsWith("/admin")) return undefined;
+
+    let settled = false;
+    let timeoutId;
+    let idleId;
+
+    const showChat = () => {
+      if (settled) return;
+      settled = true;
+      setReady(true);
+    };
+
+    timeoutId = window.setTimeout(showChat, 2000);
+
+    if (typeof window.requestIdleCallback === "function") {
+      idleId = window.requestIdleCallback(showChat, { timeout: 2000 });
+    }
+
+    return () => {
+      settled = true;
+      window.clearTimeout(timeoutId);
+      if (idleId && typeof window.cancelIdleCallback === "function") {
+        window.cancelIdleCallback(idleId);
+      }
+    };
+  }, []);
+
+  if (!ready) return null;
+
+  return (
+    <Suspense fallback={null}>
+      <FloatingChat />
+    </Suspense>
+  );
 }
 
 export default function PageShell({ children, withFooter = true }) {
@@ -53,7 +95,7 @@ export default function PageShell({ children, withFooter = true }) {
       <Header user={state?.user} lang={lang} />
       <main className="relative z-10">{children}</main>
       {withFooter && <Footer />}
-      <FloatingChat />
+      <DeferredFloatingChat />
     </div>
   );
 }
