@@ -9,7 +9,6 @@ import {
 import { applyVoucher } from "../../services/VoucherService";
 import { validateStorefrontVoucherApi } from "../../services/StorefrontVoucherApiService";
 import { createOrder } from "../../services/OrderService";
-import { getStock } from "../../services/InventoryService";
 import {
   buildCreateOrderPayload,
   createStorefrontOrderApi,
@@ -363,6 +362,7 @@ export default function CheckoutPage() {
   }
 
   function validateDraftStock() {
+<<<<<<< Updated upstream
     if (isPreorder) return true;
 
     const invalidItem = (draft.items || []).find((item) => {
@@ -384,6 +384,12 @@ export default function CheckoutPage() {
     ]);
 
     return false;
+=======
+    // Do not validate stock from localStorage/cache at checkout.
+    // Backend /api/orders is the final source of truth and will validate/decrement
+    // product or variant stock in DB transaction.
+    return true;
+>>>>>>> Stashed changes
   }
 
   async function submitOrder() {
