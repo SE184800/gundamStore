@@ -488,7 +488,6 @@ export async function listStorefrontProducts(req, res, next) {
     const products = await prisma.product.findMany({
       where: {
         active: true,
-        sellable: true, // Lọc luôn sản phẩm bán được từ DB
         price: { gt: 0 },
       },
       include: {
