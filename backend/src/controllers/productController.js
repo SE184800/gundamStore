@@ -488,8 +488,26 @@ export async function listStorefrontProducts(req, res, next) {
     const products = await prisma.product.findMany({
       where: {
         active: true,
+        sellable: true, // Lọc luôn sản phẩm bán được từ DB
+        price: { gt: 0 },
       },
-      include: productInclude(),
+      include: {
+        category: true,
+        images: {
+          where: { active: true },
+          orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+          take: 1, // Trang chủ chỉ cần 1 ảnh đại diện để hiển thị, không cần load hết album
+        },
+      },
+      variants: {
+        where: { active: true }, // Giả định check biến thể hoạt động
+        orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+      },
+      promotionProducts: {
+        include: { promotion: true },
+        orderBy: { createdAt: "desc" },
+        take: 1,
+      },
       orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
       take: 200,
     });
