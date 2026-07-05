@@ -149,12 +149,21 @@ function getBackendCollectionKeys(product = {}) {
   return Array.from(new Set(keys.filter(Boolean)));
 }
 
+function imageValue(item, preferred = "card") {
+  if (!item) return "";
+  if (typeof item === "string") return item;
+  if (preferred === "thumb") return item.thumbUrl || item.cardUrl || item.detailUrl || item.url || "";
+  if (preferred === "detail") return item.detailUrl || item.cardUrl || item.url || "";
+  return item.cardUrl || item.url || item.detailUrl || item.thumbUrl || "";
+}
+
 function firstImageUrl(product = {}) {
   return (
+    product.cardUrl ||
     product.imageUrl ||
-    product.images?.[0]?.url ||
-    product.images?.[0] ||
+    imageValue(product.images?.[0], "card") ||
     product.media?.card ||
+    product.media?.home ||
     product.media?.detailMain ||
     product.media?.gallery?.[0] ||
     ""
@@ -168,6 +177,18 @@ export function mapBackendProductToStorefront(product = {}) {
   const effectivePrice = Number(product.finalPrice ?? product.effectivePrice ?? product.price) || 0;
   const compareAtPrice = Number(product.compareAtPrice ?? product.oldPrice ?? 0);
   const variants = Array.isArray(product.variants) ? product.variants : [];
+  const images = Array.isArray(product.images)
+    ? product.images.map((item) => imageValue(item, "detail")).filter(Boolean)
+    : product.detailUrl
+      ? [product.detailUrl]
+      : imageUrl
+        ? [imageUrl]
+        : [];
+  const thumbs = Array.isArray(product.images)
+    ? product.images.map((item) => imageValue(item, "thumb")).filter(Boolean)
+    : product.thumbUrl
+      ? [product.thumbUrl]
+      : [];
 
   return {
     id: product.id,
@@ -200,11 +221,11 @@ export function mapBackendProductToStorefront(product = {}) {
     hasVariants: Boolean(product.hasVariants) || variants.length > 0,
 
     imageUrl,
-    images: Array.isArray(product.images)
-      ? product.images.map((item) => item.url || item).filter(Boolean)
-      : imageUrl
-        ? [imageUrl]
-        : [],
+    thumbUrl: product.thumbUrl || thumbs[0] || imageUrl,
+    cardUrl: product.cardUrl || imageUrl,
+    detailUrl: product.detailUrl || images[0] || imageUrl,
+    images,
+    thumbs,
     media: product.media || null,
 
     brand: product.brand || "",
@@ -276,7 +297,11 @@ export function enrichProductsWithBackendIds(localProducts = [], backendProducts
       hasVariants: Boolean(backend.hasVariants),
 
       imageUrl: backend.imageUrl || localProduct.imageUrl,
+      thumbUrl: backend.thumbUrl || localProduct.thumbUrl,
+      cardUrl: backend.cardUrl || localProduct.cardUrl,
+      detailUrl: backend.detailUrl || localProduct.detailUrl,
       images: backend.images?.length ? backend.images : localProduct.images || [],
+      thumbs: backend.thumbs?.length ? backend.thumbs : localProduct.thumbs || [],
       media: backend.media || localProduct.media,
 
       brand: backend.brand || localProduct.brand,
@@ -375,7 +400,11 @@ export function mergeLocalProductWithBackendProduct(localProduct = {}, backendPr
     hasVariants: Boolean(backend.hasVariants),
 
     imageUrl: backend.imageUrl || localProduct.imageUrl,
+    thumbUrl: backend.thumbUrl || localProduct.thumbUrl,
+    cardUrl: backend.cardUrl || localProduct.cardUrl,
+    detailUrl: backend.detailUrl || localProduct.detailUrl,
     images: backend.images?.length ? backend.images : localProduct.images || [],
+    thumbs: backend.thumbs?.length ? backend.thumbs : localProduct.thumbs || [],
     media: backend.media || localProduct.media,
 
     brand: backend.brand || localProduct.brand,
