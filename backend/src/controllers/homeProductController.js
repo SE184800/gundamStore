@@ -75,13 +75,24 @@ function hasProductStock(product = {}) {
   return Number(product.stock || 0) > 0 || canSellWithoutStock(product.status);
 }
 
+function primaryImage(product = {}) {
+  const image = product.images?.[0] || null;
+  return {
+    imageUrl: product.imageUrl || image?.cardUrl || image?.url || "",
+    thumbUrl: image?.thumbUrl || image?.cardUrl || image?.url || "",
+    cardUrl: image?.cardUrl || image?.url || product.imageUrl || "",
+    detailUrl: image?.detailUrl || image?.cardUrl || image?.url || product.imageUrl || "",
+    sizeBytes: image?.sizeBytes || 0,
+  };
+}
+
 function toLightweightHomeProduct(product = {}) {
   const decorated = decorateProductWithCommercialPrice(product);
   const sellableVariants = getSellableVariants(product);
   const hasVariants = (product.variants || []).some((variant) => variant.active !== false);
   const firstVariant = sellableVariants[0] || null;
   const totalVariantStock = sellableVariants.reduce((sum, variant) => sum + Number(variant.stock || 0), 0);
-  const imageUrl = product.imageUrl || product.images?.[0]?.url || "";
+  const image = primaryImage(product);
   const groups = (product.groupItems || [])
     .map((item) => item.group)
     .filter(Boolean)
@@ -117,7 +128,10 @@ function toLightweightHomeProduct(product = {}) {
     stock,
     status: firstVariant?.status || product.status,
     active: product.active !== false,
-    imageUrl,
+    imageUrl: image.cardUrl || image.imageUrl,
+    thumbUrl: image.thumbUrl,
+    cardUrl: image.cardUrl,
+    detailUrl: image.detailUrl,
     categoryId: product.categoryId,
     category: product.category
       ? {
@@ -180,6 +194,10 @@ export async function listHomeProducts(req, res, next) {
           take: 1,
           select: {
             url: true,
+            thumbUrl: true,
+            cardUrl: true,
+            detailUrl: true,
+            sizeBytes: true,
             alt: true,
           },
         },
