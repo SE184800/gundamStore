@@ -1,6 +1,24 @@
 import { createClient } from "@supabase/supabase-js";
 
 const DEFAULT_BUCKET = "gundam-media";
+const MEDIA_URL_KEYS = new Set([
+  "url",
+  "imageUrl",
+  "thumbUrl",
+  "cardUrl",
+  "detailUrl",
+  "originalUrl",
+  "mainImage",
+  "desktopImage",
+  "mobileImage",
+  "tabletImage",
+  "image",
+  "icon",
+  "mainImageUrl",
+  "desktopUrl",
+  "mobileUrl",
+  "tabletUrl",
+]);
 
 function cleanBaseUrl(value = "") {
   return String(value || "").trim().replace(/\/+$/, "");
@@ -33,6 +51,78 @@ export function buildPublicMediaUrl(path = "") {
   }
 
   return `${supabaseUrl}/storage/v1/object/public/${bucket}/${storagePath}`;
+}
+
+export function extractStoragePathFromMediaUrl(value = "") {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  if (!/^https?:\/\//i.test(raw)) return normalizeStoragePath(raw);
+
+  try {
+    const url = new URL(raw);
+    const bucket = getMediaBucket();
+    const supabaseMarker = `/storage/v1/object/public/${bucket}/`;
+    const pathname = decodeURI(url.pathname || "");
+
+    if (pathname.includes(supabaseMarker)) {
+      return normalizeStoragePath(pathname.split(supabaseMarker)[1] || "");
+    }
+
+    const configuredCdn = cleanBaseUrl(process.env.IMAGE_CDN_BASE_URL || "");
+    const configuredHost = configuredCdn ? new URL(configuredCdn).host : "";
+    const isWorkersDev = url.hostname.endsWith(".workers.dev");
+    const isConfiguredCdn = configuredHost && url.host === configuredHost;
+
+    if (isWorkersDev || isConfiguredCdn) {
+      return normalizeStoragePath(pathname);
+    }
+  } catch {
+    return "";
+  }
+
+  return "";
+}
+
+export function rewriteMediaUrl(value = "", fallbackPath = "") {
+  const storagePath = normalizeStoragePath(fallbackPath) || extractStoragePathFromMediaUrl(value);
+  if (!storagePath) return value || "";
+  return buildPublicMediaUrl(storagePath);
+}
+
+function shouldRewriteKey(key = "") {
+  if (MEDIA_URL_KEYS.has(key)) return true;
+  const normalized = String(key || "").toLowerCase();
+  return normalized.endsWith("image") || normalized.endsWith("imageurl") || normalized.endsWith("url") && /image|thumb|card|detail|desktop|mobile|tablet|icon/.test(normalized);
+}
+
+export function rewriteMediaUrlsInObject(value) {
+  if (Array.isArray(value)) return value.map((item) => rewriteMediaUrlsInObject(item));
+
+  if (!value || typeof value !== "object") return value;
+
+  const next = { ...value };
+  const storagePath = normalizeStoragePath(next.storagePath || "");
+
+  for (const [key, item] of Object.entries(next)) {
+    if (typeof item === "string" && shouldRewriteKey(key)) {
+      let fallbackPath = "";
+
+      if (storagePath) {
+        if (key === "thumbUrl") fallbackPath = `${storagePath}/thumb.webp`;
+        if (key === "cardUrl" || key === "url" || key === "imageUrl") fallbackPath = `${storagePath}/card.webp`;
+        if (key === "detailUrl") fallbackPath = `${storagePath}/detail.webp`;
+      }
+
+      next[key] = rewriteMediaUrl(item, fallbackPath);
+      continue;
+    }
+
+    if (Array.isArray(item) || (item && typeof item === "object")) {
+      next[key] = rewriteMediaUrlsInObject(item);
+    }
+  }
+
+  return next;
 }
 
 function getSupabaseClient() {
