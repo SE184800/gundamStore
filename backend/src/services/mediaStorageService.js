@@ -20,6 +20,9 @@ const MEDIA_URL_KEYS = new Set([
   "tabletUrl",
 ]);
 
+const MEDIA_PATH_RE = /^(products|banners|categories|uploads|media)\//i;
+const IMAGE_EXT_RE = /\.(webp|avif|png|jpe?g|gif|heic|heif)(\?.*)?$/i;
+
 function cleanBaseUrl(value = "") {
   return String(value || "").trim().replace(/\/+$/, "");
 }
@@ -33,6 +36,11 @@ export function normalizeStoragePath(path = "") {
     .trim()
     .replace(/^\/+/, "")
     .replace(/\/+/g, "/");
+}
+
+function looksLikeMediaStoragePath(value = "") {
+  const normalized = normalizeStoragePath(value);
+  return MEDIA_PATH_RE.test(normalized) && IMAGE_EXT_RE.test(normalized);
 }
 
 export function buildPublicMediaUrl(path = "") {
@@ -56,7 +64,10 @@ export function buildPublicMediaUrl(path = "") {
 export function extractStoragePathFromMediaUrl(value = "") {
   const raw = String(value || "").trim();
   if (!raw) return "";
-  if (!/^https?:\/\//i.test(raw)) return normalizeStoragePath(raw);
+
+  if (!/^https?:\/\//i.test(raw)) {
+    return looksLikeMediaStoragePath(raw) ? normalizeStoragePath(raw) : "";
+  }
 
   try {
     const url = new URL(raw);
@@ -73,7 +84,7 @@ export function extractStoragePathFromMediaUrl(value = "") {
     const isWorkersDev = url.hostname.endsWith(".workers.dev");
     const isConfiguredCdn = configuredHost && url.host === configuredHost;
 
-    if (isWorkersDev || isConfiguredCdn) {
+    if ((isWorkersDev || isConfiguredCdn) && looksLikeMediaStoragePath(pathname)) {
       return normalizeStoragePath(pathname);
     }
   } catch {
@@ -92,7 +103,11 @@ export function rewriteMediaUrl(value = "", fallbackPath = "") {
 function shouldRewriteKey(key = "") {
   if (MEDIA_URL_KEYS.has(key)) return true;
   const normalized = String(key || "").toLowerCase();
-  return normalized.endsWith("image") || normalized.endsWith("imageurl") || normalized.endsWith("url") && /image|thumb|card|detail|desktop|mobile|tablet|icon/.test(normalized);
+  return (
+    normalized.endsWith("image") ||
+    normalized.endsWith("imageurl") ||
+    (normalized.endsWith("url") && /image|thumb|card|detail|desktop|mobile|tablet|icon/.test(normalized))
+  );
 }
 
 export function rewriteMediaUrlsInObject(value) {
