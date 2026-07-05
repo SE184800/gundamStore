@@ -816,3 +816,34 @@ model HeroSetting {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+model ProductReview {
+  id               String   @id @default(cuid()) // Hoặc @default(uuid()) tùy thuộc vào chuẩn ID của nhóm cậu
+  productId        String
+  userId           String?  // Có thể null vì bảng thật không có NOT NULL
+  orderNo          String?
+  customerName     String
+  customerEmail    String?
+  rating           Int      // Tương đương với INTEGER
+  title            String?
+  content          String
+  images           Json?    // Tương đương với JSONB
+  status           String   @default("PENDING")
+  verifiedPurchase Boolean  @default(false)
+  helpfulCount     Int      @default(0)
+  adminReply       String?
+  moderatedById    String?
+  moderatedAt      DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  orderId          String?
+
+  // --- Mối quan hệ giữa các bảng (Constraints) ---
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  user    User?   @relation(fields: [userId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  order   Order?  @relation(fields: [orderId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  // --- Định nghĩa các Index để tối ưu tốc độ tìm kiếm như DB thật ---
+  @@index([productId, status, createdAt])
+  @@index([status, createdAt])
+  @@index([userId, createdAt])
+}
