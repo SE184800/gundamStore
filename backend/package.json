@@ -12,7 +12,9 @@
     "prisma:studio": "prisma studio",
     "seed": "node prisma/seed.js",
     "seed:catalog": "node prisma/seedCatalog.js",
+    "schema:repair-reviews": "node scripts/repairProductReviewSchema.mjs",
     "cleanup:banners": "node scripts/cleanupBannerPerformance.mjs",
+    "images:audit": "node scripts/auditImages.mjs",
     "smoke:admin": "node scripts/smokeAdminApis.js",
     "smoke:stock-race": "node scripts/smokeStockRace.mjs",
     "seed:customer": "node scripts/seedCustomerAccount.mjs",
@@ -29,7 +31,7 @@
   },
   "dependencies": {
     "@prisma/client": "^6.0.0",
-    "@supabase/supabase-js": "^2.110.0",
+    "@supabase/supabase-js": "^2.46.1",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
@@ -37,9 +39,9 @@
     "helmet": "^8.0.0",
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
-    "multer": "^2.2.0",
+    "multer": "^2.0.2",
     "nodemailer": "^8.0.11",
-    "sharp": "^0.35.3",
+    "sharp": "^0.33.5",
     "zod": "^3.24.1"
   },
   "devDependencies": {

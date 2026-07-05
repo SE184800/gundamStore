@@ -60,14 +60,14 @@ model User {
   role         Role       @relation(fields: [roleId], references: [id])
   auditLogs    AuditLog[]
 
-  profile            UserProfile?
-  addresses          UserAddress[]
-  wishlistItems      WishlistItem[]
-  orders             Order[]
-  voucherRedemptions VoucherRedemption[]
-  complaintTickets   ComplaintTicket[]
-  productReviews     ProductReview[]
-  customerNotes      CustomerNote[]
+  profile              UserProfile?
+  addresses            UserAddress[]
+  wishlistItems        WishlistItem[]
+  orders               Order[]
+  voucherRedemptions   VoucherRedemption[]
+  complaintTickets     ComplaintTicket[]
+  productReviews       ProductReview[]
+  customerNotes        CustomerNote[]
   resetPasswordToken   String?   @unique
   resetPasswordExpires DateTime?
   createdAt DateTime @default(now())
@@ -258,10 +258,27 @@ model ProductImage {
   sortOrder Int     @default(0)
   active    Boolean @default(true)
 
+  thumbUrl        String?
+  cardUrl         String?
+  detailUrl       String?
+  originalUrl     String?
+  bucket          String?
+  storagePath     String?
+  mimeType        String?
+  width           Int?
+  height          Int?
+  sizeBytes       Int?
+  storageProvider String? @default("LEGACY")
+  storageStatus   String? @default("ACTIVE")
+  isPrimary       Boolean @default(false)
+
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([productId, active, sortOrder])
+  @@index([storageStatus])
 }
 
 model ProductPrice {
@@ -420,37 +437,6 @@ model ComplaintTicketComment {
   createdAt DateTime @default(now())
 
   @@index([ticketId, createdAt])
-}
-
-model ProductReview {
-  id               String    @id @default(cuid())
-  productId        String
-  userId           String?
-  orderNo          String?
-  customerName     String
-  customerEmail    String?
-  rating           Int
-  title            String?
-  content          String
-  images           Json?
-  status           String    @default("PENDING")
-  verifiedPurchase Boolean   @default(false)
-  helpfulCount     Int       @default(0)
-  adminReply       String?
-  moderatedById    String?
-  moderatedAt      DateTime?
-
-  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  user    User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  order     Order?   @relation(fields: [orderId], references: [id])
-  orderId   String?
-
-  @@index([productId, status, createdAt])
-  @@index([userId, createdAt])
-  @@index([status, createdAt])
 }
 
 model Voucher {

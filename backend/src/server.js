@@ -5,6 +5,7 @@ import morgan from "morgan";
 import { env } from "./config/env.js";
 import { prisma } from "./config/prisma.js";
 import { errorHandler } from "./middleware/errorHandler.js";
+import { rejectInlineImagePayload } from "./middleware/rejectInlineImagePayload.js";
 import { requireAdminRole } from "./middleware/requireAdminRole.js";
 import { requireAuth } from "./middleware/auth.js";
 
@@ -18,7 +19,6 @@ import dashboardRoutes from "./routes/dashboardRoutes.js";
 import fulfillmentRoutes from "./routes/fulfillmentRoutes.js";
 import accountRoutes from "./routes/accountRoutes.js";
 import productRoutes from "./routes/productRoutes.js";
-// 🟢 Giữ nguyên các tuyến đường mới kéo từ sandbox về
 import inventoryRoutes from "./routes/inventoryRoutes.js";
 import pricingRoutes from "./routes/pricingRoutes.js";
 import promotionRoutes from "./routes/promotionRoutes.js";
@@ -27,6 +27,7 @@ import restockAlertRoutes from "./routes/restockAlertRoutes.js";
 import reviewRoutes from "./routes/reviewRoutes.js";
 import complaintRoutes from "./routes/complaintRoutes.js";
 import customerRoutes from "./routes/customerRoutes.js";
+import mediaRoutes from "./routes/mediaRoutes.js";
 import { publicBannerRouter, adminBannerRouter } from "./routes/bannerRoutes.js";
 
 const app = express();
@@ -51,9 +52,6 @@ function isAllowedCodespacesOrigin(origin = "") {
 
   try {
     const url = new URL(origin);
-
-    // GitHub Codespaces forwarded ports can be 5173, 5174, 51713, 4800, etc.
-    // In development only, allow any https://<codespace>-<port>.app.github.dev origin.
     return (
       url.protocol === "https:" &&
       /^[a-z0-9-]+-\d+\.app\.github\.dev$/i.test(url.hostname)
@@ -100,6 +98,8 @@ app.use([
   "/api/purchase-receipts",
 ], requireAuth, requireAdminRole);
 
+app.use(["/api/products/admin", "/api/admin/banners", "/api/admin/media"], rejectInlineImagePayload);
+
 app.use("/api/auth", authRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/reports", reportRoutes);
@@ -109,7 +109,6 @@ app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/fulfillment", fulfillmentRoutes);
 app.use("/api/account", accountRoutes);
 app.use("/api/products", productRoutes);
-// 🟢 Kích hoạt các tuyến đường mới
 app.use("/api/inventory", inventoryRoutes);
 app.use("/api/pricing", pricingRoutes);
 app.use("/api/promotions", promotionRoutes);
@@ -118,6 +117,7 @@ app.use("/api/restock-alerts", restockAlertRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/complaints", complaintRoutes);
 app.use("/api/customers", customerRoutes);
+app.use("/api/admin/media", mediaRoutes);
 app.use("/api/banners", publicBannerRouter);
 app.use("/api/admin/banners", adminBannerRouter);
 
