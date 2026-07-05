@@ -5,6 +5,7 @@ import morgan from "morgan";
 import { env } from "./config/env.js";
 import { prisma } from "./config/prisma.js";
 import { errorHandler } from "./middleware/errorHandler.js";
+import { rejectInlineImagePayload } from "./middleware/rejectInlineImagePayload.js";
 import { requireAdminRole } from "./middleware/requireAdminRole.js";
 import { requireAuth } from "./middleware/auth.js";
 
@@ -96,6 +97,8 @@ app.use([
   "/api/inventory",
   "/api/purchase-receipts",
 ], requireAuth, requireAdminRole);
+
+app.use(["/api/products/admin", "/api/admin/banners", "/api/admin/media"], rejectInlineImagePayload);
 
 app.use("/api/auth", authRoutes);
 app.use("/api/orders", orderRoutes);
