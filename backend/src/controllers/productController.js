@@ -496,22 +496,20 @@ export async function listStorefrontProducts(req, res, next) {
         images: {
           where: { active: true },
           orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-          take: 1, // Trang chủ chỉ cần 1 ảnh đại diện để hiển thị, không cần load hết album
+          take: 1, // Trang chủ chỉ cần 1 ảnh đại diện để hiển thị
+        },
+        variants: {
+          orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+        },
+        promotionProducts: {
+          include: { promotion: true },
+          orderBy: { createdAt: "desc" },
+          take: 1,
         },
       },
-      variants: {
-        where: { active: true }, // Giả định check biến thể hoạt động
-        orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-      },
-      promotionProducts: {
-        include: { promotion: true },
-        orderBy: { createdAt: "desc" },
-        take: 1,
-      },
       orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
-      take: 200,
+      take: 24, // Giới hạn 24 món thay vì 200 món để xé gió tốc độ
     });
-
     const sellableProducts = products
       .map(decorateProductForStorefront)
       .filter(isStorefrontSellableProduct);
