@@ -362,8 +362,6 @@ export default function CheckoutPage() {
   }
 
   function validateDraftStock() {
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
     if (isPreorder) return true;
 
     const invalidItem = (draft.items || []).find((item) => {
@@ -385,17 +383,10 @@ export default function CheckoutPage() {
     ]);
 
     return false;
-=======
-=======
->>>>>>> Stashed changes
     // Do not validate stock from localStorage/cache at checkout.
     // Backend /api/orders is the final source of truth and will validate/decrement
     // product or variant stock in DB transaction.
     return true;
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
   }
 
   async function submitOrder() {
