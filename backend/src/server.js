@@ -8,6 +8,7 @@ import { errorHandler } from "./middleware/errorHandler.js";
 import { rejectInlineImagePayload } from "./middleware/rejectInlineImagePayload.js";
 import { requireAdminRole } from "./middleware/requireAdminRole.js";
 import { requireAuth } from "./middleware/auth.js";
+import { rewriteMediaUrlsInObject } from "./services/mediaStorageService.js";
 
 import healthRoutes from "./routes/healthRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
@@ -61,6 +62,20 @@ function isAllowedCodespacesOrigin(origin = "") {
   }
 }
 
+function mediaUrlRewriteMiddleware(req, res, next) {
+  const originalJson = res.json.bind(res);
+
+  res.json = (body) => {
+    if (req.path.startsWith("/api/") || req.path.startsWith("/health")) {
+      return originalJson(rewriteMediaUrlsInObject(body));
+    }
+
+    return originalJson(body);
+  };
+
+  next();
+}
+
 app.use(
   cors({
     origin(origin, callback) {
@@ -78,6 +93,7 @@ app.use(
 
 app.use(express.json({ limit: process.env.JSON_BODY_LIMIT || "32mb" }));
 app.use(morgan(env.isProduction ? "combined" : "dev"));
+app.use(mediaUrlRewriteMiddleware);
 
 app.use("/health", healthRoutes);
 
