@@ -485,6 +485,8 @@ async function syncProductVariants(tx, productId, body = {}, product = {}) {
 
 export async function listStorefrontProducts(req, res, next) {
   try {
+    console.time("⏱️ [TOTAL API PRODUCTS]");
+    console.time("📥 [1. DATABASE FETCH]");
     const products = await prisma.product.findMany({
       where: {
         active: true,
@@ -509,14 +511,17 @@ export async function listStorefrontProducts(req, res, next) {
       orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
       take: 24, // Giới hạn 24 món thay vì 200 món để xé gió tốc độ
     });
+    console.timeEnd("📥 [1. DATABASE FETCH]");
+    console.time("⚙️ [2. JAVASCRIPT MAP_FILTER]");
     const sellableProducts = products
       .map(decorateProductForStorefront)
       .filter(isStorefrontSellableProduct);
-
+    console.timeEnd("⚙️ [2. JAVASCRIPT MAP_FILTER]");
     res.json({
       success: true,
       products: sellableProducts,
     });
+    console.timeEnd("⏱️ [TOTAL API PRODUCTS]");
   } catch (err) {
     next(err);
   }
