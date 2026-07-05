@@ -130,32 +130,25 @@ export function CmsProvider({ children }) {
           registerData.email,
           registerData.password
         );
-        return response // Trả về { success: true, token, user } cho file Register nhận
+        return response
       } catch (customError) {
         console.log("Lỗi đã qua xử lý của Interceptor:", customError);
-        return customError; // Trả thẳng cục này về cho Formik/Register đón nhận
+        return customError;
       }
     },
     login: async ({ email, password }) => {
       try {
-        // Gửi dữ liệu sang authService để kích hoạt Axios chạy ngầm qua cổng 4000
         const res = await authService.login(email, password);
 
         if (res.success && res.token) {
-          // 1. Lưu token vào LocalStorage để các request sau tự lấy sử dụng
           setStoredAccountToken(res.token);
-
-          // 2. 🛠️ ĐÃ FIX: Đổi từ 'set' của Zustand sang 'setState' chuẩn của Context
           setState((prev) => ({ ...prev, user: res.user }));
           return res;
         }
 
         return { success: false, message: res.message || "Tài khoản hoặc mật khẩu không đúng!" };
       } catch (error) {
-        // 🛠️ CHÈN DÒNG NÀY VÀO: Ép Front-end phải in tuốt tuột lỗi hệ thống ra tab Console
         console.error("❌ LỖI CMSTORE BẮT ĐƯỢC:", error);
-
-        // Xem đối tượng lỗi chi tiết từ Axios trả về (nếu có)
         if (error.response) {
           console.log("Dữ liệu lỗi từ BE khạc ra:", error.response.data);
         }
@@ -164,7 +157,6 @@ export function CmsProvider({ children }) {
     },
     requestResetPassword: async (email) => {
       try {
-        // 🟢 GỌI QUA SERVICE CHUẨN PATTERN:
         const res = await authService.forgotPassword(email);
         return res?.data || res;
       } catch (error) {
@@ -175,8 +167,8 @@ export function CmsProvider({ children }) {
 
     executeResetPassword: async ({ token, password }) => {
       try {
-        // 🟢 GỌI QUA SERVICE CHUẨN PATTERN:
-        const res = await authService.resetPassword(token);
+        const resetArgs = [token, password];
+        const res = await authService.resetPassword(...resetArgs);
         return res?.data || res;
       } catch (error) {
         console.error("❌ LỖI CẬP NHẬT MẬT KHẨU STORE:", error);
@@ -186,7 +178,7 @@ export function CmsProvider({ children }) {
     checkResetToken: async (token) => {
       try {
         const res = await authService.validateResetToken(token);
-        return res?.data || res; // Trả về { valid: true/false }
+        return res?.data || res;
       } catch (error) {
         return { valid: false };
       }
@@ -197,11 +189,8 @@ export function CmsProvider({ children }) {
       clearStoredAdminSession();
       localStorage.removeItem("gundam_token");
       console.log("Bắt đầu xóa:");
-      // Ép State user về null ngay lập tức để React re-render lộ 2 nút Đăng nhập/Đăng ký
       setState((prev) => ({ ...prev, user: null }));
       console.log("Đang xóa");
-      // 2. 🔵 LUỒNG BẤT ĐỒNG BỘ: Bắn request ngầm xuống Backend để hủy session
-      // Không dùng từ khóa 'await' ở đây, để JavaScript không đóng băng hàm này lại
       authService.logout()
         .then(() => {
           console.log("Backend đã hủy session thành công");
