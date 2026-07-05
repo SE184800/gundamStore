@@ -5,13 +5,13 @@ import { translateDomTree, useI18n } from "../../i18n";
 import { useCms } from "../../store/CmsStore";
 
 const FloatingChat = lazy(() => import("./FloatingChat"));
-const ENABLE_DOM_TRANSLATOR = !import.meta.env.PROD;
+const ENABLE_LEGACY_DOM_TRANSLATOR = import.meta.env.DEV;
 
 export function LanguageDomTranslator() {
   const { lang } = useI18n();
 
   useEffect(() => {
-    if (!ENABLE_DOM_TRANSLATOR) return undefined;
+    if (!ENABLE_LEGACY_DOM_TRANSLATOR) return undefined;
 
     translateDomTree(document.body, lang);
 
@@ -79,7 +79,7 @@ export default function PageShell({ children, withFooter = true }) {
   const lang = state?.settings?.lang || "vi";
   return (
     <div className="min-h-screen bg-[#f6f9fd] text-slate-900">
-      <LanguageDomTranslator />
+      {ENABLE_LEGACY_DOM_TRANSLATOR && <LanguageDomTranslator />}
 
       <div className="pointer-events-none fixed inset-0 opacity-100">
         <div className="absolute inset-0 bg-gradient-to-b from-white via-[#f7fbff] to-[#eef5fc]" />
