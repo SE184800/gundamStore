@@ -12,15 +12,26 @@ const defaultCommunications = [
 const ZALO_LOGO = import.meta.env.VITE_ZALO_LOGO;
 const MESSENGER_LOGO = import.meta.env.VITE_MESSENGER_LOGO;
 
+function ChatLogoImage({ src, alt, className }) {
+  return (
+    <img
+      src={src}
+      alt={alt}
+      className={className}
+      loading="lazy"
+      decoding="async"
+    />
+  );
+}
+
 export default function FloatingChat() {
   const { state } = useCms();
-  const [open, setOpen] = useState(false);         // Control hộp thoại Chat Box (Cả 2 giao diện)
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false); // Control bung 3 nút trên Mobile
+  const [open, setOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [chatType, setChatType] = useState("ai");
   const { t } = useI18n();
   const chatRef = useRef(null);
 
-  // Tự động đóng các menu khi nhấn ra ngoài vùng trống
   useEffect(() => {
     function handleClickOutside(event) {
       if (chatRef.current && !chatRef.current.contains(event.target)) {
@@ -71,12 +82,7 @@ export default function FloatingChat() {
 
   return (
     <div ref={chatRef} className="fixed bottom-0 right-0 z-[9999]">
-
-      {/* ============================================================================== */}
-      {/* 🖥️ GIAO DIỆN DESKTOP (md: trở lên): HIỂN THỊ 3 NÚT NẰM LỘ THIÊN TRƯỢT NGANG NHƯ CŨ */}
-      {/* ============================================================================== */}
       <div className="hidden md:flex fixed bottom-5 right-5 flex-col items-end gap-2">
-        {/* Hộp thoại Chat Box của Desktop */}
         {open && (
           <div className="absolute bottom-[230px] right-0 w-[320px] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl animate-in fade-in slide-in-from-bottom-5 duration-200">
             <div className="bg-blue-700 px-4 pt-3 pb-2 text-white">
@@ -109,7 +115,6 @@ export default function FloatingChat() {
           </div>
         )}
 
-        {/* 3 Nút độc lập của Desktop */}
         <button onClick={() => setOpen(!open)} className="group flex items-center rounded-full bg-blue-600 p-2 text-white opacity-95 shadow-xl transition-all duration-300 hover:rounded-2xl hover:opacity-100 hover:shadow-2xl">
           <span className="flex h-12 w-12 items-center justify-center rounded-full bg-white/20"><MessageCircle size={22} /></span>
           <span className="grid max-w-0 overflow-hidden text-left transition-all duration-300 group-hover:ml-3 group-hover:max-w-[210px]">
@@ -119,26 +124,19 @@ export default function FloatingChat() {
         </button>
 
         <a href={ZALO_URL || "#"} onClick={(e) => handleNavigation(e, ZALO_URL, "https://zalo.me/")} target="_blank" rel="noreferrer" className="group flex items-center rounded-full bg-cyan-600 p-2 text-white opacity-55 shadow-xl transition-all duration-300 hover:rounded-2xl hover:opacity-100 hover:shadow-2xl">
-          <span className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-white"><img src={ZALO_LOGO} alt="Zalo" className="h-full w-full object-cover" /></span>
+          <span className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-white"><ChatLogoImage src={ZALO_LOGO} alt="Zalo" className="h-full w-full object-cover" /></span>
           <span className="grid max-w-0 overflow-hidden text-left transition-all duration-300 group-hover:ml-3 group-hover:max-w-[210px]"><span className="whitespace-nowrap text-sm font-black">Zalo</span></span>
         </a>
 
         <a href={FACEBOOK_URL || "#"} onClick={(e) => handleNavigation(e, FACEBOOK_URL, "https://www.facebook.com/")} target="_blank" rel="noreferrer" className="group flex items-center rounded-full bg-indigo-600 p-2 text-white opacity-55 shadow-xl transition-all duration-300 hover:rounded-2xl hover:opacity-100 hover:shadow-2xl">
-          <span className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-white p-1"><img src={MESSENGER_LOGO} alt="Messenger" className="h-full w-full object-contain" /></span>
+          <span className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-white p-1"><ChatLogoImage src={MESSENGER_LOGO} alt="Messenger" className="h-full w-full object-contain" /></span>
           <span className="grid max-w-0 overflow-hidden text-left transition-all duration-300 group-hover:ml-3 group-hover:max-w-[210px]"><span className="whitespace-nowrap text-sm font-black">Facebook</span></span>
         </a>
       </div>
 
-      {/* ============================================================================== */}
-      {/* 📱 GIAO DIỆN MOBILE (md:hidden): CHỈ 1 NÚT, BẤM PHÁT BUNG 3 NÚT XẾP CHỒNG LÊN TRÊN */}
-      {/* ============================================================================== */}
       <div className="flex md:hidden fixed bottom-24 right-4 flex-col items-end gap-3">
-
-        {/* DANH SÁCH 3 NÚT NỔI XẾP CHỒNG (Chỉ lộ diện khi bấm nút chính ở dưới) */}
         {mobileMenuOpen && (
           <div className="flex flex-col items-end gap-3 animate-in fade-in slide-in-from-bottom-5 duration-250">
-
-            {/* Nút Phụ 1: Bật/mở Hộp thoại Chat Box đồng bộ bản Web */}
             <button
               onClick={() => { setOpen(!open); setMobileMenuOpen(false); }}
               className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-600 text-white shadow-xl border border-blue-500 transition active:scale-95"
@@ -146,7 +144,6 @@ export default function FloatingChat() {
               <Bot size={20} />
             </button>
 
-            {/* Nút Phụ 2: Link Zalo chính hãng */}
             <a
               href={ZALO_URL || "#"}
               onClick={(e) => { handleNavigation(e, ZALO_URL, "https://zalo.me/"); setMobileMenuOpen(false); }}
@@ -154,10 +151,9 @@ export default function FloatingChat() {
               rel="noreferrer"
               className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-white shadow-xl border border-slate-100 transition active:scale-95"
             >
-              <img src={ZALO_LOGO} alt="Zalo" className="h-full w-full object-cover" />
+              <ChatLogoImage src={ZALO_LOGO} alt="Zalo" className="h-full w-full object-cover" />
             </a>
 
-            {/* Nút Phụ 3: Link Messenger Fanpage */}
             <a
               href={FACEBOOK_URL || "#"}
               onClick={(e) => { handleNavigation(e, FACEBOOK_URL, "https://www.facebook.com/"); setMobileMenuOpen(false); }}
@@ -165,13 +161,11 @@ export default function FloatingChat() {
               rel="noreferrer"
               className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-white shadow-xl border border-slate-100 p-1 transition active:scale-95"
             >
-              <img src={MESSENGER_LOGO} alt="Messenger" className="h-full w-full object-contain" />
+              <ChatLogoImage src={MESSENGER_LOGO} alt="Messenger" className="h-full w-full object-contain" />
             </a>
-
           </div>
         )}
 
-        {/* NÚT KÍCH HOẠT CHÍNH TRÊN MOBILE */}
         <button
           type="button"
           onClick={() => { setMobileMenuOpen(!mobileMenuOpen); if (open) setOpen(false); }}
@@ -180,11 +174,8 @@ export default function FloatingChat() {
           {mobileMenuOpen ? <X size={24} /> : <MessageCircle size={24} />}
         </button>
 
-        {/* 🟢 HỘP CHAT POPUP CHO MOBILE: ĐÃ ĐỒNG BỘ 100% TÍNH NĂNG 2 TAB NHƯ BẢN DESKTOP */}
         {open && (
           <div className="absolute bottom-20 right-0 w-[calc(100vw-32px)] max-w-[320px] overflow-hidden rounded-[2rem] border border-slate-100 bg-white shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-200">
-
-            {/* Header Hộp thoại Mobile */}
             <div className="bg-blue-700 px-4 pt-4 pb-2 text-white">
               <div className="flex items-center justify-between mb-2">
                 <div>
@@ -193,8 +184,6 @@ export default function FloatingChat() {
                 </div>
                 <button onClick={() => setOpen(false)} className="rounded-xl bg-white/10 p-1.5"><X size={14} /></button>
               </div>
-
-              {/* Thanh Chuyển Đổi Tab Kép Trên Mobile */}
               <div className="flex rounded-lg bg-black/20 p-0.5 text-[11px] font-bold">
                 <button
                   onClick={() => setChatType("ai")}
@@ -211,7 +200,6 @@ export default function FloatingChat() {
               </div>
             </div>
 
-            {/* Vùng Tin Nhắn Nội Dung Phụ Thuộc Vào Tab Đang Chọn */}
             <div className="space-y-3 bg-slate-50 p-3.5 h-[160px] overflow-y-auto">
               {chatType === "ai" ? (
                 <>
@@ -223,17 +211,13 @@ export default function FloatingChat() {
               )}
             </div>
 
-            {/* Khung Nhập Liệu Cuối Hộp Thoại */}
             <div className="flex items-center gap-2 p-2.5 bg-white border-t border-slate-100">
               <input className="min-w-0 flex-1 rounded-xl border bg-slate-50 px-3 py-2 text-xs outline-none focus:border-blue-400 focus:bg-white transition" placeholder={chatType === "ai" ? t("chat.aiPlaceholder") : t("chat.staffPlaceholder")} />
               <button className="rounded-xl bg-blue-700 p-2 text-white hover:bg-blue-800 transition"><Send size={12} /></button>
             </div>
-
           </div>
         )}
-
       </div>
-
     </div>
   );
 }

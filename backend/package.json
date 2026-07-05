@@ -12,6 +12,7 @@
     "prisma:studio": "prisma studio",
     "seed": "node prisma/seed.js",
     "seed:catalog": "node prisma/seedCatalog.js",
+    "cleanup:banners": "node scripts/cleanupBannerPerformance.mjs",
     "smoke:admin": "node scripts/smokeAdminApis.js",
     "smoke:stock-race": "node scripts/smokeStockRace.mjs",
     "seed:customer": "node scripts/seedCustomerAccount.mjs",

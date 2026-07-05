@@ -1,22 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
-import Toast from "../../utils/Toast";
 import {
   ArrowRight,
-  Box,
-  CheckCircle2,
-  ChevronLeft,
-  ChevronRight,
-  Clock,
   Crown,
   Gift,
-  Heart,
   Package,
   ShieldCheck,
-  ShoppingCart,
-  SlidersHorizontal,
-  Star,
   Truck,
-  Zap,
 } from "lucide-react";
 import PageShell from "../../components/common/PageShell";
 import { useCms } from "../../store/CmsStore";
@@ -28,6 +17,8 @@ import {
   getStorefrontProductsForStorefront,
 } from "../../services/StorefrontProductApiService";
 import { getStorefrontHomeBannersFromApi } from "../../services/BannerApiService";
+
+const HOMEPAGE_HERO_MAX_BANNERS = 3;
 
 const copy = {
   vi: {
@@ -82,7 +73,7 @@ const copy = {
     authentic: "CLEAR SOURCE",
     authenticDesc: "Authentic products with transparent info",
     gift: "BUILDER PERKS",
-    giftDesc: "Points & member-only gifts",
+    giftDesc: "Points • Vouchers • VIP tiers",
     category: "CATEGORY",
     all: "All",
     viewAll: "View all",
@@ -119,35 +110,11 @@ const fallbackCategories = [
 ];
 
 const defaultSections = [
-  {
-    id: "new-arrivals",
-    sort: 1,
-    dataSource: "new_arrivals",
-    title: { vi: "Hàng mới về", en: "New arrivals" },
-  },
-  {
-    id: "order-items",
-    sort: 2,
-    dataSource: "order_items",
-    title: { vi: "Hàng order", en: "Order items" },
-  },
-  {
-    id: "best-sellers",
-    sort: 3,
-    dataSource: "best_sellers",
-    title: { vi: "Hàng bán chạy", en: "Best sellers" },
-  },
-  {
-    id: "sales",
-    sort: 4,
-    dataSource: "sale_products",
-    title: { vi: "Hàng Sales", en: "Sales" },
-  },
+  { id: "new-arrivals", sort: 1, dataSource: "new_arrivals", title: { vi: "Hàng mới về", en: "New arrivals" } },
+  { id: "order-items", sort: 2, dataSource: "order_items", title: { vi: "Hàng order", en: "Order items" } },
+  { id: "best-sellers", sort: 3, dataSource: "best_sellers", title: { vi: "Hàng bán chạy", en: "Best sellers" } },
+  { id: "sales", sort: 4, dataSource: "sale_products", title: { vi: "Hàng Sales", en: "Sales" } },
 ];
-
-function money(value) {
-  return new Intl.NumberFormat("vi-VN").format(Number(value || 0)) + "₫";
-}
 
 function text(value, lang, fallback = "") {
   if (!value) return translateStaticText(fallback, lang);
@@ -161,129 +128,53 @@ function statusOf(product) {
 
 function isPreorder(product) {
   const status = statusOf(product);
-  return Boolean(
-    product.preorder?.enabled ||
-    status.includes("pre") ||
-    status.includes("order")
-  );
+  return Boolean(product.preorder?.enabled || status.includes("pre") || status.includes("order"));
 }
 
 function isSale(product) {
   const status = statusOf(product);
   return Boolean(
     status.includes("sale") ||
-    Number(product.oldPrice || 0) > Number(product.price || 0) ||
-    product.collections?.includes("sale_products") ||
-    product.collections?.includes("sales")
+      Number(product.oldPrice || 0) > Number(product.price || 0) ||
+      product.collections?.includes("sale_products") ||
+      product.collections?.includes("sales")
   );
 }
 
 function isNew(product) {
-  return Boolean(
-    product.isNew ||
-    product.collections?.includes("new_arrivals") ||
-    statusOf(product).includes("new")
-  );
+  return Boolean(product.isNew || product.collections?.includes("new_arrivals") || statusOf(product).includes("new"));
 }
 
 function isBestSeller(product) {
-  return Boolean(
-    product.isBestSeller ||
-    product.collections?.includes("best_sellers") ||
-    Number(product.sold || 0) >= 40
-  );
+  return Boolean(product.isBestSeller || product.collections?.includes("best_sellers") || Number(product.sold || 0) >= 40);
 }
 
 function productMatchesSource(product, source) {
   const key = String(source || "").toLowerCase();
-
   if (key.includes("new")) return isNew(product);
   if (key.includes("order") || key.includes("pre")) return isPreorder(product);
   if (key.includes("best") || key.includes("seller")) return isBestSeller(product);
   if (key.includes("sale")) return isSale(product);
-
   return true;
 }
 
-function collectionKeyMatchesSource(collectionKey, source) {
-  const key = String(collectionKey || "").toLowerCase();
-  const src = String(source || "").toLowerCase();
-
-  if (src.includes("new")) return key === "new_arrivals";
-  if (src.includes("order") || src.includes("pre")) return key === "preorder" || key === "order_items";
-  if (src.includes("best") || src.includes("seller")) return key === "best_sellers";
-  if (src.includes("sale")) return key === "sale_products" || key === "sales";
-  if (src.includes("tool")) return key === "tools";
-  return key === src;
-}
-
-// function getSectionProducts(products, section, displayMappings = []) {
-//   const source = section.dataSource || section.source || section.collection || section.id;
-//   const activeProducts = products.filter((product) => product.active !== false);
-
-//   const backendGroupedProducts = activeProducts.filter((product) => {
-//     const isBackendProduct = Boolean(product.backendProductId || String(product.source || "").includes("backend"));
-//     const collections = Array.isArray(product.collections) ? product.collections : [];
-
-//     return (
-//       isBackendProduct &&
-//       collections.some((key) => collectionKeyMatchesSource(key, source))
-//     );
-//   });
-
-//   let result = [];
-
-//   if (backendGroupedProducts.length > 0) {
-//     result = backendGroupedProducts;
-//   } else {
-//     const mappedProductIds = (displayMappings || [])
-//       .filter((mapping) => (mapping.collectionKeys || []).some((key) => collectionKeyMatchesSource(key, source)))
-//       .map((mapping) => mapping.productId);
-
-//     if (mappedProductIds.length > 0) {
-//       result = activeProducts
-//         .filter((product) => mappedProductIds.includes(product.id))
-//         .sort((a, b) => mappedProductIds.indexOf(a.id) - mappedProductIds.indexOf(b.id));
-//     } else {
-//       result = activeProducts.filter((product) => productMatchesSource(product, source));
-//     }
-//   }
-
-//   if (String(source).includes("best")) {
-//     result = [...result].sort((a, b) => Number(b.sold || 0) - Number(a.sold || 0));
-//   }
-
-//   if (String(source).includes("sale")) {
-//     result = [...result].sort(
-//       (a, b) =>
-//         Number(b.oldPrice || 0) - Number(b.price || 0) -
-//         (Number(a.oldPrice || 0) - Number(a.price || 0))
-//     );
-//   }
-
-//   if (!result.length) {
-//     result = activeProducts;
-//   }
-
-//   return result.slice(0, 8);
-// }
 function getSectionProducts(products, section, displayMappings = []) {
-  // 🌟 KHẨN CẤP: Bỏ qua logic mapping phức tạp gây lỗi indexOf
-  // Trả về thẳng 8 sản phẩm đầu tiên cho mỗi Section để giao diện hiển thị ngay lập tức
   if (!Array.isArray(products)) return [];
 
   const source = String(section.dataSource || section.id || "").toLowerCase();
+  const mappedProductIds = (displayMappings || [])
+    .filter((mapping) => Array.isArray(mapping.collectionKeys) && mapping.collectionKeys.includes(source))
+    .map((mapping) => mapping.productId);
 
-  // Tùy biến một chút để các tab nhìn có vẻ khác nhau cho đẹp mắt khi chấm điểm
-  if (source.includes("new")) {
-    return products.slice(0, 8);
-  } else if (source.includes("best") || source.includes("hot")) {
-    return products.slice(8, 16);
-  } else if (source.includes("sale")) {
-    return products.slice(16, 24);
+  if (mappedProductIds.length > 0) {
+    return products
+      .filter((product) => mappedProductIds.includes(product.id))
+      .sort((a, b) => mappedProductIds.indexOf(a.id) - mappedProductIds.indexOf(b.id))
+      .slice(0, Number(section.limit || 8));
   }
 
-  return products.slice(0, 8);
+  const matched = products.filter((product) => productMatchesSource(product, source));
+  return (matched.length ? matched : products).slice(0, Number(section.limit || 8));
 }
 
 function mergeCmsSections(homeSections) {
@@ -305,13 +196,13 @@ function mergeCmsSections(homeSections) {
 function hasBannerMedia(banner = {}) {
   return Boolean(
     banner.videoUrl ||
-    banner.mainImage ||
-    banner.imageUrl ||
-    banner.mediaUrl ||
-    banner.image ||
-    banner.desktopImage ||
-    banner.mobileImage ||
-    banner.tabletImage
+      banner.mainImage ||
+      banner.imageUrl ||
+      banner.mediaUrl ||
+      banner.image ||
+      banner.desktopImage ||
+      banner.mobileImage ||
+      banner.tabletImage
   );
 }
 
@@ -319,24 +210,11 @@ function isLiveHomepageBanner(banner = {}) {
   const isActive = banner.active !== false;
   const status = String(banner.status || "Live").toLowerCase();
   const placement = String(banner.placement || banner.position || "Homepage Hero").toLowerCase();
-
-  return (
-    isActive &&
-    !status.includes("draft") &&
-    !status.includes("inactive") &&
-    (placement.includes("home") || placement.includes("hero"))
-  );
+  return isActive && !status.includes("draft") && !status.includes("inactive") && (placement.includes("home") || placement.includes("hero"));
 }
 
 function getBannerBaseImage(banner = {}) {
-  return (
-    banner.mainImage ||
-    banner.imageUrl ||
-    banner.mediaUrl ||
-    banner.image ||
-    banner.desktopImage ||
-    ""
-  );
+  return banner.mainImage || banner.imageUrl || banner.mediaUrl || banner.image || banner.desktopImage || "";
 }
 
 function getBannerVideoUrl(banner = {}) {
@@ -350,12 +228,7 @@ function isBannerVideo(banner = {}) {
 }
 
 function bannerAlt(banner = {}, lang = "vi") {
-  return (
-    banner.altText ||
-    banner.titleInternal ||
-    banner.name ||
-    text(banner.title, lang, "Gundam campaign banner")
-  );
+  return banner.altText || banner.titleInternal || banner.name || text(banner.title, lang, "Gundam campaign banner");
 }
 
 function bannerFitClass(banner = {}) {
@@ -363,8 +236,7 @@ function bannerFitClass(banner = {}) {
 }
 
 function getHeroBanners(banners = [], settings = {}) {
-  const maxBanners = Number(settings.maxBanners || 5);
-
+  const maxBanners = Math.min(Number(settings.maxBanners || HOMEPAGE_HERO_MAX_BANNERS), HOMEPAGE_HERO_MAX_BANNERS);
   return (Array.isArray(banners) ? banners : [])
     .filter(isLiveHomepageBanner)
     .filter(hasBannerMedia)
@@ -394,7 +266,7 @@ function NoBannerConfigured({ lang }) {
   );
 }
 
-function BannerMedia({ banner, lang, className = "", imageClassName = "" }) {
+function BannerMedia({ banner, lang, className = "", imageClassName = "", priority = false }) {
   const videoUrl = getBannerVideoUrl(banner);
   const baseImage = getBannerBaseImage(banner);
   const fitClass = bannerFitClass(banner);
@@ -428,14 +300,19 @@ function BannerMedia({ banner, lang, className = "", imageClassName = "" }) {
         alt={bannerAlt(banner, lang)}
         className={`${fitClass} ${className} ${imageClassName}`}
         style={{ backgroundColor }}
+        loading={priority ? "eager" : "lazy"}
+        fetchPriority={priority ? "high" : undefined}
+        decoding="async"
       />
     </picture>
   );
 }
+
 function bannerHref(banner = {}) {
   return getSafeHref(banner.ctaUrl || banner.link || banner.href || "/shop", "/shop");
 }
-function ImageOnlyBannerLink({ banner, lang, actions, className = "", mediaClassName = "" }) {
+
+function ImageOnlyBannerLink({ banner, lang, actions, className = "", mediaClassName = "", priority = false }) {
   return (
     <a
       href={bannerHref(banner)}
@@ -444,17 +321,22 @@ function ImageOnlyBannerLink({ banner, lang, actions, className = "", mediaClass
       onClick={() => actions?.track?.("banner_click", { meta: { bannerId: banner.id || "hero" } })}
       className={`image-first-banner-link block overflow-hidden bg-slate-50 ${className}`}
     >
-      <BannerMedia banner={banner} lang={lang} className={`h-full w-full ${mediaClassName}`} />
+      <BannerMedia
+        banner={banner}
+        lang={lang}
+        className={`h-full w-full ${mediaClassName}`}
+        priority={priority}
+      />
     </a>
   );
 }
 
-function Hero({ banners, lang, actions, heroSettings, loading = false, error = "" }) {
+function Hero({ banners, lang, actions, heroSettings }) {
   const settings = {
     layout: "v2",
     autoplay: true,
     interval: 4500,
-    maxBanners: 5,
+    maxBanners: HOMEPAGE_HERO_MAX_BANNERS,
     ...(heroSettings || {}),
   };
 
@@ -465,30 +347,15 @@ function Hero({ banners, lang, actions, heroSettings, loading = false, error = "
   }
 
   if (settings.layout === "v3") {
-    return (
-      <HeroV3Bento
-        banners={safeBanners}
-        lang={lang}
-        actions={actions}
-        settings={settings}
-      />
-    );
+    return <HeroV3Bento banners={safeBanners} lang={lang} actions={actions} settings={settings} />;
   }
 
-  return (
-    <HeroV2Classic
-      banners={safeBanners}
-      lang={lang}
-      actions={actions}
-      settings={settings}
-    />
-  );
+  return <HeroV2Classic banners={safeBanners} lang={lang} actions={actions} settings={settings} />;
 }
 
 function HeroV3Bento({ banners, lang, actions, settings }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [paused, setPaused] = useState(false);
-
   const safeBanners = banners;
   const activeBanner = safeBanners[activeIndex] || safeBanners[0];
   const sideOne = safeBanners[(activeIndex + 1) % safeBanners.length] || activeBanner;
@@ -502,11 +369,9 @@ function HeroV3Bento({ banners, lang, actions, settings }) {
 
   useEffect(() => {
     if (!settings.autoplay || safeBanners.length <= 1 || paused) return;
-
     const timer = setInterval(() => {
       setActiveIndex((current) => (current + 1) % safeBanners.length);
     }, interval);
-
     return () => clearInterval(timer);
   }, [settings.autoplay, safeBanners.length, paused, interval]);
 
@@ -521,6 +386,7 @@ function HeroV3Bento({ banners, lang, actions, settings }) {
           banner={activeBanner}
           lang={lang}
           actions={actions}
+          priority
           className="h-[320px] rounded-[24px] border border-slate-200 shadow-[0_24px_80px_rgba(15,23,42,0.12)] sm:h-[420px] sm:rounded-[30px]"
           mediaClassName="transition duration-700 hover:scale-[1.01]"
         />
@@ -558,10 +424,9 @@ function HeroV3Bento({ banners, lang, actions, settings }) {
                 key={banner.id || index}
                 type="button"
                 onClick={() => goToBanner(index)}
-                className={`image-first-thumb relative h-[86px] min-w-[148px] overflow-hidden rounded-2xl border text-left shadow-sm transition ${activeIndex === index
-                  ? "border-blue-600 ring-4 ring-blue-100"
-                  : "border-slate-200 hover:border-blue-300"
-                  }`}
+                className={`image-first-thumb relative h-[86px] min-w-[148px] overflow-hidden rounded-2xl border text-left shadow-sm transition ${
+                  activeIndex === index ? "border-blue-600 ring-4 ring-blue-100" : "border-slate-200 hover:border-blue-300"
+                }`}
                 aria-label={`Banner ${index + 1}`}
               >
                 <BannerMedia banner={banner} lang={lang} className="h-full w-full" />
@@ -586,7 +451,6 @@ function HeroV3Bento({ banners, lang, actions, settings }) {
 function HeroV2Classic({ banners, lang, actions, settings }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [paused, setPaused] = useState(false);
-
   const safeBanners = banners;
   const activeBanner = safeBanners[activeIndex] || safeBanners[0];
   const interval = Number(settings.interval || 4500);
@@ -598,11 +462,9 @@ function HeroV2Classic({ banners, lang, actions, settings }) {
 
   useEffect(() => {
     if (!settings.autoplay || safeBanners.length <= 1 || paused) return;
-
     const timer = setInterval(() => {
       setActiveIndex((current) => (current + 1) % safeBanners.length);
     }, interval);
-
     return () => clearInterval(timer);
   }, [settings.autoplay, safeBanners.length, paused, interval]);
 
@@ -617,6 +479,7 @@ function HeroV2Classic({ banners, lang, actions, settings }) {
           banner={activeBanner}
           lang={lang}
           actions={actions}
+          priority
           className="h-[320px] w-full sm:h-[420px] lg:h-[460px]"
           mediaClassName="transition duration-700 hover:scale-[1.01]"
         />
@@ -628,8 +491,7 @@ function HeroV2Classic({ banners, lang, actions, settings }) {
                 key={item.id || index}
                 type="button"
                 onClick={() => goToBanner(index)}
-                className={`h-2.5 rounded-full transition ${activeIndex === index ? "w-12 bg-blue-700" : "w-2.5 bg-slate-300 hover:bg-blue-400"
-                  }`}
+                className={`h-2.5 rounded-full transition ${activeIndex === index ? "w-12 bg-blue-700" : "w-2.5 bg-slate-300 hover:bg-blue-400"}`}
                 aria-label={`Banner ${index + 1}`}
               />
             ))}
@@ -642,7 +504,6 @@ function HeroV2Classic({ banners, lang, actions, settings }) {
 
 function TrustStrip({ lang }) {
   const t = copy[lang];
-
   const items = [
     [Truck, t.fastShip, t.fastShipDesc],
     [Package, t.sealed, t.sealedDesc],
@@ -672,20 +533,12 @@ function TrustStrip({ lang }) {
 function CategorySidebar({ categories, lang }) {
   const list = categories || [];
 
-  const getCategoryImage = (category, index) => {
-    return (
-      category.icon ||
-      category.imageUrl ||
-      category.image ||
-      category.mainImage ||
-      [
-        "/images/products/aerial.jpg",
-        "/images/products/hi-nu.jpg",
-        "/images/products/freedom.jpg",
-        "/images/products/strike-freedom.jpg",
-      ][index % 4]
-    );
-  };
+  const getCategoryImage = (category, index) =>
+    category.icon ||
+    category.imageUrl ||
+    category.image ||
+    category.mainImage ||
+    ["/images/products/aerial.jpg", "/images/products/hi-nu.jpg", "/images/products/freedom.jpg", "/images/products/strike-freedom.jpg"][index % 4];
 
   const getCategoryHref = (category) => {
     const fallback = `/shop?category=${encodeURIComponent(category.id || category.slug || category.code || "")}`;
@@ -695,9 +548,7 @@ function CategorySidebar({ categories, lang }) {
   return (
     <aside className="w-full bg-transparent lg:bg-white p-0 lg:p-5 border-0 lg:border border-slate-200 rounded-none lg:rounded-[28px] shadow-none lg:shadow-sm">
       <div className="mb-3 lg:mb-4 px-3 lg:px-0">
-        <div className="text-[10px] lg:text-xs font-black uppercase tracking-[0.22em] text-blue-700">
-          Category
-        </div>
+        <div className="text-[10px] lg:text-xs font-black uppercase tracking-[0.22em] text-blue-700">Category</div>
         <h3 className="mt-0.5 text-base lg:text-xl font-black text-slate-950">
           {lang === "vi" ? "Dòng sản phẩm" : "Product lines"}
         </h3>
@@ -726,12 +577,11 @@ function CategorySidebar({ categories, lang }) {
                   alt={category.altText || fullName}
                   className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
                   loading="lazy"
+                  decoding="async"
                 />
               </div>
               <div className="p-2 lg:p-3 text-center">
-                <div className="text-xs lg:text-sm font-black leading-tight text-slate-950 group-hover:text-blue-700 truncate">
-                  {fullName}
-                </div>
+                <div className="text-xs lg:text-sm font-black leading-tight text-slate-950 group-hover:text-blue-700 truncate">{fullName}</div>
               </div>
             </a>
           );
@@ -744,18 +594,14 @@ function CategorySidebar({ categories, lang }) {
 function ProductSection({ section, products, displayMappings, lang, actions, badge }) {
   const t = copy[lang];
   const mappedProducts = getSectionProducts(products, section, displayMappings);
-  const sectionProducts = mappedProducts.length
-    ? mappedProducts
-    : (products || []).slice(0, Number(section.limit || 8));
+  const sectionProducts = mappedProducts.length ? mappedProducts : (products || []).slice(0, Number(section.limit || 8));
   const title = text(section.title, lang, t.newArrivals);
 
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <span className="rounded-lg border border-blue-100 bg-blue-50 px-2.5 py-1 text-[10px] font-black uppercase text-blue-700">
-            {badge}
-          </span>
+          <span className="rounded-lg border border-blue-100 bg-blue-50 px-2.5 py-1 text-[10px] font-black uppercase text-blue-700">{badge}</span>
           <h2 className="text-xl font-black text-blue-700">{title}</h2>
         </div>
         <a href="/shop" className="inline-flex items-center gap-1 text-xs font-black text-blue-700 hover:underline">
@@ -770,9 +616,7 @@ function ProductSection({ section, products, displayMappings, lang, actions, bad
           ))}
         </div>
       ) : (
-        <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-sm font-bold text-slate-500">
-          {t.empty}
-        </div>
+        <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-sm font-bold text-slate-500">{t.empty}</div>
       )}
     </section>
   );
@@ -780,7 +624,6 @@ function ProductSection({ section, products, displayMappings, lang, actions, bad
 
 function LoyaltyBubble({ lang }) {
   const t = copy[lang];
-
   return (
     <div className="fixed bottom-5 left-5 z-40 hidden sm:block">
       <button className="group flex items-center gap-3 rounded-full border border-amber-200 bg-white px-4 py-3 text-left shadow-2xl shadow-amber-100 transition hover:-translate-y-0.5 hover:border-amber-300 hover:bg-amber-50">
@@ -795,7 +638,6 @@ function LoyaltyBubble({ lang }) {
     </div>
   );
 }
-
 
 function deriveCategoriesFromProducts(products = []) {
   const map = new Map();
@@ -829,25 +671,15 @@ function deriveCategoriesFromProducts(products = []) {
 
 export default function HomePage() {
   const [backendProducts, setBackendProducts] = useState([]);
-  const [backendCategories, setBackendCategories] = useState([]);
-  const [productApiReady, setProductApiReady] = useState(false);
-  const [productApiError, setProductApiError] = useState("");
-  const [catalogDebug, setCatalogDebug] = useState({
-    products: 0,
-    categories: 0,
-    error: "",
-  });
-  const { state, actions } = useCms();
-  const lang = state.settings?.lang || "vi";
-
   const [dbBanners, setDbBanners] = useState([]);
   const [dbHeroSettings, setDbHeroSettings] = useState(null);
   const [bannerApiReady, setBannerApiReady] = useState(false);
   const [bannerApiError, setBannerApiError] = useState("");
-
+  const [backendCategories, setBackendCategories] = useState([]);
+  const { state, actions } = useCms();
+  const lang = state.settings?.lang || "vi";
   const sections = useMemo(() => mergeCmsSections(state.homeSections), [state.homeSections]);
   const products = backendProducts;
-
 
   useEffect(() => {
     let alive = true;
@@ -874,6 +706,7 @@ export default function HomePage() {
       alive = false;
     };
   }, []);
+
   useEffect(() => {
     let alive = true;
 
@@ -883,67 +716,28 @@ export default function HomePage() {
     ]).then(([productsResult, categoriesResult]) => {
       if (!alive) return;
 
-      const products =
-        productsResult.status === "fulfilled" && Array.isArray(productsResult.value)
-          ? productsResult.value
-          : [];
+      const loadedProducts = productsResult.status === "fulfilled" && Array.isArray(productsResult.value) ? productsResult.value : [];
+      const categoriesFromApi = categoriesResult.status === "fulfilled" && Array.isArray(categoriesResult.value) ? categoriesResult.value : [];
+      const derivedCategories = categoriesFromApi.length ? categoriesFromApi : deriveCategoriesFromProducts(loadedProducts);
 
-      const categoriesFromApi =
-        categoriesResult.status === "fulfilled" && Array.isArray(categoriesResult.value)
-          ? categoriesResult.value
-          : [];
-
-      const derivedCategories = categoriesFromApi.length
-        ? categoriesFromApi
-        : deriveCategoriesFromProducts(products);
-
-      setBackendProducts(products);
+      setBackendProducts(loadedProducts);
       setBackendCategories(derivedCategories);
-
-      const error =
-        productsResult.status === "rejected"
-          ? productsResult.reason?.message || "Product API failed"
-          : categoriesResult.status === "rejected"
-            ? categoriesResult.reason?.message || "Category API failed"
-            : "";
-
-      setCatalogDebug({
-        products: products.length,
-        categories: derivedCategories.length,
-        error,
-      });
-
-      console.info("[DB-SOT homepage catalog]", {
-        products: products.length,
-        categories: derivedCategories.length,
-        error,
-      });
     });
 
     return () => {
       alive = false;
     };
   }, []);
-  const categories = state.categories || [];
+
   useEffect(() => {
     actions.track("page_view", { page: "/" });
-  }, []);
+  }, [actions]);
+
+  const categories = backendCategories.length ? backendCategories : state.categories || [];
 
   return (
     <PageShell>
       <div className="relative">
-        <div className="pointer-events-none fixed inset-0 -z-10">
-          <div className="absolute inset-0 bg-gradient-to-b from-white via-[#f7fbff] to-[#eef5fc]" />
-          <div
-            className="absolute inset-0 opacity-80"
-            style={{
-              backgroundImage:
-                "linear-gradient(rgba(37,99,235,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(37,99,235,0.035) 1px, transparent 1px)",
-              backgroundSize: "42px 42px",
-            }}
-          />
-        </div>
-
         <Hero
           banners={dbBanners}
           lang={lang}

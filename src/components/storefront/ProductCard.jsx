@@ -42,7 +42,6 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
   const [wishlistSaved, setWishlistSaved] = useState(false);
   const [wishlistMessage, setWishlistMessage] = useState("");
 
-  // 🟢 ĐÃ THÊM: Khai báo State quản lý cấu hình thông báo Toast để tránh crash ứng dụng
   const [toastConfig, setToastConfig] = useState({
     show: false,
     type: "success",
@@ -86,56 +85,27 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
     e?.preventDefault?.();
     e?.stopPropagation?.();
     if (!state?.user) {
-      setToastConfig({
-        show: true,
-        type: "error",
-        message: `Vui lòng đăng nhập để tiếp tục`
-      });
-      setTimeout(() => {
-        setToastConfig((prev) => ({ ...prev, show: false }));
-      }, 2500);
+      setToastConfig({ show: true, type: "error", message: `Vui lòng đăng nhập để tiếp tục` });
+      setTimeout(() => setToastConfig((prev) => ({ ...prev, show: false })), 2500);
       return false;
     }
     if (isOutOfStock) {
-      setToastConfig({
-        show: true,
-        type: "error",
-        message: outOfStockLabel
-      });
-      setTimeout(() => {
-        setToastConfig((prev) => ({ ...prev, show: false }));
-      }, 2500);
+      setToastConfig({ show: true, type: "error", message: outOfStockLabel });
+      setTimeout(() => setToastConfig((prev) => ({ ...prev, show: false })), 2500);
       return false;
     }
-    console.log("=== DEBUG GIỎ HÀNG ===");
-    console.log("Sản phẩm gốc (Product Object):", product);
-    console.log("Số lượng muốn thêm (qty):", qty, "Kiểu dữ liệu:", typeof qty);
-    console.log("Kết quả chạy hàm validate:", validateCartStock(product, qty));
     const validation = validateCartStock(product, qty);
     if (!validation.ok) {
       showCartError(validation);
       return false;
     }
 
-    if (onAddToCart) {
-      onAddToCart(product, qty);
-    } else {
-      addProductToCart(product, qty);
-    }
+    if (onAddToCart) onAddToCart(product, qty);
+    else addProductToCart(product, qty);
 
     forceCartBadgeSync();
-
-    setToastConfig({
-      show: true,
-      type: "success",
-      message: `Đã thêm sản phẩm vào giỏ hàng thành công!`
-    });
-
-    // Sau 2.5 giây tự động tắt Toast ẩn đi
-    setTimeout(() => {
-      setToastConfig((prev) => ({ ...prev, show: false }));
-    }, 2500);
-
+    setToastConfig({ show: true, type: "success", message: `Đã thêm sản phẩm vào giỏ hàng thành công!` });
+    setTimeout(() => setToastConfig((prev) => ({ ...prev, show: false })), 2500);
     actions?.track?.("add_to_cart", { productId: product?.id, qty });
     return true;
   }
@@ -144,25 +114,13 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
     e?.preventDefault?.();
     e?.stopPropagation?.();
     if (!state?.user) {
-      setToastConfig({
-        show: true,
-        type: "error",
-        message: `Vui lòng đăng nhập để tiếp tục`
-      });
-      setTimeout(() => {
-        setToastConfig((prev) => ({ ...prev, show: false }));
-      }, 2500);
+      setToastConfig({ show: true, type: "error", message: `Vui lòng đăng nhập để tiếp tục` });
+      setTimeout(() => setToastConfig((prev) => ({ ...prev, show: false })), 2500);
       return false;
     }
     if (isOutOfStock) {
-      setToastConfig({
-        show: true,
-        type: "error",
-        message: outOfStockLabel
-      });
-      setTimeout(() => {
-        setToastConfig((prev) => ({ ...prev, show: false }));
-      }, 2500);
+      setToastConfig({ show: true, type: "error", message: outOfStockLabel });
+      setTimeout(() => setToastConfig((prev) => ({ ...prev, show: false })), 2500);
       return;
     }
 
@@ -217,7 +175,6 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
               </div>
             )}
 
-            {/* COMMERCIAL_SALE_BADGE */}
             {commercialDiscount && (
               <div className={`absolute left-3 z-10 rounded-lg bg-red-600 px-2.5 py-1 text-[11px] font-black text-white ${badge ? "top-11" : "top-3"}`}>
                 Sale
@@ -230,10 +187,7 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
               onClick={addWishlist}
               disabled={wishlistSaving}
               title={wishlistSaved ? wishlistCopy.titleSaved : wishlistCopy.titleSave}
-              className={`absolute right-3 top-3 z-10 flex h-10 w-10 items-center justify-center rounded-full border bg-white/90 shadow-lg backdrop-blur transition hover:scale-110 ${wishlistSaved
-                ? "border-red-100 text-red-600"
-                : "border-white/70 text-slate-500 hover:border-red-100 hover:text-red-600"
-                } ${wishlistSaving ? "cursor-not-allowed opacity-60" : ""}`}
+              className={`absolute right-3 top-3 z-10 flex h-10 w-10 items-center justify-center rounded-full border bg-white/90 shadow-lg backdrop-blur transition hover:scale-110 ${wishlistSaved ? "border-red-100 text-red-600" : "border-white/70 text-slate-500 hover:border-red-100 hover:text-red-600"} ${wishlistSaving ? "cursor-not-allowed opacity-60" : ""}`}
             >
               <Heart size={18} fill={wishlistSaved ? "currentColor" : "none"} />
             </button>
@@ -242,6 +196,8 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
               src={image}
               alt={name}
               className="h-full w-full object-cover transition duration-500 group-hover:scale-110"
+              loading="lazy"
+              decoding="async"
             />
           </div>
         </a>
@@ -277,14 +233,8 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
 
           <div className="mb-4 flex items-end justify-between">
             <div>
-              {oldPrice ? (
-                <div className="text-xs font-bold text-slate-400 line-through">
-                  {formatCurrency(oldPrice)}
-                </div>
-              ) : null}
-              <div className="text-base font-black text-slate-950 sm:text-lg">
-                {formatCurrency(price)}
-              </div>
+              {oldPrice ? <div className="text-xs font-bold text-slate-400 line-through">{formatCurrency(oldPrice)}</div> : null}
+              <div className="text-base font-black text-slate-950 sm:text-lg">{formatCurrency(price)}</div>
             </div>
 
             <div className="flex items-center gap-1 rounded-full bg-amber-50 px-2 py-1 text-xs font-black text-amber-600">
@@ -294,11 +244,7 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
           </div>
 
           {wishlistMessage && (
-            <div
-              data-wishlist-card-message="true"
-              className={`mb-3 rounded-2xl px-3 py-2 text-xs font-black ${wishlistSaved ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"
-                }`}
-            >
+            <div data-wishlist-card-message="true" className={`mb-3 rounded-2xl px-3 py-2 text-xs font-black ${wishlistSaved ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>
               {wishlistMessage}
             </div>
           )}
@@ -309,18 +255,10 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-
-                // 🟢 RÀNG BUỘC PHÒNG THỦ: Kiểm tra trạng thái đăng nhập của User
                 if (!state?.user) {
-                  setToastConfig({
-                    show: true,
-                    type: "error",
-                    message: "Vui lòng đăng nhập để tiếp tục"
-                  });
-                  setTimeout(() => {
-                    setToastConfig((prev) => ({ ...prev, show: false }));
-                  }, 2500);
-                  return; // Phanh gấp luồng chạy, chặn không cho chuyển hướng
+                  setToastConfig({ show: true, type: "error", message: "Vui lòng đăng nhập để tiếp tục" });
+                  setTimeout(() => setToastConfig((prev) => ({ ...prev, show: false })), 2500);
+                  return;
                 }
                 window.location.href = detailUrl;
               }}
@@ -330,31 +268,17 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
               {t("product.preorder")}
             </button>
           ) : isOutOfStock ? (
-            <button
-              type="button"
-              disabled
-              className="flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-2xl bg-slate-200 px-4 py-3 text-sm font-black uppercase tracking-wide text-slate-500"
-            >
+            <button type="button" disabled className="flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-2xl bg-slate-200 px-4 py-3 text-sm font-black uppercase tracking-wide text-slate-500">
               {outOfStockLabel}
             </button>
           ) : (
             <div className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-2">
-              <button
-                type="button"
-                data-cart-managed="true"
-                onClick={addCart}
-                className="flex min-h-11 items-center justify-center gap-1 rounded-2xl border border-blue-200 bg-blue-50 px-3 py-2.5 text-xs font-black text-blue-700 transition hover:bg-blue-700 hover:text-white"
-              >
+              <button type="button" data-cart-managed="true" onClick={addCart} className="flex min-h-11 items-center justify-center gap-1 rounded-2xl border border-blue-200 bg-blue-50 px-3 py-2.5 text-xs font-black text-blue-700 transition hover:bg-blue-700 hover:text-white">
                 <ShoppingCart size={15} />
                 {t("product.addCart")}
               </button>
 
-              <button
-                type="button"
-                data-cart-managed="true"
-                onClick={buyNow}
-                className="flex min-h-11 items-center justify-center gap-1 rounded-2xl bg-blue-700 px-3 py-2.5 text-xs font-black text-white shadow-lg shadow-blue-100 transition hover:bg-blue-800"
-              >
+              <button type="button" data-cart-managed="true" onClick={buyNow} className="flex min-h-11 items-center justify-center gap-1 rounded-2xl bg-blue-700 px-3 py-2.5 text-xs font-black text-white shadow-lg shadow-blue-100 transition hover:bg-blue-800">
                 <Zap size={15} />
                 {t("product.buyNow")}
               </button>
@@ -363,15 +287,11 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
         </div>
       </article>
 
-      {/* 🟢 ĐÃ SỬA: Sắp xếp lại thẻ đóng mở an toàn cho Portal QuickView */}
       {quickOpen &&
         createPortal(
           <div className="mobile-quickview-backdrop fixed inset-0 z-[999999] flex items-end justify-center bg-slate-950/70 p-0 backdrop-blur-md sm:items-start sm:p-4 sm:pt-6">
             <div className="mobile-quickview-panel relative grid max-h-[92vh] w-full max-w-[920px] overflow-hidden rounded-t-[28px] bg-white shadow-[0_50px_160px_rgba(0,0,0,0.35)] sm:rounded-[28px] lg:grid-cols-[0.9fr_1.1fr]">
-              <button
-                onClick={() => setQuickOpen(false)}
-                className="absolute right-4 top-4 z-20 flex h-11 w-11 items-center justify-center rounded-full bg-slate-900/80 text-white shadow-lg transition hover:bg-red-600"
-              >
+              <button onClick={() => setQuickOpen(false)} className="absolute right-4 top-4 z-20 flex h-11 w-11 items-center justify-center rounded-full bg-slate-900/80 text-white shadow-lg transition hover:bg-red-600">
                 <X size={20} />
               </button>
 
@@ -381,118 +301,55 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
                     src={image}
                     alt={name}
                     className="max-h-[34vh] w-full rounded-2xl object-contain sm:max-h-[54vh]"
+                    loading="lazy"
+                    decoding="async"
                   />
                 </div>
               </div>
 
               <div className="overflow-y-auto p-5 lg:p-7">
-                <h2 className="pr-10 text-2xl font-black leading-tight text-slate-950">
-                  {name}
-                </h2>
-
+                <h2 className="pr-10 text-2xl font-black leading-tight text-slate-950">{name}</h2>
                 <div className="mt-3 flex flex-wrap gap-3 text-sm font-bold">
-                  <span className="rounded-full bg-blue-50 px-3 py-1 text-blue-700">
-                    {product?.brand || "Bandai"}
-                  </span>
-                  <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-600">
-                    SKU: {product?.sku || "-"}
-                  </span>
+                  <span className="rounded-full bg-blue-50 px-3 py-1 text-blue-700">{product?.brand || "Bandai"}</span>
+                  <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-600">SKU: {product?.sku || "-"}</span>
                 </div>
                 <div className="whitespace-pre-line text-gray-700">
-                  <p className="mt-5 text-base font-semibold leading-7 text-slate-600">
-                    {desc}
-                  </p>
+                  <p className="mt-5 text-base font-semibold leading-7 text-slate-600">{desc}</p>
                 </div>
                 <div className="my-6 border-t border-slate-200" />
-
                 <div className="flex items-end gap-3">
-                  <div className="text-3xl font-black text-red-600">
-                    {formatCurrency(price)}
-                  </div>
-                  {oldPrice ? (
-                    <div className="pb-1 text-lg font-bold text-slate-400 line-through">
-                      {formatCurrency(oldPrice)}
-                    </div>
-                  ) : null}
+                  <div className="text-3xl font-black text-red-600">{formatCurrency(price)}</div>
+                  {oldPrice ? <div className="pb-1 text-lg font-bold text-slate-400 line-through">{formatCurrency(oldPrice)}</div> : null}
                 </div>
-
                 <div className="mt-4 inline-flex rounded-lg bg-emerald-50 px-3 py-2 text-sm font-black text-emerald-700">
                   {stock > 0 ? `✓ ${t("product.stockReady")}: ${stock}` : t("product.preorderContact")}
                 </div>
-
                 <div className="mobile-quickview-actions mt-6 grid gap-3 sm:flex sm:items-center">
                   <div className="flex items-center rounded-xl border border-slate-200">
-                    <button onClick={() => setQty(Math.max(1, qty - 1))} className="p-3">
-                      <Minus size={16} />
-                    </button>
+                    <button onClick={() => setQty(Math.max(1, qty - 1))} className="p-3"><Minus size={16} /></button>
                     <span className="px-5 font-black">{qty}</span>
-                    <button
-                      onClick={() => setQty((value) => Math.min(maxQty, value + 1))}
-                      disabled={!isPreorder && qty >= maxQty}
-                      className={`p-3 ${!isPreorder && qty >= maxQty ? "cursor-not-allowed opacity-40" : ""}`}
-                    >
-                      <Plus size={16} />
-                    </button>
+                    <button onClick={() => setQty((value) => Math.min(maxQty, value + 1))} disabled={!isPreorder && qty >= maxQty} className={`p-3 ${!isPreorder && qty >= maxQty ? "cursor-not-allowed opacity-40" : ""}`}><Plus size={16} /></button>
                   </div>
 
-                  <button
-                    data-cart-managed="true"
-                    onClick={isOutOfStock ? undefined : addCart}
-                    disabled={isOutOfStock}
-                    aria-disabled={isOutOfStock}
-                    className={`flex min-h-12 flex-1 items-center justify-center gap-2 rounded-2xl px-6 py-4 text-sm font-black shadow-lg transition ${isOutOfStock
-                      ? "cursor-not-allowed bg-slate-200 text-slate-500 shadow-none"
-                      : "bg-blue-700 text-white shadow-blue-100 hover:bg-blue-800"
-                      }`}
-                  >
+                  <button data-cart-managed="true" onClick={isOutOfStock ? undefined : addCart} disabled={isOutOfStock} aria-disabled={isOutOfStock} className={`flex min-h-12 flex-1 items-center justify-center gap-2 rounded-2xl px-6 py-4 text-sm font-black shadow-lg transition ${isOutOfStock ? "cursor-not-allowed bg-slate-200 text-slate-500 shadow-none" : "bg-blue-700 text-white shadow-blue-100 hover:bg-blue-800"}`}>
                     <ShoppingCart size={18} />
                     {isOutOfStock ? outOfStockLabel : t("product.addToCart")}
                   </button>
 
-                  <a
-                    href={detailUrl}
-                    className="text-center rounded-2xl border border-slate-200 px-5 py-4 text-sm font-black text-slate-700 hover:bg-slate-50"
-                  >
-                    {t("product.details")}
-                  </a>
-
-                  <button
-                    type="button"
-                    onClick={addWishlist}
-                    disabled={wishlistSaving}
-                    title={wishlistSaved ? wishlistCopy.titleSaved : wishlistCopy.titleSave}
-                    className={`rounded-2xl border p-4 transition ${wishlistSaved
-                      ? "border-red-100 bg-red-50 text-red-600"
-                      : "border-slate-200 text-slate-600 hover:bg-slate-50"
-                      } ${wishlistSaving ? "cursor-not-allowed opacity-60" : ""}`}
-                  >
+                  <a href={detailUrl} className="text-center rounded-2xl border border-slate-200 px-5 py-4 text-sm font-black text-slate-700 hover:bg-slate-50">{t("product.details")}</a>
+                  <button type="button" onClick={addWishlist} disabled={wishlistSaving} title={wishlistSaved ? wishlistCopy.titleSaved : wishlistCopy.titleSave} className={`rounded-2xl border p-4 transition ${wishlistSaved ? "border-red-100 bg-red-50 text-red-600" : "border-slate-200 text-slate-600 hover:bg-slate-50"} ${wishlistSaving ? "cursor-not-allowed opacity-60" : ""}`}>
                     <Heart size={18} fill={wishlistSaved ? "currentColor" : "none"} />
                   </button>
                 </div>
 
-                {wishlistMessage && (
-                  <div
-                    className={`mt-3 rounded-2xl px-4 py-3 text-sm font-black ${wishlistSaved ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"
-                      }`}
-                  >
-                    {wishlistMessage}
-                  </div>
-                )}
+                {wishlistMessage && <div className={`mt-3 rounded-2xl px-4 py-3 text-sm font-black ${wishlistSaved ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>{wishlistMessage}</div>}
               </div>
             </div>
           </div>,
           document.body
         )}
 
-      {/* Portal thông báo Toast động khi thêm hàng thành công */}
-      {createPortal(
-        <Toast
-          show={toastConfig.show}
-          type={toastConfig.type}
-          message={toastConfig.message}
-        />,
-        document.body
-      )}
+      {createPortal(<Toast show={toastConfig.show} type={toastConfig.type} message={toastConfig.message} />, document.body)}
     </>
   );
 }

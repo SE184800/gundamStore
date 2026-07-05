@@ -120,6 +120,10 @@ function getBackendGroups(product = {}) {
 }
 
 function getBackendCollectionKeys(product = {}) {
+  if (Array.isArray(product.collections) && product.collections.length) {
+    return Array.from(new Set(product.collections.filter(Boolean)));
+  }
+
   const groups = getBackendGroups(product);
 
   const keys = groups.flatMap((group) => {
@@ -161,7 +165,7 @@ export function mapBackendProductToStorefront(product = {}) {
   const imageUrl = firstImageUrl(product);
   const collections = getBackendCollectionKeys(product);
   const groups = getBackendGroups(product);
-  const effectivePrice = Number(product.effectivePrice ?? product.price) || 0;
+  const effectivePrice = Number(product.finalPrice ?? product.effectivePrice ?? product.price) || 0;
   const compareAtPrice = Number(product.compareAtPrice ?? product.oldPrice ?? 0);
   const variants = Array.isArray(product.variants) ? product.variants : [];
 
@@ -182,16 +186,18 @@ export function mapBackendProductToStorefront(product = {}) {
       vi: product.shortVi || product.description || "",
       en: product.shortEn || product.shortVi || product.description || "",
     },
-    description: product.description || "",
-    descriptionEn: product.descriptionEn || "",
+    description: product.description || product.shortVi || "",
+    descriptionEn: product.descriptionEn || product.shortEn || "",
 
     price: effectivePrice,
+    finalPrice: Number(product.finalPrice ?? effectivePrice) || effectivePrice,
     oldPrice: compareAtPrice,
-    stock: Number(product.stock) || 0,
+    compareAtPrice,
+    stock: Number(product.stock ?? product.totalStock) || 0,
     status: product.status || (Number(product.stock) > 0 ? "inStock" : "outOfStock"),
     active: product.active !== false,
     variants,
-    hasVariants: variants.length > 0,
+    hasVariants: Boolean(product.hasVariants) || variants.length > 0,
 
     imageUrl,
     images: Array.isArray(product.images)
@@ -221,6 +227,9 @@ export function mapBackendProductToStorefront(product = {}) {
     groupIds: groups.map((group) => group.id).filter(Boolean),
     collections,
     promotion: product.activePromotion || null,
+    activePromotion: product.activePromotion || null,
+    discountAmount: Number(product.discountAmount || 0),
+    sellable: product.sellable !== false,
 
     source: "backend",
     backendRaw: product,
@@ -312,6 +321,22 @@ export async function getStorefrontProductsFromApi() {
   return products;
 }
 
+export async function getStorefrontHomeProductsFromApi() {
+  const data = await publicJsonRequest("/products/home");
+
+  const products = Array.isArray(data?.products)
+    ? data.products
+    : Array.isArray(data?.data)
+      ? data.data
+      : [];
+
+  if (!data?.success || !Array.isArray(products)) {
+    throw new Error("Homepage product sync skipped.");
+  }
+
+  return products;
+}
+
 export async function getStorefrontProductByKeyFromApi(key = "") {
   const data = await publicJsonRequest(`/products/${encodeURIComponent(key)}`);
 
@@ -388,7 +413,7 @@ export function dedupeStorefrontProducts(products = []) {
 }
 
 export async function getStorefrontProductsForStorefront() {
-  const backendProducts = await getStorefrontProductsFromApi();
+  const backendProducts = await getStorefrontHomeProductsFromApi();
 
   return dedupeStorefrontProducts(
     backendProducts.map(mapBackendProductToStorefront)
@@ -418,10 +443,9 @@ export function mapBackendCategoryToStorefront(category = {}) {
     image: category.imageUrl || category.image || category.mainImage || "",
     icon: category.icon || category.imageUrl || "",
     mainImage: category.imageUrl || category.mainImage || "",
-    altText: category.altText || category.nameVi || category.nameEn || "",
     active: category.active !== false,
-    sortOrder: Number(category.sortOrder || 0),
-    sort: Number(category.sortOrder || 0),
+    sortOrder: Number(category.sortOrder || category.sort || 0),
+    sort: Number(category.sortOrder || category.sort || 0),
     source: "backend",
   };
 }
@@ -439,12 +463,5 @@ export async function getStorefrontCategoriesFromApi() {
     throw new Error("Storefront category sync skipped.");
   }
 
-  return categories
-    .map(mapBackendCategoryToStorefront)
-    .filter((category) => category.active !== false)
-    .sort(
-      (a, b) =>
-        Number(a.sortOrder || 0) - Number(b.sortOrder || 0) ||
-        String(a.label || "").localeCompare(String(b.label || ""))
-    );
+  return categories.map(mapBackendCategoryToStorefront).filter((category) => category.active !== false);
 }

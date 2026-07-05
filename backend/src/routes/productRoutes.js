@@ -1,4 +1,5 @@
 import express from "express";
+import { listHomeProducts } from "../controllers/homeProductController.js";
 import {
   adjustAdminProductInventory,
   createAdminProduct,
@@ -80,6 +81,7 @@ router.patch("/admin/:id", ...requireProductUpdate, updateAdminProduct);
 router.delete("/admin/:id", ...requireProductUpdate, deleteAdminProduct);
 
 router.get("/categories", listStorefrontProductCategories);
+router.get("/home", listHomeProducts);
 router.get("/", listStorefrontProducts);
 router.get("/:key", getStorefrontProductByKey);
 
