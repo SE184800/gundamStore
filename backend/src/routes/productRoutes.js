@@ -1,6 +1,15 @@
 import express from "express";
 import { listHomeProducts } from "../controllers/homeProductController.js";
 import {
+  assignAdminCategoryToGroup,
+  createAdminCategoryGroup,
+  deleteAdminCategoryGroup,
+  listAdminCategoryGroups,
+  listStorefrontCategoryTree,
+  setAdminCategoryGroupCategories,
+  updateAdminCategoryGroup,
+} from "../controllers/categoryGroupController.js";
+import {
   adjustAdminProductInventory,
   createAdminProduct,
   createAdminProductPrice,
@@ -48,8 +57,6 @@ router.get("/admin/export", ...requireProductRead, exportAdminProductsCsv);
 router.post("/admin/import-preview", ...requireProductUpdate, previewAdminProductImportCsv);
 router.post("/admin/import-commit", ...requireProductUpdate, commitAdminProductImportCsv);
 
-
-
 router.get("/admin/prices", ...requireProductRead, listAdminProductPrices);
 router.post("/admin/:id/prices", ...requireProductUpdate, createAdminProductPrice);
 router.patch("/admin/prices/:priceId", ...requireProductUpdate, updateAdminProductPrice);
@@ -57,6 +64,13 @@ router.delete("/admin/prices/:priceId", ...requireProductUpdate, deactivateAdmin
 
 router.get("/admin/inventory-logs", ...requireProductRead, listAdminInventoryLogs);
 router.post("/admin/:id/inventory-adjust", ...requireProductUpdate, adjustAdminProductInventory);
+
+router.get("/admin/category-groups", ...requireProductRead, listAdminCategoryGroups);
+router.post("/admin/category-groups", ...requireProductUpdate, createAdminCategoryGroup);
+router.patch("/admin/category-groups/:id", ...requireProductUpdate, updateAdminCategoryGroup);
+router.delete("/admin/category-groups/:id", ...requireProductUpdate, deleteAdminCategoryGroup);
+router.put("/admin/category-groups/:id/categories", ...requireProductUpdate, setAdminCategoryGroupCategories);
+router.patch("/admin/categories/:id/group", ...requireProductUpdate, assignAdminCategoryToGroup);
 
 router.get("/admin/categories", ...requireProductRead, listAdminProductCategories);
 router.post("/admin/categories", ...requireProductUpdate, createAdminProductCategory);
@@ -80,6 +94,7 @@ router.post("/admin", ...requireProductUpdate, createAdminProduct);
 router.patch("/admin/:id", ...requireProductUpdate, updateAdminProduct);
 router.delete("/admin/:id", ...requireProductUpdate, deleteAdminProduct);
 
+router.get("/categories/tree", listStorefrontCategoryTree);
 router.get("/categories", listStorefrontProductCategories);
 router.get("/home", listHomeProducts);
 router.get("/", listStorefrontProducts);

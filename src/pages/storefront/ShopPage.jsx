@@ -1,19 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import {
-  ChevronRight,
-  Filter,
-  Grid3X3,
-  List,
-  Search,
-  SlidersHorizontal,
-  Sparkles,
-  X,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight, Filter, Search, SlidersHorizontal, Sparkles, X } from "lucide-react";
 import PageShell from "../../components/common/PageShell";
 import ProductCard from "../../components/storefront/ProductCard";
 import { useCms, useLang } from "../../store/CmsStore";
 import {
-  getStorefrontCategoriesFromApi,
+  getStorefrontCategoryTreeFromApi,
   getStorefrontProductsForStorefront,
 } from "../../services/StorefrontProductApiService";
 
@@ -22,26 +13,18 @@ const text = {
     home: "Trang chủ",
     shopPage: "Trang bán hàng",
     title: "Tất cả Gundam / Gunpla",
-    subtitle:
-      "Khám phá hàng sẵn, hàng order, pre-order, sale và phụ kiện builder tại Gundam Store VN.",
-    filters: "Bộ lọc sản phẩm",
-    mobileFilters: "Lọc sản phẩm",
-    clear: "Xóa lọc",
+    subtitle: "Khám phá hàng sẵn, hàng order, pre-order, sale và phụ kiện builder tại Gundam Store VN.",
+    categoryMenu: "Danh mục hàng",
+    allCategories: "Tất cả danh mục",
+    categorySearch: "Tìm danh mục...",
+    filters: "Bộ lọc",
     all: "Tất cả",
-    category: "Danh mục",
-    status: "Tình trạng",
-    grade: "Grade",
-    scale: "Scale",
-    series: "Series",
-    stock: "Tồn kho",
-    priceRange: "Khoảng giá",
     search: "Tìm sản phẩm, SKU, series...",
     sort: "Sắp xếp",
     popular: "Phổ biến",
     newest: "Mới nhất",
     priceLow: "Giá thấp đến cao",
     priceHigh: "Giá cao đến thấp",
-    bestSelling: "Bán chạy",
     noProducts: "Không có sản phẩm phù hợp.",
     loadMore: "Xem thêm sản phẩm",
     result: "sản phẩm phù hợp",
@@ -50,38 +33,25 @@ const text = {
     preorder: "Pre-order",
     sale: "Sale",
     outOfStock: "Hết hàng",
-    limited: "Limited",
-    beginner: "Dễ build",
-    under500: "Dưới 500K",
-    from500to1000: "500K - 1 triệu",
-    above1000: "Trên 1 triệu",
+    clear: "Xóa lọc",
     apply: "Áp dụng",
-    close: "Đóng",
   },
   en: {
     home: "Home",
     shopPage: "Shop",
     title: "All Gundam / Gunpla",
-    subtitle:
-      "Explore in-stock kits, order items, pre-orders, sale items and builder accessories.",
-    filters: "Product filters",
-    mobileFilters: "Filter products",
-    clear: "Clear",
+    subtitle: "Explore in-stock kits, order items, pre-orders, sale items and builder accessories.",
+    categoryMenu: "Categories",
+    allCategories: "All categories",
+    categorySearch: "Search categories...",
+    filters: "Filters",
     all: "All",
-    category: "Category",
-    status: "Status",
-    grade: "Grade",
-    scale: "Scale",
-    series: "Series",
-    stock: "Stock",
-    priceRange: "Price range",
     search: "Search products, SKU, series...",
     sort: "Sort by",
     popular: "Popular",
     newest: "Newest",
     priceLow: "Price low to high",
     priceHigh: "Price high to low",
-    bestSelling: "Best selling",
     noProducts: "No products match.",
     loadMore: "Load more",
     result: "matching products",
@@ -90,260 +60,226 @@ const text = {
     preorder: "Pre-order",
     sale: "Sale",
     outOfStock: "Out of stock",
-    limited: "Limited",
-    beginner: "Beginner friendly",
-    under500: "Under 500K",
-    from500to1000: "500K - 1M",
-    above1000: "Above 1M",
+    clear: "Clear",
     apply: "Apply",
-    close: "Close",
   },
 };
 
-const DEFAULT_GRADES = ["HG", "RG", "MG", "MGEX", "PG", "SD", "FM", "RE/100"];
-const DEFAULT_SCALES = ["1/144", "1/100", "1/60", "SD"];
-const DEFAULT_SERIES = ["SEED", "UC", "WFM", "IBO", "Wing", "00", "Build", "G Gundam"];
 const PAGE_SIZE = 12;
 
-function getProductName(product, lang) {
+function normalize(value = "") {
+  return String(value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
+}
+
+function getName(item = {}, lang = "vi") {
+  if (typeof item.name === "string") return item.name;
+  return item.name?.[lang] || item.nameVi || item.nameEn || item.label || item.code || item.id || "";
+}
+
+function getProductName(product = {}, lang = "vi") {
   if (typeof product.name === "string") return product.name;
-  return product.name?.[lang] || product.name?.vi || product.name?.en || "";
+  return product.name?.[lang] || product.name?.vi || product.name?.en || product.nameVi || product.nameEn || "";
 }
 
-function getCategoryName(category, lang) {
-  return category.name?.[lang] || category.name?.vi || category.label || category.id;
+function hasDiscount(product = {}) {
+  const price = Number(product.finalPrice || product.price || 0);
+  const oldPrice = Number(product.compareAtPrice || product.oldPrice || 0);
+  return Boolean(product.activePromotion) || Number(product.discountAmount || 0) > 0 || (oldPrice > price && price > 0);
 }
 
-function isProductInCategory(productId, categoryId, mappings) {
-  return (mappings || []).some(
-    (item) => item.productId === productId && (item.categoryIds || []).includes(categoryId)
-  );
-}
-
-function normalizeText(value = "") {
-  return String(value || "").toLowerCase().trim();
-}
-
-function hasCommercialDiscount(product = {}) {
-  const finalPrice = Number(product.finalPrice || product.effectivePrice || product.price || 0);
-  const compareAtPrice = Number(product.compareAtPrice || product.oldPrice || product.originalPrice || 0);
-
-  return Boolean(product.activePromotion) ||
-    Number(product.discountAmount || 0) > 0 ||
-    (finalPrice > 0 && compareAtPrice > finalPrice);
-}
-
-function getProductSearchText(product, lang) {
-  return [
-    getProductName(product, lang),
-    product.sku,
-    product.brand,
-    product.grade,
-    product.scale,
-    product.series,
-    product.status,
-    product.tags?.join?.(" "),
-    product.short?.vi,
-    product.short?.en,
-  ]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase();
-}
-
-function inferSeries(product) {
-  const text = getProductSearchText(product, "vi");
-
-  if (text.includes("seed") || text.includes("freedom") || text.includes("justice")) return "SEED";
-  if (text.includes("unicorn") || text.includes("nu ") || text.includes("hi-nu") || text.includes("uc")) return "UC";
-  if (text.includes("aerial") || text.includes("witch") || text.includes("wfm")) return "WFM";
-  if (text.includes("barbatos") || text.includes("ibo")) return "IBO";
-  if (text.includes("wing") || text.includes("zero")) return "Wing";
-  if (text.includes("exia") || text.includes("00")) return "00";
-  if (text.includes("build")) return "Build";
-  if (text.includes("god gundam") || text.includes("g gundam")) return "G Gundam";
-
-  return product.series || "";
-}
-
-function inferScale(product) {
-  const text = getProductSearchText(product, "vi");
-
-  if (product.scale) return product.scale;
-  if (text.includes("1/144")) return "1/144";
-  if (text.includes("1/100")) return "1/100";
-  if (text.includes("1/60")) return "1/60";
-  if (String(product.grade || "").toUpperCase() === "SD") return "SD";
-
-  return "";
-}
-
-function getStockStatus(product) {
-  const stock = Number(product.stock ?? product.inventory ?? product.quantity ?? 0);
-  const status = normalizeText(product.status);
-
+function getStockStatus(product = {}) {
+  const status = normalize(product.status);
+  const stock = Number(product.stock || product.totalStock || 0);
   if (status.includes("pre")) return "preorder";
-  if (hasCommercialDiscount(product)) return "sale";
+  if (hasDiscount(product)) return "sale";
   if (stock <= 0 || status.includes("out")) return "outOfStock";
   return "inStock";
 }
 
-function getUniqueOptions(products, getter, fallback = []) {
-  const values = products
-    .map(getter)
-    .filter(Boolean)
-    .map((item) => String(item).trim())
-    .filter(Boolean);
-
-  return Array.from(new Set([...fallback, ...values]));
+function productSearchText(product = {}, lang = "vi") {
+  return [
+    getProductName(product, lang),
+    product.sku,
+    product.slug,
+    product.brand,
+    product.grade,
+    product.scale,
+    product.status,
+    product.category?.nameVi,
+    product.category?.nameEn,
+  ].filter(Boolean).join(" ");
 }
 
-function ProductFilterContent({
-  t,
-  lang,
-  activeCategories,
-  filters,
-  setFilters,
-  grades,
-  scales,
-  seriesOptions,
-  statusOptions,
-  reset,
-}) {
-  function setFilter(key, value) {
-    setFilters((prev) => ({ ...prev, [key]: value }));
+function productCategoryKeys(product = {}) {
+  return [product.categoryId, product.category?.id, product.category?.slug, product.category?.code]
+    .filter(Boolean)
+    .map(String);
+}
+
+function normalizeTreeNode(node = {}, lang = "vi") {
+  const children = Array.isArray(node.children) ? node.children : [];
+  const normalizedChildren = children.map((child) => ({
+    ...child,
+    id: child.id || child.backendCategoryId || child.slug || child.code,
+    name: getName(child, lang),
+    count: Number(child.productCount || child.count || 0),
+    categoryIds: Array.from(new Set([child.id, child.backendCategoryId, child.slug, child.code, ...(child.categoryIds || [])].filter(Boolean).map(String))),
+  }));
+
+  return {
+    ...node,
+    id: node.id || node.slug || node.code,
+    name: getName(node, lang),
+    count: Number(node.productCount || node.count || normalizedChildren.reduce((sum, child) => sum + Number(child.count || 0), 0)),
+    categoryIds: Array.from(new Set([...(node.categoryIds || []), ...normalizedChildren.flatMap((child) => child.categoryIds || [])].filter(Boolean).map(String))),
+    children: normalizedChildren,
+  };
+}
+
+function findNode(tree = [], id = "all") {
+  if (id === "all") return null;
+  for (const root of tree) {
+    if (root.id === id) return root;
+    const child = root.children?.find((item) => item.id === id);
+    if (child) return child;
   }
+  return null;
+}
+
+function CategoryTree({ t, lang, tree, activeId, onSelect, search, setSearch }) {
+  const q = normalize(search);
+  const visibleTree = tree
+    .map((node) => {
+      const nodeMatch = !q || normalize(node.name).includes(q);
+      const children = (node.children || []).filter((child) => !q || normalize(child.name).includes(q));
+      return nodeMatch ? node : children.length ? { ...node, children } : null;
+    })
+    .filter(Boolean);
 
   return (
-    <div className="space-y-5">
-      <div>
-        <div className="mb-2 text-xs font-black uppercase text-slate-500">{t.category}</div>
-        <div className="grid gap-2">
-          <button
-            onClick={() => setFilter("category", "all")}
-            className={`rounded-xl px-3 py-2 text-left text-xs font-bold ${
-              filters.category === "all"
-                ? "bg-blue-700 text-white"
-                : "bg-slate-50 text-slate-600 hover:bg-slate-100"
-            }`}
-          >
-            {t.all}
-          </button>
-          {activeCategories.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => setFilter("category", item.id)}
-              className={`rounded-xl px-3 py-2 text-left text-xs font-bold ${
-                filters.category === item.id
-                  ? "bg-blue-700 text-white"
-                  : "bg-slate-50 text-slate-600 hover:bg-slate-100"
-              }`}
-            >
-              {getCategoryName(item, lang)}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div>
-        <div className="mb-2 text-xs font-black uppercase text-slate-500">{t.stock}</div>
-        <div className="grid grid-cols-2 gap-2">
-          {statusOptions.map((item) => (
-            <button
-              key={item.value}
-              onClick={() => setFilter("stock", item.value)}
-              className={`rounded-xl px-3 py-2 text-left text-xs font-bold ${
-                filters.stock === item.value
-                  ? "bg-blue-700 text-white"
-                  : "bg-slate-50 text-slate-600 hover:bg-slate-100"
-              }`}
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div>
-        <div className="mb-2 text-xs font-black uppercase text-slate-500">{t.grade}</div>
-        <div className="flex flex-wrap gap-2">
-          {["all", ...grades].map((g) => (
-            <button
-              key={g}
-              onClick={() => setFilter("grade", g)}
-              className={`rounded-xl px-3 py-2 text-xs font-black ${
-                filters.grade === g
-                  ? "bg-slate-950 text-white"
-                  : "bg-slate-50 text-slate-600 hover:bg-slate-100"
-              }`}
-            >
-              {g === "all" ? t.all : g}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div>
-        <div className="mb-2 text-xs font-black uppercase text-slate-500">{t.scale}</div>
-        <div className="flex flex-wrap gap-2">
-          {["all", ...scales].map((value) => (
-            <button
-              key={value}
-              onClick={() => setFilter("scale", value)}
-              className={`rounded-xl px-3 py-2 text-xs font-black ${
-                filters.scale === value
-                  ? "bg-slate-950 text-white"
-                  : "bg-slate-50 text-slate-600 hover:bg-slate-100"
-              }`}
-            >
-              {value === "all" ? t.all : value}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div>
-        <div className="mb-2 text-xs font-black uppercase text-slate-500">{t.series}</div>
-        <select
-          value={filters.series}
-          onChange={(event) => setFilter("series", event.target.value)}
-          className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-xs font-black text-slate-700 outline-none"
-        >
-          <option value="all">{t.all}</option>
-          {seriesOptions.map((value) => (
-            <option key={value} value={value}>
-              {value}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div>
-        <div className="mb-2 text-xs font-black uppercase text-slate-500">{t.priceRange}</div>
-        <div className="grid grid-cols-2 gap-2">
-          <input
-            value={filters.minPrice}
-            onChange={(event) => setFilter("minPrice", event.target.value)}
-            inputMode="numeric"
-            placeholder="Min"
-            className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-xs font-bold outline-none"
-          />
-          <input
-            value={filters.maxPrice}
-            onChange={(event) => setFilter("maxPrice", event.target.value)}
-            inputMode="numeric"
-            placeholder="Max"
-            className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-xs font-bold outline-none"
-          />
-        </div>
+    <div className="space-y-3">
+      <div className="flex items-center rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5">
+        <Search size={16} className="text-blue-600" />
+        <input
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          className="min-w-0 flex-1 bg-transparent px-2 text-sm font-semibold outline-none placeholder:text-slate-400"
+          placeholder={t.categorySearch}
+        />
       </div>
 
       <button
-        onClick={reset}
-        className="w-full rounded-2xl bg-slate-950 px-4 py-3 text-sm font-black text-white"
+        type="button"
+        onClick={() => onSelect("all")}
+        className={`flex w-full items-center justify-between rounded-2xl px-3 py-3 text-left text-sm font-black transition ${activeId === "all" ? "bg-blue-700 text-white" : "bg-slate-50 text-slate-700 hover:bg-blue-50"}`}
       >
-        {t.clear}
+        <span>{t.allCategories}</span>
       </button>
+
+      {visibleTree.map((node) => {
+        const active = activeId === node.id || node.children?.some((child) => child.id === activeId);
+        return (
+          <div key={node.id} className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
+            <button
+              type="button"
+              onClick={() => onSelect(node.id)}
+              className={`flex w-full items-center justify-between gap-3 px-3 py-3 text-left ${active ? "bg-blue-50" : "hover:bg-slate-50"}`}
+            >
+              <span className="min-w-0 flex-1 text-sm font-black leading-tight text-slate-950">{node.name}</span>
+              <span className="shrink-0 text-xs font-black text-slate-400">({node.count || 0})</span>
+            </button>
+
+            {node.children?.length > 0 && (
+              <div className="divide-y divide-slate-100 border-t border-slate-100">
+                {node.children.map((child) => (
+                  <button
+                    key={child.id}
+                    type="button"
+                    onClick={() => onSelect(child.id)}
+                    className={`flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left transition ${activeId === child.id ? "bg-slate-950 text-white" : "hover:bg-slate-50"}`}
+                  >
+                    <span className="min-w-0 flex items-center gap-2 text-sm font-bold">
+                      {(child.icon || child.imageUrl) && <img src={child.icon || child.imageUrl} alt="" className="h-7 w-7 rounded-lg object-contain" loading="lazy" decoding="async" />}
+                      <span className="line-clamp-1">{getName(child, lang)}</span>
+                    </span>
+                    <span className={`shrink-0 text-xs font-black ${activeId === child.id ? "text-white/70" : "text-slate-400"}`}>({child.count || 0})</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function CategoryBottomSheet({ t, lang, tree, activeId, onSelect, onClose }) {
+  const [search, setSearch] = useState("");
+  const [rootId, setRootId] = useState(null);
+  const root = rootId ? tree.find((node) => node.id === rootId) : null;
+
+  return (
+    <div className="fixed inset-0 z-[9999] bg-slate-950/60 backdrop-blur-sm lg:hidden">
+      <div className="absolute inset-x-0 bottom-0 max-h-[86vh] overflow-hidden rounded-t-[2rem] bg-white shadow-2xl">
+        <div className="sticky top-0 z-10 border-b border-slate-100 bg-white px-4 py-4">
+          <div className="flex items-center justify-between gap-3">
+            <button type="button" onClick={() => (root ? setRootId(null) : onClose())} className="rounded-full bg-slate-100 p-2 text-slate-700">
+              {root ? <ChevronLeft size={18} /> : <X size={18} />}
+            </button>
+            <div className="min-w-0 flex-1 text-center text-base font-black text-slate-950">{root ? root.name : t.categoryMenu}</div>
+            <button type="button" onClick={onClose} className="rounded-full bg-slate-100 p-2 text-slate-700"><X size={18} /></button>
+          </div>
+        </div>
+
+        <div className="max-h-[72vh] overflow-y-auto p-4">
+          {!root ? (
+            <CategoryTree
+              t={t}
+              lang={lang}
+              tree={tree}
+              activeId={activeId}
+              search={search}
+              setSearch={setSearch}
+              onSelect={(id) => {
+                const selected = tree.find((node) => node.id === id);
+                if (selected?.children?.length) {
+                  setRootId(id);
+                  return;
+                }
+                onSelect(id);
+                onClose();
+              }}
+            />
+          ) : (
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={() => { onSelect(root.id); onClose(); }}
+                className={`flex w-full items-center justify-between rounded-2xl px-4 py-3 text-left text-sm font-black ${activeId === root.id ? "bg-blue-700 text-white" : "bg-blue-50 text-blue-700"}`}
+              >
+                <span>{t.all} {root.name}</span>
+                <span>({root.count || 0})</span>
+              </button>
+              {root.children.map((child) => (
+                <button
+                  key={child.id}
+                  type="button"
+                  onClick={() => { onSelect(child.id); onClose(); }}
+                  className={`flex w-full items-center justify-between rounded-2xl px-4 py-3 text-left text-sm font-bold ${activeId === child.id ? "bg-slate-950 text-white" : "bg-white text-slate-800 shadow-sm ring-1 ring-slate-100"}`}
+                >
+                  <span className="line-clamp-1">{getName(child, lang)}</span>
+                  <span className="shrink-0 text-xs text-slate-400">({child.count || 0})</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -354,21 +290,15 @@ export default function ShopPage() {
   const t = text[lang];
 
   const [query, setQuery] = useState("");
-  const [filters, setFilters] = useState({
-    category: "all",
-    stock: "all",
-    grade: "all",
-    scale: "all",
-    series: "all",
-    minPrice: "",
-    maxPrice: "",
-  });
+  const [stock, setStock] = useState("all");
+  const [selectedCategoryId, setSelectedCategoryId] = useState("all");
   const [sort, setSort] = useState("popular");
-  const [view, setView] = useState("grid");
+  const [mobileCategoryOpen, setMobileCategoryOpen] = useState(false);
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+  const [categorySearch, setCategorySearch] = useState("");
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-  const [dbProducts, setDbProducts] = useState([]);
-  const [dbCategories, setDbCategories] = useState([]);
+  const [productsFromApi, setProductsFromApi] = useState([]);
+  const [categoryTreeFromApi, setCategoryTreeFromApi] = useState([]);
   const [catalogError, setCatalogError] = useState("");
 
   useEffect(() => {
@@ -379,400 +309,185 @@ export default function ShopPage() {
 
   useEffect(() => {
     let alive = true;
-
-    Promise.all([
-      getStorefrontProductsForStorefront(),
-      getStorefrontCategoriesFromApi(),
-    ])
-      .then(([products, categories]) => {
+    Promise.all([getStorefrontProductsForStorefront(), getStorefrontCategoryTreeFromApi()])
+      .then(([products, categoryData]) => {
         if (!alive) return;
-        setDbProducts(products || []);
-        setDbCategories(categories || []);
+        setProductsFromApi(products || []);
+        setCategoryTreeFromApi(Array.isArray(categoryData?.tree) ? categoryData.tree : []);
         setCatalogError("");
       })
       .catch((error) => {
         if (!alive) return;
-        setDbProducts([]);
-        setDbCategories([]);
+        setProductsFromApi([]);
+        setCategoryTreeFromApi([]);
         setCatalogError(error?.message || "Storefront catalog sync skipped.");
       });
-
-    return () => {
-      alive = false;
-    };
+    return () => { alive = false; };
   }, []);
 
-  const activeCategories = useMemo(() => {
-    return [...(dbCategories || [])]
-      .filter((item) => item.active !== false)
-      .sort((a, b) => Number(a.sortOrder || item.sort || 0) - Number(b.sortOrder || b.sort || 0));
-  }, [dbCategories]);
+  const categoryTree = useMemo(() => categoryTreeFromApi.map((node) => normalizeTreeNode(node, lang)), [categoryTreeFromApi, lang]);
+  const selectedNode = useMemo(() => findNode(categoryTree, selectedCategoryId), [categoryTree, selectedCategoryId]);
 
-  const baseProducts = useMemo(() => {
-    return (dbProducts || []).filter((product) => product.active !== false);
-  }, [dbProducts]);
-
-  const grades = useMemo(() => {
-    return getUniqueOptions(baseProducts, (product) => product.grade, DEFAULT_GRADES);
-  }, [baseProducts]);
-
-  const scales = useMemo(() => {
-    return getUniqueOptions(baseProducts, inferScale, DEFAULT_SCALES);
-  }, [baseProducts]);
-
-  const seriesOptions = useMemo(() => {
-    return getUniqueOptions(baseProducts, inferSeries, DEFAULT_SERIES);
-  }, [baseProducts]);
-
-  const statusOptions = [
-    { value: "all", label: t.all },
-    { value: "inStock", label: t.inStock },
-    { value: "preorder", label: t.preorder },
-    { value: "sale", label: t.sale },
-    { value: "outOfStock", label: t.outOfStock },
-  ];
-
-  const quickChips = [
-    { key: "inStock", label: t.inStock, patch: { stock: "inStock" } },
-    { key: "preorder", label: t.preorder, patch: { stock: "preorder" } },
-    { key: "sale", label: t.sale, patch: { stock: "sale" } },
-    { key: "RG", label: "RG", patch: { grade: "RG" } },
-    { key: "MG", label: "MG", patch: { grade: "MG" } },
-    { key: "SEED", label: "SEED", patch: { series: "SEED" } },
-    { key: "UC", label: "UC", patch: { series: "UC" } },
-    { key: "under500", label: t.under500, patch: { minPrice: "", maxPrice: "500000" } },
-    { key: "500to1000", label: t.from500to1000, patch: { minPrice: "500000", maxPrice: "1000000" } },
-    { key: "above1000", label: t.above1000, patch: { minPrice: "1000000", maxPrice: "" } },
-  ];
-
-  const products = useMemo(() => {
-    let result = baseProducts;
+  const filteredProducts = useMemo(() => {
+    let result = (productsFromApi || []).filter((product) => product.active !== false);
 
     if (query) {
-      const q = normalizeText(query);
-      result = result.filter((product) => getProductSearchText(product, lang).includes(q));
+      const q = normalize(query);
+      result = result.filter((product) => normalize(productSearchText(product, lang)).includes(q));
     }
 
-    if (filters.category !== "all") {
-      result = result.filter((product) =>
-        product.categoryId === filters.category ||
-        product.category?.id === filters.category ||
-        product.category?.slug === filters.category ||
-        product.category?.code === filters.category
-      );
+    if (selectedCategoryId !== "all") {
+      const selectedIds = selectedNode?.categoryIds?.length ? selectedNode.categoryIds : [selectedCategoryId];
+      result = result.filter((product) => {
+        const keys = productCategoryKeys(product);
+        return selectedIds.some((id) => keys.includes(String(id)));
+      });
     }
 
-    if (filters.stock !== "all") {
-      result = result.filter((product) => getStockStatus(product) === filters.stock);
+    if (stock !== "all") {
+      result = result.filter((product) => getStockStatus(product) === stock);
     }
 
-    if (filters.grade !== "all") {
-      result = result.filter(
-        (product) => normalizeText(product.grade).toUpperCase() === String(filters.grade).toUpperCase()
-      );
-    }
-
-    if (filters.scale !== "all") {
-      result = result.filter((product) => inferScale(product) === filters.scale);
-    }
-
-    if (filters.series !== "all") {
-      result = result.filter((product) => inferSeries(product) === filters.series);
-    }
-
-    const min = Number(String(filters.minPrice).replace(/\D/g, ""));
-    const max = Number(String(filters.maxPrice).replace(/\D/g, ""));
-
-    if (min > 0) {
-      result = result.filter((product) => Number(product.price || 0) >= min);
-    }
-
-    if (max > 0) {
-      result = result.filter((product) => Number(product.price || 0) <= max);
-    }
-
-    if (sort === "popular" || sort === "bestSelling") {
-      result = [...result].sort((a, b) => Number(b.sold || 0) - Number(a.sold || 0));
-    }
-    if (sort === "newest") {
-      result = [...result].sort(
-        (a, b) =>
-          new Date(b.createdAt || b.updatedAt || 0).getTime() -
-          new Date(a.createdAt || a.updatedAt || 0).getTime()
-      );
-    }
-    if (sort === "priceLow") {
-      result = [...result].sort((a, b) => Number(a.price || 0) - Number(b.price || 0));
-    }
-    if (sort === "priceHigh") {
-      result = [...result].sort((a, b) => Number(b.price || 0) - Number(a.price || 0));
-    }
+    if (sort === "popular") result = [...result].sort((a, b) => Number(b.sold || 0) - Number(a.sold || 0));
+    if (sort === "newest") result = [...result].sort((a, b) => new Date(b.createdAt || b.updatedAt || 0).getTime() - new Date(a.createdAt || a.updatedAt || 0).getTime());
+    if (sort === "priceLow") result = [...result].sort((a, b) => Number(a.price || 0) - Number(b.price || 0));
+    if (sort === "priceHigh") result = [...result].sort((a, b) => Number(b.price || 0) - Number(a.price || 0));
 
     return result;
-  }, [
-    baseProducts,
-    query,
-    filters,
-    sort,
-    lang,
-    dbProducts,
-  ]);
+  }, [productsFromApi, query, selectedCategoryId, selectedNode, stock, sort, lang]);
 
-  const visibleProducts = useMemo(() => {
-    return products.slice(0, visibleCount);
-  }, [products, visibleCount]);
+  const visibleProducts = useMemo(() => filteredProducts.slice(0, visibleCount), [filteredProducts, visibleCount]);
 
-  useEffect(() => {
-    setVisibleCount(PAGE_SIZE);
-  }, [query, filters, sort]);
+  useEffect(() => { setVisibleCount(PAGE_SIZE); }, [query, selectedCategoryId, stock, sort]);
 
-  function reset() {
+  function resetFilters() {
     setQuery("");
-    setFilters({
-      category: "all",
-      stock: "all",
-      grade: "all",
-      scale: "all",
-      series: "all",
-      minPrice: "",
-      maxPrice: "",
-    });
+    setStock("all");
+    setSelectedCategoryId("all");
   }
 
-  function applyQuickChip(patch) {
-    setFilters((prev) => ({ ...prev, ...patch }));
-    actions.track("filter", { meta: patch });
+  function selectCategory(id) {
+    setSelectedCategoryId(id);
+    actions.track("category_filter", { meta: { category: id } });
   }
 
-  const activeFilterCount = Object.entries(filters).filter(([key, value]) => {
-    if (key === "minPrice" || key === "maxPrice") return Boolean(value);
-    return value !== "all";
-  }).length;
+  const quickChips = [
+    { key: "inStock", label: t.inStock, value: "inStock" },
+    { key: "preorder", label: t.preorder, value: "preorder" },
+    { key: "sale", label: t.sale, value: "sale" },
+    { key: "outOfStock", label: t.outOfStock, value: "outOfStock" },
+  ];
 
   return (
     <PageShell>
-      <section className="shop-mobile-shell mx-auto max-w-[1440px] px-4 py-5 lg:px-8">
-        {catalogError && (
-          <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-black text-amber-800">
-            {catalogError}
-          </div>
-        )}
+      <section className="mx-auto max-w-[1440px] px-3 py-4 sm:px-4 sm:py-5 lg:px-8">
+        {catalogError && <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-black text-amber-800">{catalogError}</div>}
 
-        <div className="mb-4 flex flex-wrap items-center gap-2 text-sm font-bold text-slate-500">
-          <span>{t.home}</span>
-          <ChevronRight size={16} />
-          <span className="text-slate-950">{t.shopPage}</span>
+        <div className="mb-3 flex items-center gap-2 text-xs font-bold text-slate-500 sm:text-sm">
+          <span>{t.home}</span><ChevronRight size={15} /><span className="text-slate-950">{t.shopPage}</span>
         </div>
 
-        <div className="relative overflow-hidden rounded-[24px] border border-blue-100 bg-white p-4 shadow-xl shadow-blue-100/60 sm:rounded-[2rem] sm:p-6 lg:p-8">
+        <div className="relative overflow-hidden rounded-[22px] border border-blue-100 bg-white p-4 shadow-xl shadow-blue-100/60 sm:rounded-[2rem] sm:p-6 lg:p-8">
           <div className="absolute inset-0 bg-gradient-to-br from-white via-blue-50 to-cyan-50" />
           <div className="relative">
-            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-blue-100 bg-white px-3 py-1 text-xs font-black text-blue-700">
-              <Sparkles size={14} />
-              {t.shopPage}
-            </div>
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-blue-100 bg-white px-3 py-1 text-xs font-black text-blue-700"><Sparkles size={14} />{t.shopPage}</div>
             <h1 className="text-2xl font-black text-slate-950 sm:text-3xl lg:text-5xl">{t.title}</h1>
-            <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">{t.subtitle}</p>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600 sm:mt-3 sm:leading-7">{t.subtitle}</p>
           </div>
         </div>
 
-        <div className="mt-4 rounded-[24px] border border-slate-200 bg-white p-3 shadow-sm sm:rounded-3xl sm:p-4">
-          <div className="mb-3 flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-slate-500">
-            <Filter size={15} className="text-blue-600" />
-            {t.quickForYou}
-          </div>
-
+        <div className="mt-4 rounded-[22px] border border-slate-200 bg-white p-3 shadow-sm sm:rounded-3xl sm:p-4">
+          <div className="mb-3 flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-slate-500"><Filter size={15} className="text-blue-600" />{t.quickForYou}</div>
           <div className="mobile-hide-scrollbar flex gap-2 overflow-x-auto pb-1">
             {quickChips.map((chip) => (
-              <button
-                key={chip.key}
-                onClick={() => applyQuickChip(chip.patch)}
-                className="shrink-0 rounded-full border border-blue-100 bg-blue-50 px-4 py-2 text-xs font-black text-blue-700 hover:bg-blue-600 hover:text-white"
-              >
-                {chip.label}
-              </button>
+              <button key={chip.key} onClick={() => setStock(chip.value)} className={`shrink-0 rounded-full border px-4 py-2 text-xs font-black ${stock === chip.value ? "border-blue-700 bg-blue-700 text-white" : "border-blue-100 bg-blue-50 text-blue-700 hover:bg-blue-600 hover:text-white"}`}>{chip.label}</button>
             ))}
           </div>
         </div>
       </section>
 
-      <section className="mx-auto grid max-w-[1440px] gap-5 px-4 py-5 lg:grid-cols-[280px_1fr] lg:px-8">
-        <aside className="hidden space-y-4 lg:block">
-          <div className="rounded-[24px] border border-slate-200 bg-white p-3 shadow-sm sm:rounded-3xl sm:p-4">
+      <section className="mx-auto grid max-w-[1440px] gap-5 px-3 py-4 sm:px-4 lg:grid-cols-[320px_1fr] lg:px-8">
+        <aside className="hidden lg:block">
+          <div className="sticky top-24 rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm">
             <div className="mb-4 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2 text-sm font-black text-slate-950">
-                <SlidersHorizontal size={17} className="text-blue-600" />
-                {t.filters}
-              </div>
-              <button
-                onClick={reset}
-                className="rounded-xl bg-slate-50 px-3 py-1.5 text-[11px] font-black text-slate-500 hover:bg-slate-100"
-              >
-                {t.clear}
-              </button>
+              <div className="flex items-center gap-2 text-sm font-black text-slate-950"><SlidersHorizontal size={17} className="text-blue-600" />{t.categoryMenu}</div>
+              <button onClick={resetFilters} className="rounded-xl bg-slate-50 px-3 py-1.5 text-[11px] font-black text-slate-500 hover:bg-slate-100">{t.clear}</button>
             </div>
-
-            <ProductFilterContent
-              t={t}
-              lang={lang}
-              activeCategories={activeCategories}
-              filters={filters}
-              setFilters={setFilters}
-              grades={grades}
-              scales={scales}
-              seriesOptions={seriesOptions}
-              statusOptions={statusOptions}
-              reset={reset}
-            />
+            <CategoryTree t={t} lang={lang} tree={categoryTree} activeId={selectedCategoryId} onSelect={selectCategory} search={categorySearch} setSearch={setCategorySearch} />
           </div>
         </aside>
 
-        <div className="space-y-5">
-          <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="space-y-4 sm:space-y-5">
+          <div className="sticky top-0 z-30 -mx-3 border-y border-slate-100 bg-white/95 px-3 py-3 shadow-sm backdrop-blur lg:static lg:mx-0 lg:rounded-3xl lg:border lg:border-slate-200 lg:bg-white lg:p-4">
             <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
               <div className="flex min-w-0 flex-1 items-center rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
                 <Search size={18} className="text-blue-600" />
-                <input
-                  value={query}
-                  onChange={(e) => {
-                    setQuery(e.target.value);
-                    actions.track("search", { meta: { query: e.target.value } });
-                  }}
-                  className="w-full bg-transparent px-3 text-sm font-semibold outline-none placeholder:text-slate-400"
-                  placeholder={t.search}
-                />
-                {query && (
-                  <button
-                    onClick={() => setQuery("")}
-                    className="rounded-lg p-1 text-slate-400 hover:bg-white hover:text-slate-700"
-                  >
-                    <X size={16} />
-                  </button>
-                )}
+                <input value={query} onChange={(event) => setQuery(event.target.value)} className="w-full bg-transparent px-3 text-sm font-semibold outline-none placeholder:text-slate-400" placeholder={t.search} />
+                {query && <button onClick={() => setQuery("")} className="rounded-lg p-1 text-slate-400 hover:bg-white hover:text-slate-700"><X size={16} /></button>}
               </div>
 
-              <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap sm:items-center">
-                <button
-                  onClick={() => setMobileFilterOpen(true)}
-                  className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700 lg:hidden"
-                >
-                  <SlidersHorizontal size={16} className="mr-1 inline text-blue-600" />
-                  {t.mobileFilters}
-                  {activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
+              <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
+                <button onClick={() => setMobileCategoryOpen(true)} className="rounded-2xl border border-blue-100 bg-blue-50 px-3 py-2 text-xs font-black text-blue-700 lg:hidden">
+                  {selectedNode?.name || t.categoryMenu}
+                </button>
+                <button onClick={() => setMobileFilterOpen(true)} className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700 lg:hidden">
+                  <SlidersHorizontal size={16} className="mr-1 inline text-blue-600" />{t.filters}
                 </button>
 
-                <div className="flex min-h-11 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2">
+                <div className="col-span-2 flex min-h-11 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 sm:col-span-1">
                   <span className="text-xs font-black text-slate-500">{t.sort}</span>
-                  <select
-                    value={sort}
-                    onChange={(e) => setSort(e.target.value)}
-                    className="bg-transparent text-xs font-black text-slate-800 outline-none"
-                  >
+                  <select value={sort} onChange={(event) => setSort(event.target.value)} className="min-w-0 flex-1 bg-transparent text-xs font-black text-slate-800 outline-none">
                     <option value="popular">{t.popular}</option>
-                    <option value="bestSelling">{t.bestSelling}</option>
                     <option value="newest">{t.newest}</option>
                     <option value="priceLow">{t.priceLow}</option>
                     <option value="priceHigh">{t.priceHigh}</option>
                   </select>
                 </div>
-
-                <div className="flex items-center rounded-2xl border border-slate-200 bg-slate-50 p-1">
-                  <button
-                    onClick={() => setView("grid")}
-                    className={`rounded-xl p-2 ${
-                      view === "grid" ? "bg-blue-700 text-white" : "text-slate-500 hover:bg-white"
-                    }`}
-                  >
-                    <Grid3X3 size={17} />
-                  </button>
-                  <button
-                    onClick={() => setView("list")}
-                    className={`rounded-xl p-2 ${
-                      view === "list" ? "bg-blue-700 text-white" : "text-slate-500 hover:bg-white"
-                    }`}
-                  >
-                    <List size={17} />
-                  </button>
-                </div>
               </div>
             </div>
 
             <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs font-bold text-slate-500">
-              <span>
-                {products.length} {t.result}
-              </span>
-              {activeFilterCount > 0 && (
-                <button onClick={reset} className="font-black text-blue-600">
-                  {t.clear}
-                </button>
-              )}
+              <span>{filteredProducts.length} {t.result}</span>
+              {(selectedCategoryId !== "all" || stock !== "all" || query) && <button onClick={resetFilters} className="font-black text-blue-600">{t.clear}</button>}
             </div>
           </div>
 
-          {products.length > 0 ? (
-            <div className={view === "grid" ? "shop-mobile-grid grid gap-3 sm:grid-cols-2 xl:grid-cols-3 sm:gap-4" : "shop-mobile-list space-y-4"}>
-              {visibleProducts.map((product) => (
-                <ProductCard key={product.id} product={product} view={view} lang={lang} actions={actions} />
-              ))}
+          {filteredProducts.length > 0 ? (
+            <div className="shop-mobile-grid grid grid-cols-2 gap-3 sm:grid-cols-2 xl:grid-cols-3 sm:gap-4">
+              {visibleProducts.map((product) => <ProductCard key={product.id} product={product} lang={lang} actions={actions} />)}
             </div>
           ) : (
             <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-10 text-center shadow-sm">
               <div className="text-lg font-black text-slate-950">{t.noProducts}</div>
-              <button
-                onClick={reset}
-                className="mt-4 rounded-2xl bg-blue-700 px-5 py-3 text-sm font-black text-white shadow-lg shadow-blue-100 hover:bg-blue-800"
-              >
-                {t.clear}
-              </button>
+              <button onClick={resetFilters} className="mt-4 rounded-2xl bg-blue-700 px-5 py-3 text-sm font-black text-white shadow-lg shadow-blue-100 hover:bg-blue-800">{t.clear}</button>
             </div>
           )}
 
-          {visibleCount < products.length && (
+          {visibleCount < filteredProducts.length && (
             <div className="flex items-center justify-center rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
-              <button
-                type="button"
-                onClick={() => setVisibleCount((count) => Math.min(count + PAGE_SIZE, products.length))}
-                className="rounded-2xl bg-blue-700 px-5 py-3 text-sm font-black text-white shadow-lg shadow-blue-100 hover:bg-blue-800"
-              >
-                {t.loadMore}
-              </button>
+              <button type="button" onClick={() => setVisibleCount((count) => Math.min(count + PAGE_SIZE, filteredProducts.length))} className="rounded-2xl bg-blue-700 px-5 py-3 text-sm font-black text-white shadow-lg shadow-blue-100 hover:bg-blue-800">{t.loadMore}</button>
             </div>
           )}
         </div>
       </section>
 
+      {mobileCategoryOpen && <CategoryBottomSheet t={t} lang={lang} tree={categoryTree} activeId={selectedCategoryId} onSelect={selectCategory} onClose={() => setMobileCategoryOpen(false)} />}
+
       {mobileFilterOpen && (
-        <div className="mobile-filter-drawer fixed inset-0 z-[9999] bg-slate-950/60 p-0 backdrop-blur-sm lg:hidden">
+        <div className="fixed inset-0 z-[9999] bg-slate-950/60 p-0 backdrop-blur-sm lg:hidden">
           <div className="ml-auto h-full w-full max-w-md overflow-y-auto rounded-none bg-white p-5 shadow-2xl sm:rounded-l-3xl">
             <div className="mb-4 flex items-center justify-between">
-              <div className="text-lg font-black text-slate-950">{t.mobileFilters}</div>
-              <button
-                onClick={() => setMobileFilterOpen(false)}
-                className="rounded-xl bg-slate-100 p-2 text-slate-600"
-              >
-                <X size={18} />
-              </button>
+              <div className="text-lg font-black text-slate-950">{t.filters}</div>
+              <button onClick={() => setMobileFilterOpen(false)} className="rounded-xl bg-slate-100 p-2 text-slate-600"><X size={18} /></button>
             </div>
-
-            <ProductFilterContent
-              t={t}
-              lang={lang}
-              activeCategories={activeCategories}
-              filters={filters}
-              setFilters={setFilters}
-              grades={grades}
-              scales={scales}
-              seriesOptions={seriesOptions}
-              statusOptions={statusOptions}
-              reset={reset}
-            />
-
-            <button
-              onClick={() => setMobileFilterOpen(false)}
-              className="mobile-filter-apply mt-4 w-full rounded-2xl bg-blue-700 px-5 py-3 text-sm font-black text-white"
-            >
-              {t.apply}
-            </button>
+            <div className="grid gap-2">
+              {["all", "inStock", "preorder", "sale", "outOfStock"].map((value) => (
+                <button key={value} onClick={() => setStock(value)} className={`rounded-2xl px-4 py-3 text-left text-sm font-black ${stock === value ? "bg-blue-700 text-white" : "bg-slate-50 text-slate-700"}`}>
+                  {value === "all" ? t.all : t[value]}
+                </button>
+              ))}
+            </div>
+            <button onClick={() => setMobileFilterOpen(false)} className="mt-4 w-full rounded-2xl bg-blue-700 px-5 py-3 text-sm font-black text-white">{t.apply}</button>
           </div>
         </div>
       )}
