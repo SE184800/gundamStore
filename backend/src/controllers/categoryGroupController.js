@@ -67,12 +67,6 @@ function normalizeRow(row = {}) {
 }
 
 async function getCategoryGroupsRaw({ activeOnly = false } = {}) {
-  const activeFilter = activeOnly ? prisma.$queryRaw`
-    WHERE g."active" = true
-  ` : prisma.$queryRaw``;
-
-  // Prisma does not support interpolating SQL fragments in the middle reliably across versions here,
-  // so keep the two branches explicit.
   if (activeOnly) {
     return prisma.$queryRaw`
       SELECT
@@ -111,15 +105,8 @@ async function getCategoriesWithCountsRaw({ activeOnly = false } = {}) {
         c."active", c."sortOrder", c."categoryGroupId", c."createdAt", c."updatedAt",
         COALESCE(COUNT(DISTINCT p."id"), 0)::int AS "productCount",
         CASE WHEN g."id" IS NULL THEN NULL ELSE json_build_object(
-          'id', g."id",
-          'code', g."code",
-          'slug', g."slug",
-          'nameVi', g."nameVi",
-          'nameEn', g."nameEn",
-          'imageUrl', g."imageUrl",
-          'icon', g."icon",
-          'sortOrder', g."sortOrder",
-          'active', g."active"
+          'id', g."id", 'code', g."code", 'slug', g."slug", 'nameVi', g."nameVi", 'nameEn', g."nameEn",
+          'imageUrl', g."imageUrl", 'icon', g."icon", 'sortOrder', g."sortOrder", 'active', g."active"
         ) END AS "categoryGroup"
       FROM "ProductCategory" c
       LEFT JOIN "ProductCategoryGroup" g ON g."id" = c."categoryGroupId"
@@ -136,15 +123,8 @@ async function getCategoriesWithCountsRaw({ activeOnly = false } = {}) {
       c."active", c."sortOrder", c."categoryGroupId", c."createdAt", c."updatedAt",
       COALESCE(COUNT(DISTINCT p."id"), 0)::int AS "productCount",
       CASE WHEN g."id" IS NULL THEN NULL ELSE json_build_object(
-        'id', g."id",
-        'code', g."code",
-        'slug', g."slug",
-        'nameVi', g."nameVi",
-        'nameEn', g."nameEn",
-        'imageUrl', g."imageUrl",
-        'icon', g."icon",
-        'sortOrder', g."sortOrder",
-        'active', g."active"
+        'id', g."id", 'code', g."code", 'slug', g."slug", 'nameVi', g."nameVi", 'nameEn', g."nameEn",
+        'imageUrl', g."imageUrl", 'icon', g."icon", 'sortOrder', g."sortOrder", 'active', g."active"
       ) END AS "categoryGroup"
     FROM "ProductCategory" c
     LEFT JOIN "ProductCategoryGroup" g ON g."id" = c."categoryGroupId"
@@ -158,7 +138,7 @@ function buildTree(groups = [], categories = []) {
   const byGroup = new Map();
 
   for (const group of groups.map(normalizeRow)) {
-    byGroup.set(group.id, { ...group, count: group.productCount, children: [] });
+    byGroup.set(group.id, { ...group, count: group.productCount, categoryIds: [], children: [] });
   }
 
   const ungrouped = {
@@ -172,14 +152,16 @@ function buildTree(groups = [], categories = []) {
     productCount: 0,
     categoryCount: 0,
     count: 0,
+    categoryIds: [],
     children: [],
   };
 
   for (const category of categories.map(normalizeRow)) {
-    const child = { ...category, count: category.productCount };
-    const groupId = category.categoryGroupId;
-    const parent = groupId && byGroup.has(groupId) ? byGroup.get(groupId) : ungrouped;
+    const child = { ...category, count: category.productCount, categoryIds: [category.id, category.slug, category.code].filter(Boolean) };
+    const parent = category.categoryGroupId && byGroup.has(category.categoryGroupId) ? byGroup.get(category.categoryGroupId) : ungrouped;
     parent.children.push(child);
+    parent.categoryIds.push(...child.categoryIds);
+
     if (parent.id === "ungrouped") {
       parent.productCount += child.productCount;
       parent.count += child.productCount;
@@ -192,6 +174,7 @@ function buildTree(groups = [], categories = []) {
 
   return tree.map((group) => ({
     ...group,
+    categoryIds: Array.from(new Set(group.categoryIds || [])),
     children: [...(group.children || [])].sort((a, b) => Number(a.sortOrder || 0) - Number(b.sortOrder || 0) || String(a.nameVi || "").localeCompare(String(b.nameVi || ""))),
   }));
 }
@@ -203,12 +186,7 @@ export async function listStorefrontCategoryTree(req, res, next) {
       getCategoriesWithCountsRaw({ activeOnly: true }),
     ]);
 
-    res.json({
-      success: true,
-      groups: groups.map(normalizeRow),
-      categories: categories.map(normalizeRow),
-      tree: buildTree(groups, categories),
-    });
+    res.json({ success: true, groups: groups.map(normalizeRow), categories: categories.map(normalizeRow), tree: buildTree(groups, categories) });
   } catch (err) {
     next(err);
   }
@@ -221,12 +199,7 @@ export async function listAdminCategoryGroups(req, res, next) {
       getCategoriesWithCountsRaw({ activeOnly: false }),
     ]);
 
-    res.json({
-      success: true,
-      groups: groups.map(normalizeRow),
-      categories: categories.map(normalizeRow),
-      tree: buildTree(groups, categories),
-    });
+    res.json({ success: true, groups: groups.map(normalizeRow), categories: categories.map(normalizeRow), tree: buildTree(groups, categories) });
   } catch (err) {
     next(err);
   }
@@ -238,11 +211,8 @@ export async function createAdminCategoryGroup(req, res, next) {
     const id = req.body.id || cuidLike("catgrp");
 
     const [group] = await prisma.$queryRaw`
-      INSERT INTO "ProductCategoryGroup" (
-        "id", "code", "slug", "nameVi", "nameEn", "description", "imageUrl", "icon", "active", "sortOrder"
-      ) VALUES (
-        ${id}, ${payload.code}, ${payload.slug}, ${payload.nameVi}, ${payload.nameEn}, ${payload.description}, ${payload.imageUrl}, ${payload.icon}, ${payload.active}, ${payload.sortOrder}
-      )
+      INSERT INTO "ProductCategoryGroup" ("id", "code", "slug", "nameVi", "nameEn", "description", "imageUrl", "icon", "active", "sortOrder")
+      VALUES (${id}, ${payload.code}, ${payload.slug}, ${payload.nameVi}, ${payload.nameEn}, ${payload.description}, ${payload.imageUrl}, ${payload.icon}, ${payload.active}, ${payload.sortOrder})
       RETURNING *
     `;
 
@@ -259,18 +229,10 @@ export async function updateAdminCategoryGroup(req, res, next) {
 
     const [group] = await prisma.$queryRaw`
       UPDATE "ProductCategoryGroup"
-      SET
-        "code" = ${payload.code},
-        "slug" = ${payload.slug},
-        "nameVi" = ${payload.nameVi},
-        "nameEn" = ${payload.nameEn},
-        "description" = ${payload.description},
-        "imageUrl" = ${payload.imageUrl},
-        "icon" = ${payload.icon},
-        "active" = ${payload.active},
-        "sortOrder" = ${payload.sortOrder},
-        "updatedAt" = CURRENT_TIMESTAMP
-      WHERE "id" = ${id}
+      SET "code"=${payload.code}, "slug"=${payload.slug}, "nameVi"=${payload.nameVi}, "nameEn"=${payload.nameEn},
+          "description"=${payload.description}, "imageUrl"=${payload.imageUrl}, "icon"=${payload.icon},
+          "active"=${payload.active}, "sortOrder"=${payload.sortOrder}, "updatedAt"=CURRENT_TIMESTAMP
+      WHERE "id"=${id}
       RETURNING *
     `;
 
@@ -287,15 +249,15 @@ export async function deleteAdminCategoryGroup(req, res, next) {
 
     const [group] = await prisma.$queryRaw`
       UPDATE "ProductCategoryGroup"
-      SET "active" = false, "updatedAt" = CURRENT_TIMESTAMP
-      WHERE "id" = ${id}
+      SET "active"=false, "updatedAt"=CURRENT_TIMESTAMP
+      WHERE "id"=${id}
       RETURNING *
     `;
 
     await prisma.$executeRaw`
       UPDATE "ProductCategory"
-      SET "categoryGroupId" = NULL, "updatedAt" = CURRENT_TIMESTAMP
-      WHERE "categoryGroupId" = ${id}
+      SET "categoryGroupId"=NULL, "updatedAt"=CURRENT_TIMESTAMP
+      WHERE "categoryGroupId"=${id}
     `;
 
     if (!group) return res.status(404).json({ success: false, message: "Category group not found." });
@@ -312,8 +274,8 @@ export async function assignAdminCategoryToGroup(req, res, next) {
 
     const [category] = await prisma.$queryRaw`
       UPDATE "ProductCategory"
-      SET "categoryGroupId" = ${categoryGroupId}, "updatedAt" = CURRENT_TIMESTAMP
-      WHERE "id" = ${categoryId}
+      SET "categoryGroupId"=${categoryGroupId}, "updatedAt"=CURRENT_TIMESTAMP
+      WHERE "id"=${categoryId}
       RETURNING *
     `;
 
@@ -329,23 +291,20 @@ export async function setAdminCategoryGroupCategories(req, res, next) {
     const groupId = String(req.params.id || "").trim();
     const categoryIds = Array.isArray(req.body.categoryIds) ? req.body.categoryIds.map(String) : [];
 
-    const [group] = await prisma.$queryRaw`
-      SELECT * FROM "ProductCategoryGroup" WHERE "id" = ${groupId} LIMIT 1
-    `;
-
+    const [group] = await prisma.$queryRaw`SELECT * FROM "ProductCategoryGroup" WHERE "id"=${groupId} LIMIT 1`;
     if (!group) return res.status(404).json({ success: false, message: "Category group not found." });
 
     await prisma.$transaction(async (tx) => {
       await tx.$executeRaw`
         UPDATE "ProductCategory"
-        SET "categoryGroupId" = NULL, "updatedAt" = CURRENT_TIMESTAMP
-        WHERE "categoryGroupId" = ${groupId}
+        SET "categoryGroupId"=NULL, "updatedAt"=CURRENT_TIMESTAMP
+        WHERE "categoryGroupId"=${groupId}
       `;
 
       if (categoryIds.length) {
         await tx.$executeRaw`
           UPDATE "ProductCategory"
-          SET "categoryGroupId" = ${groupId}, "updatedAt" = CURRENT_TIMESTAMP
+          SET "categoryGroupId"=${groupId}, "updatedAt"=CURRENT_TIMESTAMP
           WHERE "id" = ANY(${categoryIds})
         `;
       }
