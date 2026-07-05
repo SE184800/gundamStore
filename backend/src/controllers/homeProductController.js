@@ -1,5 +1,6 @@
 import { prisma } from "../config/prisma.js";
 import { decorateProductWithCommercialPrice } from "../services/commercialPriceResolver.js";
+import { rewriteMediaUrl, rewriteMediaUrlsInObject } from "../services/mediaStorageService.js";
 
 const HOME_PRODUCTS_LIMIT = 24;
 
@@ -45,7 +46,6 @@ function getCollectionKeys(product = {}) {
     const code = String(group.code || "").trim().toUpperCase();
     const slug = String(group.slug || "").trim();
     const name = group.nameVi || group.nameEn || "";
-
     const mapped = {
       NEW_ARRIVALS: "new_arrivals",
       PREORDER: "preorder",
@@ -55,19 +55,12 @@ function getCollectionKeys(product = {}) {
       SALES: "sales",
       TOOLS: "tools",
     }[code];
-
-    return [
-      mapped,
-      normalizeCollection(code),
-      normalizeCollection(slug),
-      normalizeCollection(name),
-    ].filter(Boolean);
+    return [mapped, normalizeCollection(code), normalizeCollection(slug), normalizeCollection(name)].filter(Boolean);
   });
 
   const status = normalizeCollection(product.status || "");
   if (status.includes("pre")) keys.push("preorder", "order_items");
   if (status.includes("sale")) keys.push("sale_products", "sales");
-
   return Array.from(new Set(keys.filter(Boolean)));
 }
 
@@ -77,11 +70,13 @@ function hasProductStock(product = {}) {
 
 function primaryImage(product = {}) {
   const image = product.images?.[0] || null;
+  const storagePath = image?.storagePath || "";
+
   return {
-    imageUrl: product.imageUrl || image?.cardUrl || image?.url || "",
-    thumbUrl: image?.thumbUrl || image?.cardUrl || image?.url || "",
-    cardUrl: image?.cardUrl || image?.url || product.imageUrl || "",
-    detailUrl: image?.detailUrl || image?.cardUrl || image?.url || product.imageUrl || "",
+    imageUrl: rewriteMediaUrl(product.imageUrl || image?.cardUrl || image?.url || "", storagePath ? `${storagePath}/card.webp` : ""),
+    thumbUrl: rewriteMediaUrl(image?.thumbUrl || image?.cardUrl || image?.url || "", storagePath ? `${storagePath}/thumb.webp` : ""),
+    cardUrl: rewriteMediaUrl(image?.cardUrl || image?.url || product.imageUrl || "", storagePath ? `${storagePath}/card.webp` : ""),
+    detailUrl: rewriteMediaUrl(image?.detailUrl || image?.cardUrl || image?.url || product.imageUrl || "", storagePath ? `${storagePath}/detail.webp` : ""),
     sizeBytes: image?.sizeBytes || 0,
   };
 }
@@ -96,13 +91,7 @@ function toLightweightHomeProduct(product = {}) {
   const groups = (product.groupItems || [])
     .map((item) => item.group)
     .filter(Boolean)
-    .map((group) => ({
-      id: group.id,
-      code: group.code,
-      slug: group.slug,
-      nameVi: group.nameVi,
-      nameEn: group.nameEn,
-    }));
+    .map((group) => ({ id: group.id, code: group.code, slug: group.slug, nameVi: group.nameVi, nameEn: group.nameEn }));
 
   const variantPrice = firstVariant ? Number(firstVariant.price || 0) : 0;
   const variantOldPrice = firstVariant ? Number(firstVariant.oldPrice || 0) : 0;
@@ -113,7 +102,7 @@ function toLightweightHomeProduct(product = {}) {
     ? variantPrice > 0 && (totalVariantStock > 0 || canSellWithoutStock(firstVariant.status))
     : Boolean(decorated.sellable && price > 0 && hasProductStock(product));
 
-  return {
+  return rewriteMediaUrlsInObject({
     id: product.id,
     sku: product.sku,
     slug: product.slug,
@@ -134,13 +123,7 @@ function toLightweightHomeProduct(product = {}) {
     detailUrl: image.detailUrl,
     categoryId: product.categoryId,
     category: product.category
-      ? {
-          id: product.category.id,
-          code: product.category.code,
-          slug: product.category.slug,
-          nameVi: product.category.nameVi,
-          nameEn: product.category.nameEn,
-        }
+      ? { id: product.category.id, code: product.category.code, slug: product.category.slug, nameVi: product.category.nameVi, nameEn: product.category.nameEn }
       : null,
     groups,
     collections: getCollectionKeys(product),
@@ -152,16 +135,13 @@ function toLightweightHomeProduct(product = {}) {
     sellable,
     activePromotion: decorated.activePromotion || null,
     discountAmount: Number(decorated.discountAmount || 0),
-  };
+  });
 }
 
 export async function listHomeProducts(req, res, next) {
   try {
     const products = await prisma.product.findMany({
-      where: {
-        active: true,
-        price: { gt: 0 },
-      },
+      where: { active: true, price: { gt: 0 } },
       select: {
         id: true,
         sku: true,
@@ -179,73 +159,28 @@ export async function listHomeProducts(req, res, next) {
         categoryId: true,
         sold: true,
         rating: true,
-        category: {
-          select: {
-            id: true,
-            code: true,
-            slug: true,
-            nameVi: true,
-            nameEn: true,
-          },
-        },
+        category: { select: { id: true, code: true, slug: true, nameVi: true, nameEn: true } },
         images: {
           where: { active: true },
           orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
           take: 1,
-          select: {
-            url: true,
-            thumbUrl: true,
-            cardUrl: true,
-            detailUrl: true,
-            sizeBytes: true,
-            alt: true,
-          },
+          select: { url: true, thumbUrl: true, cardUrl: true, detailUrl: true, storagePath: true, sizeBytes: true, alt: true },
         },
         variants: {
           where: { active: true },
           orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-          select: {
-            id: true,
-            sku: true,
-            price: true,
-            oldPrice: true,
-            stock: true,
-            status: true,
-            active: true,
-            sortOrder: true,
-          },
+          select: { id: true, sku: true, price: true, oldPrice: true, stock: true, status: true, active: true, sortOrder: true },
         },
         groupItems: {
           orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-          select: {
-            group: {
-              select: {
-                id: true,
-                code: true,
-                slug: true,
-                nameVi: true,
-                nameEn: true,
-              },
-            },
-          },
+          select: { group: { select: { id: true, code: true, slug: true, nameVi: true, nameEn: true } } },
         },
         promotionProducts: {
           orderBy: { createdAt: "desc" },
           take: 1,
           select: {
             promotion: {
-              select: {
-                id: true,
-                code: true,
-                nameVi: true,
-                nameEn: true,
-                type: true,
-                value: true,
-                priority: true,
-                active: true,
-                startDate: true,
-                endDate: true,
-              },
+              select: { id: true, code: true, nameVi: true, nameEn: true, type: true, value: true, priority: true, active: true, startDate: true, endDate: true },
             },
           },
         },
@@ -253,15 +188,7 @@ export async function listHomeProducts(req, res, next) {
           where: { active: true },
           orderBy: [{ startDate: "desc" }, { createdAt: "desc" }],
           take: 5,
-          select: {
-            id: true,
-            price: true,
-            oldPrice: true,
-            active: true,
-            startDate: true,
-            endDate: true,
-            createdAt: true,
-          },
+          select: { id: true, price: true, oldPrice: true, active: true, startDate: true, endDate: true, createdAt: true },
         },
       },
       orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
@@ -272,15 +199,7 @@ export async function listHomeProducts(req, res, next) {
       .map(toLightweightHomeProduct)
       .filter((product) => product.sellable && Number(product.finalPrice || product.price || 0) > 0);
 
-    return res.json({
-      success: true,
-      products: homeProducts,
-      meta: {
-        limit: HOME_PRODUCTS_LIMIT,
-        count: homeProducts.length,
-        lightweight: true,
-      },
-    });
+    return res.json({ success: true, products: homeProducts, meta: { limit: HOME_PRODUCTS_LIMIT, count: homeProducts.length, lightweight: true } });
   } catch (err) {
     next(err);
   }
