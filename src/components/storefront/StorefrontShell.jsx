@@ -3,28 +3,20 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import HeaderCart from "../layout/HeaderCart";
 import { useCms } from "../../store/CmsStore";
 import { useI18n } from "../../i18n";
-import { User, ChevronDown, Settings, Heart, LogOut, Globe, Home, Package, ShoppingCart, ClipboardList } from "lucide-react";
-function MobileBottomTabs({ lang = "vi", isLoggedIn = false }) {
-  const location = useLocation();
-
-  const tabs = [
+import { User, ChevronDown, Settings, Heart, LogOut, Globe, Home, Package, ClipboardList, Gift, Users, Headphones } from "lucide-react";
+function getStoreNavigationItems(lang = "vi") {
+  return [
     {
       to: "/",
-      label: lang === "en" ? "Home" : "Home",
+      label: "Home",
       icon: Home,
       match: (pathname) => pathname === "/",
     },
     {
       to: "/shop",
-      label: lang === "en" ? "Shop" : "Sản phẩm",
+      label: lang === "en" ? "Products" : "Sản phẩm",
       icon: Package,
       match: (pathname) => pathname.startsWith("/shop") || pathname.startsWith("/product"),
-    },
-    {
-      to: "/cart",
-      label: lang === "en" ? "Cart" : "Giỏ hàng",
-      icon: ShoppingCart,
-      match: (pathname) => pathname.startsWith("/cart") || pathname.startsWith("/checkout"),
     },
     {
       to: "/orders",
@@ -33,12 +25,29 @@ function MobileBottomTabs({ lang = "vi", isLoggedIn = false }) {
       match: (pathname) => pathname.startsWith("/orders") || pathname.startsWith("/order-lookup"),
     },
     {
-      to: isLoggedIn ? "/account" : "/login",
-      label: lang === "en" ? "Account" : "Tài khoản",
-      icon: User,
-      match: (pathname) => pathname.startsWith("/account") || pathname.startsWith("/profile") || pathname.startsWith("/login"),
+      to: "/promotions",
+      label: lang === "en" ? "Deals" : "Ưu đãi",
+      icon: Gift,
+      match: (pathname) => pathname.startsWith("/promotions") || pathname.startsWith("/flash-sale"),
+    },
+    {
+      to: "/community-gallery",
+      label: lang === "en" ? "Community" : "Cộng đồng",
+      icon: Users,
+      match: (pathname) => pathname.startsWith("/community-gallery") || pathname.startsWith("/news") || pathname.startsWith("/events"),
+    },
+    {
+      to: "/support",
+      label: lang === "en" ? "Support" : "Hỗ trợ",
+      icon: Headphones,
+      match: (pathname) => pathname.startsWith("/support") || pathname.startsWith("/contact") || pathname.startsWith("/faq") || pathname.startsWith("/return-request"),
     },
   ];
+}
+
+function MobileBottomTabs({ lang = "vi" }) {
+  const location = useLocation();
+  const tabs = getStoreNavigationItems(lang);
 
   return (
     <nav className="mobile-bottom-tabs md:hidden" aria-label="Mobile bottom navigation">
@@ -118,12 +127,13 @@ export default function StorefrontShell({ children }) {
             />
           </form>
 
-          {/* THANH MENU ĐIỀU HƯỚNG */}
+          {/* THANH MENU ĐIỀU HƯỚNG - PC and mobile bottom tabs share the same source */}
           <nav className="hidden items-center gap-6 text-sm font-black text-slate-600 lg:flex">
-            <Link to="/" className="hover:text-blue-700 transition">{t.home || "Trang chủ"}</Link>
-            <Link to="/shop" className="hover:text-blue-700 transition">{t.products || "Sản phẩm"}</Link>
-            <Link to="/orders" className="hover:text-blue-700 transition">{t.orders || "Đơn hàng"}</Link>
-            <Link to="/order-lookup" className="hover:text-blue-700 transition">{t.orderLookup || "Tra cứu đơn hàng"}</Link>
+            {getStoreNavigationItems(lang).map((item) => (
+              <Link key={item.to} to={item.to} className="hover:text-blue-700 transition">
+                {item.label}
+              </Link>
+            ))}
           </nav>
 
           {/* 🟢 CỤM ĐIỀU KHIỂN PHẢI: Bọc tất cả vào một khối flex items-center để chúng không bao giờ bị rách hàng */}
@@ -218,8 +228,6 @@ export default function StorefrontShell({ children }) {
       </header>
 
       {children}
-
-      <MobileBottomTabs lang={lang} isLoggedIn={Boolean(state?.user)} />
 
       <footer className="mt-10 border-t bg-white">
         <div className="mx-auto grid max-w-7xl gap-6 px-6 py-8 md:grid-cols-3">

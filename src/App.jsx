@@ -1,10 +1,12 @@
 import AutoTranslate from "./components/common/AutoTranslate.jsx";
+import { Gift, Home, Newspaper, Package, ShieldCheck, ShoppingBag } from "lucide-react";
 import SeoManager from "./components/common/SeoManager";
 import { lazy, Suspense } from "react";
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Link, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import Register from "./components/Register.jsx";
 // 🛠️ GIỮ LẠI CÁC ĐƯỜNG IMPORT KHÔNG DÙNG LAZY
 import AddToCartBridge from "./components/cart/AddToCartBridge";
+import { useI18n } from "./i18n";
 import Login from "./components/Login"; // Route Login mới tinh của bạn
 import AdminProtectedRoute from "./components/admin/AdminProtectedRoute";
 import ForgotPassword from "./components/ForgotPassword.jsx";
@@ -80,6 +82,79 @@ const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
 const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
 const AdminQaHelper = lazy(() => import("./pages/admin/AdminQaHelper"));
 const AdminCommunication = lazy(() => import("./pages/admin/AdminCommunication"));
+
+function isGlobalMobileTabActive(pathname, item) {
+  if (item.href === "/") return pathname === "/";
+  if (item.href === "/news") return pathname === "/news" || pathname.startsWith("/news/");
+  if (item.extraMatch?.some((path) => pathname === path || pathname.startsWith(`${path}/`))) return true;
+  return pathname === item.href || pathname.startsWith(`${item.href}/`);
+}
+
+function GlobalMobileBottomTabs() {
+  const location = useLocation();
+  const { t } = useI18n();
+  const pathname = location.pathname || "/";
+
+  if (pathname.startsWith("/admin")) return null;
+
+  const items = [
+    {
+      label: t("common.home") || "Home",
+      href: "/",
+      icon: Home,
+    },
+    {
+      label: t("common.products") || "Sản phẩm",
+      href: "/shop",
+      icon: Package,
+      extraMatch: ["/product"],
+    },
+    {
+      label: t("common.orders") || "Đặt hàng",
+      href: "/pre-order",
+      icon: ShoppingBag,
+      extraMatch: ["/orders", "/order-success"],
+    },
+    {
+      label: t("common.deals") || "Ưu đãi",
+      href: "/promotions",
+      icon: Gift,
+      extraMatch: ["/flash-sale", "/restock", "/limited", "/coming-soon"],
+    },
+    {
+      label: t("common.community") || "Cộng đồng",
+      href: "/news",
+      icon: Newspaper,
+      extraMatch: ["/community-gallery", "/build-guide"],
+    },
+    {
+      label: t("common.support") || "Hỗ trợ",
+      href: "/order-lookup",
+      icon: ShieldCheck,
+      extraMatch: ["/support", "/contact", "/faq", "/return-policy", "/return-request", "/shipping-policy", "/payment-guide", "/warranty"],
+    },
+  ];
+
+  return (
+    <nav className="mobile-bottom-tabs md:hidden" aria-label="Mobile bottom navigation">
+      {items.map((item) => {
+        const Icon = item.icon;
+        const active = isGlobalMobileTabActive(pathname, item);
+
+        return (
+          <Link
+            key={item.href}
+            to={item.href}
+            className={`mobile-bottom-tab-item ${active ? "is-active" : ""}`}
+          >
+            <Icon size={18} />
+            <span>{item.label}</span>
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
 
 function RouteLoading() {
   return (
@@ -225,6 +300,7 @@ export default function App() {
       </Suspense>
 
       <AddToCartBridge />
+      <GlobalMobileBottomTabs />
     </>
   );
 }

@@ -594,3 +594,124 @@ body {
     padding-bottom: calc(72px + env(safe-area-inset-bottom));
   }
 }
+
+/* Bottom tab based on PC navigation: Home / Products / Orders / Deals / Community / Support */
+@media (max-width: 767px) {
+  .mobile-bottom-tabs {
+    grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+    left: 8px !important;
+    right: 8px !important;
+    bottom: calc(7px + env(safe-area-inset-bottom)) !important;
+    padding: 6px !important;
+    gap: 3px !important;
+    border-radius: 20px !important;
+  }
+
+  .mobile-bottom-tab-item {
+    height: 46px !important;
+    gap: 3px !important;
+    border-radius: 14px !important;
+    font-size: 9px !important;
+    letter-spacing: -0.02em;
+  }
+
+  .mobile-bottom-tab-item svg {
+    width: 17px !important;
+    height: 17px !important;
+  }
+
+  .mobile-bottom-tab-item span {
+    max-width: 48px;
+  }
+}
+
+@media (max-width: 390px) {
+  .mobile-bottom-tab-item {
+    font-size: 8.5px !important;
+  }
+
+  .mobile-bottom-tab-item svg {
+    width: 16px !important;
+    height: 16px !important;
+  }
+}
+
+/* Global fixed mobile bottom tab - visible on all storefront routes */
+@media (max-width: 767px) {
+  body {
+    padding-bottom: calc(76px + env(safe-area-inset-bottom)) !important;
+  }
+
+  .mobile-bottom-tabs {
+    position: fixed !important;
+    left: 8px !important;
+    right: 8px !important;
+    bottom: calc(7px + env(safe-area-inset-bottom)) !important;
+    z-index: 99999 !important;
+    display: grid !important;
+    grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+    gap: 3px !important;
+    padding: 6px !important;
+    border: 1px solid rgba(226, 232, 240, 0.95) !important;
+    border-radius: 20px !important;
+    background: rgba(255, 255, 255, 0.96) !important;
+    box-shadow: 0 18px 50px rgba(15, 23, 42, 0.18) !important;
+    backdrop-filter: blur(18px) !important;
+    -webkit-backdrop-filter: blur(18px) !important;
+  }
+
+  .mobile-bottom-tab-item {
+    display: flex !important;
+    min-width: 0 !important;
+    height: 46px !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 3px !important;
+    border-radius: 14px !important;
+    color: #64748b !important;
+    font-size: 9px !important;
+    font-weight: 900 !important;
+    line-height: 1 !important;
+    text-decoration: none !important;
+    letter-spacing: -0.02em !important;
+    transition: all 0.18s ease !important;
+  }
+
+  .mobile-bottom-tab-item svg {
+    width: 17px !important;
+    height: 17px !important;
+  }
+
+  .mobile-bottom-tab-item span {
+    max-width: 48px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  .mobile-bottom-tab-item.is-active {
+    background: #2563eb !important;
+    color: #ffffff !important;
+    box-shadow: 0 10px 24px rgba(37, 99, 235, 0.28) !important;
+  }
+
+  .mobile-bottom-tab-item:active {
+    transform: scale(0.96) !important;
+  }
+
+  footer {
+    padding-bottom: calc(72px + env(safe-area-inset-bottom)) !important;
+  }
+}
+
+@media (max-width: 390px) {
+  .mobile-bottom-tab-item {
+    font-size: 8.5px !important;
+  }
+
+  .mobile-bottom-tab-item svg {
+    width: 16px !important;
+    height: 16px !important;
+  }
+}
