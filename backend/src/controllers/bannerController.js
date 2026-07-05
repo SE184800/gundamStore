@@ -5,9 +5,47 @@ const VALID_STATUSES = new Set(["Live", "Draft", "Scheduled", "Inactive"]);
 const VALID_FIT_MODES = new Set(["cover", "contain"]);
 const VALID_MEDIA_TYPES = new Set(["image", "gif", "video"]);
 const BANNER_MEDIA_TEXT_LIMIT = 20_000_000;
+const HOMEPAGE_HERO_MAX_BANNERS = 3;
+const BANNER_IMAGE_FIELDS = ["mainImage", "imageUrl", "mobileImage", "tabletImage", "desktopImage"];
 
 function cleanText(value = "", max = 2000) {
   return String(value || "").trim().slice(0, max);
+}
+
+function clampHeroMaxBanners(value) {
+  const requested = Number(value || HOMEPAGE_HERO_MAX_BANNERS);
+  if (!Number.isFinite(requested) || requested <= 0) return HOMEPAGE_HERO_MAX_BANNERS;
+  return Math.min(requested, HOMEPAGE_HERO_MAX_BANNERS);
+}
+
+function isInlineImageValue(value = "") {
+  const text = cleanText(value, BANNER_MEDIA_TEXT_LIMIT).toLowerCase();
+  return text.startsWith("data:") || text.includes(";base64,");
+}
+
+function isOptimizedImageUrl(value = "") {
+  const text = cleanText(value, BANNER_MEDIA_TEXT_LIMIT).toLowerCase();
+  return !text || text.includes(".webp") || text.includes(".avif");
+}
+
+function validateBannerImageFields(input = {}) {
+  for (const field of BANNER_IMAGE_FIELDS) {
+    const value = cleanText(input[field] || "", BANNER_MEDIA_TEXT_LIMIT);
+    if (!value) continue;
+
+    if (isInlineImageValue(value)) {
+      return {
+        ok: false,
+        message: `${field} must be an uploaded image URL. Inline data/base64 images are not allowed.`,
+      };
+    }
+
+    if (!isOptimizedImageUrl(value)) {
+      console.warn(`[Banner performance] ${field}: WebP/AVIF is recommended. Current URL: ${value.slice(0, 180)}`);
+    }
+  }
+
+  return { ok: true };
 }
 
 function normalizeStatus(value) {
@@ -73,7 +111,17 @@ function normalizeSafeCtaUrl(rawValue, { fallback = "/shop", rejectUnsafe = fals
 }
 
 function hasMainMedia(input = {}) {
-  return Boolean(cleanText(input.mainImage || input.imageUrl || input.videoUrl || ""));
+  return Boolean(
+    cleanText(
+      input.mainImage ||
+        input.imageUrl ||
+        input.desktopImage ||
+        input.mobileImage ||
+        input.tabletImage ||
+        input.videoUrl ||
+        ""
+    )
+  );
 }
 
 function toPublicBanner(row = {}) {
@@ -116,13 +164,16 @@ function normalizeBannerInput(body = {}, { current = null } = {}) {
 
   const mainImage = cleanText(merged.mainImage || merged.imageUrl || "", BANNER_MEDIA_TEXT_LIMIT);
   const imageUrl = cleanText(merged.imageUrl || mainImage, BANNER_MEDIA_TEXT_LIMIT);
+  const mobileImage = cleanText(merged.mobileImage || "", BANNER_MEDIA_TEXT_LIMIT);
+  const tabletImage = cleanText(merged.tabletImage || "", BANNER_MEDIA_TEXT_LIMIT);
+  const desktopImage = cleanText(merged.desktopImage || "", BANNER_MEDIA_TEXT_LIMIT);
   const videoUrl = cleanText(merged.videoUrl || "", BANNER_MEDIA_TEXT_LIMIT);
   const cta = normalizeSafeCtaUrl(merged.ctaUrl || "/shop", {
     fallback: "/shop",
     rejectUnsafe: true,
   });
 
-  if (!hasMainMedia({ mainImage, imageUrl, videoUrl })) {
+  if (!hasMainMedia({ mainImage, imageUrl, mobileImage, tabletImage, desktopImage, videoUrl })) {
     return {
       ok: false,
       message: "Main image or imageUrl is required for banner.",
@@ -133,6 +184,21 @@ function normalizeBannerInput(body = {}, { current = null } = {}) {
     return {
       ok: false,
       message: "CTA URL is not allowed.",
+    };
+  }
+
+  const imageValidation = validateBannerImageFields({
+    mainImage,
+    imageUrl,
+    mobileImage,
+    tabletImage,
+    desktopImage,
+  });
+
+  if (!imageValidation.ok) {
+    return {
+      ok: false,
+      message: imageValidation.message,
     };
   }
 
@@ -155,9 +221,9 @@ function normalizeBannerInput(body = {}, { current = null } = {}) {
       mediaType,
       mainImage,
       imageUrl,
-      mobileImage: cleanText(merged.mobileImage || "", BANNER_MEDIA_TEXT_LIMIT) || null,
-      tabletImage: cleanText(merged.tabletImage || "", BANNER_MEDIA_TEXT_LIMIT) || null,
-      desktopImage: cleanText(merged.desktopImage || "", BANNER_MEDIA_TEXT_LIMIT) || null,
+      mobileImage: mobileImage || null,
+      tabletImage: tabletImage || null,
+      desktopImage: desktopImage || null,
       videoUrl: videoUrl || null,
       ctaUrl: cta.value,
       status,
@@ -189,7 +255,7 @@ async function getOrCreateHeroSettings() {
       layout: "v2",
       autoplay: true,
       interval: 4500,
-      maxBanners: 5,
+      maxBanners: HOMEPAGE_HERO_MAX_BANNERS,
     },
   });
 }
@@ -197,6 +263,7 @@ async function getOrCreateHeroSettings() {
 export async function listStorefrontHomeBanners(req, res, next) {
   try {
     const settings = await getOrCreateHeroSettings();
+    const maxBanners = clampHeroMaxBanners(settings.maxBanners);
 
     const rows = await prisma.banner.findMany({
       where: {
@@ -214,7 +281,7 @@ export async function listStorefrontHomeBanners(req, res, next) {
         const placement = String(banner.placement || "").toLowerCase();
         return placement.includes("home") || placement.includes("hero");
       })
-      .slice(0, settings.maxBanners)
+      .slice(0, maxBanners)
       .map(toPublicBanner);
 
     return res.json({
@@ -224,7 +291,7 @@ export async function listStorefrontHomeBanners(req, res, next) {
         layout: settings.layout,
         autoplay: settings.autoplay,
         interval: settings.interval,
-        maxBanners: settings.maxBanners,
+        maxBanners,
       },
     });
   } catch (error) {
@@ -345,7 +412,7 @@ export async function getAdminHeroSettings(req, res, next) {
         layout: settings.layout,
         autoplay: settings.autoplay,
         interval: settings.interval,
-        maxBanners: settings.maxBanners,
+        maxBanners: clampHeroMaxBanners(settings.maxBanners),
       },
     });
   } catch (error) {
@@ -362,6 +429,7 @@ export async function updateAdminHeroSettings(req, res, next) {
 
     const interval = Number(body.interval);
     const maxBanners = Number(body.maxBanners);
+    const safeMaxBanners = clampHeroMaxBanners(maxBanners);
 
     const settings = await prisma.heroSetting.upsert({
       where: { id: HERO_SETTING_ID },
@@ -369,14 +437,14 @@ export async function updateAdminHeroSettings(req, res, next) {
         ...(layout ? { layout } : {}),
         ...(typeof body.autoplay === "boolean" ? { autoplay: body.autoplay } : {}),
         ...(Number.isFinite(interval) && interval >= 1500 ? { interval } : {}),
-        ...(Number.isFinite(maxBanners) && maxBanners > 0 ? { maxBanners } : {}),
+        ...(Number.isFinite(maxBanners) && maxBanners > 0 ? { maxBanners: safeMaxBanners } : {}),
       },
       create: {
         id: HERO_SETTING_ID,
         layout: layout || "v2",
         autoplay: typeof body.autoplay === "boolean" ? body.autoplay : true,
         interval: Number.isFinite(interval) && interval >= 1500 ? interval : 4500,
-        maxBanners: Number.isFinite(maxBanners) && maxBanners > 0 ? maxBanners : 5,
+        maxBanners: Number.isFinite(maxBanners) && maxBanners > 0 ? safeMaxBanners : HOMEPAGE_HERO_MAX_BANNERS,
       },
     });
 
@@ -386,7 +454,7 @@ export async function updateAdminHeroSettings(req, res, next) {
         layout: settings.layout,
         autoplay: settings.autoplay,
         interval: settings.interval,
-        maxBanners: settings.maxBanners,
+        maxBanners: clampHeroMaxBanners(settings.maxBanners),
       },
     });
   } catch (error) {
