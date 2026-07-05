@@ -482,9 +482,20 @@ async function syncProductVariants(tx, productId, body = {}, product = {}) {
     },
   });
 }
-
+let PRODUCTS_CACHE = null;
+let CACHE_EXPIRY = 0;
 export async function listStorefrontProducts(req, res, next) {
   try {
+    const now = Date.now();
+
+    // 🌟 BƯỚC 2: KIỂM TRA CACHE (Nếu có data và chưa quá 3 phút -> TRẢ VỀ NGAY LẬP TỨC)
+    if (PRODUCTS_CACHE && now < CACHE_EXPIRY) {
+      // Tốc độ khúc này chỉ mất đúng 1ms, ổn định tuyệt đối, bất chấp mạng yếu hay DB ngủ đông!
+      return res.json({
+        success: true,
+        products: PRODUCTS_CACHE,
+      });
+    }
     console.time("⏱️ [TOTAL API PRODUCTS]");
     console.time("📥 [1. DATABASE FETCH]");
     const products = await prisma.product.findMany({
@@ -517,6 +528,8 @@ export async function listStorefrontProducts(req, res, next) {
       .map(decorateProductForStorefront)
       .filter(isStorefrontSellableProduct);
     console.timeEnd("⚙️ [2. JAVASCRIPT MAP_FILTER]");
+    PRODUCTS_CACHE = sellableProducts;
+    CACHE_EXPIRY = now + 3 * 60 * 1000;
     res.json({
       success: true,
       products: sellableProducts,
