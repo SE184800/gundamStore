@@ -738,18 +738,6 @@ export default function HomePage() {
   return (
     <PageShell>
       <div className="relative">
-        <div className="pointer-events-none fixed inset-0 -z-10">
-          <div className="absolute inset-0 bg-gradient-to-b from-white via-[#f7fbff] to-[#eef5fc]" />
-          <div
-            className="absolute inset-0 opacity-80"
-            style={{
-              backgroundImage:
-                "linear-gradient(rgba(37,99,235,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(37,99,235,0.035) 1px, transparent 1px)",
-              backgroundSize: "42px 42px",
-            }}
-          />
-        </div>
-
         <Hero
           banners={dbBanners}
           lang={lang}
