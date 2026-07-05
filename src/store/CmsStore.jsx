@@ -22,6 +22,7 @@ import {
 } from "../data/seed";
 
 const STORAGE_KEY = "gundam_store_vn_v2_cms";
+const DISABLE_LOCAL_ANALYTICS_TRACKING = import.meta.env.PROD;
 
 const initialState = {
   products: [],
@@ -107,6 +108,10 @@ export function CmsProvider({ children }) {
       setState((prev) => ({ ...prev, settings: { ...prev.settings, lang } }));
     },
     track(event, payload = {}) {
+      if (DISABLE_LOCAL_ANALYTICS_TRACKING) {
+        return;
+      }
+
       const item = {
         id: makeId("evt"),
         event,
@@ -171,7 +176,7 @@ export function CmsProvider({ children }) {
     executeResetPassword: async ({ token, password }) => {
       try {
         // 🟢 GỌI QUA SERVICE CHUẨN PATTERN:
-        const res = await authService.resetPassword(token, password);
+        const res = await authService.resetPassword(token);
         return res?.data || res;
       } catch (error) {
         console.error("❌ LỖI CẬP NHẬT MẬT KHẨU STORE:", error);
