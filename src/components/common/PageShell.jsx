@@ -5,11 +5,14 @@ import { translateDomTree, useI18n } from "../../i18n";
 import { useCms } from "../../store/CmsStore";
 
 const FloatingChat = lazy(() => import("./FloatingChat"));
+const ENABLE_DOM_TRANSLATOR = !import.meta.env.PROD;
 
 export function LanguageDomTranslator() {
   const { lang } = useI18n();
 
   useEffect(() => {
+    if (!ENABLE_DOM_TRANSLATOR) return undefined;
+
     translateDomTree(document.body, lang);
 
     const observer = new MutationObserver(() => {
