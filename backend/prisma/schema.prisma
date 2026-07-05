@@ -391,6 +391,7 @@ model ProductVariant {
 
 model ComplaintTicket {
   id             String    @id @default(cuid())
+  ticketNo       String    @unique
   orderId        String?
   customerId     String?
   customerName   String
@@ -416,8 +417,6 @@ model ComplaintTicket {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  order     Order?   @relation(fields: [orderId], references: [id])
-  orderId   String?
 
   @@index([status, priority, createdAt])
   @@index([orderId])
@@ -531,7 +530,7 @@ model Order {
   productReviews     ProductReview[]
 
   createdAt     DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
+  updatedAt     DateTime       @updatedAt
   customerNotes CustomerNote[]
 
   @@index([customerId, createdAt])
@@ -675,4 +674,145 @@ model InventoryTransaction {
   createdAt DateTime @default(now())
 
   @@index([productId, type, createdAt])
+}
+
+model StockAdjustment {
+  id            String  @id @default(cuid())
+  adjustmentNo  String  @unique
+  productId     String
+  quantityDelta Int
+  beforeStock   Int
+  afterStock    Int
+  reason        String
+  note          String?
+
+  product Product @relation(fields: [productId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model StockCount {
+  id        String           @id @default(cuid())
+  countNo   String           @unique
+  countDate DateTime         @default(now())
+  status    String           @default("POSTED")
+  note      String?
+  items     StockCountItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model StockCountItem {
+  id           String  @id @default(cuid())
+  countId      String
+  productId    String
+  systemStock  Int
+  countedStock Int
+  difference   Int
+  reason       String?
+
+  count   StockCount @relation(fields: [countId], references: [id], onDelete: Cascade)
+  product Product    @relation(fields: [productId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Promotion {
+  id        String    @id @default(cuid())
+  code      String    @unique
+  nameVi    String
+  nameEn    String?
+  type      String    @default("PERCENT")
+  value     Int
+  startDate DateTime
+  endDate   DateTime?
+  active    Boolean   @default(true)
+  priority  Int       @default(0)
+  note      String?
+
+  products PromotionProduct[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([active, startDate, endDate, priority])
+}
+
+model PromotionProduct {
+  id          String @id @default(cuid())
+  promotionId String
+  productId   String
+
+  promotion Promotion @relation(fields: [promotionId], references: [id], onDelete: Cascade)
+  product   Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([promotionId, productId])
+}
+
+model RestockAlert {
+  id          String    @id @default(cuid())
+  productId   String
+  productName String
+  productSlug String?
+  sku         String?
+  grade       String?
+  scale       String?
+  name        String
+  phone       String
+  note        String?
+  status      String    @default("PENDING")
+  notifiedAt  DateTime?
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, createdAt])
+  @@index([productId, phone, status])
+}
+
+model Banner {
+  id            String  @id @default(cuid())
+  titleInternal String
+  altText       String?
+  placement     String  @default("Homepage Hero")
+  mediaType     String  @default("image")
+
+  mainImage    String
+  imageUrl     String?
+  mobileImage  String?
+  tabletImage  String?
+  desktopImage String?
+  videoUrl     String?
+
+  ctaUrl   String  @default("/shop")
+  status   String  @default("Draft")
+  active   Boolean @default(true)
+  priority Int     @default(1)
+  fitMode  String  @default("cover")
+
+  legacyText Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([placement, status, active, priority])
+}
+
+model HeroSetting {
+  id         String  @id
+  layout     String  @default("v2")
+  autoplay   Boolean @default(true)
+  interval   Int     @default(4500)
+  maxBanners Int     @default(5)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
