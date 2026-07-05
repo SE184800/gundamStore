@@ -25,13 +25,25 @@ function normalizeCategoryPayload(category = {}) {
   };
 }
 
+function normalizeCategoryGroupPayload(group = {}) {
+  return {
+    code: group.code || "",
+    slug: group.slug || "",
+    nameVi: group.nameVi || group.name?.vi || group.name || "",
+    nameEn: group.nameEn || group.name?.en || group.nameEn || group.nameVi || group.name || "",
+    description: group.description || group.descriptionVi || group.description?.vi || "",
+    imageUrl: group.imageUrl || group.icon || "",
+    icon: group.icon || group.imageUrl || "",
+    active: group.active !== false,
+    sortOrder: Number(group.sortOrder || group.sort || 0),
+  };
+}
+
 export async function getAdminCategoriesApi() {
   const data = await apiRequest("/api/products/admin/categories");
-
   if (!data?.success || !Array.isArray(data.categories)) {
     throw new Error("Backend did not return categories.");
   }
-
   return data.categories;
 }
 
@@ -40,11 +52,7 @@ export async function createAdminCategoryApi(category) {
     method: "POST",
     body: JSON.stringify(normalizeCategoryPayload(category)),
   });
-
-  if (!data?.success || !data.category) {
-    throw new Error(data?.message || "Create category failed.");
-  }
-
+  if (!data?.success || !data.category) throw new Error(data?.message || "Create category failed.");
   return data.category;
 }
 
@@ -53,24 +61,62 @@ export async function updateAdminCategoryApi(id, category) {
     method: "PATCH",
     body: JSON.stringify(normalizeCategoryPayload(category)),
   });
-
-  if (!data?.success || !data.category) {
-    throw new Error(data?.message || "Update category failed.");
-  }
-
+  if (!data?.success || !data.category) throw new Error(data?.message || "Update category failed.");
   return data.category;
 }
 
 export async function deleteAdminCategoryApi(id) {
-  const data = await apiRequest(`/api/products/admin/categories/${encodeURIComponent(id)}`, {
-    method: "DELETE",
-  });
-
-  if (!data?.success || !data.category) {
-    throw new Error(data?.message || "Deactivate category failed.");
-  }
-
+  const data = await apiRequest(`/api/products/admin/categories/${encodeURIComponent(id)}`, { method: "DELETE" });
+  if (!data?.success || !data.category) throw new Error(data?.message || "Deactivate category failed.");
   return data.category;
+}
+
+export async function getAdminCategoryGroupsApi() {
+  const data = await apiRequest("/api/products/admin/category-groups");
+  if (!data?.success || !Array.isArray(data.groups)) throw new Error("Backend did not return category groups.");
+  return data;
+}
+
+export async function createAdminCategoryGroupApi(group) {
+  const data = await apiRequest("/api/products/admin/category-groups", {
+    method: "POST",
+    body: JSON.stringify(normalizeCategoryGroupPayload(group)),
+  });
+  if (!data?.success || !data.group) throw new Error(data?.message || "Create category group failed.");
+  return data.group;
+}
+
+export async function updateAdminCategoryGroupApi(id, group) {
+  const data = await apiRequest(`/api/products/admin/category-groups/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    body: JSON.stringify(normalizeCategoryGroupPayload(group)),
+  });
+  if (!data?.success || !data.group) throw new Error(data?.message || "Update category group failed.");
+  return data.group;
+}
+
+export async function deleteAdminCategoryGroupApi(id) {
+  const data = await apiRequest(`/api/products/admin/category-groups/${encodeURIComponent(id)}`, { method: "DELETE" });
+  if (!data?.success || !data.group) throw new Error(data?.message || "Deactivate category group failed.");
+  return data.group;
+}
+
+export async function assignAdminCategoryToGroupApi(categoryId, categoryGroupId = "") {
+  const data = await apiRequest(`/api/products/admin/categories/${encodeURIComponent(categoryId)}/group`, {
+    method: "PATCH",
+    body: JSON.stringify({ categoryGroupId: categoryGroupId || null }),
+  });
+  if (!data?.success || !data.category) throw new Error(data?.message || "Assign category group failed.");
+  return data.category;
+}
+
+export async function setAdminCategoryGroupCategoriesApi(groupId, categoryIds = []) {
+  const data = await apiRequest(`/api/products/admin/category-groups/${encodeURIComponent(groupId)}/categories`, {
+    method: "PUT",
+    body: JSON.stringify({ categoryIds }),
+  });
+  if (!data?.success) throw new Error(data?.message || "Set category group categories failed.");
+  return data;
 }
 
 function normalizeSupplierPayload(supplier = {}) {
@@ -88,49 +134,25 @@ function normalizeSupplierPayload(supplier = {}) {
 
 export async function getAdminSuppliersApi() {
   const data = await apiRequest("/api/products/admin/suppliers");
-
-  if (!data?.success || !Array.isArray(data.suppliers)) {
-    throw new Error("Backend did not return suppliers.");
-  }
-
+  if (!data?.success || !Array.isArray(data.suppliers)) throw new Error("Backend did not return suppliers.");
   return data.suppliers;
 }
 
 export async function createAdminSupplierApi(supplier) {
-  const data = await apiRequest("/api/products/admin/suppliers", {
-    method: "POST",
-    body: JSON.stringify(normalizeSupplierPayload(supplier)),
-  });
-
-  if (!data?.success || !data.supplier) {
-    throw new Error(data?.message || "Create supplier failed.");
-  }
-
+  const data = await apiRequest("/api/products/admin/suppliers", { method: "POST", body: JSON.stringify(normalizeSupplierPayload(supplier)) });
+  if (!data?.success || !data.supplier) throw new Error(data?.message || "Create supplier failed.");
   return data.supplier;
 }
 
 export async function updateAdminSupplierApi(id, supplier) {
-  const data = await apiRequest(`/api/products/admin/suppliers/${encodeURIComponent(id)}`, {
-    method: "PATCH",
-    body: JSON.stringify(normalizeSupplierPayload(supplier)),
-  });
-
-  if (!data?.success || !data.supplier) {
-    throw new Error(data?.message || "Update supplier failed.");
-  }
-
+  const data = await apiRequest(`/api/products/admin/suppliers/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(normalizeSupplierPayload(supplier)) });
+  if (!data?.success || !data.supplier) throw new Error(data?.message || "Update supplier failed.");
   return data.supplier;
 }
 
 export async function deleteAdminSupplierApi(id) {
-  const data = await apiRequest(`/api/products/admin/suppliers/${encodeURIComponent(id)}`, {
-    method: "DELETE",
-  });
-
-  if (!data?.success || !data.supplier) {
-    throw new Error(data?.message || "Deactivate supplier failed.");
-  }
-
+  const data = await apiRequest(`/api/products/admin/suppliers/${encodeURIComponent(id)}`, { method: "DELETE" });
+  if (!data?.success || !data.supplier) throw new Error(data?.message || "Deactivate supplier failed.");
   return data.supplier;
 }
 
@@ -148,140 +170,71 @@ function normalizeGroupPayload(group = {}) {
 
 export async function getAdminGroupsApi() {
   const data = await apiRequest("/api/products/admin/groups");
-
-  if (!data?.success || !Array.isArray(data.groups)) {
-    throw new Error("Backend did not return groups.");
-  }
-
+  if (!data?.success || !Array.isArray(data.groups)) throw new Error("Backend did not return groups.");
   return data.groups;
 }
 
 export async function createAdminGroupApi(group) {
-  const data = await apiRequest("/api/products/admin/groups", {
-    method: "POST",
-    body: JSON.stringify(normalizeGroupPayload(group)),
-  });
-
-  if (!data?.success || !data.group) {
-    throw new Error(data?.message || "Create group failed.");
-  }
-
+  const data = await apiRequest("/api/products/admin/groups", { method: "POST", body: JSON.stringify(normalizeGroupPayload(group)) });
+  if (!data?.success || !data.group) throw new Error(data?.message || "Create group failed.");
   return data.group;
 }
 
 export async function updateAdminGroupApi(id, group) {
-  const data = await apiRequest(`/api/products/admin/groups/${encodeURIComponent(id)}`, {
-    method: "PATCH",
-    body: JSON.stringify(normalizeGroupPayload(group)),
-  });
-
-  if (!data?.success || !data.group) {
-    throw new Error(data?.message || "Update group failed.");
-  }
-
+  const data = await apiRequest(`/api/products/admin/groups/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(normalizeGroupPayload(group)) });
+  if (!data?.success || !data.group) throw new Error(data?.message || "Update group failed.");
   return data.group;
 }
 
 export async function deleteAdminGroupApi(id) {
-  const data = await apiRequest(`/api/products/admin/groups/${encodeURIComponent(id)}`, {
-    method: "DELETE",
-  });
-
-  if (!data?.success || !data.group) {
-    throw new Error(data?.message || "Deactivate group failed.");
-  }
-
+  const data = await apiRequest(`/api/products/admin/groups/${encodeURIComponent(id)}`, { method: "DELETE" });
+  if (!data?.success || !data.group) throw new Error(data?.message || "Deactivate group failed.");
   return data.group;
 }
 
 export async function getAdminInventoryLogsApi(productId = "") {
   const query = productId ? `?productId=${encodeURIComponent(productId)}` : "";
   const data = await apiRequest(`/api/products/admin/inventory-logs${query}`);
-
-  if (!data?.success || !Array.isArray(data.logs)) {
-    throw new Error("Backend did not return inventory logs.");
-  }
-
+  if (!data?.success || !Array.isArray(data.logs)) throw new Error("Backend did not return inventory logs.");
   return data.logs;
 }
 
 export async function adjustAdminProductInventoryApi(productId, payload = {}) {
   const data = await apiRequest(`/api/products/admin/${encodeURIComponent(productId)}/inventory-adjust`, {
     method: "POST",
-    body: JSON.stringify({
-      delta: Number(payload.delta || 0),
-      reason: payload.reason || "",
-      refType: payload.refType || "ADMIN_ADJUSTMENT",
-    }),
+    body: JSON.stringify({ delta: Number(payload.delta || 0), reason: payload.reason || "", refType: payload.refType || "ADMIN_ADJUSTMENT" }),
   });
-
-  if (!data?.success || !data.product) {
-    throw new Error(data?.message || "Adjust inventory failed.");
-  }
-
+  if (!data?.success || !data.product) throw new Error(data?.message || "Adjust inventory failed.");
   return data;
 }
 
 export async function getAdminProductPricesApi(productId = "") {
   const query = productId ? `?productId=${encodeURIComponent(productId)}` : "";
   const data = await apiRequest(`/api/products/admin/prices${query}`);
-
-  if (!data?.success || !Array.isArray(data.prices)) {
-    throw new Error("Backend did not return product prices.");
-  }
-
+  if (!data?.success || !Array.isArray(data.prices)) throw new Error("Backend did not return product prices.");
   return data.prices;
 }
 
 export async function createAdminProductPriceApi(productId, payload = {}) {
   const data = await apiRequest(`/api/products/admin/${encodeURIComponent(productId)}/prices`, {
     method: "POST",
-    body: JSON.stringify({
-      price: Number(payload.price || 0),
-      oldPrice: Number(payload.oldPrice || 0),
-      startDate: payload.startDate || "",
-      endDate: payload.endDate || "",
-      active: payload.active !== false,
-      note: payload.note || "",
-    }),
+    body: JSON.stringify({ price: Number(payload.price || 0), oldPrice: Number(payload.oldPrice || 0), source: payload.source || "MANUAL", startDate: payload.startDate, endDate: payload.endDate || null, active: payload.active !== false, note: payload.note || "" }),
   });
-
-  if (!data?.success || !data.price) {
-    throw new Error(data?.message || "Create product price failed.");
-  }
-
-  return data;
+  if (!data?.success || !data.price) throw new Error(data?.message || "Create product price failed.");
+  return data.price;
 }
 
 export async function updateAdminProductPriceApi(priceId, payload = {}) {
   const data = await apiRequest(`/api/products/admin/prices/${encodeURIComponent(priceId)}`, {
     method: "PATCH",
-    body: JSON.stringify({
-      price: Number(payload.price || 0),
-      oldPrice: Number(payload.oldPrice || 0),
-      startDate: payload.startDate || "",
-      endDate: payload.endDate || "",
-      active: payload.active !== false,
-      note: payload.note || "",
-    }),
+    body: JSON.stringify({ price: Number(payload.price || 0), oldPrice: Number(payload.oldPrice || 0), source: payload.source || "MANUAL", startDate: payload.startDate, endDate: payload.endDate || null, active: payload.active !== false, note: payload.note || "" }),
   });
-
-  if (!data?.success || !data.price) {
-    throw new Error(data?.message || "Update product price failed.");
-  }
-
-  return data;
-}
-
-export async function deactivateAdminProductPriceApi(priceId) {
-  const data = await apiRequest(`/api/products/admin/prices/${encodeURIComponent(priceId)}`, {
-    method: "DELETE",
-  });
-
-  if (!data?.success || !data.price) {
-    throw new Error(data?.message || "Deactivate product price failed.");
-  }
-
+  if (!data?.success || !data.price) throw new Error(data?.message || "Update product price failed.");
   return data.price;
 }
 
+export async function deactivateAdminProductPriceApi(priceId) {
+  const data = await apiRequest(`/api/products/admin/prices/${encodeURIComponent(priceId)}`, { method: "DELETE" });
+  if (!data?.success || !data.price) throw new Error(data?.message || "Deactivate product price failed.");
+  return data.price;
+}
