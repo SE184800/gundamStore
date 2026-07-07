@@ -84,14 +84,24 @@ function shouldForceAdminLogout(path = "", status = 0) {
   );
 }
 
+function isFormDataBody(body) {
+  return typeof FormData !== "undefined" && body instanceof FormData;
+}
+
 export async function apiRequest(path, options = {}) {
   const baseUrl = getApiBaseUrl();
   const token = options.token ?? getStoredAdminToken();
+  const isFormData = isFormDataBody(options.body);
 
   const headers = {
     "Content-Type": "application/json",
     ...(options.headers || {}),
   };
+
+  if (isFormData) {
+    delete headers["Content-Type"];
+    delete headers["content-type"];
+  }
 
   if (token) {
     headers.Authorization = `Bearer ${token}`;
