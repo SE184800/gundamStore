@@ -3,6 +3,10 @@ import { validateImageUrlForPerformance } from "../utils/imagePerformanceValidat
 
 const HOMEPAGE_HERO_MAX_BANNERS = 3;
 
+function isFormDataPayload(payload) {
+  return typeof FormData !== "undefined" && payload instanceof FormData;
+}
+
 function limitHeroSettings(heroSettings = {}) {
   const settings = heroSettings || {};
   return {
@@ -12,7 +16,9 @@ function limitHeroSettings(heroSettings = {}) {
 }
 
 function validateBannerPayloadImages(payload = {}) {
-  validateImageUrlForPerformance(payload.desktopImage || payload.mainImage || payload.imageUrl || payload.mediaUrl || payload.image, {
+  if (isFormDataPayload(payload)) return;
+
+  validateImageUrlForPerformance(payload.desktopImage || payload.mainImage || payload.imageUrl || payload.mediaUrl, {
     label: "Hero desktop image",
     targetKey: "heroDesktop",
     sizeBytes: payload.desktopImageSizeBytes || payload.sizeBytes || payload.fileSize,
@@ -31,9 +37,12 @@ function validateBannerPayloadImages(payload = {}) {
   });
 }
 
+function toRequestBody(payload) {
+  return isFormDataPayload(payload) ? payload : JSON.stringify(payload || {});
+}
+
 export async function getStorefrontHomeBannersFromApi() {
   const data = await apiRequest("/api/banners/home");
-
   return {
     banners: Array.isArray(data?.banners) ? data.banners.slice(0, HOMEPAGE_HERO_MAX_BANNERS) : [],
     heroSettings: limitHeroSettings(data?.heroSettings || null),
@@ -47,23 +56,19 @@ export async function listAdminBanners() {
 
 export async function createAdminBanner(payload) {
   validateBannerPayloadImages(payload);
-
   const data = await apiRequest("/api/admin/banners", {
     method: "POST",
-    body: JSON.stringify(payload),
+    body: toRequestBody(payload),
   });
-
   return data?.banner;
 }
 
 export async function updateAdminBanner(id, payload) {
   validateBannerPayloadImages(payload);
-
   const data = await apiRequest("/api/admin/banners/" + id, {
     method: "PATCH",
-    body: JSON.stringify(payload),
+    body: toRequestBody(payload),
   });
-
   return data?.banner;
 }
 
@@ -83,6 +88,5 @@ export async function updateAdminHeroSettings(payload) {
     method: "PATCH",
     body: JSON.stringify(limitHeroSettings(payload)),
   });
-
   return limitHeroSettings(data?.heroSettings || null);
 }
