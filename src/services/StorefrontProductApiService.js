@@ -1,4 +1,5 @@
 import { apiRequest } from "./ApiClient";
+import { resolveMediaUrl, resolveMediaUrls } from "../utils/mediaUrlResolver";
 
 const GROUP_COLLECTION_ALIASES = {
   NEW_ARRIVALS: "new_arrivals",
@@ -11,27 +12,7 @@ const GROUP_COLLECTION_ALIASES = {
 };
 
 async function publicJsonRequest(path) {
-  const response = await fetch(`/api${path}`, {
-    method: "GET",
-    headers: { Accept: "application/json" },
-  });
-
-  let data = null;
-  try {
-    data = await response.json();
-  } catch {
-    data = null;
-  }
-
-  if (!response.ok) {
-    throw new Error(data?.message || `Public catalog API failed: ${response.status}`);
-  }
-
-  return data;
-}
-
-function cacheBackendProducts(products = []) {
-  return products;
+  return apiRequest(`/api${path}`, { method: "GET", token: "" });
 }
 
 function normalize(value = "") {
@@ -58,8 +39,7 @@ function getLocalProductSearchKeys(product = {}) {
   const raw = [product.id, product.productId, product.backendProductId, product.sku, product.slug, product.title, product.name, product.short, product.description]
     .map(textOf)
     .filter(Boolean);
-  const joined = raw.join(" ");
-  return Array.from(new Set([...raw.map(normalize), normalize(joined)].filter(Boolean)));
+  return Array.from(new Set([...raw.map(normalize), normalize(raw.join(" "))].filter(Boolean)));
 }
 
 function getBackendSearchKeys(product = {}) {
@@ -73,12 +53,9 @@ function fuzzyMatch(localProduct = {}, backendProduct = {}) {
   return localKeys.some((localKey) =>
     backendKeys.some((backendKey) => {
       if (!localKey || !backendKey) return false;
-      if (localKey === backendKey) return true;
-      if (localKey.includes(backendKey) || backendKey.includes(localKey)) return true;
+      if (localKey === backendKey || localKey.includes(backendKey) || backendKey.includes(localKey)) return true;
       const localWords = new Set(localKey.split("-").filter((word) => word.length >= 3));
-      const backendWords = backendKey.split("-").filter((word) => word.length >= 3);
-      const hitCount = backendWords.filter((word) => localWords.has(word)).length;
-      return hitCount >= 2;
+      return backendKey.split("-").filter((word) => word.length >= 3 && localWords.has(word)).length >= 2;
     })
   );
 }
@@ -91,13 +68,11 @@ function getBackendGroups(product = {}) {
 
 function getBackendCollectionKeys(product = {}) {
   if (Array.isArray(product.collections) && product.collections.length) return Array.from(new Set(product.collections.filter(Boolean)));
-  const groups = getBackendGroups(product);
-  const keys = groups.flatMap((group) => {
+  const keys = getBackendGroups(product).flatMap((group) => {
     const code = String(group.code || "").trim().toUpperCase();
     const slug = String(group.slug || "").trim();
     const name = group.nameVi || group.nameEn || "";
-    const mapped = GROUP_COLLECTION_ALIASES[code];
-    return [mapped, normalizeCollection(code), normalizeCollection(slug), normalizeCollection(name)].filter(Boolean);
+    return [GROUP_COLLECTION_ALIASES[code], normalizeCollection(code), normalizeCollection(slug), normalizeCollection(name)].filter(Boolean);
   });
   const status = normalizeCollection(product.status || "");
   if (status.includes("pre")) keys.push("preorder", "order_items");
@@ -117,19 +92,31 @@ function firstImageUrl(product = {}) {
   return product.cardUrl || product.imageUrl || imageValue(product.images?.[0], "card") || product.media?.card || product.media?.home || product.media?.detailMain || product.media?.gallery?.[0] || "";
 }
 
+function productMedia(product = {}) {
+  const imageUrl = resolveMediaUrl(firstImageUrl(product));
+  const images = Array.isArray(product.images)
+    ? resolveMediaUrls(product.images.map((item) => imageValue(item, "detail")))
+    : resolveMediaUrls(product.detailUrl ? [product.detailUrl] : imageUrl ? [imageUrl] : []);
+  const thumbs = Array.isArray(product.images)
+    ? resolveMediaUrls(product.images.map((item) => imageValue(item, "thumb")))
+    : resolveMediaUrls(product.thumbUrl ? [product.thumbUrl] : []);
+  return {
+    imageUrl,
+    thumbUrl: resolveMediaUrl(product.thumbUrl) || thumbs[0] || imageUrl,
+    cardUrl: resolveMediaUrl(product.cardUrl) || imageUrl,
+    detailUrl: resolveMediaUrl(product.detailUrl) || images[0] || imageUrl,
+    images,
+    thumbs,
+  };
+}
+
 export function mapBackendProductToStorefront(product = {}) {
-  const imageUrl = firstImageUrl(product);
+  const media = productMedia(product);
   const collections = getBackendCollectionKeys(product);
   const groups = getBackendGroups(product);
   const effectivePrice = Number(product.finalPrice ?? product.effectivePrice ?? product.price) || 0;
   const compareAtPrice = Number(product.compareAtPrice ?? product.oldPrice ?? 0);
   const variants = Array.isArray(product.variants) ? product.variants : [];
-  const images = Array.isArray(product.images)
-    ? product.images.map((item) => imageValue(item, "detail")).filter(Boolean)
-    : product.detailUrl ? [product.detailUrl] : imageUrl ? [imageUrl] : [];
-  const thumbs = Array.isArray(product.images)
-    ? product.images.map((item) => imageValue(item, "thumb")).filter(Boolean)
-    : product.thumbUrl ? [product.thumbUrl] : [];
 
   return {
     id: product.id,
@@ -151,12 +138,12 @@ export function mapBackendProductToStorefront(product = {}) {
     active: product.active !== false,
     variants,
     hasVariants: Boolean(product.hasVariants) || variants.length > 0,
-    imageUrl,
-    thumbUrl: product.thumbUrl || thumbs[0] || imageUrl,
-    cardUrl: product.cardUrl || imageUrl,
-    detailUrl: product.detailUrl || images[0] || imageUrl,
-    images,
-    thumbs,
+    imageUrl: media.imageUrl,
+    thumbUrl: media.thumbUrl,
+    cardUrl: media.cardUrl,
+    detailUrl: media.detailUrl,
+    images: media.images,
+    thumbs: media.thumbs,
     media: product.media || null,
     brand: product.brand || "",
     grade: product.grade || "",
@@ -189,7 +176,6 @@ export function enrichProductsWithBackendIds(localProducts = [], backendProducts
     const matched = backendProducts.find((backendProduct) => fuzzyMatch(localProduct, backendProduct));
     if (!matched) return localProduct;
     const backend = mapBackendProductToStorefront(matched);
-    const backendCollections = backend.collections?.length ? backend.collections : localProduct.collections || [];
     return {
       ...localProduct,
       backendProductId: matched.id,
@@ -207,12 +193,12 @@ export function enrichProductsWithBackendIds(localProducts = [], backendProducts
       active: backend.active,
       variants: backend.variants || [],
       hasVariants: Boolean(backend.hasVariants),
-      imageUrl: backend.imageUrl || localProduct.imageUrl,
-      thumbUrl: backend.thumbUrl || localProduct.thumbUrl,
-      cardUrl: backend.cardUrl || localProduct.cardUrl,
-      detailUrl: backend.detailUrl || localProduct.detailUrl,
-      images: backend.images?.length ? backend.images : localProduct.images || [],
-      thumbs: backend.thumbs?.length ? backend.thumbs : localProduct.thumbs || [],
+      imageUrl: backend.imageUrl || resolveMediaUrl(localProduct.imageUrl),
+      thumbUrl: backend.thumbUrl || resolveMediaUrl(localProduct.thumbUrl),
+      cardUrl: backend.cardUrl || resolveMediaUrl(localProduct.cardUrl),
+      detailUrl: backend.detailUrl || resolveMediaUrl(localProduct.detailUrl),
+      images: backend.images?.length ? backend.images : resolveMediaUrls(localProduct.images || []),
+      thumbs: backend.thumbs?.length ? backend.thumbs : resolveMediaUrls(localProduct.thumbs || []),
       media: backend.media || localProduct.media,
       brand: backend.brand || localProduct.brand,
       grade: backend.grade || localProduct.grade,
@@ -229,7 +215,7 @@ export function enrichProductsWithBackendIds(localProducts = [], backendProducts
       groups: backend.groups,
       groupItems: backend.groupItems,
       groupIds: backend.groupIds,
-      collections: backendCollections,
+      collections: backend.collections?.length ? backend.collections : localProduct.collections || [],
       source: "local+backend",
       backendRaw: matched,
     };
@@ -258,56 +244,14 @@ export async function getStorefrontProductByKeyFromApi(key = "") {
 
 export function mergeLocalProductWithBackendProduct(localProduct = {}, backendProduct = {}) {
   if (!backendProduct?.id) return localProduct;
-  const backend = mapBackendProductToStorefront(backendProduct);
-  return {
-    ...localProduct,
-    backendProductId: backendProduct.id,
-    productId: backendProduct.id,
-    sku: backend.sku || localProduct.sku,
-    slug: localProduct.slug || backend.slug,
-    name: backend.name,
-    title: backend.title,
-    short: backend.short,
-    description: backend.description || localProduct.description,
-    price: backend.price || Number(localProduct.price) || 0,
-    oldPrice: backend.oldPrice || Number(localProduct.oldPrice) || 0,
-    stock: backend.stock,
-    status: backend.status,
-    active: backend.active,
-    variants: backend.variants || [],
-    hasVariants: Boolean(backend.hasVariants),
-    imageUrl: backend.imageUrl || localProduct.imageUrl,
-    thumbUrl: backend.thumbUrl || localProduct.thumbUrl,
-    cardUrl: backend.cardUrl || localProduct.cardUrl,
-    detailUrl: backend.detailUrl || localProduct.detailUrl,
-    images: backend.images?.length ? backend.images : localProduct.images || [],
-    thumbs: backend.thumbs?.length ? backend.thumbs : localProduct.thumbs || [],
-    media: backend.media || localProduct.media,
-    brand: backend.brand || localProduct.brand,
-    grade: backend.grade || localProduct.grade,
-    scale: backend.scale || localProduct.scale,
-    tone: backend.tone || localProduct.tone,
-    specs: backend.specs?.length ? backend.specs : localProduct.specs || [],
-    boxItems: backend.boxItems?.length ? backend.boxItems : localProduct.boxItems || [],
-    categoryId: backend.categoryId,
-    supplierId: backend.supplierId,
-    category: backend.category,
-    supplier: backend.supplier,
-    groups: backend.groups,
-    groupItems: backend.groupItems,
-    groupIds: backend.groupIds,
-    collections: backend.collections?.length ? backend.collections : localProduct.collections || [],
-    source: "local+backend-detail",
-    backendRaw: backendProduct,
-  };
+  return enrichProductsWithBackendIds([localProduct], [backendProduct])[0] || localProduct;
 }
 
 export function dedupeStorefrontProducts(products = []) {
   const seen = new Set();
   return (products || []).filter((product) => {
     const key = String(product.backendProductId || product.id || product.sku || product.slug || "").trim();
-    if (!key) return false;
-    if (seen.has(key)) return false;
+    if (!key || seen.has(key)) return false;
     seen.add(key);
     return product.active !== false;
   });
@@ -326,39 +270,25 @@ export async function getStorefrontProductDetailForStorefront(key = "") {
 export function mapBackendCategoryToStorefront(category = {}) {
   const id = category.id || category.slug || category.code;
   const group = category.categoryGroup || category.group || null;
+  const imageUrl = resolveMediaUrl(category.imageUrl || category.image || category.mainImage || "");
   return {
     id,
     backendCategoryId: category.id,
     code: category.code,
     slug: category.slug,
-    name: {
-      vi: category.nameVi || category.name?.vi || category.name || category.code || id,
-      en: category.nameEn || category.name?.en || category.nameVi || category.name || category.code || id,
-    },
+    name: { vi: category.nameVi || category.name?.vi || category.name || category.code || id, en: category.nameEn || category.name?.en || category.nameVi || category.name || category.code || id },
     label: category.nameVi || category.nameEn || category.code || id,
     description: category.description || "",
-    imageUrl: category.imageUrl || category.image || category.mainImage || "",
-    image: category.imageUrl || category.image || category.mainImage || "",
-    icon: category.icon || category.imageUrl || "",
-    mainImage: category.imageUrl || category.mainImage || "",
+    imageUrl,
+    image: imageUrl,
+    icon: resolveMediaUrl(category.icon) || imageUrl,
+    mainImage: imageUrl,
     active: category.active !== false,
     sortOrder: Number(category.sortOrder || category.sort || 0),
     sort: Number(category.sortOrder || category.sort || 0),
     productCount: Number(category.productCount || category.count || 0),
     categoryGroupId: category.categoryGroupId || group?.id || "",
-    categoryGroup: group
-      ? {
-          id: group.id,
-          code: group.code,
-          slug: group.slug,
-          nameVi: group.nameVi,
-          nameEn: group.nameEn || group.nameVi,
-          imageUrl: group.imageUrl || "",
-          icon: group.icon || group.imageUrl || "",
-          sortOrder: Number(group.sortOrder || 0),
-          active: group.active !== false,
-        }
-      : null,
+    categoryGroup: group ? mapBackendCategoryGroupToStorefront({ ...group, children: [] }) : null,
     source: "backend",
   };
 }
@@ -372,8 +302,8 @@ export function mapBackendCategoryGroupToStorefront(group = {}) {
     nameEn: group.nameEn || group.nameVi,
     name: { vi: group.nameVi, en: group.nameEn || group.nameVi },
     label: group.nameVi || group.nameEn || group.code || group.id,
-    imageUrl: group.imageUrl || "",
-    icon: group.icon || group.imageUrl || "",
+    imageUrl: resolveMediaUrl(group.imageUrl),
+    icon: resolveMediaUrl(group.icon || group.imageUrl),
     active: group.active !== false,
     sortOrder: Number(group.sortOrder || 0),
     productCount: Number(group.productCount || group.count || 0),
