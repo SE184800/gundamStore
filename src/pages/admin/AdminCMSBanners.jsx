@@ -9,7 +9,7 @@ import {
   AdminToggle,
 } from "../../components/admin/AdminField";
 import { useLang } from "../../store/CmsStore";
-import { fileToBase64 } from "../../utils/mediaUpload";
+import { uploadAdminMediaImages, uploadAdminMediaVideo } from "../../services/AdminMediaApiService";
 import { normalizeSafeCtaUrl } from "../../utils/urlSafety";
 import {
   createAdminBanner,
@@ -56,6 +56,7 @@ export default function AdminCMSBanners() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [uploadingField, setUploadingField] = useState("");
 
   function patch(field, value) {
     setDraft((prev) => ({ ...prev, [field]: value }));
@@ -90,23 +91,36 @@ export default function AdminCMSBanners() {
 
     if (!file) return;
 
+    setUploadingField(targetField);
+
     try {
-      const base64 = await fileToBase64(file, { mediaKind: "banner" });
       const isVideo = file.type.startsWith("video/");
+      const upload = isVideo
+        ? await uploadAdminMediaVideo(file)
+        : await uploadAdminMediaImages([file]);
+
+      const uploadedUrl = isVideo
+        ? upload.videoUrl || upload.url
+        : upload.images?.[0]?.detailUrl || upload.images?.[0]?.cardUrl || upload.url;
+
+      if (!uploadedUrl) {
+        throw new Error("Upload succeeded but no media URL was returned.");
+      }
 
       setDraft((prev) => ({
         ...prev,
         mediaType: isVideo ? "video" : file.type.includes("gif") ? "gif" : "image",
-        mainImage: !isVideo && targetField === "mainImage" ? base64 : prev.mainImage,
-        imageUrl: !isVideo && targetField === "mainImage" ? base64 : prev.imageUrl,
-        mobileImage: !isVideo && targetField === "mobileImage" ? base64 : prev.mobileImage,
-        tabletImage: !isVideo && targetField === "tabletImage" ? base64 : prev.tabletImage,
-        desktopImage: !isVideo && targetField === "desktopImage" ? base64 : prev.desktopImage,
-        videoUrl: isVideo ? base64 : prev.videoUrl,
+        mainImage: !isVideo && targetField === "mainImage" ? uploadedUrl : prev.mainImage,
+        imageUrl: !isVideo && targetField === "mainImage" ? uploadedUrl : prev.imageUrl,
+        mobileImage: !isVideo && targetField === "mobileImage" ? uploadedUrl : prev.mobileImage,
+        tabletImage: !isVideo && targetField === "tabletImage" ? uploadedUrl : prev.tabletImage,
+        desktopImage: !isVideo && targetField === "desktopImage" ? uploadedUrl : prev.desktopImage,
+        videoUrl: isVideo ? uploadedUrl : prev.videoUrl,
       }));
     } catch (err) {
       window.alert(err?.message || "Invalid banner media file.");
     } finally {
+      setUploadingField("");
       event.target.value = "";
     }
   }
