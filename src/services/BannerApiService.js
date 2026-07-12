@@ -1,7 +1,8 @@
 import { apiRequest } from "./ApiClient";
-import { validateImageUrlForPerformance } from "../utils/imagePerformanceValidation";
+import { isInlineImageValue, validateImageUrlForPerformance } from "../utils/imagePerformanceValidation";
 
 const HOMEPAGE_HERO_MAX_BANNERS = 3;
+const BANNER_IMAGE_FIELDS = ["mainImage", "imageUrl", "mobileImage", "tabletImage", "desktopImage", "mediaUrl"];
 
 function isFormDataPayload(payload) {
   return typeof FormData !== "undefined" && payload instanceof FormData;
@@ -13,6 +14,24 @@ function limitHeroSettings(heroSettings = {}) {
     ...settings,
     maxBanners: Math.min(Number(settings.maxBanners || HOMEPAGE_HERO_MAX_BANNERS), HOMEPAGE_HERO_MAX_BANNERS),
   };
+}
+
+function cleanLegacyInlineBannerImages(payload = {}) {
+  if (isFormDataPayload(payload)) return payload;
+
+  const cleanPayload = { ...(payload || {}) };
+
+  for (const field of BANNER_IMAGE_FIELDS) {
+    if (isInlineImageValue(cleanPayload[field])) {
+      cleanPayload[field] = "";
+    }
+  }
+
+  const mainImage = cleanPayload.mainImage || cleanPayload.imageUrl || cleanPayload.mediaUrl || "";
+  if (!cleanPayload.mainImage && mainImage) cleanPayload.mainImage = mainImage;
+  if (!cleanPayload.imageUrl && mainImage) cleanPayload.imageUrl = mainImage;
+
+  return cleanPayload;
 }
 
 function validateBannerPayloadImages(payload = {}) {
@@ -55,19 +74,21 @@ export async function listAdminBanners() {
 }
 
 export async function createAdminBanner(payload) {
-  validateBannerPayloadImages(payload);
+  const cleanPayload = cleanLegacyInlineBannerImages(payload);
+  validateBannerPayloadImages(cleanPayload);
   const data = await apiRequest("/api/admin/banners", {
     method: "POST",
-    body: toRequestBody(payload),
+    body: toRequestBody(cleanPayload),
   });
   return data?.banner;
 }
 
 export async function updateAdminBanner(id, payload) {
-  validateBannerPayloadImages(payload);
+  const cleanPayload = cleanLegacyInlineBannerImages(payload);
+  validateBannerPayloadImages(cleanPayload);
   const data = await apiRequest("/api/admin/banners/" + id, {
     method: "PATCH",
-    body: toRequestBody(payload),
+    body: toRequestBody(cleanPayload),
   });
   return data?.banner;
 }
