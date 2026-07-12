@@ -141,7 +141,20 @@ function toLightweightHomeProduct(product = {}) {
 export async function listHomeProducts(req, res, next) {
   try {
     const products = await prisma.product.findMany({
-      where: { active: true, price: { gt: 0 } },
+      where: {
+        active: true,
+        OR: [
+          { price: { gt: 0 } },
+          {
+            variants: {
+              some: {
+                active: true,
+                price: { gt: 0 },
+              },
+            },
+          },
+        ],
+      },
       select: {
         id: true,
         sku: true,

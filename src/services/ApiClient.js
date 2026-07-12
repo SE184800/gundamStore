@@ -84,19 +84,23 @@ function shouldForceAdminLogout(path = "", status = 0) {
   );
 }
 
+function isFormDataBody(body) {
+  return typeof FormData !== "undefined" && body instanceof FormData;
+}
+
 export async function apiRequest(path, options = {}) {
   const baseUrl = getApiBaseUrl();
   const token = options.token ?? getStoredAdminToken();
+  const isFormData = isFormDataBody(options.body);
 
   const headers = {
     "Content-Type": "application/json",
     ...(options.headers || {}),
   };
 
-  // 🌟 ĐÃ THÊM: Nếu phát hiện body gửi đi là FormData (bộ upload ảnh/video thô của tụi mình)
-  if (options.body instanceof FormData) {
-    // Bắt buộc phải xóa Content-Type json đi để trình duyệt tự điền multipart/form-data kèm chuỗi boundary mã hóa file
+  if (isFormData) {
     delete headers["Content-Type"];
+    delete headers["content-type"];
   }
 
   if (token) {
