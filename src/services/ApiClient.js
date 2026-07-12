@@ -93,6 +93,12 @@ export async function apiRequest(path, options = {}) {
     ...(options.headers || {}),
   };
 
+  // 🌟 ĐÃ THÊM: Nếu phát hiện body gửi đi là FormData (bộ upload ảnh/video thô của tụi mình)
+  if (options.body instanceof FormData) {
+    // Bắt buộc phải xóa Content-Type json đi để trình duyệt tự điền multipart/form-data kèm chuỗi boundary mã hóa file
+    delete headers["Content-Type"];
+  }
+
   if (token) {
     headers.Authorization = `Bearer ${token}`;
   }

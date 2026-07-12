@@ -1,10 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ImagePlus, Info, UploadCloud, X } from "lucide-react";
-import { fileToBase64 } from "../../utils/mediaUpload";
 
 export function AdminFieldTip({ children }) {
   if (!children) return null;
-
   return (
     <div className="mt-1 flex items-start gap-1.5 text-xs leading-5 text-slate-500">
       <Info size={13} className="mt-0.5 shrink-0 text-blue-500" />
@@ -133,32 +131,34 @@ export function AdminImageUploader({
   onChange,
   recommended = "1200 x 630 px",
 }) {
-  const [preview, setPreview] = useState(value || "");
+  const [preview, setPreview] = useState("");
 
-  async function handleUpload(event) {
+  // Đồng bộ preview nếu ban đầu form cha truyền vào một link URL ảnh cũ từ Database
+  useEffect(() => {
+    if (typeof value === "string") {
+      setPreview(value);
+    } else if (!value) {
+      setPreview("");
+    }
+  }, [value]);
+
+  function handleUpload(event) {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    try {
-      const base64 = await fileToBase64(file, { mediaKind: "image" });
-      setPreview(base64);
-      onChange?.(base64);
-    } catch (error) {
-      window.alert(error?.message || "Invalid image file.");
-    } finally {
-      event.target.value = "";
-    }
+    setPreview(URL.createObjectURL(file));
+    onChange?.(file);
+    event.target.value = "";
   }
 
   function remove() {
     setPreview("");
-    onChange?.("");
+    onChange?.(null);
   }
 
   return (
     <div>
       <AdminFieldLabel label={label} tip={tip} required={required} />
-
       <div className="rounded-md border border-dashed border-slate-300 bg-slate-50 p-4">
         <div className="flex min-h-36 items-center justify-center overflow-hidden rounded-md border border-slate-200 bg-white">
           {preview ? (
@@ -178,14 +178,8 @@ export function AdminImageUploader({
             Upload image
             <input type="file" accept="image/*" className="hidden" onChange={handleUpload} />
           </label>
-
-          <button
-            type="button"
-            onClick={remove}
-            className="inline-flex items-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50"
-          >
-            <X size={14} />
-            Remove
+          <button type="button" onClick={remove} className="inline-flex items-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50">
+            <X size={14} /> Remove
           </button>
         </div>
       </div>
@@ -193,7 +187,7 @@ export function AdminImageUploader({
   );
 }
 
-
+// 🌟 ĐÃ FIX TRIỆT ĐỂ LỖI LOGIC MULTI UPLOADER TẠI ĐÂY
 export function AdminMultiImageUploader({
   label,
   tip,
@@ -204,21 +198,20 @@ export function AdminMultiImageUploader({
 }) {
   const images = Array.isArray(value) ? value.filter(Boolean) : [];
 
-  async function handleUpload(event) {
+  function getPreviewSrc(item) {
+    if (typeof item === "string") return item;
+    if (item instanceof File) return URL.createObjectURL(item);
+    return "";
+  }
+
+  function handleUpload(event) {
     const files = Array.from(event.target.files || []);
     if (!files.length) return;
 
-    try {
-      const base64List = await Promise.all(
-        files.map((file) => fileToBase64(file, { mediaKind: "image" }))
-      );
-      const next = Array.from(new Set([...images, ...base64List]));
-      onChange?.(next);
-    } catch (error) {
-      window.alert(error?.message || "Invalid gallery image file.");
-    } finally {
-      event.target.value = "";
-    }
+    // Sửa lỗi: Ghép mảng images hiện tại với các File mới chọn chuẩn xác
+    const next = [...images, ...files];
+    onChange?.(next);
+    event.target.value = "";
   }
 
   function remove(index) {
@@ -237,14 +230,13 @@ export function AdminMultiImageUploader({
   return (
     <div>
       <AdminFieldLabel label={label} tip={tip} required={required} />
-
       <div className="rounded-md border border-dashed border-slate-300 bg-slate-50 p-4">
         {images.length ? (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {images.map((src, index) => (
-              <div key={`${src}-${index}`} className="overflow-hidden rounded-md border border-slate-200 bg-white">
+            {images.map((item, index) => (
+              <div key={index} className="overflow-hidden rounded-md border border-slate-200 bg-white">
                 <div className="h-36 bg-slate-100">
-                  <img src={src} alt="" className="h-full w-full object-cover" />
+                  <img src={getPreviewSrc(item)} alt="" className="h-full w-full object-cover" />
                 </div>
                 <div className="flex items-center justify-between gap-2 p-2">
                   <span className="text-[11px] font-black text-slate-500">
@@ -289,32 +281,33 @@ export function AdminVideoUploader({
   onChange,
   accept = "video/*",
 }) {
-  const [preview, setPreview] = useState(value || "");
+  const [preview, setPreview] = useState("");
 
-  async function handleUpload(event) {
+  useEffect(() => {
+    if (typeof value === "string") {
+      setPreview(value);
+    } else if (!value) {
+      setPreview("");
+    }
+  }, [value]);
+
+  function handleUpload(event) {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    try {
-      const base64 = await fileToBase64(file, { mediaKind: "video" });
-      setPreview(base64);
-      onChange?.(base64);
-    } catch (error) {
-      window.alert(error?.message || "Invalid video file.");
-    } finally {
-      event.target.value = "";
-    }
+    setPreview(URL.createObjectURL(file));
+    onChange?.(file);
+    event.target.value = "";
   }
 
   function remove() {
     setPreview("");
-    onChange?.("");
+    onChange?.(null);
   }
 
   return (
     <div>
       <AdminFieldLabel label={label} tip={tip} required={required} />
-
       <div className="rounded-md border border-dashed border-slate-300 bg-slate-50 p-4">
         <div className="flex min-h-44 items-center justify-center overflow-hidden rounded-md border border-slate-200 bg-white">
           {preview ? (
@@ -334,14 +327,8 @@ export function AdminVideoUploader({
             Upload video
             <input type="file" accept={accept} className="hidden" onChange={handleUpload} />
           </label>
-
-          <button
-            type="button"
-            onClick={remove}
-            className="inline-flex items-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50"
-          >
-            <X size={14} />
-            Remove
+          <button type="button" onClick={remove} className="inline-flex items-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50">
+            <X size={14} /> Remove
           </button>
         </div>
       </div>

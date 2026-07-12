@@ -7,17 +7,41 @@ import { addProductToCart, forceCartBadgeSync, saveBuyNowDraft, validateCartStoc
 import { addMyWishlistItem, hasAccountToken } from "../../services/AccountApiService";
 import Toast from "../../utils/Toast";
 import { useCms } from "../../store/CmsStore";
+
+// 🌟 ĐÃ THÊM: Định nghĩa link gốc chứa ảnh của Supabase Storage nhóm cậu
+const SUPABASE_BASE_URL = "https://nglnhakstmjqmxapzfgj.supabase.co/storage/v1/object/public/gundam-media/";
+
 function getImage(product) {
-  return (
+  // Lấy ra link ảnh thô đầu tiên tìm thấy trong các trường dữ liệu
+  const rawImage = (
     product?.cardUrl ||
     product?.media?.card ||
     product?.media?.home ||
     product?.imageUrl ||
     product?.images?.[0] ||
     product?.detailUrl ||
-    product?.media?.detailMain ||
-    "/images/products/hi-nu.jpg"
+    product?.media?.detailMain
   );
+
+  if (!rawImage) return "/images/products/hi-nu.jpg"; // Ảnh fallback mặc định nếu trống trơn
+
+  // 🌟 ĐÃ FIX: Nếu link ảnh đã có sẵn http (từ CDN cũ hoặc link tuyệt đối) thì giữ nguyên, 
+  // ngược lại nếu chỉ là tên file thô thì tự động nối đầu link Supabase Storage vào.
+  if (typeof rawImage === "string" && rawImage.startsWith("http")) {
+    return rawImage;
+  }
+
+  return `${SUPABASE_BASE_URL}${rawImage}`;
+}
+
+// 🌟 ĐÃ SỬA: Đồng bộ tương tự cho ảnh chi tiết xuất hiện trong modal Quick View
+function getDetailImage(product, defaultImage) {
+  const rawDetail = product?.detailUrl || product?.media?.detailMain;
+  if (!rawDetail) return defaultImage;
+  if (typeof rawDetail === "string" && rawDetail.startsWith("http")) {
+    return rawDetail;
+  }
+  return `${SUPABASE_BASE_URL}${rawDetail}`;
 }
 
 function getProductUrl(product) {
@@ -54,6 +78,7 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
   const short = resolveText(product?.short, lang, t("product.defaultShort"));
   const desc = resolveText(product?.description, lang, short);
   const image = getImage(product);
+  const detailImage = getDetailImage(product, image); // 🌟 Áp dụng hàm bốc ảnh chi tiết chuẩn hóa
   const price = Number(product?.finalPrice || product?.effectivePrice || product?.price || 0);
   const commercialDiscount = hasCommercialDiscount(product);
   const oldPrice = commercialDiscount
@@ -199,7 +224,7 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
               alt={name}
               className="h-full w-full object-cover transition duration-500 group-hover:scale-110"
               loading="lazy"
-              decoding="async"
+              幕 encoding="async"
             />
           </div>
         </a>
@@ -291,7 +316,7 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
             </button>
             <div className="grid gap-5 md:grid-cols-[1fr_1fr]">
               <div className="overflow-hidden rounded-3xl bg-slate-100">
-                <img src={product?.detailUrl || image} alt={name} className="h-full max-h-[520px] w-full object-cover" loading="lazy" decoding="async" />
+                <img src={detailImage} alt={name} className="h-full max-h-[520px] w-full object-cover" loading="lazy" decoding="async" />
               </div>
               <div className="flex flex-col p-2 md:p-4">
                 <div className="text-xs font-black uppercase tracking-[0.2em] text-blue-700">Quick view</div>
