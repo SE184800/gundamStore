@@ -362,10 +362,40 @@ export default function CheckoutPage() {
   }
 
   function validateDraftStock() {
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+    if (isPreorder) return true;
+
+    const invalidItem = (draft.items || []).find((item) => {
+      const available = getReliableCheckoutAvailableStock(item);
+
+      if (available === null) return false;
+
+      return (Number(item.quantity) || 1) > available;
+    });
+
+    if (!invalidItem) return true;
+
+    const available = getReliableCheckoutAvailableStock(invalidItem);
+
+    setErrors([
+      lang === "en"
+        ? `${getItemName(invalidItem, lang)} only has ${Number(available || 0)} item(s) available.`
+        : `${getItemName(invalidItem, lang)} chỉ còn ${Number(available || 0)} sản phẩm trong kho.`,
+    ]);
+
+    return false;
+=======
+=======
+>>>>>>> Stashed changes
     // Do not validate stock from localStorage/cache at checkout.
     // Backend /api/orders is the final source of truth and will validate/decrement
     // product or variant stock in DB transaction.
     return true;
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
   }
 
   async function submitOrder() {
