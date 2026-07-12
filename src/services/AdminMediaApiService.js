@@ -43,6 +43,23 @@ async function multipartRequest(path, formData) {
   return data;
 }
 
+export async function uploadAdminMediaImages(files = []) {
+  const formData = new FormData();
+
+  for (const file of Array.from(files || []).slice(0, 6)) {
+    formData.append("images", file);
+  }
+
+  return multipartRequest("/api/admin/media/uploads/images", formData);
+}
+
+export async function uploadAdminMediaVideo(file) {
+  const formData = new FormData();
+  formData.append("video", file);
+
+  return multipartRequest("/api/admin/media/uploads/video", formData);
+}
+
 export async function uploadAdminProductImages(productId, files = [], { replace = false } = {}) {
   const formData = new FormData();
 

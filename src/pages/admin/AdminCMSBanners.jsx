@@ -9,6 +9,7 @@ import {
   AdminToggle,
 } from "../../components/admin/AdminField";
 import { useLang } from "../../store/CmsStore";
+import { fileToBase64 } from "../../utils/mediaUpload";
 import { normalizeSafeCtaUrl } from "../../utils/urlSafety";
 import {
   createAdminBanner,
@@ -56,15 +57,6 @@ export default function AdminCMSBanners() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // 🌟 ĐÃ THÊM: State dùng để giữ các File thô (Binary) trước khi submit FormData
-  const [mediaFiles, setMediaFiles] = useState({
-    mainImage: null,
-    mobileImage: null,
-    tabletImage: null,
-    desktopImage: null,
-    videoUrl: null
-  });
-
   function patch(field, value) {
     setDraft((prev) => ({ ...prev, [field]: value }));
   }
@@ -72,11 +64,13 @@ export default function AdminCMSBanners() {
   async function refresh() {
     setLoading(true);
     setError("");
+
     try {
       const [bannerRows, settings] = await Promise.all([
         listAdminBanners(),
         getAdminHeroSettings(),
       ]);
+
       setBanners(bannerRows);
       setHeroSettings(settings || defaultHeroSettings);
     } catch (err) {
@@ -90,7 +84,6 @@ export default function AdminCMSBanners() {
     refresh();
   }, []);
 
-  // 🛠️ ĐÃ SỬA: Loại bỏ hoàn toàn Base64, chuyển sang dùng URL RAM ảo siêu nhẹ
   async function uploadMedia(event) {
     const file = event.target.files?.[0];
     const targetField = event.target.name || "mainImage";
@@ -98,22 +91,18 @@ export default function AdminCMSBanners() {
     if (!file) return;
 
     try {
-      // Sinh link ảo để hiển thị preview tức thì trên giao diện admin
-      const objectUrl = URL.createObjectURL(file);
+      const base64 = await fileToBase64(file, { mediaKind: "banner" });
       const isVideo = file.type.startsWith("video/");
-
-      // Lưu file thô vào bộ nhớ tạm để tí đóng gói FormData
-      setMediaFiles(prev => ({ ...prev, [targetField]: file }));
 
       setDraft((prev) => ({
         ...prev,
         mediaType: isVideo ? "video" : file.type.includes("gif") ? "gif" : "image",
-        mainImage: targetField === "mainImage" ? objectUrl : prev.mainImage,
-        imageUrl: targetField === "mainImage" ? objectUrl : prev.imageUrl,
-        mobileImage: targetField === "mobileImage" ? objectUrl : prev.mobileImage,
-        tabletImage: targetField === "tabletImage" ? objectUrl : prev.tabletImage,
-        desktopImage: targetField === "desktopImage" ? objectUrl : prev.desktopImage,
-        videoUrl: targetField === "videoUrl" ? objectUrl : prev.videoUrl,
+        mainImage: !isVideo && targetField === "mainImage" ? base64 : prev.mainImage,
+        imageUrl: !isVideo && targetField === "mainImage" ? base64 : prev.imageUrl,
+        mobileImage: !isVideo && targetField === "mobileImage" ? base64 : prev.mobileImage,
+        tabletImage: !isVideo && targetField === "tabletImage" ? base64 : prev.tabletImage,
+        desktopImage: !isVideo && targetField === "desktopImage" ? base64 : prev.desktopImage,
+        videoUrl: isVideo ? base64 : prev.videoUrl,
       }));
     } catch (err) {
       window.alert(err?.message || "Invalid banner media file.");
@@ -124,7 +113,6 @@ export default function AdminCMSBanners() {
 
   function createBanner() {
     setDraft(emptyBanner);
-    setMediaFiles({ mainImage: null, mobileImage: null, tabletImage: null, desktopImage: null, videoUrl: null });
     setOpen(true);
   }
 
@@ -137,7 +125,6 @@ export default function AdminCMSBanners() {
       fitMode: banner.fitMode || "cover",
       status: banner.status || "Draft",
     });
-    setMediaFiles({ mainImage: null, mobileImage: null, tabletImage: null, desktopImage: null, videoUrl: null });
     setOpen(true);
   }
 
@@ -147,13 +134,17 @@ export default function AdminCMSBanners() {
 
     if (!mainImage) {
       throw new Error(
-        lang === "en" ? "Main image is required." : "Banner cần có main image."
+        lang === "en"
+          ? "Main image is required."
+          : "Banner cần có main image."
       );
     }
 
     if (!cta.ok) {
       throw new Error(
-        lang === "en" ? "CTA URL is not allowed." : "CTA URL không hợp lệ."
+        lang === "en"
+          ? "CTA URL is not allowed."
+          : "CTA URL không hợp lệ."
       );
     }
 
@@ -177,34 +168,16 @@ export default function AdminCMSBanners() {
     };
   }
 
-  // 🛠️ ĐÃ SỬA: Đóng gói toàn bộ payload và file thô thành FormData để bắn lên API Backend Multer
   async function saveBanner() {
     try {
       setError("");
-      const cleanData = normalizePayload();
-
-      // Khởi tạo FormData bọc dữ liệu nhị phân gửi đi an toàn
-      const formData = new FormData();
-
-      // Khởi tạo các trường text
-      Object.keys(cleanData).forEach(key => {
-        if (cleanData[key] !== null && cleanData[key] !== undefined) {
-          formData.append(key, cleanData[key]);
-        }
-      });
-
-      // Đính kèm các file thô thực tế nếu có thao tác upload mới
-      if (mediaFiles.mainImage) formData.append("mainImageFile", mediaFiles.mainImage);
-      if (mediaFiles.mobileImage) formData.append("mobileImageFile", mediaFiles.mobileImage);
-      if (mediaFiles.tabletImage) formData.append("tabletImageFile", mediaFiles.tabletImage);
-      if (mediaFiles.desktopImage) formData.append("desktopImageFile", mediaFiles.desktopImage);
-      if (mediaFiles.videoUrl) formData.append("videoFile", mediaFiles.videoUrl);
+      const payload = normalizePayload();
 
       if (draft.id) {
-        await updateAdminBanner(draft.id, formData); // Truyền formData thay vì JSON cũ
+        await updateAdminBanner(draft.id, payload);
         setMessage("Banner updated.");
       } else {
-        await createAdminBanner(formData); // Truyền formData thay vì JSON cũ
+        await createAdminBanner(payload);
         setMessage("Banner created.");
       }
 
@@ -217,6 +190,7 @@ export default function AdminCMSBanners() {
 
   async function removeBanner(id) {
     if (!window.confirm("Delete this banner?")) return;
+
     try {
       await deleteAdminBanner(id);
       setMessage("Banner deleted.");
@@ -232,6 +206,7 @@ export default function AdminCMSBanners() {
         ...heroSettings,
         ...patch,
       });
+
       setHeroSettings(next || { ...heroSettings, ...patch });
       setMessage("Hero settings updated.");
     } catch (err) {
@@ -252,7 +227,7 @@ export default function AdminCMSBanners() {
       return <div className="h-16 w-28 rounded-md bg-gradient-to-r from-blue-600 to-cyan-500" />;
     }
 
-    if (banner.mediaType === "video" || String(url).startsWith("data:video") || String(url).startsWith("blob:")) {
+    if (banner.mediaType === "video" || String(url).startsWith("data:video")) {
       return <video src={url} className="h-16 w-28 rounded-md object-cover" muted />;
     }
 
@@ -299,15 +274,23 @@ export default function AdminCMSBanners() {
       )}
 
       <section className="mb-4 rounded-md border border-blue-200 bg-blue-50 p-4">
-        <div className="text-sm font-black text-blue-900">Image-first storefront banner</div>
+        <div className="text-sm font-black text-blue-900">
+          Image-first storefront banner
+        </div>
         <div className="mt-1 text-xs font-semibold leading-5 text-blue-800">
           Nội dung chữ/CTA nên được thiết kế trực tiếp trong ảnh banner. Storefront chỉ hiển thị banner dạng hình ảnh. Title/alt text chỉ dùng để quản lý và hỗ trợ accessibility.
+        </div>
+        <div className="mt-2 text-xs font-semibold leading-5 text-blue-800">
+          Banner text should be embedded directly in the artwork image. Storefront will display image-only banners. Title/alt text is used for management and accessibility only.
         </div>
       </section>
 
       <section className="mb-4 rounded-md border border-slate-200 bg-white p-4">
         <div className="mb-4">
           <h2 className="text-base font-black text-slate-950">Hero Layout Settings</h2>
+          <p className="mt-1 text-xs font-semibold text-slate-500">
+            V2 and V3 are both image-first. They only differ by visual layout.
+          </p>
         </div>
 
         <div className="grid gap-4 md:grid-cols-4">
@@ -320,17 +303,20 @@ export default function AdminCMSBanners() {
               { label: "V3 - Bento image layout", value: "v3" },
             ]}
           />
+
           <AdminToggle
             label="Autoplay"
             checked={heroSettings.autoplay !== false}
             onChange={(value) => saveHeroSettingPatch({ autoplay: value })}
           />
+
           <AdminTextField
             label="Interval milliseconds"
             type="number"
             value={heroSettings.interval || 4500}
             onChange={(value) => saveHeroSettingPatch({ interval: Number(value || 4500) })}
           />
+
           <AdminTextField
             label="Max active banners"
             type="number"
@@ -356,22 +342,34 @@ export default function AdminCMSBanners() {
                 <th className="px-4 py-3 text-right">Priority</th>
               </tr>
             </thead>
+
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={9} className="px-4 py-8 text-center font-bold text-slate-500">Loading banners...</td>
+                  <td colSpan={9} className="px-4 py-8 text-center font-bold text-slate-500">
+                    Loading banners...
+                  </td>
                 </tr>
               ) : banners.length ? (
                 banners.map((banner) => (
                   <tr key={banner.id} className="group border-t border-slate-100 hover:bg-slate-50">
                     <td className="sticky left-0 z-10 bg-white px-4 py-3 group-hover:bg-slate-50">
-                      <button onClick={() => editBanner(banner)} className="mr-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-xs font-bold">
-                        <Edit3 size={14} className="mr-1 inline" /> Edit
+                      <button
+                        onClick={() => editBanner(banner)}
+                        className="mr-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-xs font-bold"
+                      >
+                        <Edit3 size={14} className="mr-1 inline" />
+                        Edit
                       </button>
-                      <button onClick={() => removeBanner(banner.id)} className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-600">
+
+                      <button
+                        onClick={() => removeBanner(banner.id)}
+                        className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-600"
+                      >
                         <Trash2 size={14} />
                       </button>
                     </td>
+
                     <td className="px-4 py-3">{mediaPreview(banner)}</td>
                     <td className="px-4 py-3 font-black">{banner.titleInternal}</td>
                     <td className="px-4 py-3">{banner.placement}</td>
@@ -384,7 +382,9 @@ export default function AdminCMSBanners() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={9} className="px-4 py-8 text-center font-bold text-slate-500">No banners yet.</td>
+                  <td colSpan={9} className="px-4 py-8 text-center font-bold text-slate-500">
+                    No banners yet. Create the first image-first banner.
+                  </td>
                 </tr>
               )}
             </tbody>
@@ -400,29 +400,89 @@ export default function AdminCMSBanners() {
       >
         <div className="space-y-5">
           <div className="grid gap-4 md:grid-cols-2">
-            <AdminTextField label="Internal title" value={draft.titleInternal} onChange={(value) => patch("titleInternal", value)} />
-            <AdminTextField label="Alt text" value={draft.altText} onChange={(value) => patch("altText", value)} />
-            <AdminSelect label="Placement" value={draft.placement} onChange={(value) => patch("placement", value)} options={["Homepage Hero", "Below Categories", "Shop Top", "Popup"]} />
-            <AdminSelect label="Media type" value={draft.mediaType} onChange={(value) => patch("mediaType", value)} options={["image", "gif", "video"]} />
-            <AdminSelect label="Fit mode" value={draft.fitMode || "cover"} onChange={(value) => patch("fitMode", value)} options={["cover", "contain"]} />
-            <AdminTextField label="Priority" type="number" value={draft.priority} onChange={(value) => patch("priority", Number(value || 1))} />
-            <AdminSelect label="Status" value={draft.status} onChange={(value) => patch("status", value)} options={["Live", "Draft", "Scheduled", "Inactive"]} />
-            <AdminToggle label="Active" checked={draft.active !== false} onChange={(value) => patch("active", value)} />
+            <AdminTextField
+              label="Internal title"
+              tip="Management/SEO/accessibility only. Not rendered as overlay."
+              value={draft.titleInternal}
+              onChange={(value) => patch("titleInternal", value)}
+            />
+
+            <AdminTextField
+              label="Alt text"
+              tip="Accessibility text. Not rendered visually."
+              value={draft.altText}
+              onChange={(value) => patch("altText", value)}
+            />
+
+            <AdminSelect
+              label="Placement"
+              value={draft.placement}
+              onChange={(value) => patch("placement", value)}
+              options={["Homepage Hero", "Below Categories", "Shop Top", "Popup"]}
+            />
+
+            <AdminSelect
+              label="Media type"
+              value={draft.mediaType}
+              onChange={(value) => patch("mediaType", value)}
+              options={["image", "gif", "video"]}
+            />
+
+            <AdminSelect
+              label="Fit mode"
+              tip="cover: fills frame, may crop. contain: full image, may leave blank space."
+              value={draft.fitMode || "cover"}
+              onChange={(value) => patch("fitMode", value)}
+              options={["cover", "contain"]}
+            />
+
+            <AdminTextField
+              label="Priority"
+              type="number"
+              value={draft.priority}
+              onChange={(value) => patch("priority", Number(value || 1))}
+            />
+
+            <AdminSelect
+              label="Status"
+              value={draft.status}
+              onChange={(value) => patch("status", value)}
+              options={["Live", "Draft", "Scheduled", "Inactive"]}
+            />
+
+            <AdminToggle
+              label="Active"
+              checked={draft.active !== false}
+              onChange={(value) => patch("active", value)}
+            />
           </div>
 
           <div className="rounded-md border border-dashed border-slate-300 bg-slate-50 p-4">
             <div className="mb-2 text-sm font-black">Responsive banner media</div>
+            <div className="mb-3 text-xs font-semibold text-slate-500">
+              Main image is required. Mobile/tablet/desktop images are optional and fallback to main image.
+            </div>
+
             <div className="grid gap-3 md:grid-cols-2">
               {[
                 ["mainImage", "Main image / required"],
                 ["mobileImage", "Mobile image / optional"],
                 ["tabletImage", "Tablet image / optional"],
                 ["desktopImage", "Desktop image / optional"],
-                ["videoUrl", "Video / optional"]
               ].map(([field, label]) => (
-                <label key={field} className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-md bg-blue-700 px-4 py-2 text-sm font-black text-white">
-                  <UploadCloud size={16} /> {label}
-                  <input name={field} type="file" accept="image/*,video/*" className="hidden" onChange={uploadMedia} />
+                <label
+                  key={field}
+                  className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-md bg-blue-700 px-4 py-2 text-sm font-black text-white"
+                >
+                  <UploadCloud size={16} />
+                  {label}
+                  <input
+                    name={field}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/ogg"
+                    className="hidden"
+                    onChange={uploadMedia}
+                  />
                 </label>
               ))}
             </div>
@@ -441,6 +501,15 @@ export default function AdminCMSBanners() {
               <AdminTextField label="Desktop image URL" value={draft.desktopImage} onChange={(value) => patch("desktopImage", value)} />
               <AdminTextField label="Video URL / optional" value={draft.videoUrl} onChange={(value) => patch("videoUrl", value)} />
               <AdminTextField label="CTA URL" value={draft.ctaUrl} onChange={(value) => patch("ctaUrl", value)} />
+            </div>
+          </div>
+
+          <div className="rounded-md border border-slate-200 bg-slate-50 p-4">
+            <div className="mb-2 text-sm font-black text-slate-950">
+              Legacy text overlay / not used on storefront
+            </div>
+            <div className="text-xs font-semibold leading-5 text-slate-500">
+              Old fields such as heading/title/subtitle/CTA/chips are intentionally not rendered on the storefront. Put campaign text directly into the artwork image.
             </div>
           </div>
         </div>

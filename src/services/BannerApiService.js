@@ -15,7 +15,6 @@ function limitHeroSettings(heroSettings = {}) {
   };
 }
 
-// 🌟 ĐÃ SỬA: Bộ kiểm duyệt thông minh (Chỉ validate hiệu năng nếu payload là JSON thường, bỏ qua nếu là FormData)
 function validateBannerPayloadImages(payload = {}) {
   if (isFormDataPayload(payload)) return;
 
@@ -55,7 +54,6 @@ export async function listAdminBanners() {
   return Array.isArray(data?.banners) ? data.banners : [];
 }
 
-// 🛠️ ĐÃ SỬA: Hàm tạo Banner hỗ trợ tiếp nhận cả FormData lẫn JSON thường
 export async function createAdminBanner(payload) {
   validateBannerPayloadImages(payload);
   const data = await apiRequest("/api/admin/banners", {
@@ -65,7 +63,6 @@ export async function createAdminBanner(payload) {
   return data?.banner;
 }
 
-// 🛠️ ĐÃ SỬA: Hàm cập nhật Banner hỗ trợ tiếp nhận cả FormData
 export async function updateAdminBanner(id, payload) {
   validateBannerPayloadImages(payload);
   const data = await apiRequest("/api/admin/banners/" + id, {

@@ -1,8 +1,10 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { ImagePlus, Info, UploadCloud, X } from "lucide-react";
+import { uploadAdminMediaImages, uploadAdminMediaVideo } from "../../services/AdminMediaApiService";
 
 export function AdminFieldTip({ children }) {
   if (!children) return null;
+
   return (
     <div className="mt-1 flex items-start gap-1.5 text-xs leading-5 text-slate-500">
       <Info size={13} className="mt-0.5 shrink-0 text-blue-500" />
@@ -123,6 +125,16 @@ export function AdminToggle({ label, tip, checked = true, onChange }) {
   );
 }
 
+function pickUploadedImageUrl(image = {}) {
+  if (!image) return "";
+  if (typeof image === "string") return image;
+  return image.cardUrl || image.url || image.detailUrl || image.thumbUrl || image.originalUrl || "";
+}
+
+function pickUploadedVideoUrl(payload = {}) {
+  return payload.videoUrl || payload.url || payload.video?.url || payload.video?.videoUrl || "";
+}
+
 export function AdminImageUploader({
   label,
   tip,
@@ -131,34 +143,45 @@ export function AdminImageUploader({
   onChange,
   recommended = "1200 x 630 px",
 }) {
-  const [preview, setPreview] = useState("");
+  const [preview, setPreview] = useState(value || "");
+  const [uploading, setUploading] = useState(false);
 
-  // Đồng bộ preview nếu ban đầu form cha truyền vào một link URL ảnh cũ từ Database
   useEffect(() => {
-    if (typeof value === "string") {
-      setPreview(value);
-    } else if (!value) {
-      setPreview("");
-    }
+    setPreview(value || "");
   }, [value]);
 
-  function handleUpload(event) {
+  async function handleUpload(event) {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    setPreview(URL.createObjectURL(file));
-    onChange?.(file);
-    event.target.value = "";
+    try {
+      setUploading(true);
+      const data = await uploadAdminMediaImages([file]);
+      const url = pickUploadedImageUrl(data?.images?.[0]) || data?.url || "";
+
+      if (!url) {
+        throw new Error("Backend did not return uploaded image URL.");
+      }
+
+      setPreview(url);
+      onChange?.(url);
+    } catch (error) {
+      window.alert(error?.message || "Invalid image file.");
+    } finally {
+      setUploading(false);
+      event.target.value = "";
+    }
   }
 
   function remove() {
     setPreview("");
-    onChange?.(null);
+    onChange?.("");
   }
 
   return (
     <div>
       <AdminFieldLabel label={label} tip={tip} required={required} />
+
       <div className="rounded-md border border-dashed border-slate-300 bg-slate-50 p-4">
         <div className="flex min-h-36 items-center justify-center overflow-hidden rounded-md border border-slate-200 bg-white">
           {preview ? (
@@ -173,13 +196,19 @@ export function AdminImageUploader({
         </div>
 
         <div className="mt-3 flex gap-2">
-          <label className="inline-flex cursor-pointer items-center gap-2 rounded-md bg-blue-700 px-3 py-2 text-xs font-black text-white hover:bg-blue-800">
+          <label className={`inline-flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-xs font-black text-white ${uploading ? "bg-blue-400" : "bg-blue-700 hover:bg-blue-800"}`}>
             <UploadCloud size={14} />
-            Upload image
-            <input type="file" accept="image/*" className="hidden" onChange={handleUpload} />
+            {uploading ? "Uploading..." : "Upload image"}
+            <input type="file" accept="image/*" className="hidden" disabled={uploading} onChange={handleUpload} />
           </label>
-          <button type="button" onClick={remove} className="inline-flex items-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50">
-            <X size={14} /> Remove
+
+          <button
+            type="button"
+            onClick={remove}
+            className="inline-flex items-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50"
+          >
+            <X size={14} />
+            Remove
           </button>
         </div>
       </div>
@@ -187,7 +216,6 @@ export function AdminImageUploader({
   );
 }
 
-// 🌟 ĐÃ FIX TRIỆT ĐỂ LỖI LOGIC MULTI UPLOADER TẠI ĐÂY
 export function AdminMultiImageUploader({
   label,
   tip,
@@ -197,21 +225,29 @@ export function AdminMultiImageUploader({
   recommended = "1200 x 1200 px",
 }) {
   const images = Array.isArray(value) ? value.filter(Boolean) : [];
+  const [uploading, setUploading] = useState(false);
 
-  function getPreviewSrc(item) {
-    if (typeof item === "string") return item;
-    if (item instanceof File) return URL.createObjectURL(item);
-    return "";
-  }
-
-  function handleUpload(event) {
+  async function handleUpload(event) {
     const files = Array.from(event.target.files || []);
     if (!files.length) return;
 
-    // Sửa lỗi: Ghép mảng images hiện tại với các File mới chọn chuẩn xác
-    const next = [...images, ...files];
-    onChange?.(next);
-    event.target.value = "";
+    try {
+      setUploading(true);
+      const data = await uploadAdminMediaImages(files);
+      const uploadedUrls = (data?.images || []).map(pickUploadedImageUrl).filter(Boolean);
+
+      if (!uploadedUrls.length) {
+        throw new Error("Backend did not return uploaded gallery image URLs.");
+      }
+
+      const next = Array.from(new Set([...images, ...uploadedUrls]));
+      onChange?.(next);
+    } catch (error) {
+      window.alert(error?.message || "Invalid gallery image file.");
+    } finally {
+      setUploading(false);
+      event.target.value = "";
+    }
   }
 
   function remove(index) {
@@ -230,13 +266,14 @@ export function AdminMultiImageUploader({
   return (
     <div>
       <AdminFieldLabel label={label} tip={tip} required={required} />
+
       <div className="rounded-md border border-dashed border-slate-300 bg-slate-50 p-4">
         {images.length ? (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {images.map((item, index) => (
-              <div key={index} className="overflow-hidden rounded-md border border-slate-200 bg-white">
+            {images.map((src, index) => (
+              <div key={`${src}-${index}`} className="overflow-hidden rounded-md border border-slate-200 bg-white">
                 <div className="h-36 bg-slate-100">
-                  <img src={getPreviewSrc(item)} alt="" className="h-full w-full object-cover" />
+                  <img src={src} alt="" className="h-full w-full object-cover" />
                 </div>
                 <div className="flex items-center justify-between gap-2 p-2">
                   <span className="text-[11px] font-black text-slate-500">
@@ -262,10 +299,10 @@ export function AdminMultiImageUploader({
         )}
 
         <div className="mt-3">
-          <label className="inline-flex cursor-pointer items-center gap-2 rounded-md bg-blue-700 px-3 py-2 text-xs font-black text-white hover:bg-blue-800">
+          <label className={`inline-flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-xs font-black text-white ${uploading ? "bg-blue-400" : "bg-blue-700 hover:bg-blue-800"}`}>
             <UploadCloud size={14} />
-            Upload multiple images
-            <input type="file" accept="image/*" multiple className="hidden" onChange={handleUpload} />
+            {uploading ? "Uploading..." : "Upload multiple images"}
+            <input type="file" accept="image/*" multiple className="hidden" disabled={uploading} onChange={handleUpload} />
           </label>
         </div>
       </div>
@@ -281,33 +318,45 @@ export function AdminVideoUploader({
   onChange,
   accept = "video/*",
 }) {
-  const [preview, setPreview] = useState("");
+  const [preview, setPreview] = useState(value || "");
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
-    if (typeof value === "string") {
-      setPreview(value);
-    } else if (!value) {
-      setPreview("");
-    }
+    setPreview(value || "");
   }, [value]);
 
-  function handleUpload(event) {
+  async function handleUpload(event) {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    setPreview(URL.createObjectURL(file));
-    onChange?.(file);
-    event.target.value = "";
+    try {
+      setUploading(true);
+      const data = await uploadAdminMediaVideo(file);
+      const url = pickUploadedVideoUrl(data);
+
+      if (!url) {
+        throw new Error("Backend did not return uploaded video URL.");
+      }
+
+      setPreview(url);
+      onChange?.(url);
+    } catch (error) {
+      window.alert(error?.message || "Invalid video file.");
+    } finally {
+      setUploading(false);
+      event.target.value = "";
+    }
   }
 
   function remove() {
     setPreview("");
-    onChange?.(null);
+    onChange?.("");
   }
 
   return (
     <div>
       <AdminFieldLabel label={label} tip={tip} required={required} />
+
       <div className="rounded-md border border-dashed border-slate-300 bg-slate-50 p-4">
         <div className="flex min-h-44 items-center justify-center overflow-hidden rounded-md border border-slate-200 bg-white">
           {preview ? (
@@ -322,13 +371,19 @@ export function AdminVideoUploader({
         </div>
 
         <div className="mt-3 flex gap-2">
-          <label className="inline-flex cursor-pointer items-center gap-2 rounded-md bg-blue-700 px-3 py-2 text-xs font-black text-white hover:bg-blue-800">
+          <label className={`inline-flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-xs font-black text-white ${uploading ? "bg-blue-400" : "bg-blue-700 hover:bg-blue-800"}`}>
             <UploadCloud size={14} />
-            Upload video
-            <input type="file" accept={accept} className="hidden" onChange={handleUpload} />
+            {uploading ? "Uploading..." : "Upload video"}
+            <input type="file" accept={accept} className="hidden" disabled={uploading} onChange={handleUpload} />
           </label>
-          <button type="button" onClick={remove} className="inline-flex items-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50">
-            <X size={14} /> Remove
+
+          <button
+            type="button"
+            onClick={remove}
+            className="inline-flex items-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50"
+          >
+            <X size={14} />
+            Remove
           </button>
         </div>
       </div>
