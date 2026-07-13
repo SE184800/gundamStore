@@ -122,48 +122,44 @@ function text(value, lang, fallback = "") {
   return value[lang] || value.vi || value.en || translateStaticText(fallback, lang);
 }
 
-function statusOf(product) {
-  return String(product.status || "").toLowerCase();
+function normalizeCollection(value = "") {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
 }
 
-function isPreorder(product) {
-  const status = statusOf(product);
-  return Boolean(product.preorder?.enabled || status.includes("pre") || status.includes("order"));
-}
+function getProductCollectionKeys(product = {}) {
+  const keys = Array.isArray(product.collections) ? product.collections : [];
+  const groups = Array.isArray(product.groups) ? product.groups : [];
 
-function isSale(product) {
-  const status = statusOf(product);
-  return Boolean(
-    status.includes("sale") ||
-      Number(product.oldPrice || 0) > Number(product.price || 0) ||
-      product.collections?.includes("sale_products") ||
-      product.collections?.includes("sales")
+  return Array.from(
+    new Set(
+      [
+        ...keys,
+        ...groups.flatMap((group) => [group.code, group.slug, group.nameVi, group.nameEn]),
+      ]
+        .map(normalizeCollection)
+        .filter(Boolean)
+    )
   );
 }
 
-function isNew(product) {
-  return Boolean(product.isNew || product.collections?.includes("new_arrivals") || statusOf(product).includes("new"));
-}
-
-function isBestSeller(product) {
-  return Boolean(product.isBestSeller || product.collections?.includes("best_sellers") || Number(product.sold || 0) >= 40);
-}
-
 function productMatchesSource(product, source) {
-  const key = String(source || "").toLowerCase();
-  if (key.includes("new")) return isNew(product);
-  if (key.includes("order") || key.includes("pre")) return isPreorder(product);
-  if (key.includes("best") || key.includes("seller")) return isBestSeller(product);
-  if (key.includes("sale")) return isSale(product);
-  return true;
+  const key = normalizeCollection(source);
+  if (!key) return false;
+  return getProductCollectionKeys(product).includes(key);
 }
 
 function getSectionProducts(products, section, displayMappings = []) {
   if (!Array.isArray(products)) return [];
 
-  const source = String(section.dataSource || section.id || "").toLowerCase();
+  const source = normalizeCollection(section.dataSource || section.id || "");
   const mappedProductIds = (displayMappings || [])
-    .filter((mapping) => Array.isArray(mapping.collectionKeys) && mapping.collectionKeys.includes(source))
+    .filter((mapping) => Array.isArray(mapping.collectionKeys) && mapping.collectionKeys.map(normalizeCollection).includes(source))
     .map((mapping) => mapping.productId);
 
   if (mappedProductIds.length > 0) {
@@ -173,8 +169,9 @@ function getSectionProducts(products, section, displayMappings = []) {
       .slice(0, Number(section.limit || 8));
   }
 
-  const matched = products.filter((product) => productMatchesSource(product, source));
-  return (matched.length ? matched : products).slice(0, Number(section.limit || 8));
+  return products
+    .filter((product) => productMatchesSource(product, source))
+    .slice(0, Number(section.limit || 8));
 }
 
 function mergeCmsSections(homeSections) {
@@ -533,34 +530,27 @@ function TrustStrip({ lang }) {
 function CategorySidebar({ categories, lang }) {
   const list = categories || [];
 
-  const getCategoryImage = (category, index) =>
-    category.icon ||
-    category.imageUrl ||
-    category.image ||
-    category.mainImage ||
-    ["/images/products/aerial.jpg", "/images/products/hi-nu.jpg", "/images/products/freedom.jpg", "/images/products/strike-freedom.jpg"][index % 4];
-
   const getCategoryHref = (category) => {
-    const fallback = `/shop?category=${encodeURIComponent(category.id || category.slug || category.code || "")}`;
+    const rawKey = category.id === "all" ? "" : category.id || category.slug || category.code || "";
+    const fallback = rawKey ? `/shop?category=${encodeURIComponent(rawKey)}` : "/shop";
     return getSafeHref(category.ctaUrl || fallback, fallback);
   };
 
   return (
-    <aside className="w-full bg-transparent lg:bg-white p-0 lg:p-5 border-0 lg:border border-slate-200 rounded-none lg:rounded-[28px] shadow-none lg:shadow-sm">
-      <div className="mb-3 lg:mb-4 px-3 lg:px-0">
-        <div className="text-[10px] lg:text-xs font-black uppercase tracking-[0.22em] text-blue-700">Category</div>
-        <h3 className="mt-0.5 text-base lg:text-xl font-black text-slate-950">
+    <aside className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="mb-3">
+        <div className="text-[10px] font-black uppercase tracking-[0.22em] text-blue-700">Category</div>
+        <h3 className="mt-0.5 text-lg font-black text-slate-950">
           {lang === "vi" ? "Dòng sản phẩm" : "Product lines"}
         </h3>
-        <p className="mt-1 text-xs font-semibold leading-5 text-slate-500 hidden lg:block">
-          {lang === "vi" ? "Danh mục các phân khúc của sản phẩm Gundam" : "Category list for Gundam toy figure"}
+        <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">
+          {lang === "vi" ? "Chọn dòng để lọc nhanh sản phẩm" : "Tap a line to filter products"}
         </p>
       </div>
 
-      <div className="flex flex-nowrap gap-3 w-full overflow-x-auto pb-4 pt-1 px-3 lg:px-0 scrollbar-none snap-x snap-mandatory lg:grid lg:grid-cols-2 lg:gap-3 lg:overflow-x-visible lg:pb-0">
-        {list.map((category, index) => {
+      <div className="flex flex-wrap gap-2">
+        {list.map((category) => {
           const fullName = text(category.name, lang, category.label || category.code || "Category");
-          const image = getCategoryImage(category, index);
           const href = getCategoryHref(category);
 
           return (
@@ -569,20 +559,9 @@ function CategorySidebar({ categories, lang }) {
               href={href}
               title={category.titleInternal || fullName}
               aria-label={category.altText || fullName}
-              className="group block w-[95px] max-w-[95px] md:w-full md:max-w-none shrink-0 snap-start overflow-hidden rounded-2xl border border-slate-200 bg-white transition hover:-translate-y-1 hover:border-blue-300 hover:shadow-xl lg:w-full lg:max-w-none lg:shrink"
+              className="inline-flex max-w-full items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-black text-slate-700 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"
             >
-              <div className="aspect-square w-full overflow-hidden bg-gradient-to-br from-slate-100 to-blue-50">
-                <img
-                  src={image}
-                  alt={category.altText || fullName}
-                  className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                  loading="lazy"
-                  decoding="async"
-                />
-              </div>
-              <div className="p-2 lg:p-3 text-center">
-                <div className="text-xs lg:text-sm font-black leading-tight text-slate-950 group-hover:text-blue-700 truncate">{fullName}</div>
-              </div>
+              <span className="truncate">{fullName}</span>
             </a>
           );
         })}
@@ -593,8 +572,7 @@ function CategorySidebar({ categories, lang }) {
 
 function ProductSection({ section, products, displayMappings, lang, actions, badge }) {
   const t = copy[lang];
-  const mappedProducts = getSectionProducts(products, section, displayMappings);
-  const sectionProducts = mappedProducts.length ? mappedProducts : (products || []).slice(0, Number(section.limit || 8));
+  const sectionProducts = getSectionProducts(products, section, displayMappings);
   const title = text(section.title, lang, t.newArrivals);
 
   return (
@@ -604,7 +582,7 @@ function ProductSection({ section, products, displayMappings, lang, actions, bad
           <span className="rounded-lg border border-blue-100 bg-blue-50 px-2.5 py-1 text-[10px] font-black uppercase text-blue-700">{badge}</span>
           <h2 className="text-xl font-black text-blue-700">{title}</h2>
         </div>
-        <a href="/shop" className="inline-flex items-center gap-1 text-xs font-black text-blue-700 hover:underline">
+        <a href={`/shop?collection=${encodeURIComponent(section.dataSource || section.id || "")}`} className="inline-flex items-center gap-1 text-xs font-black text-blue-700 hover:underline">
           {t.viewAll}<ArrowRight size={13} />
         </a>
       </div>
@@ -669,6 +647,21 @@ function deriveCategoriesFromProducts(products = []) {
     .sort((a, b) => Number(a.sortOrder || 0) - Number(b.sortOrder || 0) || String(a.label || "").localeCompare(String(b.label || "")));
 }
 
+
+function mergeCategoryLists(apiCategories = [], derivedCategories = []) {
+  const map = new Map();
+
+  for (const category of [...apiCategories, ...derivedCategories]) {
+    const key = String(category.id || category.backendCategoryId || category.slug || category.code || "").trim();
+    if (!key || map.has(key)) continue;
+    map.set(key, category);
+  }
+
+  return Array.from(map.values())
+    .filter((item) => item.active !== false)
+    .sort((a, b) => Number(a.sortOrder || a.sort || 0) - Number(b.sortOrder || b.sort || 0) || String(a.label || "").localeCompare(String(b.label || "")));
+}
+
 export default function HomePage() {
   const [backendProducts, setBackendProducts] = useState([]);
   const [dbBanners, setDbBanners] = useState([]);
@@ -718,7 +711,7 @@ export default function HomePage() {
 
       const loadedProducts = productsResult.status === "fulfilled" && Array.isArray(productsResult.value) ? productsResult.value : [];
       const categoriesFromApi = categoriesResult.status === "fulfilled" && Array.isArray(categoriesResult.value) ? categoriesResult.value : [];
-      const derivedCategories = categoriesFromApi.length ? categoriesFromApi : deriveCategoriesFromProducts(loadedProducts);
+      const derivedCategories = mergeCategoryLists(categoriesFromApi, deriveCategoriesFromProducts(loadedProducts));
 
       setBackendProducts(loadedProducts);
       setBackendCategories(derivedCategories);

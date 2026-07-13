@@ -66,17 +66,38 @@ function getBackendGroups(product = {}) {
   return [];
 }
 
+const HOMEPAGE_GROUP_COLLECTION_ALIASES = {
+  new_arrivals: ["new_arrivals", "new_arrival", "new_products", "hang_moi", "hang_moi_ve", "moi_ve"],
+  order_items: ["order_items", "preorder", "pre_order", "hang_order", "hang_dat_truoc", "dat_hang", "hang_dat"],
+  best_sellers: ["best_sellers", "best_seller", "top_sellers", "hot", "hang_ban_chay", "ban_chay"],
+  sale_products: ["sale_products", "sales", "sale", "hang_sale", "hang_sales", "hang_giam_gia", "giam_gia"],
+};
+
+function getHomepageCollectionAliases(group = {}) {
+  const rawKeys = [group.code, group.slug, group.nameVi, group.nameEn]
+    .map(normalizeCollection)
+    .filter(Boolean);
+
+  const keys = new Set(rawKeys);
+
+  for (const [canonical, aliases] of Object.entries(HOMEPAGE_GROUP_COLLECTION_ALIASES)) {
+    if (aliases.some((alias) => rawKeys.includes(alias))) {
+      keys.add(canonical);
+    }
+  }
+
+  return Array.from(keys);
+}
+
 function getBackendCollectionKeys(product = {}) {
-  if (Array.isArray(product.collections) && product.collections.length) return Array.from(new Set(product.collections.filter(Boolean)));
-  const keys = getBackendGroups(product).flatMap((group) => {
-    const code = String(group.code || "").trim().toUpperCase();
-    const slug = String(group.slug || "").trim();
-    const name = group.nameVi || group.nameEn || "";
-    return [GROUP_COLLECTION_ALIASES[code], normalizeCollection(code), normalizeCollection(slug), normalizeCollection(name)].filter(Boolean);
-  });
-  const status = normalizeCollection(product.status || "");
-  if (status.includes("pre")) keys.push("preorder", "order_items");
-  if (status.includes("sale")) keys.push("sale_products", "sales");
+  if (Array.isArray(product.collections) && product.collections.length) {
+    return Array.from(new Set(product.collections.map(normalizeCollection).filter(Boolean)));
+  }
+
+  const keys = getBackendGroups(product).flatMap(getHomepageCollectionAliases);
+
+  // Homepage sections must be driven by explicit product group assignment only.
+  // Do not auto-place products into ORDER/HOT/SALE using status, sold count or price.
   return Array.from(new Set(keys.filter(Boolean)));
 }
 

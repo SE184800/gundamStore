@@ -2,7 +2,7 @@ const ADMIN_TOKEN_KEY = "gundam-admin-token";
 const ACCOUNT_TOKEN_KEY = "gundam_token";
 const ADMIN_SESSION_KEY = "gundam-admin-auth";
 const ADMIN_USER_KEY = "gundam-admin-user";
-const PUBLIC_API_CACHE_PREFIX = "gundam-public-api-cache:";
+const PUBLIC_API_CACHE_PREFIX = "gundam-public-api-cache:v2:";
 
 export function getApiBaseUrl() {
   const baseUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_BASE_URL || "";
