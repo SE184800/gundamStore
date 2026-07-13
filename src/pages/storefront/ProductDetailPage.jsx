@@ -244,8 +244,27 @@ function productName(product, lang) {
   return text(product.name, lang, product.title || "Gundam Model Kit");
 }
 
-function productDesc(product, lang, fallback) {
+function productLongDesc(product, lang, fallback) {
   return text(product.description, lang, product.desc || fallback);
+}
+
+function firstNonEmptyLine(value = "") {
+  return String(value || "")
+    .split(/\n+/)
+    .map((line) => line.trim())
+    .find(Boolean) || "";
+}
+
+function productShortDesc(product, lang, fallback) {
+  const shortText = text(product.short, lang, product.shortVi || product.shortEn || "");
+  if (shortText) return shortText;
+
+  const longText = productLongDesc(product, lang, "");
+  return firstNonEmptyLine(longText) || fallback;
+}
+
+function productDesc(product, lang, fallback) {
+  return productLongDesc(product, lang, fallback);
 }
 
 function isPreorder(product) {
@@ -311,7 +330,7 @@ function mergeProductVariant(product = {}, variant = null) {
   };
 }
 
-function GundamVisual({ tone = "blue", imageUrl, large = false }) {
+function GundamVisual({ tone = "blue", imageUrl, large = false, priority = false, alt = "" }) {
   const toneMap = {
     blue: "from-blue-950 via-blue-600 to-sky-100",
     cyan: "from-cyan-900 via-cyan-500 to-blue-100",
@@ -325,7 +344,7 @@ function GundamVisual({ tone = "blue", imageUrl, large = false }) {
   if (imageUrl) {
     return (
       <div className="relative h-full overflow-hidden rounded-2xl bg-slate-100">
-        <img src={imageUrl} alt="" className="h-full w-full object-cover" />
+        <img src={imageUrl} alt={alt} className="h-full w-full object-cover" loading={priority ? "eager" : "lazy"} fetchPriority={priority ? "high" : undefined} decoding="async" />
         <div className="absolute inset-0 bg-gradient-to-tr from-slate-950/20 via-transparent to-white/20" />
       </div>
     );
@@ -561,7 +580,7 @@ function ProductInfo({ product, lang, actions, onPreorder }) {
 
       <h1 className="mt-4 text-3xl font-black leading-tight text-slate-950 lg:text-4xl">{productName(product, lang)}</h1>
       <p className="mt-3 text-sm leading-6 text-slate-600 whitespace-pre-line">
-        {productDesc(product, lang, t.defaultDesc)}
+        {productShortDesc(product, lang, t.defaultDesc)}
       </p>
 
       {/* VARIANT_SELECTOR_START */}
@@ -1259,7 +1278,7 @@ export default function ProductDetailPage() {
             <div className="space-y-4">
               <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
                 <div className="h-[520px] overflow-hidden rounded-2xl">
-                  <GundamVisual imageUrl={gallery[activeImage]} tone={product.tone || "blue"} large />
+                  <GundamVisual imageUrl={gallery[activeImage]} tone={product.tone || "blue"} large priority alt={productName(product, lang)} />
                 </div>
               </div>
               <div className="grid grid-cols-4 gap-3">
@@ -1289,7 +1308,7 @@ export default function ProductDetailPage() {
               <h2 className="mb-4 text-xl font-black text-slate-950">{t.descTitle}</h2>
               {/* Thêm class whitespace-pre-line vào đây */}
               <p className="text-sm leading-7 text-slate-600 whitespace-pre-line">
-                {productDesc(product, lang, t.defaultDesc)}
+                {productLongDesc(product, lang, t.defaultDesc)}
               </p>
             </div>
 
