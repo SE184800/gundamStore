@@ -1,5 +1,6 @@
 import "./styles/mobile-polish.css";
 import "./styles/storefront-mobile-checkout.css";
+import "./styles/storefront-mobile-uat-final.css";
 import { I18nProvider } from "./i18n";
 import React from "react";
 import ReactDOM from "react-dom/client";
