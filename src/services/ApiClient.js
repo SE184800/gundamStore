@@ -2,6 +2,7 @@ const ADMIN_TOKEN_KEY = "gundam-admin-token";
 const ACCOUNT_TOKEN_KEY = "gundam_token";
 const ADMIN_SESSION_KEY = "gundam-admin-auth";
 const ADMIN_USER_KEY = "gundam-admin-user";
+const PUBLIC_API_CACHE_PREFIX = "gundam-public-api-cache:";
 
 export function getApiBaseUrl() {
   const baseUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_BASE_URL || "";
@@ -17,6 +18,91 @@ function buildApiUrl(baseUrl = "", path = "") {
   }
 
   return `${cleanBase}${cleanPath}`;
+}
+
+
+const PUBLIC_API_CACHE_RULES = [
+  { pattern: /^\/api\/products\/?$/i, ttlMs: 5 * 60_000, staleMs: 24 * 60 * 60_000 },
+  { pattern: /^\/api\/products\/home\/?$/i, ttlMs: 5 * 60_000, staleMs: 24 * 60 * 60_000 },
+  { pattern: /^\/api\/products\/categories(?:\/tree)?\/?$/i, ttlMs: 60 * 60_000, staleMs: 7 * 24 * 60 * 60_000 },
+  { pattern: /^\/api\/products\/(?!admin(?:\/|$)|home(?:\/|$)|categories(?:\/|$))[^/?#]+\/?$/i, ttlMs: 10 * 60_000, staleMs: 24 * 60 * 60_000 },
+  { pattern: /^\/api\/banners\/home\/?$/i, ttlMs: 10 * 60_000, staleMs: 24 * 60 * 60_000 },
+  { pattern: /^\/api\/reviews\/product\/[^/?#]+\/?$/i, ttlMs: 10 * 60_000, staleMs: 24 * 60 * 60_000 },
+];
+
+const backgroundRefreshes = new Set();
+
+function getRequestMethod(options = {}) {
+  return String(options.method || "GET").toUpperCase();
+}
+
+function getPublicApiCacheRule(path = "", options = {}) {
+  if (getRequestMethod(options) !== "GET") return null;
+  if (options.token) return null;
+  if (options.headers?.Authorization || options.headers?.authorization) return null;
+  return PUBLIC_API_CACHE_RULES.find((rule) => rule.pattern.test(String(path || ""))) || null;
+}
+
+function publicApiCacheKey(path = "") {
+  return `${PUBLIC_API_CACHE_PREFIX}${String(path || "")}`;
+}
+
+function readPublicApiCache(path = "", rule = null, { allowStale = false } = {}) {
+  if (!rule || typeof localStorage === "undefined") return null;
+
+  try {
+    const raw = localStorage.getItem(publicApiCacheKey(path));
+    if (!raw) return null;
+
+    const cached = JSON.parse(raw);
+    const age = Date.now() - Number(cached.cachedAt || 0);
+    const maxAge = allowStale ? rule.staleMs : rule.ttlMs;
+
+    if (!cached?.data || age < 0 || age > maxAge) return null;
+    return cached.data;
+  } catch {
+    return null;
+  }
+}
+
+export function readCachedPublicApiData(path = "", { allowStale = true } = {}) {
+  const rule = getPublicApiCacheRule(path, { method: "GET", token: "" });
+  return readPublicApiCache(path, rule, { allowStale });
+}
+
+function writePublicApiCache(path = "", rule = null, data = null) {
+  if (!rule || typeof localStorage === "undefined" || !data) return;
+
+  try {
+    localStorage.setItem(publicApiCacheKey(path), JSON.stringify({ cachedAt: Date.now(), data }));
+    window.dispatchEvent(new CustomEvent("gundam-public-api-cache-updated", { detail: { path } }));
+  } catch {
+    // Ignore storage quota/privacy mode errors.
+  }
+}
+
+function refreshPublicApiCacheInBackground(baseUrl = "", path = "", options = {}, headers = {}, rule = null) {
+  if (!rule || typeof fetch === "undefined") return;
+
+  const key = publicApiCacheKey(path);
+  if (backgroundRefreshes.has(key)) return;
+
+  backgroundRefreshes.add(key);
+
+  fetch(buildApiUrl(baseUrl, path), {
+    ...options,
+    headers,
+  })
+    .then(async (response) => {
+      if (!response.ok) return;
+      const contentType = response.headers.get("content-type") || "";
+      const data = contentType.includes("application/json") ? await response.json() : await response.text();
+      writePublicApiCache(path, rule, data);
+    })
+    .catch(() => {})
+    .finally(() => {
+      backgroundRefreshes.delete(key);
+    });
 }
 
 export function getStoredAdminToken() {
@@ -92,6 +178,10 @@ export async function apiRequest(path, options = {}) {
   const baseUrl = getApiBaseUrl();
   const token = options.token ?? getStoredAdminToken();
   const isFormData = isFormDataBody(options.body);
+  const cacheRule = !token ? getPublicApiCacheRule(path, options) : null;
+  const freshCachedData = readPublicApiCache(path, cacheRule);
+
+  if (freshCachedData) return freshCachedData;
 
   const headers = {
     "Content-Type": "application/json",
@@ -107,17 +197,37 @@ export async function apiRequest(path, options = {}) {
     headers.Authorization = `Bearer ${token}`;
   }
 
-  const response = await fetch(buildApiUrl(baseUrl, path), {
-    ...options,
-    headers,
-  });
+  // Return stale storefront cache immediately, then refresh in background.
+  // This improves perceived speed when Render/Neon is waking up.
+  const staleData = readPublicApiCache(path, cacheRule, { allowStale: true });
+  if (staleData) {
+    refreshPublicApiCacheInBackground(baseUrl, path, options, headers, cacheRule);
+    return staleData;
+  }
 
-  const contentType = response.headers.get("content-type") || "";
-  const data = contentType.includes("application/json")
-    ? await response.json()
-    : await response.text();
+  let response;
+  let data;
+
+  try {
+    response = await fetch(buildApiUrl(baseUrl, path), {
+      ...options,
+      headers,
+    });
+
+    const contentType = response.headers.get("content-type") || "";
+    data = contentType.includes("application/json")
+      ? await response.json()
+      : await response.text();
+  } catch (networkError) {
+    const fallbackData = readPublicApiCache(path, cacheRule, { allowStale: true });
+    if (fallbackData) return fallbackData;
+    throw networkError;
+  }
 
   if (!response.ok) {
+    const fallbackData = readPublicApiCache(path, cacheRule, { allowStale: true });
+    if (fallbackData) return fallbackData;
+
     if (shouldForceAdminLogout(path, response.status)) {
       clearStoredAdminSession();
       window.dispatchEvent(new CustomEvent("gundam-admin-auth-expired"));
@@ -134,5 +244,7 @@ export async function apiRequest(path, options = {}) {
     throw error;
   }
 
+  writePublicApiCache(path, cacheRule, data);
   return data;
 }
+
