@@ -161,3 +161,103 @@
     min-height: 48px;
   }
 }
+
+/* Mobile readability boost for customer UAT feedback: bigger text and fuller product cards. */
+@media (max-width: 640px) {
+  :root {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  body {
+    font-size: 16px;
+  }
+
+  .home-mobile-product-grid,
+  .shop-mobile-grid {
+    gap: 12px !important;
+  }
+
+  .shop-mobile-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  @media (max-width: 374px) {
+    .shop-mobile-grid {
+      grid-template-columns: minmax(0, 1fr) !important;
+    }
+  }
+
+  .product-card-mobile {
+    border-radius: 24px !important;
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08) !important;
+  }
+
+  .product-card-mobile > a > .relative.aspect-square {
+    aspect-ratio: 1 / 1 !important;
+  }
+
+  .product-card-mobile .p-3,
+  .product-card-mobile .sm\:p-4 {
+    padding: 12px !important;
+  }
+
+  .product-card-mobile h3 {
+    min-height: 44px !important;
+    font-size: 15.5px !important;
+    line-height: 1.28 !important;
+    letter-spacing: -0.01em;
+  }
+
+  .product-card-mobile .text-sm {
+    font-size: 13.5px !important;
+    line-height: 1.35 !important;
+  }
+
+  .product-card-mobile .text-xs,
+  .product-card-mobile .text-\[11px\] {
+    font-size: 12px !important;
+  }
+
+  .product-card-mobile .text-base.font-black,
+  .product-card-mobile .sm\:text-lg {
+    font-size: 18px !important;
+    line-height: 1.18 !important;
+  }
+
+  .product-card-mobile button {
+    min-height: 44px !important;
+    font-size: 14px !important;
+  }
+
+  .product-card-mobile [data-wishlist-card-button="true"] {
+    width: 42px !important;
+    height: 42px !important;
+  }
+
+  .home-mobile-product-grid .product-card-mobile {
+    margin-inline: -2px;
+  }
+
+  main.relative p,
+  main.relative li,
+  main.relative input,
+  main.relative textarea,
+  main.relative button,
+  main.relative a,
+  main.min-h-screen.bg-\[\#F5F7FB\] p,
+  main.min-h-screen.bg-\[\#F5F7FB\] li,
+  main.min-h-screen.bg-\[\#F5F7FB\] input,
+  main.min-h-screen.bg-\[\#F5F7FB\] textarea,
+  main.min-h-screen.bg-\[\#F5F7FB\] button,
+  main.min-h-screen.bg-\[\#F5F7FB\] a {
+    font-size: max(14px, 0.94rem) !important;
+    line-height: 1.45 !important;
+  }
+
+  main.relative h2,
+  main.min-h-screen.bg-\[\#F5F7FB\] h2 {
+    font-size: 20px !important;
+    line-height: 1.2 !important;
+  }
+}
