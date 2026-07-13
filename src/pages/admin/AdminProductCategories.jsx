@@ -26,6 +26,17 @@ const empty = {
   active: true,
 };
 
+
+const PRODUCT_LINE_TEMPLATES = [
+  { code: "HG", slug: "hg-high-grade", nameVi: "HIGH GRADE HG", nameEn: "High Grade HG", sortOrder: 10 },
+  { code: "RG", slug: "rg-real-grade", nameVi: "REAL GRADE RG", nameEn: "Real Grade RG", sortOrder: 20 },
+  { code: "MG", slug: "mg-master-grade", nameVi: "MASTER GRADE MG", nameEn: "Master Grade MG", sortOrder: 30 },
+  { code: "PG", slug: "pg-perfect-grade", nameVi: "PERFECT GRADE PG", nameEn: "Perfect Grade PG", sortOrder: 40 },
+  { code: "SD_BB", slug: "sd-bb", nameVi: "SD / BB", nameEn: "SD / BB", sortOrder: 50 },
+  { code: "GUNPLA_KIT", slug: "gunpla-kit", nameVi: "Gunpla Kit", nameEn: "Gunpla Kit", sortOrder: 5 },
+  { code: "TOOLS", slug: "phu-kien-dung-cu", nameVi: "Phụ kiện & dụng cụ", nameEn: "Accessories & Tools", sortOrder: 80 },
+];
+
 function makeSlug(value = "") {
   return String(value || "")
     .trim()
@@ -100,6 +111,19 @@ export default function AdminProductCategories() {
     });
   }
 
+  async function createFromTemplate(template) {
+    try {
+      await createAdminCategoryApi({
+        ...template,
+        description: template.description || "",
+        active: true,
+      });
+      await reload();
+    } catch (error) {
+      alert(error?.message || "Create product line failed.");
+    }
+  }
+
   function openCreate() {
     setDraft(empty);
     setDrawerOpen(true);
@@ -158,18 +182,47 @@ export default function AdminProductCategories() {
     <>
       <AdminPageHeader
         eyebrow="Product Management"
-        title="Product Categories"
-        desc="Quản lý danh mục sản phẩm từ PostgreSQL để dùng cho product master và storefront."
+        title="Dòng sản phẩm"
+        desc="Tạo và quản lý dòng sản phẩm như HG, RG, MG, PG, Gunpla Kit, Tools. Các dòng này sẽ hiển thị ở trang chủ và trang shop."
         action={
           <button onClick={openCreate} className="rounded-md bg-blue-700 px-4 py-2 text-xs font-black text-white hover:bg-blue-800">
             <Plus size={15} className="mr-1 inline" />
-            Create category
+            Tạo dòng sản phẩm
           </button>
         }
       />
 
       <section className="mb-4 rounded-3xl border border-emerald-100 bg-emerald-50 p-4 text-sm font-bold text-emerald-800">
-        PostgreSQL Categories · {loading ? "Loading..." : `${rows.length} categories`}
+        Dòng sản phẩm · {loading ? "Loading..." : `${rows.length} categories`}
+      </section>
+
+      <section className="mb-4 rounded-3xl border border-blue-100 bg-blue-50 p-4">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div>
+            <div className="text-sm font-black text-blue-900">Tạo nhanh dòng phổ biến</div>
+            <div className="text-xs font-bold text-blue-600">Dùng khi thiếu HG/RG/MG/PG/Gunpla Kit/Tools trên storefront.</div>
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {PRODUCT_LINE_TEMPLATES.map((template) => {
+            const exists = rows.some((item) => String(item.code || "").toUpperCase() === template.code);
+            return (
+              <button
+                key={template.code}
+                type="button"
+                disabled={exists}
+                onClick={() => void createFromTemplate(template)}
+                className={`rounded-2xl border px-3 py-2 text-xs font-black transition ${
+                  exists
+                    ? "cursor-not-allowed border-slate-200 bg-white/70 text-slate-400"
+                    : "border-blue-200 bg-white text-blue-700 hover:bg-blue-100"
+                }`}
+              >
+                {exists ? "Đã có " : "+ "}{template.nameVi}
+              </button>
+            );
+          })}
+        </div>
       </section>
 
       {apiError && (
@@ -248,7 +301,7 @@ export default function AdminProductCategories() {
         </table>
       </section>
 
-      <AdminDrawer open={drawerOpen} title={draft.id ? "Edit category" : "Create category"} subtitle="PostgreSQL category" onClose={() => setDrawerOpen(false)} onSave={save} saveLabel="Save category">
+      <AdminDrawer open={drawerOpen} title={draft.id ? "Edit category" : "Tạo dòng sản phẩm"} subtitle="PostgreSQL category" onClose={() => setDrawerOpen(false)} onSave={save} saveLabel="Save category">
         <div className="grid gap-5 md:grid-cols-2">
           <AdminTextField label="Tên VI" required value={draft.nameVi} onChange={(v) => patch("nameVi", v)} />
           <AdminTextField label="Tên EN" value={draft.nameEn} onChange={(v) => patch("nameEn", v)} />
