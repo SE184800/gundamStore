@@ -146,3 +146,36 @@
     }
   }
 }
+
+/* Hotfix: restore mobile hero banner after dot selector accidentally hit main banner link. */
+@media (max-width: 640px) {
+  .image-first-hero .image-first-banner-link {
+    display: block !important;
+    height: clamp(210px, 42vw, 280px) !important;
+    min-height: 210px !important;
+    border-radius: 22px !important;
+  }
+
+  .image-first-hero .image-first-banner-link picture,
+  .image-first-hero .image-first-banner-link img,
+  .image-first-hero .image-first-banner-link video {
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  .image-first-hero .absolute.bottom-4.left-1\/2 > button[aria-label^="Banner"] {
+    min-height: 8px !important;
+    height: 8px !important;
+    padding: 0 !important;
+    border-radius: 999px !important;
+  }
+
+  .image-first-hero .absolute.bottom-4.left-1\/2 > button[aria-label^="Banner"].w-12 {
+    width: 26px !important;
+  }
+
+  .image-first-hero .absolute.bottom-4.left-1\/2 > button[aria-label^="Banner"].w-2\.5 {
+    width: 8px !important;
+  }
+}
