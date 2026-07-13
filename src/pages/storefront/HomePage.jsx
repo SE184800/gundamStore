@@ -528,7 +528,21 @@ function TrustStrip({ lang }) {
 }
 
 function CategorySidebar({ categories, lang }) {
-  const list = categories || [];
+  const list = (categories || []).filter((category) => category.active !== false);
+
+  const fallbackImages = [
+    "/images/products/aerial.jpg",
+    "/images/products/hi-nu.jpg",
+    "/images/products/freedom.jpg",
+    "/images/products/strike-freedom.jpg",
+  ];
+
+  const getCategoryImage = (category, index) =>
+    category.imageUrl ||
+    category.image ||
+    category.icon ||
+    category.mainImage ||
+    fallbackImages[index % fallbackImages.length];
 
   const getCategoryHref = (category) => {
     const rawKey = category.id === "all" ? "" : category.id || category.slug || category.code || "";
@@ -537,10 +551,10 @@ function CategorySidebar({ categories, lang }) {
   };
 
   return (
-    <aside className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="mb-3">
+    <aside className="rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="mb-4">
         <div className="text-[10px] font-black uppercase tracking-[0.22em] text-blue-700">Category</div>
-        <h3 className="mt-0.5 text-lg font-black text-slate-950">
+        <h3 className="mt-1 text-xl font-black text-slate-950">
           {lang === "vi" ? "Dòng sản phẩm" : "Product lines"}
         </h3>
         <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">
@@ -548,9 +562,10 @@ function CategorySidebar({ categories, lang }) {
         </p>
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        {list.map((category) => {
+      <div className="mobile-hide-scrollbar flex gap-3 overflow-x-auto pb-2 lg:grid lg:grid-cols-2 lg:overflow-visible lg:pb-0">
+        {list.map((category, index) => {
           const fullName = text(category.name, lang, category.label || category.code || "Category");
+          const image = getCategoryImage(category, index);
           const href = getCategoryHref(category);
 
           return (
@@ -559,9 +574,22 @@ function CategorySidebar({ categories, lang }) {
               href={href}
               title={category.titleInternal || fullName}
               aria-label={category.altText || fullName}
-              className="inline-flex max-w-full items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-black text-slate-700 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"
+              className="group block w-[128px] shrink-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-xl lg:w-full"
             >
-              <span className="truncate">{fullName}</span>
+              <div className="aspect-square w-full overflow-hidden bg-gradient-to-br from-slate-100 to-blue-50">
+                <img
+                  src={image}
+                  alt={category.altText || fullName}
+                  className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </div>
+              <div className="p-2.5">
+                <div className="line-clamp-2 min-h-[34px] text-xs font-black leading-tight text-slate-950 group-hover:text-blue-700">
+                  {fullName}
+                </div>
+              </div>
             </a>
           );
         })}
