@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { LockKeyhole, ShieldCheck } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { getDemoAdminUsers, loginAdmin } from "../../services/AdminAuthService";
+import { loginAdmin } from "../../services/AdminAuthService";
 
 export default function AdminLoginPage() {
   const navigate = useNavigate();
@@ -9,13 +9,11 @@ export default function AdminLoginPage() {
   const redirectTo = location.state?.from || "/admin";
 
   const [form, setForm] = useState({
-    email: "admin@gundam.local",
-    password: "admin123",
+    email: "",
+    password: "",
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-
-  const demoUsers = getDemoAdminUsers();
 
   function patch(field, value) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -24,29 +22,25 @@ export default function AdminLoginPage() {
   async function submit(event) {
     event.preventDefault();
     setError("");
+
+    const email = form.email.trim();
+    const password = form.password;
+
+    if (!email || !password) {
+      setError("Vui lòng nhập email và mật khẩu admin.");
+      return;
+    }
+
     setLoading(true);
 
     try {
-      await loginAdmin({ email: form.email, password: form.password });
+      await loginAdmin({ email, password });
       navigate(redirectTo, { replace: true });
     } catch (err) {
       setError(err?.response?.data?.message || err?.message || "Login failed.");
     } finally {
       setLoading(false);
     }
-  }
-
-  function fillDemo(email) {
-    const passwordMap = {
-      "admin@gundam.local": "admin123",
-      "manager@gundam.local": "manager123",
-      "staff@gundam.local": "staff123",
-    };
-
-    setForm({
-      email,
-      password: passwordMap[email] || "",
-    });
   }
 
   return (
@@ -63,11 +57,11 @@ export default function AdminLoginPage() {
           </h1>
 
           <p className="mt-4 max-w-2xl text-sm font-semibold leading-7 text-white/70">
-            Demo login guard cho môi trường sandbox/SIT. Production cần backend auth, session và phân quyền server-side.
+            Khu vực quản trị dùng tài khoản được tạo trong Admin User Center và xác thực qua backend.
           </p>
 
-          <div className="mt-8 rounded-3xl border border-amber-300/30 bg-amber-300/10 p-5 text-sm font-semibold text-amber-100">
-            Không dùng tài khoản demo này cho production. Không lưu password thật trong frontend.
+          <div className="mt-8 rounded-3xl border border-blue-300/30 bg-blue-300/10 p-5 text-sm font-semibold text-blue-100">
+            Không hardcode tài khoản admin trên frontend. Tài khoản, role và permission phải được quản lý từ backend/database.
           </div>
         </div>
 
@@ -92,7 +86,9 @@ export default function AdminLoginPage() {
             <input
               value={form.email}
               onChange={(event) => patch("email", event.target.value)}
-              placeholder="Email"
+              type="email"
+              autoComplete="username"
+              placeholder="Email admin"
               className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold outline-none focus:border-blue-500"
             />
 
@@ -100,6 +96,7 @@ export default function AdminLoginPage() {
               value={form.password}
               onChange={(event) => patch("password", event.target.value)}
               type="password"
+              autoComplete="current-password"
               placeholder="Password"
               className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold outline-none focus:border-blue-500"
             />
@@ -113,26 +110,8 @@ export default function AdminLoginPage() {
             {loading ? "Logging in..." : "Login"}
           </button>
 
-          <div className="mt-6 rounded-3xl bg-slate-50 p-4">
-            <div className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">
-              Backend test account
-            </div>
-
-            <div className="mt-3 space-y-2">
-              {demoUsers.map((user) => (
-                <button
-                  key={user.email}
-                  type="button"
-                  onClick={() => fillDemo(user.email)}
-                  className="flex w-full items-center justify-between rounded-2xl bg-white px-4 py-3 text-left text-sm font-bold hover:bg-blue-50"
-                >
-                  <span>{user.email}</span>
-                  <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-black text-blue-700">
-                    {user.role}
-                  </span>
-                </button>
-              ))}
-            </div>
+          <div className="mt-6 rounded-3xl bg-slate-50 p-4 text-xs font-bold leading-5 text-slate-600">
+            Admin account được tạo trong <b>Admin → Users</b>. Không dùng tài khoản demo hoặc mật khẩu mặc định trên production.
           </div>
         </form>
       </section>

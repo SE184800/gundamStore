@@ -1,4 +1,4 @@
-﻿import {
+import {
   apiRequest,
   clearStoredAdminSession,
   clearStoredAdminToken,
@@ -40,14 +40,6 @@ const ADMIN_PERMISSION_PREFIXES = [
   "users:",
   "roles:",
 ];
-
-export function getDemoAdminUsers() {
-  return [
-    { email: "admin@gundam.local", role: "ADMIN" },
-    { email: "manager@gundam.local", role: "MANAGER" },
-    { email: "staff@gundam.local", role: "STAFF" },
-  ];
-}
 
 function decodeJwtPayload(token = "") {
   try {
@@ -109,6 +101,17 @@ function normalizeAdminUser(user = {}) {
   };
 }
 
+function safePublicAdminProfile(admin = {}) {
+  return {
+    id: admin.id,
+    name: admin.name,
+    email: admin.email,
+    role: admin.role,
+    roleCode: admin.roleCode,
+    permissions: Array.isArray(admin.permissions) ? admin.permissions : [],
+  };
+}
+
 export async function loginAdmin({ email, password }) {
   const data = await apiRequest("/api/auth/login", {
     method: "POST",
@@ -134,26 +137,28 @@ export async function loginAdmin({ email, password }) {
   }
 
   const now = new Date().toISOString();
+  const safeAdmin = safePublicAdminProfile(admin);
 
   setStoredAdminToken(token);
 
+  // Keep only non-sensitive profile/session metadata here.
+  // The bearer token is stored separately by ApiClient.
   localStorage.setItem(
     ADMIN_SESSION_KEY,
     JSON.stringify({
-      token,
-      admin,
+      admin: safeAdmin,
       loggedInAt: now,
       lastActiveAt: now,
     })
   );
 
-  localStorage.setItem(ADMIN_USER_KEY, JSON.stringify(admin));
+  localStorage.setItem(ADMIN_USER_KEY, JSON.stringify(safeAdmin));
 
   return {
     success: true,
     token,
-    admin,
-    user: admin,
+    admin: safeAdmin,
+    user: safeAdmin,
   };
 }
 
