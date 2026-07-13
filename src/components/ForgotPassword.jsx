@@ -23,6 +23,7 @@ export default function ForgotPassword() {
       return;
     }
 
+    
     setIsSubmitting(true);
     triggerToast("info", "Đang gửi yêu cầu khôi phục...");
 
