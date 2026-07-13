@@ -78,9 +78,6 @@ export default function CartPage() {
   const [voucherCode, setVoucherCode] = useState("");
   const [shippingMethod, setShippingMethod] = useState("FAST");
 
-  console.log("=== BẮT ĐẦU RENDER GIỎ HÀNG ===");
-  console.log("1. Mảng cart tổng hiện tại trong State:", cart);
-
   const selectedItems = cart.filter((item) => item.selected !== false);
 
   const subtotal = selectedItems.reduce(
@@ -95,9 +92,6 @@ export default function CartPage() {
     0,
     subtotal + baseShippingFee - voucher.discount - voucher.shippingDiscount
   );
-
-  console.log("4. Tổng số tiền thanh toán cuối cùng (total):", total);
-  console.log("=================================");
 
   // 🟢 BỔ SUNG 1: Tự động bắn Toast khi hệ thống kiểm tra xong mã Voucher
   useEffect(() => {
@@ -115,8 +109,6 @@ export default function CartPage() {
   }, [voucher.valid, voucherCode]);
 
   function updateCart(next) {
-    console.log("👉 Hàm updateCart ĐÃ ĐƯỢC KÍCH HOẠT!");
-    console.log("👉 Dữ liệu mảng NEXT chuẩn bị lưu:", next);
 
     localStorage.setItem("gundam-cart-final", JSON.stringify(next));
 
