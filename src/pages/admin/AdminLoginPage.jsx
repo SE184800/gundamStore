@@ -34,10 +34,19 @@ export default function AdminLoginPage() {
     setLoading(true);
 
     try {
-      await loginAdmin({ email, password });
+      const result = await loginAdmin({ email, password });
+
+      if (result?.admin?.mustChangePassword) {
+        navigate("/admin/change-password", {
+          replace: true,
+          state: { from: redirectTo },
+        });
+        return;
+      }
+
       navigate(redirectTo, { replace: true });
     } catch (err) {
-      setError(err?.response?.data?.message || err?.message || "Login failed.");
+      setError(err?.data?.message || err?.message || "Đăng nhập thất bại.");
     } finally {
       setLoading(false);
     }

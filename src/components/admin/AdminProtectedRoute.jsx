@@ -15,6 +15,7 @@ export default function AdminProtectedRoute({ children }) {
   const [checking, setChecking] = useState(true);
   const [sessionExpired, setSessionExpired] = useState(false);
   const [accessDenied, setAccessDenied] = useState(false);
+  const [passwordChangeRequired, setPasswordChangeRequired] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -32,23 +33,17 @@ export default function AdminProtectedRoute({ children }) {
       }
 
       try {
-        await refreshCurrentAdminFromApi();
+        const freshAdmin = await refreshCurrentAdminFromApi();
         touchAdminSession();
-        const freshAdmin = getCurrentAdmin();
-        console.log("account: ", freshAdmin);
-        const role = freshAdmin?.role || freshAdmin?.roleCode;
-        console.log("role id: ", role);
-        const ADMIN_ROLE = "ADMIN"; // <-- Dán đầy đủ chuỗi ID dòng ADMIN trong ảnh vào đây nhé
 
-        const isAuthorizedAdmin = role === ADMIN_ROLE;
-
-        if (!isAuthorizedAdmin) {
+        if (freshAdmin?.mustChangePassword) {
           if (!cancelled) {
-            setAccessDenied(true);
+            setPasswordChangeRequired(true);
             setChecking(false);
           }
           return;
         }
+
         if (!canAccessAdminPath(location.pathname)) {
           if (!cancelled) {
             setAccessDenied(true);
@@ -60,6 +55,7 @@ export default function AdminProtectedRoute({ children }) {
         if (!cancelled) {
           setSessionExpired(false);
           setAccessDenied(false);
+          setPasswordChangeRequired(false);
           setChecking(false);
         }
       } catch {
@@ -111,9 +107,13 @@ export default function AdminProtectedRoute({ children }) {
     return <Navigate to="/admin/login" replace state={{ from: location.pathname, reason: "expired" }} />;
   }
 
+  if (passwordChangeRequired) {
+    return <Navigate to="/admin/change-password" replace state={{ from: location.pathname }} />;
+  }
+
   if (accessDenied) {
     return <Navigate to="/admin/access-denied" replace state={{ from: location.pathname }} />;
   }
-  console.log("🚀 Đã chạy qua cổng bảo vệ Admin thành công!");
+
   return children;
 }

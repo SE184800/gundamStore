@@ -109,6 +109,9 @@ function safePublicAdminProfile(admin = {}) {
     role: admin.role,
     roleCode: admin.roleCode,
     permissions: Array.isArray(admin.permissions) ? admin.permissions : [],
+    mustChangePassword: Boolean(admin.mustChangePassword),
+    passwordChangedAt: admin.passwordChangedAt || null,
+    lastLoginAt: admin.lastLoginAt || null,
   };
 }
 
@@ -159,6 +162,49 @@ export async function loginAdmin({ email, password }) {
     token,
     admin: safeAdmin,
     user: safeAdmin,
+  };
+}
+
+export async function changeAdminPassword({ currentPassword, newPassword, confirmPassword }) {
+  const data = await apiRequest("/api/auth/change-password", {
+    method: "POST",
+    body: JSON.stringify({ currentPassword, newPassword, confirmPassword }),
+  });
+
+  const token = data?.token || "";
+  const user = data?.user || null;
+
+  if (!token || !user) {
+    throw new Error(data?.message || "Không thể cập nhật mật khẩu.");
+  }
+
+  const admin = normalizeAdminUser(user);
+  if (!hasAdminPermission(admin)) {
+    throw new Error("Tài khoản không còn quyền truy cập admin.");
+  }
+
+  const safeAdmin = safePublicAdminProfile(admin);
+  const session = getAdminSession();
+  const now = new Date().toISOString();
+
+  setStoredAdminToken(token);
+  localStorage.setItem(ADMIN_USER_KEY, JSON.stringify(safeAdmin));
+  localStorage.setItem(
+    ADMIN_SESSION_KEY,
+    JSON.stringify({
+      ...(session || {}),
+      admin: safeAdmin,
+      loggedInAt: session?.loggedInAt || now,
+      lastActiveAt: now,
+    })
+  );
+
+  return {
+    success: true,
+    token,
+    admin: safeAdmin,
+    user: safeAdmin,
+    message: data?.message || "Đổi mật khẩu thành công.",
   };
 }
 

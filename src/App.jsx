@@ -42,6 +42,7 @@ const OrderSuccessPage = lazy(() => import("./pages/storefront/OrderSuccessPage"
 const StorefrontSupportPage = lazy(() => import("./pages/storefront/StorefrontSupportPage"));
 const PolicyPage = lazy(() => import("./pages/storefront/PolicyPage"));
 const AdminLoginPage = lazy(() => import("./pages/admin/AdminLoginPage"));
+const AdminChangePasswordPage = lazy(() => import("./pages/admin/AdminChangePasswordPage"));
 const AdminAccessDeniedPage = lazy(() => import("./pages/admin/AdminAccessDeniedPage"));
 const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
@@ -236,6 +237,7 @@ export default function App() {
 
           {/* 🔐 Admin Module (Grouped & Protected) */}
           <Route path="/admin/login" element={<AdminLoginPage />} />
+          <Route path="/admin/change-password" element={<AdminChangePasswordPage />} />
           <Route path="/admin/access-denied" element={<AdminAccessDeniedPage />} />
 
           <Route path="/admin" element={<AdminProtectedRoute><AdminLayout /></AdminProtectedRoute>}>

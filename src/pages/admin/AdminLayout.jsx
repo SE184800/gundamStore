@@ -9,6 +9,7 @@ import {
   History,
   CalendarDays,
   Image,
+  KeyRound,
   LayoutDashboard,
   Megaphone,
   MessageCircle,
@@ -79,6 +80,7 @@ const copy = {
     analytics: "Phân tích",
     auditLogs: "Nhật ký hoạt động",
     adminUsers: "Người dùng & phân quyền",
+    changePassword: "Đổi mật khẩu",
     settings: "Cài đặt",
     viewStore: "Xem cửa hàng",
     search: "Tìm trong admin...",
@@ -129,6 +131,7 @@ const copy = {
     analytics: "Analytics",
     auditLogs: "Audit Logs",
     adminUsers: "Users & Roles",
+    changePassword: "Change password",
     settings: "Settings",
     viewStore: "View Store",
     search: "Search admin...",
@@ -316,6 +319,7 @@ export default function AdminLayout() {
               <NavItem to="/admin/analytics" icon={Activity} label={t.analytics} />
               <NavItem to="/admin/audit-logs" icon={History} label={t.auditLogs} />
               <NavItem to="/admin/users" icon={Users} label={t.adminUsers} />
+              <NavItem to="/admin/change-password" icon={KeyRound} label={t.changePassword} />
               <NavItem to="/admin/settings" icon={Settings} label={t.settings} />
               <NavItem to="/admin/qa-helper" icon={TestTube2} label={t.qaHelper} />
             </NavGroup>

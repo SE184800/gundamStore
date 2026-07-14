@@ -34,6 +34,20 @@ function shortDate(value) {
   return new Date(value).toLocaleString("vi-VN");
 }
 
+function passwordPolicyErrors(password = "") {
+  const value = String(password || "");
+  const errors = [];
+
+  if (value.length < 12) errors.push("ít nhất 12 ký tự");
+  if (!/[a-z]/.test(value)) errors.push("1 chữ thường");
+  if (!/[A-Z]/.test(value)) errors.push("1 chữ hoa");
+  if (!/[0-9]/.test(value)) errors.push("1 chữ số");
+  if (!/[^A-Za-z0-9]/.test(value)) errors.push("1 ký tự đặc biệt");
+  if (/\s/.test(value)) errors.push("không có khoảng trắng");
+
+  return errors;
+}
+
 function roleTone(code = "") {
   const value = String(code || "").toUpperCase();
 
@@ -150,6 +164,15 @@ export default function AdminUsers() {
 
   async function saveUser() {
     try {
+      const passwordErrors = userDraft.password
+        ? passwordPolicyErrors(userDraft.password)
+        : [];
+
+      if (passwordErrors.length) {
+        alert(`Mật khẩu cần: ${passwordErrors.join(", ")}.`);
+        return;
+      }
+
       const payload = {
         name: userDraft.name,
         roleId: userDraft.roleId,
@@ -348,17 +371,32 @@ export default function AdminUsers() {
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      {user.active ? (
-                        <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-700">
-                          <CheckCircle2 size={13} className="mr-1 inline" />
-                          Active
-                        </span>
-                      ) : (
-                        <span className="rounded-full bg-red-50 px-3 py-1 text-xs font-black text-red-700">
-                          <XCircle size={13} className="mr-1 inline" />
-                          Inactive
-                        </span>
-                      )}
+                      <div className="flex flex-col items-start gap-1">
+                        {user.active ? (
+                          <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-700">
+                            <CheckCircle2 size={13} className="mr-1 inline" />
+                            Active
+                          </span>
+                        ) : (
+                          <span className="rounded-full bg-red-50 px-3 py-1 text-xs font-black text-red-700">
+                            <XCircle size={13} className="mr-1 inline" />
+                            Inactive
+                          </span>
+                        )}
+
+                        {user.mustChangePassword && (
+                          <span className="rounded-full bg-amber-50 px-3 py-1 text-[11px] font-black text-amber-700">
+                            <KeyRound size={12} className="mr-1 inline" />
+                            Must change password
+                          </span>
+                        )}
+
+                        {user.lockedUntil && new Date(user.lockedUntil).getTime() > Date.now() && (
+                          <span className="rounded-full bg-red-50 px-3 py-1 text-[11px] font-black text-red-700">
+                            Locked until {shortDate(user.lockedUntil)}
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-4 py-3 text-xs font-bold text-slate-500">{shortDate(user.createdAt)}</td>
                     <td className="px-4 py-3">
@@ -433,7 +471,8 @@ export default function AdminUsers() {
         <div className="space-y-4">
           {temporaryPassword && (
             <div className="rounded-2xl border border-amber-100 bg-amber-50 p-4 text-sm font-black text-amber-800">
-              Temporary password: <span className="font-mono">{temporaryPassword}</span>
+              Mật khẩu tạm dùng một lần: <span className="font-mono">{temporaryPassword}</span>
+              <div className="mt-2 text-xs font-bold">Hãy gửi riêng cho user. Hệ thống sẽ bắt đổi ngay lần đăng nhập đầu.</div>
             </div>
           )}
 
@@ -441,22 +480,22 @@ export default function AdminUsers() {
           <AdminTextField label="Email" type="email" value={userDraft.email} disabled={Boolean(userDraft.id)} onChange={(value) => setUserDraft((prev) => ({ ...prev, email: value }))} />
           <AdminSelect label="Role" options={roleOptions.filter((item) => item.value)} value={userDraft.roleId} onChange={(value) => setUserDraft((prev) => ({ ...prev, roleId: value }))} />
           <AdminTextField
-            label={userDraft.id ? "New password (optional)" : "Password (optional, auto temp password if blank)"}
+            label={userDraft.id ? "Mật khẩu tạm mới (bỏ trống nếu không reset)" : "Mật khẩu tạm (bỏ trống để tự tạo)"}
             type="password"
             value={userDraft.password}
             onChange={(value) => setUserDraft((prev) => ({ ...prev, password: value }))}
           />
           <AdminToggle label="Active" checked={userDraft.active !== false} onChange={(value) => setUserDraft((prev) => ({ ...prev, active: value }))} />
 
-          {userDraft.password && userDraft.password.length < 8 && (
-            <div className="rounded-2xl bg-red-50 p-3 text-xs font-black text-red-700">
-              Password must be at least 8 characters.
+          {userDraft.password && passwordPolicyErrors(userDraft.password).length > 0 && (
+            <div className="rounded-2xl bg-red-50 p-3 text-xs font-black leading-5 text-red-700">
+              Mật khẩu cần: {passwordPolicyErrors(userDraft.password).join(", ")}.
             </div>
           )}
 
-          <div className="rounded-2xl bg-blue-50 p-3 text-xs font-bold text-blue-800">
+          <div className="rounded-2xl bg-blue-50 p-3 text-xs font-bold leading-5 text-blue-800">
             <KeyRound size={14} className="mr-1 inline" />
-            Password reset will be written to DB immediately after save.
+            Tối thiểu 12 ký tự, có chữ hoa, chữ thường, số và ký tự đặc biệt. Tạo mới hoặc reset đều bắt user tự đổi mật khẩu ở lần đăng nhập kế tiếp.
           </div>
         </div>
       </AdminDrawer>
