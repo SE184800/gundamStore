@@ -240,10 +240,11 @@ export function touchAdminSession() {
 export function isAdminSessionExpired() {
   const session = getAdminSession();
 
-  if (!session?.token) return true;
-  if (isJwtExpired(session.token)) return true;
+  if (!session) return true;
 
-  const lastActiveAt = new Date(session.lastActiveAt || session.loggedInAt || 0).getTime();
+  const lastActiveAt = new Date(
+    session.lastActiveAt || session.loggedInAt || 0
+  ).getTime();
 
   if (!Number.isFinite(lastActiveAt)) return true;
 
