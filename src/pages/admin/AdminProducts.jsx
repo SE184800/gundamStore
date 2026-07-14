@@ -25,6 +25,7 @@ import {
   previewAdminProductImportCsv,
   updateAdminProductApi,
 } from "../../services/AdminProductApiService";
+import { uploadAdminProductImages } from "../../services/AdminMediaApiService";
 
 const emptyDraft = {
   id: "",
@@ -950,26 +951,143 @@ function getProductTabMatch(product = {}, tab = "all") {
   return true;
 }
 
+function parseBulkCsvLine(line = "") {
+  const values = [];
+  let current = "";
+  let quoted = false;
+
+  for (let index = 0; index < line.length; index += 1) {
+    const char = line[index];
+    const next = line[index + 1];
+
+    if (char === '"' && quoted && next === '"') {
+      current += '"';
+      index += 1;
+    } else if (char === '"') {
+      quoted = !quoted;
+    } else if (char === "," && !quoted) {
+      values.push(current.trim());
+      current = "";
+    } else {
+      current += char;
+    }
+  }
+
+  values.push(current.trim());
+  return values;
+}
+
+function getBulkCsvSkus(csvText = "") {
+  const lines = String(csvText || "")
+    .replace(/^\uFEFF/, "")
+    .split(/\r?\n/)
+    .filter((line) => line.trim());
+
+  if (lines.length < 2) return [];
+
+  const headers = parseBulkCsvLine(lines[0]).map((value) => value.toLowerCase());
+  const skuIndex = headers.indexOf("sku");
+  if (skuIndex < 0) return [];
+
+  return Array.from(new Set(
+    lines
+      .slice(1)
+      .map((line) => String(parseBulkCsvLine(line)[skuIndex] || "").trim().toUpperCase())
+      .filter(Boolean)
+  )).sort((a, b) => b.length - a.length);
+}
+
+function imageStem(filename = "") {
+  return String(filename || "")
+    .replace(/\.[^.]+$/, "")
+    .trim()
+    .toUpperCase();
+}
+
+function imageOrderForSku(file, sku) {
+  const stem = imageStem(file?.name);
+  if (stem === sku) return 0;
+  const suffix = stem.slice(sku.length).replace(/^[-_]/, "");
+  const number = Number(String(suffix).match(/\d+/)?.[0] || 999);
+  return Number.isFinite(number) ? number : 999;
+}
+
+function matchBulkImagesToSkus(csvText = "", selectedFiles = []) {
+  const skus = getBulkCsvSkus(csvText);
+  const bySku = new Map();
+  const unmatched = [];
+  const oversized = [];
+
+  for (const file of Array.from(selectedFiles || [])) {
+    if (!String(file?.type || "").startsWith("image/")) {
+      unmatched.push(file);
+      continue;
+    }
+
+    if (Number(file.size || 0) > 10 * 1024 * 1024) {
+      oversized.push(file);
+      continue;
+    }
+
+    const stem = imageStem(file.name);
+    const sku = skus.find((item) => stem === item || stem.startsWith(`${item}-`) || stem.startsWith(`${item}_`));
+
+    if (!sku) {
+      unmatched.push(file);
+      continue;
+    }
+
+    if (!bySku.has(sku)) bySku.set(sku, []);
+    bySku.get(sku).push(file);
+  }
+
+  const overLimit = [];
+
+  for (const [sku, files] of bySku.entries()) {
+    files.sort((a, b) => imageOrderForSku(a, sku) - imageOrderForSku(b, sku) || a.name.localeCompare(b.name, undefined, { numeric: true }));
+
+    if (files.length > 6) {
+      overLimit.push({ sku, count: files.length });
+      bySku.set(sku, files.slice(0, 6));
+    }
+  }
+
+  return {
+    bySku,
+    imageSkus: Array.from(bySku.keys()),
+    matchedFiles: Array.from(bySku.values()).reduce((sum, files) => sum + files.length, 0),
+    unmatched,
+    oversized,
+    overLimit,
+  };
+}
+
 function ProductBulkImportExportPanel({ onImported }) {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState("upsert");
   const [csvText, setCsvText] = useState("");
+  const [imageFiles, setImageFiles] = useState([]);
   const [preview, setPreview] = useState(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
+
+  const imageMatch = useMemo(
+    () => matchBulkImagesToSkus(csvText, imageFiles),
+    [csvText, imageFiles]
+  );
 
   async function handleFile(event) {
     const file = event.target.files?.[0];
     if (!file) return;
 
     if (!file.name.toLowerCase().endsWith(".csv") && !file.type.includes("csv")) {
-      alert("Please upload CSV file only for this phase.");
+      alert("Vui lòng chọn file CSV. File này có thể mở và chỉnh sửa trực tiếp bằng Excel.");
       event.target.value = "";
       return;
     }
 
     if (file.size > 2 * 1024 * 1024) {
-      alert("CSV file is too large. Maximum 2MB for this phase.");
+      alert("File CSV quá lớn. Dung lượng tối đa 2MB.");
       event.target.value = "";
       return;
     }
@@ -977,49 +1095,107 @@ function ProductBulkImportExportPanel({ onImported }) {
     const text = await file.text();
     setCsvText(text);
     setPreview(null);
-    setMessage(`Loaded ${file.name}`);
+    setMessage(`Đã đọc file ${file.name}`);
+  }
+
+  function handleImageFiles(event) {
+    const files = Array.from(event.target.files || []);
+    setImageFiles(files);
+    setPreview(null);
+    setMessage(files.length ? `Đã chọn ${files.length} ảnh. Hệ thống sẽ ghép theo SKU.` : "");
   }
 
   async function previewImport() {
+    if (imageMatch.oversized.length) {
+      setMessage(`Có ${imageMatch.oversized.length} ảnh lớn hơn 10MB. Vui lòng giảm dung lượng trước khi tiếp tục.`);
+      return;
+    }
+
+    if (imageMatch.overLimit.length) {
+      setMessage(`Mỗi sản phẩm tối đa 6 ảnh. Vui lòng giảm ảnh của: ${imageMatch.overLimit.map((item) => `${item.sku} (${item.count})`).join(", ")}.`);
+      return;
+    }
+
     setBusy(true);
     setMessage("");
 
     try {
-      const result = await previewAdminProductImportCsv(csvText);
+      const result = await previewAdminProductImportCsv(csvText, {
+        mode,
+        imageSkus: imageMatch.imageSkus,
+      });
       setPreview(result);
-      setMessage(`Preview: ${result.validRows}/${result.totalRows} valid row(s).`);
+      setMessage(
+        `Preview: ${result.validRows}/${result.totalRows} dòng hợp lệ; tạo ${result.createRows || 0}; cập nhật ${result.updateRows || 0}; bỏ qua ${result.skippedRows || 0}.`
+      );
     } catch (error) {
-      setMessage(error?.message || "Preview failed.");
+      setMessage(error?.message || "Preview thất bại.");
     } finally {
       setBusy(false);
     }
   }
 
+  async function uploadMatchedProductImages(importedProducts = []) {
+    const productBySku = new Map(
+      (importedProducts || []).map((product) => [String(product.sku || "").toUpperCase(), product])
+    );
+    let uploadedProducts = 0;
+    let uploadedImages = 0;
+    const failures = [];
+
+    for (const [sku, files] of imageMatch.bySku.entries()) {
+      const product = productBySku.get(sku);
+
+      if (!product?.id) {
+        continue;
+      }
+
+      try {
+        await uploadAdminProductImages(product.id, files, { replace: true });
+        uploadedProducts += 1;
+        uploadedImages += files.length;
+      } catch (error) {
+        failures.push(`${sku}: ${error?.message || "upload failed"}`);
+      }
+    }
+
+    return { uploadedProducts, uploadedImages, failures };
+  }
+
   async function commitImport() {
     if (!preview) {
-      alert("Please preview before commit.");
+      alert("Vui lòng bấm Preview trước khi Commit.");
       return;
     }
 
     if (preview.errorRows > 0) {
-      alert("Import has error rows. Please fix CSV and preview again.");
+      alert("File còn dòng lỗi. Vui lòng sửa CSV rồi Preview lại.");
       return;
     }
 
-    if (!window.confirm(`Commit import with mode: ${mode}?`)) return;
+    if (!window.confirm(`Xác nhận import theo chế độ: ${mode}?`)) return;
 
     setBusy(true);
     setMessage("");
 
     try {
-      const result = await commitAdminProductImportCsv(csvText, mode);
-      setMessage(`Import done. Created ${result.created}, updated ${result.updated}, variants ${result.variants}, skipped ${result.skipped}.`);
+      const result = await commitAdminProductImportCsv(csvText, mode, imageMatch.imageSkus);
+      const uploadResult = await uploadMatchedProductImages(result.products || []);
+      const baseMessage = `Import xong: tạo ${result.created}, cập nhật ${result.updated}, variants ${result.variants}, bỏ qua ${result.skipped}. Ảnh: ${uploadResult.uploadedImages} ảnh cho ${uploadResult.uploadedProducts} sản phẩm.`;
+
+      if (uploadResult.failures.length) {
+        setMessage(`${baseMessage}\nẢnh lỗi:\n${uploadResult.failures.join("\n")}`);
+      } else {
+        setMessage(baseMessage);
+        setCsvText("");
+        setImageFiles([]);
+      }
+
       setPreview(null);
-      setCsvText("");
       await onImported?.();
     } catch (error) {
-      const details = error?.data?.errorRows?.slice?.(0, 3)?.map((row) => `Line ${row.line}: ${row.errors.join("; ")}`).join("\n");
-      setMessage(details || error?.message || "Commit failed.");
+      const details = error?.data?.errorRows?.slice?.(0, 5)?.map((row) => `Dòng ${row.line}: ${row.errors.join("; ")}`).join("\n");
+      setMessage(details || error?.message || "Commit thất bại.");
     } finally {
       setBusy(false);
     }
@@ -1029,9 +1205,9 @@ function ProductBulkImportExportPanel({ onImported }) {
     <section className="mb-4 rounded-3xl border border-blue-100 bg-blue-50 p-4">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <div className="text-sm font-black text-blue-900">Bulk Import / Export Products</div>
+          <div className="text-sm font-black text-blue-900">Mass Create / Update Products</div>
           <p className="mt-1 text-sm font-semibold text-blue-800/80">
-            CSV first phase. Preview validates line number, product readiness, category/supplier code and variant data before commit.
+            Import CSV bằng Excel, cập nhật theo SKU và upload nhiều ảnh tự động lên Supabase.
           </p>
         </div>
 
@@ -1041,46 +1217,94 @@ function ProductBulkImportExportPanel({ onImported }) {
             onClick={() => void downloadAdminProductImportTemplateCsv()}
             className="rounded-2xl border border-blue-200 bg-white px-4 py-2 text-xs font-black text-blue-700 hover:bg-blue-50"
           >
-            Download Template
+            Tải file mẫu
           </button>
           <button
             type="button"
             onClick={() => void exportAdminProductsCsv()}
             className="rounded-2xl border border-emerald-200 bg-white px-4 py-2 text-xs font-black text-emerald-700 hover:bg-emerald-50"
           >
-            Export Products
+            Export sản phẩm
           </button>
           <button
             type="button"
             onClick={() => setOpen((value) => !value)}
             className="rounded-2xl bg-blue-700 px-4 py-2 text-xs font-black text-white hover:bg-blue-800"
           >
-            Import Products
+            {open ? "Đóng import" : "Mass Import"}
           </button>
         </div>
       </div>
 
       {open && (
         <div className="mt-4 rounded-3xl bg-white p-4 shadow-sm">
-          <div className="grid gap-4 lg:grid-cols-[260px_1fr]">
+          <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-xs font-bold leading-5 text-amber-800">
+            Tên ảnh: <b>SKU.jpg</b> là ảnh chính; <b>SKU-2.jpg</b>, <b>SKU-3.jpg</b> là ảnh gallery. Tối đa 6 ảnh/sản phẩm và 10MB/ảnh.
+            Khi update, ô trống trong CSV sẽ giữ nguyên dữ liệu cũ. Dùng <b>__CLEAR__</b> tại cột groupCodes nếu muốn xóa toàn bộ group.
+          </div>
+
+          <div className="grid gap-4 lg:grid-cols-[300px_1fr]">
             <div className="space-y-3">
-              <label className="block text-xs font-black uppercase text-slate-500">Import mode</label>
+              <label className="block text-xs font-black uppercase text-slate-500">Chế độ import</label>
               <select
                 value={mode}
-                onChange={(event) => setMode(event.target.value)}
+                onChange={(event) => {
+                  setMode(event.target.value);
+                  setPreview(null);
+                }}
                 className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm font-bold outline-none"
               >
-                <option value="create">Create new only</option>
-                <option value="update">Update existing by SKU</option>
-                <option value="upsert">Upsert by SKU</option>
+                <option value="create">Chỉ tạo sản phẩm mới</option>
+                <option value="update">Chỉ cập nhật theo SKU</option>
+                <option value="upsert">Có thì cập nhật, chưa có thì tạo</option>
               </select>
 
-              <input
-                type="file"
-                accept=".csv,text/csv"
-                onChange={handleFile}
-                className="w-full rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-3 text-xs font-bold text-slate-600"
-              />
+              <label className="block text-xs font-black text-slate-600">
+                1. Chọn file CSV
+                <input
+                  type="file"
+                  accept=".csv,text/csv"
+                  onChange={handleFile}
+                  className="mt-2 w-full rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-3 text-xs font-bold text-slate-600"
+                />
+              </label>
+
+              <label className="block text-xs font-black text-slate-600">
+                2. Chọn nhiều ảnh
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleImageFiles}
+                  className="mt-2 w-full rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-3 text-xs font-bold text-slate-600"
+                />
+              </label>
+
+              <label className="block text-xs font-black text-slate-600">
+                Hoặc chọn cả thư mục ảnh
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  webkitdirectory=""
+                  directory=""
+                  onChange={handleImageFiles}
+                  className="mt-2 w-full rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-3 text-xs font-bold text-slate-600"
+                />
+              </label>
+
+              <div className="rounded-2xl bg-slate-50 p-3 text-xs font-bold leading-5 text-slate-600">
+                <div>Sản phẩm có ảnh khớp: <b>{imageMatch.imageSkus.length}</b></div>
+                <div>Số ảnh sẽ upload: <b>{imageMatch.matchedFiles}</b></div>
+                <div className={imageMatch.unmatched.length ? "text-amber-700" : ""}>Ảnh chưa khớp SKU: <b>{imageMatch.unmatched.length}</b></div>
+                <div className={imageMatch.oversized.length ? "text-red-600" : ""}>Ảnh trên 10MB: <b>{imageMatch.oversized.length}</b></div>
+              </div>
+
+              {imageMatch.unmatched.length > 0 && (
+                <div className="max-h-28 overflow-auto rounded-2xl border border-amber-200 bg-amber-50 p-3 text-[11px] font-bold text-amber-800">
+                  Chưa khớp: {imageMatch.unmatched.slice(0, 12).map((file) => file.name).join(", ")}
+                </div>
+              )}
 
               <div className="flex flex-wrap gap-2">
                 <button
@@ -1089,7 +1313,7 @@ function ProductBulkImportExportPanel({ onImported }) {
                   onClick={() => void previewImport()}
                   className="rounded-2xl bg-slate-900 px-4 py-2 text-xs font-black text-white disabled:opacity-50"
                 >
-                  Preview
+                  {busy ? "Đang xử lý..." : "Preview"}
                 </button>
                 <button
                   type="button"
@@ -1109,8 +1333,8 @@ function ProductBulkImportExportPanel({ onImported }) {
                   setCsvText(event.target.value);
                   setPreview(null);
                 }}
-                placeholder="Paste CSV content here..."
-                className="h-44 w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 font-mono text-xs outline-none focus:border-blue-300 focus:bg-white"
+                placeholder="Nội dung CSV sẽ hiển thị tại đây..."
+                className="h-52 w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 font-mono text-xs outline-none focus:border-blue-300 focus:bg-white"
               />
 
               {message && (
@@ -1121,20 +1345,25 @@ function ProductBulkImportExportPanel({ onImported }) {
 
               {preview && (
                 <div className="mt-3 overflow-hidden rounded-2xl border border-slate-200">
-                  <div className="grid grid-cols-3 bg-slate-50 p-3 text-xs font-black text-slate-600">
+                  <div className="grid grid-cols-2 gap-2 bg-slate-50 p-3 text-xs font-black text-slate-600 md:grid-cols-5">
                     <div>Total: {preview.totalRows}</div>
-                    <div className="text-emerald-600">Valid: {preview.validRows}</div>
-                    <div className="text-red-600">Errors: {preview.errorRows}</div>
+                    <div className="text-emerald-600">Hợp lệ: {preview.validRows}</div>
+                    <div className="text-blue-600">Tạo: {preview.createRows || 0}</div>
+                    <div className="text-violet-600">Cập nhật: {preview.updateRows || 0}</div>
+                    <div className="text-red-600">Lỗi: {preview.errorRows}</div>
                   </div>
 
-                  <div className="max-h-64 overflow-auto">
-                    {(preview.rows || []).slice(0, 40).map((row) => (
-                      <div key={`${row.line}-${row.sku}-${row.variantSku}`} className="grid gap-2 border-t border-slate-100 p-3 text-xs md:grid-cols-[80px_1fr_1fr_1fr]">
-                        <div className="font-black text-slate-500">Line {row.line}</div>
-                        <div className="font-black text-slate-900">{row.sku}</div>
-                        <div className="text-slate-600">{row.variantSku || "Parent product"}</div>
+                  <div className="max-h-72 overflow-auto">
+                    {(preview.rows || []).slice(0, 80).map((row) => (
+                      <div key={`${row.line}-${row.sku}-${row.variantSku}`} className="grid gap-2 border-t border-slate-100 p-3 text-xs md:grid-cols-[70px_1fr_1fr_1fr]">
+                        <div className="font-black text-slate-500">Dòng {row.line}</div>
+                        <div>
+                          <div className="font-black text-slate-900">{row.sku}</div>
+                          <div className="text-[10px] font-bold uppercase text-blue-600">{row.action}</div>
+                        </div>
+                        <div className="text-slate-600">{row.hasUploadedImages ? "Có ảnh theo SKU" : row.variantSku || "Sản phẩm chính"}</div>
                         <div className={row.valid ? "font-black text-emerald-600" : "font-black text-red-600"}>
-                          {row.valid ? "Valid" : row.errors.join("; ")}
+                          {row.valid ? "Hợp lệ" : row.errors.join("; ")}
                         </div>
                       </div>
                     ))}

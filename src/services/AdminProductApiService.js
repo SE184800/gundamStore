@@ -312,10 +312,10 @@ export async function exportAdminProductsCsv() {
   return text;
 }
 
-export async function previewAdminProductImportCsv(csvText = "") {
+export async function previewAdminProductImportCsv(csvText = "", { mode = "upsert", imageSkus = [] } = {}) {
   const data = await apiRequest("/api/products/admin/import-preview", {
     method: "POST",
-    body: JSON.stringify({ csvText }),
+    body: JSON.stringify({ csvText, mode, imageSkus }),
   });
 
   if (!data?.success) {
@@ -325,10 +325,10 @@ export async function previewAdminProductImportCsv(csvText = "") {
   return data;
 }
 
-export async function commitAdminProductImportCsv(csvText = "", mode = "upsert") {
+export async function commitAdminProductImportCsv(csvText = "", mode = "upsert", imageSkus = []) {
   const data = await apiRequest("/api/products/admin/import-commit", {
     method: "POST",
-    body: JSON.stringify({ csvText, mode }),
+    body: JSON.stringify({ csvText, mode, imageSkus }),
   });
 
   if (!data?.success) {
