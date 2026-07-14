@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
   ArrowRight,
+  ChevronRight,
   Crown,
   Gift,
   Package,
@@ -13,7 +14,7 @@ import { translateStaticText } from "../../i18n";
 import { getSafeHref } from "../../utils/urlSafety";
 import ProductCard from "../../components/storefront/ProductCard";
 import {
-  getStorefrontCategoriesFromApi,
+  getStorefrontCategoryTreeFromApi,
   getStorefrontProductsForStorefront,
 } from "../../services/StorefrontProductApiService";
 import { getStorefrontHomeBannersFromApi } from "../../services/BannerApiService";
@@ -527,70 +528,191 @@ function TrustStrip({ lang }) {
   );
 }
 
-function CategorySidebar({ categories, lang }) {
-  const list = (categories || []).filter((category) => category.active !== false);
+function CategorySidebar({ categoryTree, lang }) {
+  const roots = (categoryTree || []).filter((category) => category?.active !== false);
+  const [expandedRootId, setExpandedRootId] = useState("");
 
-  const fallbackImages = [
-    "/images/products/aerial.jpg",
-    "/images/products/hi-nu.jpg",
-    "/images/products/freedom.jpg",
-    "/images/products/strike-freedom.jpg",
-  ];
+  useEffect(() => {
+    const firstExpandable = roots.find((root) =>
+      (root.children || []).some((child) => child?.active !== false)
+    );
 
-  const getCategoryImage = (category, index) =>
-    category.imageUrl ||
-    category.image ||
-    category.icon ||
-    category.mainImage ||
-    fallbackImages[index % fallbackImages.length];
+    setExpandedRootId((current) => {
+      const currentStillExists = roots.some(
+        (root) =>
+          root.id === current &&
+          (root.children || []).some((child) => child?.active !== false)
+      );
+
+      return currentStillExists ? current : firstExpandable?.id || "";
+    });
+  }, [categoryTree]);
 
   const getCategoryHref = (category) => {
-    const rawKey = category.id === "all" ? "" : category.id || category.slug || category.code || "";
-    const fallback = rawKey ? `/shop?category=${encodeURIComponent(rawKey)}` : "/shop";
+    const rawKey =
+      category.id === "all"
+        ? ""
+        : category.id ||
+          category.backendCategoryId ||
+          category.slug ||
+          category.code ||
+          "";
+
+    const fallback = rawKey
+      ? `/shop?category=${encodeURIComponent(rawKey)}`
+      : "/shop";
+
     return getSafeHref(category.ctaUrl || fallback, fallback);
   };
 
   return (
-    <aside className="rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="mb-4">
-        <div className="text-[10px] font-black uppercase tracking-[0.22em] text-blue-700">Category</div>
-        <h3 className="mt-1 text-xl font-black text-slate-950">
+    <aside className="self-start rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="mb-3">
+        <div className="text-[10px] font-black uppercase tracking-[0.22em] text-blue-700">
+          Category
+        </div>
+
+        <h3 className="mt-0.5 text-lg font-black text-slate-950">
           {lang === "vi" ? "Dòng sản phẩm" : "Product lines"}
         </h3>
+
         <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">
-          {lang === "vi" ? "Chọn dòng để lọc nhanh sản phẩm" : "Tap a line to filter products"}
+          {lang === "vi"
+            ? "Chọn cấp cha hoặc dòng con để xem sản phẩm"
+            : "Choose a parent or child line to view products"}
         </p>
       </div>
 
-      <div className="mobile-hide-scrollbar flex gap-3 overflow-x-auto pb-2 lg:grid lg:grid-cols-2 lg:overflow-visible lg:pb-0">
-        {list.map((category, index) => {
-          const fullName = text(category.name, lang, category.label || category.code || "Category");
-          const image = getCategoryImage(category, index);
-          const href = getCategoryHref(category);
+      <div className="space-y-2">
+        {roots.map((root) => {
+          const children = (root.children || []).filter(
+            (child) => child?.active !== false
+          );
+
+          const hasChildren = children.length > 0;
+          const expanded = hasChildren && expandedRootId === root.id;
+
+          const rootName = text(
+            root.name,
+            lang,
+            root.label || root.code || "Category"
+          );
+
+          const rootCount = Number(
+            root.productCount ||
+              root.count ||
+              children.reduce(
+                (sum, child) =>
+                  sum + Number(child.productCount || child.count || 0),
+                0
+              )
+          );
 
           return (
-            <a
-              key={category.id || category.code || fullName}
-              href={href}
-              title={category.titleInternal || fullName}
-              aria-label={category.altText || fullName}
-              className="group block w-[128px] shrink-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-xl lg:w-full"
+            <div
+              key={root.id || root.code || rootName}
+              className="overflow-hidden rounded-2xl border border-slate-200 bg-white"
             >
-              <div className="aspect-square w-full overflow-hidden bg-gradient-to-br from-slate-100 to-blue-50">
-                <img
-                  src={image}
-                  alt={category.altText || fullName}
-                  className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                  loading="lazy"
-                  decoding="async"
-                />
+              <div className="flex items-stretch bg-slate-50">
+                <a
+                  href={getCategoryHref(root)}
+                  title={root.titleInternal || rootName}
+                  aria-label={root.altText || rootName}
+                  className="flex min-w-0 flex-1 items-center justify-between gap-2 px-3 py-3 text-sm font-black text-slate-900 transition hover:bg-blue-50 hover:text-blue-700"
+                >
+                  <span className="line-clamp-2">{rootName}</span>
+                  <span className="shrink-0 text-[11px] font-black text-slate-400">
+                    ({rootCount})
+                  </span>
+                </a>
+
+                {hasChildren && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setExpandedRootId((current) =>
+                        current === root.id ? "" : root.id
+                      )
+                    }
+                    aria-expanded={expanded}
+                    aria-label={
+                      expanded
+                        ? "Thu gọn dòng sản phẩm con"
+                        : "Mở dòng sản phẩm con"
+                    }
+                    className="flex w-11 shrink-0 items-center justify-center border-l border-slate-200 text-slate-500 transition hover:bg-blue-50 hover:text-blue-700"
+                  >
+                    <ChevronRight
+                      size={17}
+                      className={`transition-transform duration-200 ${
+                        expanded ? "rotate-90" : ""
+                      }`}
+                    />
+                  </button>
+                )}
               </div>
-              <div className="p-2.5">
-                <div className="line-clamp-2 min-h-[34px] text-xs font-black leading-tight text-slate-950 group-hover:text-blue-700">
-                  {fullName}
+
+              {expanded && (
+                <div className="grid grid-cols-2 gap-2 border-t border-slate-100 bg-slate-50/60 p-2">
+                  {children.map((child) => {
+                    const childName = text(
+                      child.name,
+                      lang,
+                      child.label || child.code || "Category"
+                    );
+
+                    const imageUrl =
+                      child.icon ||
+                      child.imageUrl ||
+                      child.image ||
+                      child.mainImage ||
+                      "";
+
+                    const childCount = Number(
+                      child.productCount || child.count || 0
+                    );
+
+                    return (
+                      <a
+                        key={child.id || child.code || childName}
+                        href={getCategoryHref(child)}
+                        title={child.titleInternal || childName}
+                        aria-label={child.altText || childName}
+                        className="group overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-md"
+                      >
+                        <div className="flex h-20 items-center justify-center bg-white p-1.5">
+                          {imageUrl ? (
+                            <img
+                              src={imageUrl}
+                              alt=""
+                              className="h-full w-full object-contain"
+                              loading="lazy"
+                              decoding="async"
+                            />
+                          ) : (
+                            <Package
+                              size={28}
+                              className="text-blue-200 transition group-hover:text-blue-500"
+                            />
+                          )}
+                        </div>
+
+                        <div className="border-t border-slate-100 px-2 py-2">
+                          <div className="line-clamp-2 min-h-8 text-[11px] font-black leading-4 text-slate-900 group-hover:text-blue-700">
+                            {childName}
+                          </div>
+
+                          <div className="mt-1 text-[10px] font-bold text-slate-400">
+                            {childCount}{" "}
+                            {lang === "vi" ? "sản phẩm" : "products"}
+                          </div>
+                        </div>
+                      </a>
+                    );
+                  })}
                 </div>
-              </div>
-            </a>
+              )}
+            </div>
           );
         })}
       </div>
@@ -696,7 +818,7 @@ export default function HomePage() {
   const [dbHeroSettings, setDbHeroSettings] = useState(null);
   const [bannerApiReady, setBannerApiReady] = useState(false);
   const [bannerApiError, setBannerApiError] = useState("");
-  const [backendCategories, setBackendCategories] = useState([]);
+  const [backendCategoryTree, setBackendCategoryTree] = useState([]);
   const { state, actions } = useCms();
   const lang = state.settings?.lang || "vi";
   const sections = useMemo(() => mergeCmsSections(state.homeSections), [state.homeSections]);
@@ -733,16 +855,48 @@ export default function HomePage() {
 
     Promise.allSettled([
       getStorefrontProductsForStorefront(),
-      getStorefrontCategoriesFromApi(),
+      getStorefrontCategoryTreeFromApi(),
     ]).then(([productsResult, categoriesResult]) => {
       if (!alive) return;
 
-      const loadedProducts = productsResult.status === "fulfilled" && Array.isArray(productsResult.value) ? productsResult.value : [];
-      const categoriesFromApi = categoriesResult.status === "fulfilled" && Array.isArray(categoriesResult.value) ? categoriesResult.value : [];
-      const derivedCategories = mergeCategoryLists(categoriesFromApi, deriveCategoriesFromProducts(loadedProducts));
+      const loadedProducts =
+        productsResult.status === "fulfilled" &&
+        Array.isArray(productsResult.value)
+          ? productsResult.value
+          : [];
+
+      const treeFromApi =
+        categoriesResult.status === "fulfilled" &&
+        Array.isArray(categoriesResult.value?.tree)
+          ? categoriesResult.value.tree.filter(
+              (root) => root?.active !== false
+            )
+          : [];
+
+      const derivedCategories = treeFromApi.length
+        ? []
+        : deriveCategoriesFromProducts(loadedProducts);
+
+      const derivedTree = derivedCategories.length
+        ? [
+            {
+              id: "catalog",
+              name: {
+                vi: "Danh mục sản phẩm",
+                en: "Product categories",
+              },
+              ctaUrl: "/shop",
+              active: true,
+              productCount: loadedProducts.length,
+              children: derivedCategories,
+            },
+          ]
+        : [];
 
       setBackendProducts(loadedProducts);
-      setBackendCategories(derivedCategories);
+      setBackendCategoryTree(
+        treeFromApi.length ? treeFromApi : derivedTree
+      );
     });
 
     return () => {
@@ -754,7 +908,34 @@ export default function HomePage() {
     actions.track("page_view", { page: "/" });
   }, [actions]);
 
-  const categories = backendCategories.length ? backendCategories : state.categories || [];
+  const categoryTree = useMemo(() => {
+    if (backendCategoryTree.length) return backendCategoryTree;
+
+    const fallbackChildren = (
+      state.categories?.length ? state.categories : fallbackCategories
+    ).filter(
+      (category) =>
+        category?.active !== false && category?.id !== "all"
+    );
+
+    return [
+      {
+        id: "catalog",
+        name: {
+          vi: "Danh mục sản phẩm",
+          en: "Product categories",
+        },
+        ctaUrl: "/shop",
+        active: true,
+        productCount: fallbackChildren.reduce(
+          (sum, child) =>
+            sum + Number(child.productCount || child.count || 0),
+          0
+        ),
+        children: fallbackChildren,
+      },
+    ];
+  }, [backendCategoryTree, state.categories]);
 
   return (
     <PageShell>
@@ -770,7 +951,7 @@ export default function HomePage() {
         <TrustStrip lang={lang} />
 
         <main className="mx-auto grid max-w-[1200px] gap-4 px-4 pb-8 lg:grid-cols-[300px_1fr]">
-          <CategorySidebar categories={categories.length ? categories : fallbackCategories} lang={lang} />
+          <CategorySidebar categoryTree={categoryTree} lang={lang} />
 
           <div className="space-y-4">
             {sections.map((section, index) => (

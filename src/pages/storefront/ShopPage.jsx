@@ -150,6 +150,32 @@ function findNode(tree = [], id = "all") {
   return null;
 }
 
+function findNodeByUrlKey(tree = [], rawKey = "") {
+  const key = String(rawKey || "").trim();
+
+  if (!key || key === "all") return null;
+
+  for (const root of tree) {
+    const nodes = [root, ...(root.children || [])];
+
+    const match = nodes.find((node) =>
+      [
+        node.id,
+        node.backendCategoryId,
+        node.slug,
+        node.code,
+      ]
+        .filter(Boolean)
+        .map(String)
+        .includes(key)
+    );
+
+    if (match) return match;
+  }
+
+  return null;
+}
+
 function CategoryTree({ t, lang, tree, activeId, onSelect, search, setSearch, allCount }) {
   const [expandedIds, setExpandedIds] = useState(() => new Set());
   const q = normalize(search);
@@ -338,6 +364,16 @@ export default function ShopPage() {
   const [stock, setStock] = useState("all");
   const [selectedCategoryId, setSelectedCategoryId] = useState("all");
   const [sort, setSort] = useState("popular");
+  const [requestedCategoryKey] = useState(() => {
+    try {
+      return (
+        new URLSearchParams(window.location.search).get("category") ||
+        ""
+      );
+    } catch {
+      return "";
+    }
+  });
   const [mobileCategoryOpen, setMobileCategoryOpen] = useState(false);
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
   const [categorySearch, setCategorySearch] = useState("");
@@ -371,6 +407,24 @@ export default function ShopPage() {
   }, []);
 
   const categoryTree = useMemo(() => categoryTreeFromApi.map((node) => normalizeTreeNode(node, lang)), [categoryTreeFromApi, lang]);
+  useEffect(() => {
+    if (!requestedCategoryKey || !categoryTree.length) return;
+
+    if (requestedCategoryKey === "all") {
+      setSelectedCategoryId("all");
+      return;
+    }
+
+    const requestedNode = findNodeByUrlKey(
+      categoryTree,
+      requestedCategoryKey
+    );
+
+    if (requestedNode?.id) {
+      setSelectedCategoryId(requestedNode.id);
+    }
+  }, [categoryTree, requestedCategoryKey]);
+
   const selectedNode = useMemo(() => findNode(categoryTree, selectedCategoryId), [categoryTree, selectedCategoryId]);
   const catalogProductCount = useMemo(
     () => (productsFromApi || []).filter((product) => product.active !== false).length,
