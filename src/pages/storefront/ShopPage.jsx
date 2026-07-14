@@ -151,6 +151,7 @@ function findNode(tree = [], id = "all") {
 }
 
 function CategoryTree({ t, lang, tree, activeId, onSelect, search, setSearch, allCount }) {
+  const [expandedIds, setExpandedIds] = useState(() => new Set());
   const q = normalize(search);
   const visibleTree = tree
     .map((node) => {
@@ -162,6 +163,30 @@ function CategoryTree({ t, lang, tree, activeId, onSelect, search, setSearch, al
   const totalCount = Number.isFinite(Number(allCount))
     ? Number(allCount)
     : tree.reduce((sum, node) => sum + Number(node.count || node.productCount || 0), 0);
+
+  useEffect(() => {
+    const activeParent = tree.find(
+      (node) => node.id === activeId || node.children?.some((child) => child.id === activeId)
+    );
+
+    if (!activeParent?.children?.length) return;
+
+    setExpandedIds((current) => {
+      if (current.has(activeParent.id)) return current;
+      const next = new Set(current);
+      next.add(activeParent.id);
+      return next;
+    });
+  }, [activeId, tree]);
+
+  function toggleExpanded(id) {
+    setExpandedIds((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
 
   return (
     <div className="space-y-3">
@@ -185,28 +210,48 @@ function CategoryTree({ t, lang, tree, activeId, onSelect, search, setSearch, al
       </button>
 
       {visibleTree.map((node) => {
-        const active = activeId === node.id || node.children?.some((child) => child.id === activeId);
-        return (
-          <div key={node.id} className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
-            <button
-              type="button"
-              onClick={() => onSelect(node.id)}
-              className={`flex w-full items-center justify-between gap-3 px-3 py-3 text-left ${active ? "bg-blue-50" : "hover:bg-slate-50"}`}
-            >
-              <span className="min-w-0 flex-1 text-sm font-black leading-tight text-slate-950">{node.name}</span>
-              <span className="shrink-0 text-xs font-black text-slate-400">({node.count || 0})</span>
-            </button>
+        const children = node.children || [];
+        const hasChildren = children.length > 0;
+        const hasActiveChild = children.some((child) => child.id === activeId);
+        const active = activeId === node.id || hasActiveChild;
+        const expanded = Boolean(q) || expandedIds.has(node.id) || hasActiveChild;
 
-            {node.children?.length > 0 && (
-              <div className="divide-y divide-slate-100 border-t border-slate-100">
-                {node.children.map((child) => (
+        return (
+          <div key={node.id} className={`overflow-hidden rounded-2xl border bg-white shadow-sm transition ${active ? "border-blue-200" : "border-slate-100"}`}>
+            <div className={`flex items-stretch ${active ? "bg-blue-50" : "hover:bg-slate-50"}`}>
+              <button
+                type="button"
+                onClick={() => onSelect(node.id)}
+                className="flex min-w-0 flex-1 items-center justify-between gap-3 px-3 py-3 text-left"
+              >
+                <span className="min-w-0 flex-1 text-sm font-black leading-tight text-slate-950">{node.name}</span>
+                <span className="shrink-0 text-xs font-black text-slate-400">({node.count || 0})</span>
+              </button>
+
+              {hasChildren && (
+                <button
+                  type="button"
+                  onClick={() => toggleExpanded(node.id)}
+                  aria-expanded={expanded}
+                  aria-label={expanded ? "Thu gọn danh mục con" : "Mở danh mục con"}
+                  className={`flex w-11 shrink-0 items-center justify-center border-l transition ${active ? "border-blue-100 text-blue-700" : "border-slate-100 text-slate-500 hover:bg-slate-100"}`}
+                >
+                  <ChevronRight size={18} className={`transition-transform duration-200 ${expanded ? "rotate-90" : ""}`} />
+                </button>
+              )}
+            </div>
+
+            {hasChildren && expanded && (
+              <div className="ml-4 divide-y divide-slate-100 border-l-2 border-blue-100 bg-slate-50/50 pl-2">
+                {children.map((child) => (
                   <button
                     key={child.id}
                     type="button"
                     onClick={() => onSelect(child.id)}
-                    className={`flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left transition ${activeId === child.id ? "bg-slate-950 text-white" : "hover:bg-slate-50"}`}
+                    className={`flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left transition ${activeId === child.id ? "bg-slate-950 text-white" : "text-slate-700 hover:bg-blue-50"}`}
                   >
                     <span className="min-w-0 flex items-center gap-2 text-sm font-bold">
+                      <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${activeId === child.id ? "bg-blue-300" : "bg-blue-500"}`} />
                       {(child.icon || child.imageUrl) && <img src={child.icon || child.imageUrl} alt="" className="h-7 w-7 rounded-lg object-contain" loading="lazy" decoding="async" />}
                       <span className="line-clamp-1">{getName(child, lang)}</span>
                     </span>
