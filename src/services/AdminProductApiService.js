@@ -248,17 +248,19 @@ export async function updateAdminProductApi(productId, product = {}) {
   return mapBackendProductForAdmin(data.product);
 }
 
-export async function deactivateAdminProductApi(productId) {
+export async function deleteAdminProductApi(productId) {
   const data = await apiRequest(`/api/products/admin/${encodeURIComponent(productId)}`, {
     method: "DELETE",
   });
 
   if (!data?.success || !data.product) {
-    throw new Error("Backend did not return deactivated product.");
+    throw new Error(data?.message || "Backend did not return deleted product.");
   }
 
   return mapBackendProductForAdmin(data.product);
 }
+
+export const deactivateAdminProductApi = deleteAdminProductApi;
 
 export async function setAdminProductGroupsApi(productId, groupIds = []) {
   const data = await apiRequest(`/api/products/admin/products/${encodeURIComponent(productId)}/groups`, {

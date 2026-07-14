@@ -17,7 +17,7 @@ import { logoutAdmin } from "../../services/AdminAuthService";
 import {
   commitAdminProductImportCsv,
   createAdminProductApi,
-  deactivateAdminProductApi,
+  deleteAdminProductApi,
   downloadAdminProductImportTemplateCsv,
   exportAdminProductsCsv,
   getAdminCatalogReferenceApi,
@@ -1622,14 +1622,14 @@ export default function AdminProducts() {
     }
   }
 
-  async function deactivate(product) {
-    if (!window.confirm(`Ẩn sản phẩm ${product.sku}?`)) return;
+  async function removeProduct(product) {
+    if (!window.confirm(`Xóa vĩnh viễn sản phẩm ${product.sku}? Sản phẩm đã có đơn hàng, phiếu nhập hoặc đánh giá sẽ được backend chặn.`)) return;
 
     try {
-      await deactivateAdminProductApi(product.id);
+      await deleteAdminProductApi(product.id);
       await reload();
     } catch (error) {
-      alert(error?.message || "Deactivate product failed.");
+      alert(error?.message || "Xóa sản phẩm thất bại.");
     }
   }
 
@@ -1845,9 +1845,9 @@ export default function AdminProducts() {
                         </button>
 
                         <button
-                          onClick={() => void deactivate(product)}
+                          onClick={() => void removeProduct(product)}
                           className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-600 hover:bg-red-100"
-                          title="Deactivate"
+                          title="Xóa vĩnh viễn"
                         >
                           <Trash2 size={14} />
                         </button>
