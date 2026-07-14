@@ -1,12 +1,18 @@
 import { useState } from "react";
 import { LockKeyhole, ShieldCheck } from "lucide-react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { loginAdmin } from "../../services/AdminAuthService";
 
 export default function AdminLoginPage() {
-  const navigate = useNavigate();
   const location = useLocation();
-  const redirectTo = location.state?.from || "/admin";
+  const requestedRedirect = location.state?.from;
+  const redirectTo =
+    typeof requestedRedirect === "string" &&
+    requestedRedirect.startsWith("/admin") &&
+    !requestedRedirect.startsWith("/admin/login") &&
+    !requestedRedirect.startsWith("/admin/access-denied")
+      ? requestedRedirect
+      : "/admin";
 
   const [form, setForm] = useState({
     email: "",
@@ -36,15 +42,11 @@ export default function AdminLoginPage() {
     try {
       const result = await loginAdmin({ email, password });
 
-      if (result?.admin?.mustChangePassword) {
-        navigate("/admin/change-password", {
-          replace: true,
-          state: { from: redirectTo },
-        });
-        return;
-      }
+      const nextPath = result?.admin?.mustChangePassword
+        ? "/admin/change-password"
+        : redirectTo;
 
-      navigate(redirectTo, { replace: true });
+      window.location.replace(nextPath);
     } catch (err) {
       setError(err?.data?.message || err?.message || "Đăng nhập thất bại.");
     } finally {

@@ -129,16 +129,9 @@ export async function loginAdmin({ email, password }) {
     throw new Error(data?.message || "Admin login failed.");
   }
 
-  if (isJwtExpired(token)) {
-    throw new Error("Admin token is already expired.");
-  }
-
+  // Backend login and /api/auth/me are the source of truth for authentication/authorization.
+  // Persist the successful response first so route guards can verify it after navigation.
   const admin = normalizeAdminUser(user);
-
-  if (!hasAdminPermission(admin)) {
-    throw new Error("This account does not have admin access.");
-  }
-
   const now = new Date().toISOString();
   const safeAdmin = safePublicAdminProfile(admin);
 
