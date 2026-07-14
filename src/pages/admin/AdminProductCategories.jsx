@@ -193,22 +193,22 @@ export default function AdminProductCategories() {
   }
 
   async function removeParent(item) {
-    if (!window.confirm(`Ẩn danh mục cấp cha “${item.nameVi}”? Các danh mục con sẽ chuyển sang Chưa gán cấp cha.`)) return;
+    if (!window.confirm(`Xóa vĩnh viễn cấp cha “${item.nameVi}”? Các danh mục con sẽ được giữ lại và chuyển sang Chưa gán cấp cha.`)) return;
     try {
       await deleteAdminCategoryGroupApi(item.id);
       await reload();
     } catch (error) {
-      alert(error?.message || "Ẩn danh mục cấp cha thất bại.");
+      alert(error?.message || "Xóa danh mục cấp cha thất bại.");
     }
   }
 
   async function removeChild(item) {
-    if (!window.confirm(`Ẩn danh mục cấp con “${item.nameVi}”?`)) return;
+    if (!window.confirm(`Xóa vĩnh viễn cấp con “${item.nameVi}”? Chỉ có thể xóa khi danh mục không còn sản phẩm.`)) return;
     try {
       await deleteAdminCategoryApi(item.id);
       await reload();
     } catch (error) {
-      alert(error?.message || "Ẩn danh mục cấp con thất bại.");
+      alert(error?.message || "Xóa danh mục cấp con thất bại.");
     }
   }
 
@@ -327,7 +327,7 @@ export default function AdminProductCategories() {
                         <span className={`text-[10px] font-black ${child.active !== false ? "text-emerald-600" : "text-slate-400"}`}>{child.active !== false ? "ACTIVE" : "INACTIVE"}</span>
                         <div className="flex gap-2">
                           <button onClick={() => openEditChild(child)} className="rounded-lg bg-slate-100 p-2 text-slate-700 hover:bg-slate-200" aria-label="Sửa danh mục con"><Edit3 size={14} /></button>
-                          <button onClick={() => void removeChild(child)} className="rounded-lg bg-red-50 p-2 text-red-600 hover:bg-red-100" aria-label="Ẩn danh mục con"><Trash2 size={14} /></button>
+                          <button onClick={() => void removeChild(child)} className="rounded-lg bg-red-50 p-2 text-red-600 hover:bg-red-100" aria-label="Xóa danh mục con"><Trash2 size={14} /></button>
                         </div>
                       </div>
                     </div>
