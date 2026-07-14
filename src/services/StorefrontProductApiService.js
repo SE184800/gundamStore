@@ -335,7 +335,7 @@ export function mapBackendCategoryGroupToStorefront(group = {}) {
 }
 
 export async function getStorefrontCategoryTreeFromApi() {
-  const data = await publicJsonRequest("/products/categories/tree");
+  const data = await publicJsonRequest("/products/categories/tree?catalog=live");
   if (!data?.success) throw new Error("Storefront category tree sync skipped.");
   return {
     groups: Array.isArray(data.groups) ? data.groups.map(mapBackendCategoryGroupToStorefront) : [],
