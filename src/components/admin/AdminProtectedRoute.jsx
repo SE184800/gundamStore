@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import {
-  getCurrentAdmin,
+  getAdminSession,
   isAdminSessionExpired,
   logoutAdmin,
   refreshCurrentAdminFromApi,
@@ -21,9 +21,12 @@ export default function AdminProtectedRoute({ children }) {
     let cancelled = false;
 
     async function verifySession() {
-      const currentAdmin = getCurrentAdmin();
+      const session = getAdminSession();
       const token = getStoredAdminToken();
-      if (!currentAdmin || !token || isAdminSessionExpired()) {
+
+      // The backend token is the source of truth. A missing local profile/session
+      // must be recoverable through /api/auth/me instead of deleting a valid token.
+      if (!token || (session && isAdminSessionExpired())) {
         logoutAdmin();
         if (!cancelled) {
           setSessionExpired(true);

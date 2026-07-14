@@ -265,20 +265,21 @@ export async function refreshCurrentAdminFromApi() {
     throw new Error("This account no longer has admin access.");
   }
 
-  localStorage.setItem(ADMIN_USER_KEY, JSON.stringify(admin));
+  const safeAdmin = safePublicAdminProfile(admin);
+  const now = new Date().toISOString();
 
-  if (session?.token) {
-    localStorage.setItem(
-      ADMIN_SESSION_KEY,
-      JSON.stringify({
-        ...session,
-        admin,
-        lastActiveAt: new Date().toISOString(),
-      })
-    );
-  }
+  localStorage.setItem(ADMIN_USER_KEY, JSON.stringify(safeAdmin));
+  localStorage.setItem(
+    ADMIN_SESSION_KEY,
+    JSON.stringify({
+      ...(session || {}),
+      admin: safeAdmin,
+      loggedInAt: session?.loggedInAt || now,
+      lastActiveAt: now,
+    })
+  );
 
-  return admin;
+  return safeAdmin;
 }
 
 export function logoutAdmin() {
