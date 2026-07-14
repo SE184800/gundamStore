@@ -1,4 +1,4 @@
-﻿import { apiRequest } from "./ApiClient";
+import { apiRequest, clearPublicApiCache } from "./ApiClient";
 import {
   getAdminCatalogReferenceApi,
   getAdminProductsFromApi,
@@ -13,6 +13,15 @@ export {
   updateAdminProductApi,
 };
 
+const CATEGORY_CACHE_PATHS = [
+  "/api/products/categories",
+  "/api/products/categories/tree",
+];
+
+function invalidateStorefrontCategoryCache() {
+  clearPublicApiCache(CATEGORY_CACHE_PATHS);
+}
+
 function normalizeCategoryPayload(category = {}) {
   return {
     code: category.code || "",
@@ -20,6 +29,9 @@ function normalizeCategoryPayload(category = {}) {
     nameVi: category.nameVi || category.name?.vi || "",
     nameEn: category.nameEn || category.name?.en || category.nameVi || category.name?.vi || "",
     description: category.description || category.descriptionVi || category.description?.vi || "",
+    imageUrl: category.imageUrl || category.image || "",
+    icon: category.icon || category.imageUrl || "",
+    altText: category.altText || category.nameVi || category.name?.vi || "",
     active: category.active !== false,
     sortOrder: Number(category.sortOrder || category.sort || 0),
   };
@@ -53,6 +65,7 @@ export async function createAdminCategoryApi(category) {
     body: JSON.stringify(normalizeCategoryPayload(category)),
   });
   if (!data?.success || !data.category) throw new Error(data?.message || "Create category failed.");
+  invalidateStorefrontCategoryCache();
   return data.category;
 }
 
@@ -62,12 +75,14 @@ export async function updateAdminCategoryApi(id, category) {
     body: JSON.stringify(normalizeCategoryPayload(category)),
   });
   if (!data?.success || !data.category) throw new Error(data?.message || "Update category failed.");
+  invalidateStorefrontCategoryCache();
   return data.category;
 }
 
 export async function deleteAdminCategoryApi(id) {
   const data = await apiRequest(`/api/products/admin/categories/${encodeURIComponent(id)}`, { method: "DELETE" });
   if (!data?.success || !data.category) throw new Error(data?.message || "Deactivate category failed.");
+  invalidateStorefrontCategoryCache();
   return data.category;
 }
 
@@ -83,6 +98,7 @@ export async function createAdminCategoryGroupApi(group) {
     body: JSON.stringify(normalizeCategoryGroupPayload(group)),
   });
   if (!data?.success || !data.group) throw new Error(data?.message || "Create category group failed.");
+  invalidateStorefrontCategoryCache();
   return data.group;
 }
 
@@ -92,12 +108,14 @@ export async function updateAdminCategoryGroupApi(id, group) {
     body: JSON.stringify(normalizeCategoryGroupPayload(group)),
   });
   if (!data?.success || !data.group) throw new Error(data?.message || "Update category group failed.");
+  invalidateStorefrontCategoryCache();
   return data.group;
 }
 
 export async function deleteAdminCategoryGroupApi(id) {
   const data = await apiRequest(`/api/products/admin/category-groups/${encodeURIComponent(id)}`, { method: "DELETE" });
   if (!data?.success || !data.group) throw new Error(data?.message || "Deactivate category group failed.");
+  invalidateStorefrontCategoryCache();
   return data.group;
 }
 
@@ -107,6 +125,7 @@ export async function assignAdminCategoryToGroupApi(categoryId, categoryGroupId 
     body: JSON.stringify({ categoryGroupId: categoryGroupId || null }),
   });
   if (!data?.success || !data.category) throw new Error(data?.message || "Assign category group failed.");
+  invalidateStorefrontCategoryCache();
   return data.category;
 }
 
@@ -116,6 +135,7 @@ export async function setAdminCategoryGroupCategoriesApi(groupId, categoryIds = 
     body: JSON.stringify({ categoryIds }),
   });
   if (!data?.success) throw new Error(data?.message || "Set category group categories failed.");
+  invalidateStorefrontCategoryCache();
   return data;
 }
 

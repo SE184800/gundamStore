@@ -70,6 +70,25 @@ export function readCachedPublicApiData(path = "", { allowStale = true } = {}) {
   return readPublicApiCache(path, rule, { allowStale });
 }
 
+export function clearPublicApiCache(paths = []) {
+  if (typeof localStorage === "undefined") return;
+
+  const targets = Array.isArray(paths) ? paths : [paths];
+
+  try {
+    if (targets.length) {
+      targets.filter(Boolean).forEach((path) => localStorage.removeItem(publicApiCacheKey(path)));
+      return;
+    }
+
+    Object.keys(localStorage)
+      .filter((key) => key.startsWith(PUBLIC_API_CACHE_PREFIX))
+      .forEach((key) => localStorage.removeItem(key));
+  } catch {
+    // Ignore storage/privacy mode errors.
+  }
+}
+
 function writePublicApiCache(path = "", rule = null, data = null) {
   if (!rule || typeof localStorage === "undefined" || !data) return;
 

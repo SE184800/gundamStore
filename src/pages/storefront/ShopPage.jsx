@@ -150,7 +150,7 @@ function findNode(tree = [], id = "all") {
   return null;
 }
 
-function CategoryTree({ t, lang, tree, activeId, onSelect, search, setSearch }) {
+function CategoryTree({ t, lang, tree, activeId, onSelect, search, setSearch, allCount }) {
   const q = normalize(search);
   const visibleTree = tree
     .map((node) => {
@@ -159,6 +159,9 @@ function CategoryTree({ t, lang, tree, activeId, onSelect, search, setSearch }) 
       return nodeMatch ? node : children.length ? { ...node, children } : null;
     })
     .filter(Boolean);
+  const totalCount = Number.isFinite(Number(allCount))
+    ? Number(allCount)
+    : tree.reduce((sum, node) => sum + Number(node.count || node.productCount || 0), 0);
 
   return (
     <div className="space-y-3">
@@ -178,6 +181,7 @@ function CategoryTree({ t, lang, tree, activeId, onSelect, search, setSearch }) 
         className={`flex w-full items-center justify-between rounded-2xl px-3 py-3 text-left text-sm font-black transition ${activeId === "all" ? "bg-blue-700 text-white" : "bg-slate-50 text-slate-700 hover:bg-blue-50"}`}
       >
         <span>{t.allCategories}</span>
+        <span className={`shrink-0 text-xs font-black ${activeId === "all" ? "text-white/70" : "text-slate-400"}`}>({totalCount})</span>
       </button>
 
       {visibleTree.map((node) => {
@@ -218,7 +222,7 @@ function CategoryTree({ t, lang, tree, activeId, onSelect, search, setSearch }) 
   );
 }
 
-function CategoryBottomSheet({ t, lang, tree, activeId, onSelect, onClose }) {
+function CategoryBottomSheet({ t, lang, tree, activeId, onSelect, onClose, allCount }) {
   const [search, setSearch] = useState("");
   const [rootId, setRootId] = useState(null);
   const root = rootId ? tree.find((node) => node.id === rootId) : null;
@@ -245,12 +249,8 @@ function CategoryBottomSheet({ t, lang, tree, activeId, onSelect, onClose }) {
               activeId={activeId}
               search={search}
               setSearch={setSearch}
+              allCount={allCount}
               onSelect={(id) => {
-                const selected = tree.find((node) => node.id === id);
-                if (selected?.children?.length) {
-                  setRootId(id);
-                  return;
-                }
                 onSelect(id);
                 onClose();
               }}
@@ -327,6 +327,10 @@ export default function ShopPage() {
 
   const categoryTree = useMemo(() => categoryTreeFromApi.map((node) => normalizeTreeNode(node, lang)), [categoryTreeFromApi, lang]);
   const selectedNode = useMemo(() => findNode(categoryTree, selectedCategoryId), [categoryTree, selectedCategoryId]);
+  const catalogProductCount = useMemo(
+    () => (productsFromApi || []).filter((product) => product.active !== false).length,
+    [productsFromApi]
+  );
 
   const filteredProducts = useMemo(() => {
     let result = (productsFromApi || []).filter((product) => product.active !== false);
@@ -413,7 +417,7 @@ export default function ShopPage() {
               <div className="flex items-center gap-2 text-sm font-black text-slate-950"><SlidersHorizontal size={17} className="text-blue-600" />{t.categoryMenu}</div>
               <button onClick={resetFilters} className="rounded-xl bg-slate-50 px-3 py-1.5 text-[11px] font-black text-slate-500 hover:bg-slate-100">{t.clear}</button>
             </div>
-            <CategoryTree t={t} lang={lang} tree={categoryTree} activeId={selectedCategoryId} onSelect={selectCategory} search={categorySearch} setSearch={setCategorySearch} />
+            <CategoryTree t={t} lang={lang} tree={categoryTree} activeId={selectedCategoryId} onSelect={selectCategory} search={categorySearch} setSearch={setCategorySearch} allCount={catalogProductCount} />
           </div>
         </aside>
 
@@ -471,7 +475,7 @@ export default function ShopPage() {
         </div>
       </section>
 
-      {mobileCategoryOpen && <CategoryBottomSheet t={t} lang={lang} tree={categoryTree} activeId={selectedCategoryId} onSelect={selectCategory} onClose={() => setMobileCategoryOpen(false)} />}
+      {mobileCategoryOpen && <CategoryBottomSheet t={t} lang={lang} tree={categoryTree} activeId={selectedCategoryId} onSelect={selectCategory} onClose={() => setMobileCategoryOpen(false)} allCount={catalogProductCount} />}
 
       {mobileFilterOpen && (
         <div className="fixed inset-0 z-[9999] bg-slate-950/60 p-0 backdrop-blur-sm lg:hidden">
