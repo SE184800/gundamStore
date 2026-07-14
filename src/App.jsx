@@ -1,5 +1,5 @@
 import AutoTranslate from "./components/common/AutoTranslate.jsx";
-import { Gift, Home, Newspaper, Package, ShieldCheck, ShoppingBag } from "lucide-react";
+import { Gift, Home, Package, ShieldCheck, ShoppingBag } from "lucide-react";
 import SeoManager from "./components/common/SeoManager";
 import { lazy, Suspense } from "react";
 import { Link, Navigate, Route, Routes, useLocation } from "react-router-dom";
@@ -121,12 +121,6 @@ function GlobalMobileBottomTabs() {
       href: "/promotions",
       icon: Gift,
       extraMatch: ["/flash-sale", "/restock", "/limited", "/coming-soon"],
-    },
-    {
-      label: t("common.community") || "Cộng đồng",
-      href: "/news",
-      icon: Newspaper,
-      extraMatch: ["/community-gallery", "/build-guide"],
     },
     {
       label: t("common.support") || "Hỗ trợ",
