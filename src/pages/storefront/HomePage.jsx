@@ -588,13 +588,12 @@ function CategorySidebar({ categoryTree, lang }) {
               key={root.id || root.code || rootName}
               className={`overflow-hidden rounded-2xl border transition ${expanded ? "border-blue-700 shadow-md shadow-blue-100" : "border-slate-200 bg-white"}`}
             >
-              <div className={`relative w-full ${expanded ? "bg-gradient-to-r from-blue-700 to-blue-600" : "bg-white"}`}>
+              <div className={`grid w-full grid-cols-[minmax(0,1fr)_48px] ${expanded ? "bg-gradient-to-r from-blue-700 to-blue-600" : "bg-white"}`}>
                 <a
                   href={getCategoryHref(root)}
                   title={root.titleInternal || rootName}
                   aria-label={root.altText || rootName}
-                  className={`block w-full px-3 py-3 text-left transition ${expanded ? "hover:bg-white/10" : "hover:bg-blue-50"}`}
-                  style={{ paddingRight: hasChildren ? "60px" : "12px" }}
+                  className={`block min-w-0 px-3 py-3 text-left transition ${expanded ? "hover:bg-white/10" : "hover:bg-blue-50"} ${hasChildren ? "" : "col-span-2"}`}
                 >
                   <span
                     className={`block whitespace-normal text-sm font-black leading-5 ${expanded ? "text-white" : "text-slate-950"}`}
@@ -613,7 +612,7 @@ function CategorySidebar({ categoryTree, lang }) {
                     onClick={() => setExpandedRootId((current) => current === root.id ? "" : root.id)}
                     aria-expanded={expanded}
                     aria-label={expanded ? "Thu gọn dòng sản phẩm con" : "Mở dòng sản phẩm con"}
-                    className={`absolute inset-y-0 right-0 flex w-12 items-center justify-center border-l transition ${expanded ? "border-white/20 text-white hover:bg-white/10" : "border-slate-200 text-slate-500 hover:bg-blue-50 hover:text-blue-700"}`}
+                    className={`flex min-h-full w-12 items-center justify-center border-l transition ${expanded ? "border-white/20 text-white hover:bg-white/10" : "border-slate-200 text-slate-500 hover:bg-blue-50 hover:text-blue-700"}`}
                   >
                     <ChevronRight size={18} className={`transition-transform duration-200 ${expanded ? "rotate-90" : ""}`} />
                   </button>
@@ -626,7 +625,7 @@ function CategorySidebar({ categoryTree, lang }) {
                     {lang === "vi" ? "Dòng sản phẩm con" : "Child product lines"}
                   </div>
 
-                  <div className="space-y-1.5 border-l-2 border-blue-200 pl-2">
+                  <div className="grid grid-cols-1 gap-1.5 border-l-2 border-blue-200 pl-2">
                     {children.map((child) => {
                       const childName = text(child.name, lang, child.label || child.code || "Category");
                       const childCount = Number(child.productCount || child.count || 0);
@@ -637,7 +636,7 @@ function CategorySidebar({ categoryTree, lang }) {
                           href={getCategoryHref(child)}
                           title={child.titleInternal || childName}
                           aria-label={child.altText || childName}
-                          className="group relative block w-full rounded-xl border border-slate-100 bg-white px-3 py-2.5 pr-9 text-left shadow-sm transition hover:border-blue-200 hover:bg-blue-50"
+                          className="group relative !block !w-full !max-w-none rounded-xl border border-slate-100 bg-white px-3 py-2.5 pr-9 text-left shadow-sm transition hover:border-blue-200 hover:bg-blue-50"
                         >
                           <span
                             className="block whitespace-normal text-xs font-black leading-4 text-slate-800 group-hover:text-blue-700"
