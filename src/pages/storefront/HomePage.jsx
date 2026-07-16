@@ -18,6 +18,10 @@ import {
   getStorefrontProductsForStorefront,
 } from "../../services/StorefrontProductApiService";
 import { getStorefrontHomeBannersFromApi } from "../../services/BannerApiService";
+import {
+  getPublicEventsApi,
+  getPublicNewsApi,
+} from "../../services/ContentApiService";
 
 const HOMEPAGE_HERO_MAX_BANNERS = 3;
 
@@ -744,6 +748,125 @@ function ProductSection({ section, products, displayMappings, lang, actions, bad
   );
 }
 
+function ContentHighlights({ news = [], events = [], lang = "vi" }) {
+  if (!news.length && !events.length) return null;
+
+  const formatDate = (value) => {
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+
+    return new Intl.DateTimeFormat(
+      lang === "en" ? "en-US" : "vi-VN",
+      { day: "2-digit", month: "2-digit", year: "numeric" }
+    ).format(date);
+  };
+
+  return (
+    <section className="mx-auto mt-4 grid max-w-[1200px] gap-4 px-4 pb-6 lg:grid-cols-[1.4fr_0.6fr]">
+      {news.length > 0 && (
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div>
+              <div className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600">
+                {lang === "en" ? "Latest updates" : "Cập nhật mới"}
+              </div>
+              <h2 className="mt-1 text-xl font-black text-slate-950">
+                {lang === "en" ? "News & guides" : "Tin tức & hướng dẫn"}
+              </h2>
+            </div>
+
+            <a
+              href="/news"
+              className="inline-flex shrink-0 items-center gap-1 text-xs font-black text-blue-700"
+            >
+              {lang === "en" ? "View all" : "Xem tất cả"}
+              <ArrowRight size={14} />
+            </a>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-3">
+            {news.slice(0, 3).map((article) => (
+              <a
+                key={article.id || article.slug}
+                href={`/news/${article.slug}`}
+                className="group overflow-hidden rounded-2xl border border-slate-100 bg-slate-50 transition hover:border-blue-200 hover:bg-blue-50"
+              >
+                {article.image && (
+                  <div className="aspect-[16/9] overflow-hidden bg-slate-100">
+                    <img
+                      src={article.image}
+                      alt={article.title || ""}
+                      loading="lazy"
+                      className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                    />
+                  </div>
+                )}
+
+                <div className="p-3">
+                  <div className="text-[10px] font-black uppercase text-blue-600">
+                    {article.tag || (lang === "en" ? "News" : "Tin tức")}
+                  </div>
+                  <h3 className="mt-1 line-clamp-2 text-sm font-black leading-5 text-slate-900">
+                    {article.title}
+                  </h3>
+                  <div className="mt-2 text-[11px] font-bold text-slate-400">
+                    {formatDate(article.publishedAt || article.date)}
+                  </div>
+                </div>
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {events.length > 0 && (
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div>
+              <div className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600">
+                {lang === "en" ? "Upcoming" : "Sắp diễn ra"}
+              </div>
+              <h2 className="mt-1 text-xl font-black text-slate-950">
+                {lang === "en" ? "Events" : "Sự kiện"}
+              </h2>
+            </div>
+
+            <a
+              href="/news/events"
+              className="inline-flex shrink-0 items-center gap-1 text-xs font-black text-blue-700"
+            >
+              {lang === "en" ? "Calendar" : "Xem lịch"}
+              <ArrowRight size={14} />
+            </a>
+          </div>
+
+          <div className="space-y-2">
+            {events.slice(0, 2).map((event) => (
+              <a
+                key={event.id}
+                href={`/news/events/${event.id}`}
+                className="block rounded-2xl border border-slate-100 bg-slate-50 p-3 transition hover:border-blue-200 hover:bg-blue-50"
+              >
+                <div className="text-[10px] font-black uppercase text-blue-600">
+                  {formatDate(event.date)}
+                  {event.time ? ` · ${event.time}` : ""}
+                </div>
+                <h3 className="mt-1 line-clamp-2 text-sm font-black leading-5 text-slate-900">
+                  {event.title}
+                </h3>
+                <div className="mt-1 line-clamp-1 text-xs font-semibold text-slate-500">
+                  {event.location || event.address || ""}
+                </div>
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
 function LoyaltyBubble({ lang }) {
   const t = copy[lang];
   return (
@@ -808,6 +931,8 @@ function mergeCategoryLists(apiCategories = [], derivedCategories = []) {
 
 export default function HomePage() {
   const [backendProducts, setBackendProducts] = useState([]);
+  const [homepageNews, setHomepageNews] = useState([]);
+  const [homepageEvents, setHomepageEvents] = useState([]);
   const [dbBanners, setDbBanners] = useState([]);
   const [dbHeroSettings, setDbHeroSettings] = useState(null);
   const [bannerApiReady, setBannerApiReady] = useState(false);
@@ -890,6 +1015,33 @@ export default function HomePage() {
       setBackendProducts(loadedProducts);
       setBackendCategoryTree(
         treeFromApi.length ? treeFromApi : derivedTree
+      );
+    });
+
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let alive = true;
+
+    Promise.allSettled([
+      getPublicNewsApi(),
+      getPublicEventsApi(),
+    ]).then(([newsResult, eventsResult]) => {
+      if (!alive) return;
+
+      setHomepageNews(
+        newsResult.status === "fulfilled" && Array.isArray(newsResult.value)
+          ? newsResult.value.slice(0, 3)
+          : []
+      );
+
+      setHomepageEvents(
+        eventsResult.status === "fulfilled" && Array.isArray(eventsResult.value)
+          ? eventsResult.value.slice(0, 2)
+          : []
       );
     });
 
@@ -1015,6 +1167,12 @@ export default function HomePage() {
             ))}
           </div>
         </main>
+
+        <ContentHighlights
+          news={homepageNews}
+          events={homepageEvents}
+          lang={lang}
+        />
 
         <LoyaltyBubble lang={lang} />
       </div>
