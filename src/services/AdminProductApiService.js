@@ -263,16 +263,44 @@ export async function deleteAdminProductApi(productId) {
 export const deactivateAdminProductApi = deleteAdminProductApi;
 
 export async function setAdminProductGroupsApi(productId, groupIds = []) {
+  const expectedGroupIds = Array.from(
+    new Set(
+      (Array.isArray(groupIds) ? groupIds : [])
+        .map((id) => String(id || "").trim())
+        .filter(Boolean)
+    )
+  );
+
   const data = await apiRequest(`/api/products/admin/products/${encodeURIComponent(productId)}/groups`, {
     method: "PUT",
-    body: JSON.stringify({ groupIds }),
+    body: JSON.stringify({ groupIds: expectedGroupIds }),
   });
 
   if (!data?.success || !data.product) {
     throw new Error("Backend did not return updated product groups.");
   }
 
-  return mapBackendProductForAdmin(data.product);
+  const updated = mapBackendProductForAdmin(data.product);
+
+  const persistedGroupIds = Array.from(
+    new Set([
+      ...(updated.groupIds || []),
+      ...(Array.isArray(data.groupIds) ? data.groupIds : []),
+    ].filter(Boolean))
+  );
+
+  if (
+    persistedGroupIds.length !== expectedGroupIds.length ||
+    expectedGroupIds.some(
+      (groupId) => !persistedGroupIds.includes(groupId)
+    )
+  ) {
+    throw new Error(
+      "Nhóm sản phẩm chưa được lưu đầy đủ. Vui lòng thử lại."
+    );
+  }
+
+  return { ...updated, groupIds: persistedGroupIds };
 }
 
 function downloadCsvText(filename = "products.csv", text = "") {

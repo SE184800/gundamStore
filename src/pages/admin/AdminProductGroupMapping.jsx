@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { RefreshCcw, Search, Save } from "lucide-react";
+import { RefreshCcw, Search } from "lucide-react";
 import AdminPageHeader from "../../components/admin/AdminPageHeader";
 import { logoutAdmin } from "../../services/AdminAuthService";
 import {
@@ -57,29 +57,51 @@ export default function AdminProductGroupMapping() {
     );
   }, [products, query]);
 
-  function toggleLocal(productId, groupId) {
-    setProducts((prev) =>
-      prev.map((product) => {
-        if (product.id !== productId) return product;
+  async function toggleAndSave(product, groupId) {
+    if (savingId) return;
 
-        const current = Array.isArray(product.groupIds) ? product.groupIds : [];
-        const next = current.includes(groupId)
-          ? current.filter((id) => id !== groupId)
-          : [...current, groupId];
+    const currentGroupIds = Array.isArray(product.groupIds)
+      ? product.groupIds.filter(Boolean)
+      : [];
 
-        return { ...product, groupIds: next };
-      })
-    );
-  }
+    const nextGroupIds = currentGroupIds.includes(groupId)
+      ? currentGroupIds.filter((id) => id !== groupId)
+      : [...currentGroupIds, groupId];
 
-  async function saveProduct(product) {
     setSavingId(product.id);
+    setApiError("");
+
+    setProducts((prev) =>
+      prev.map((item) =>
+        item.id === product.id
+          ? { ...item, groupIds: nextGroupIds }
+          : item
+      )
+    );
 
     try {
-      await setAdminProductGroupsApi(product.id, product.groupIds || []);
-      await reload();
+      const updated = await setAdminProductGroupsApi(
+        product.id,
+        nextGroupIds
+      );
+
+      setProducts((prev) =>
+        prev.map((item) =>
+          item.id === product.id
+            ? { ...updated, groupIds: updated.groupIds || nextGroupIds }
+            : item
+        )
+      );
     } catch (error) {
-      alert(error?.message || "Save group mapping failed.");
+      setProducts((prev) =>
+        prev.map((item) =>
+          item.id === product.id
+            ? { ...product, groupIds: currentGroupIds }
+            : item
+        )
+      );
+
+      setApiError(error?.message || "Không thể lưu nhóm sản phẩm.");
     } finally {
       setSavingId("");
     }
@@ -90,7 +112,7 @@ export default function AdminProductGroupMapping() {
       <AdminPageHeader
         eyebrow="Product Management"
         title="Product Group Mapping"
-        desc="Gắn sản phẩm vào nhóm hiển thị như Hàng mới về, Hàng order, Hàng bán chạy, Hàng sale."
+        desc="Bấm vào nhóm để gán hoặc bỏ gán. Thay đổi được tự động lưu ngay vào database."
         action={
           <button onClick={() => void reload()} className="rounded-md border border-slate-300 bg-white px-4 py-2 text-xs font-black text-slate-700 hover:bg-slate-50">
             <RefreshCcw size={15} className="mr-1 inline" />
@@ -147,8 +169,9 @@ export default function AdminProductGroupMapping() {
                         <button
                           key={group.id}
                           type="button"
-                          onClick={() => toggleLocal(product.id, group.id)}
-                          className={`rounded-xl px-3 py-2 text-xs font-black ${
+                          onClick={() => void toggleAndSave(product, group.id)}
+                          disabled={savingId === product.id}
+                          className={`rounded-xl px-3 py-2 text-xs font-black disabled:cursor-wait disabled:opacity-60 ${
                             checked
                               ? "bg-blue-700 text-white"
                               : "bg-slate-100 text-slate-600 hover:bg-blue-50"
@@ -161,13 +184,15 @@ export default function AdminProductGroupMapping() {
                   </div>
                 </td>
                 <td className="px-4 py-3 text-right">
-                  <button
-                    onClick={() => void saveProduct(product)}
-                    className="rounded-md bg-blue-700 px-4 py-2 text-xs font-black text-white hover:bg-blue-800"
+                  <span
+                    className={`inline-flex rounded-full px-3 py-2 text-xs font-black ${
+                      savingId === product.id
+                        ? "bg-amber-100 text-amber-700"
+                        : "bg-emerald-100 text-emerald-700"
+                    }`}
                   >
-                    <Save size={14} className="mr-1 inline" />
-                    {savingId === product.id ? "Saving..." : "Save"}
-                  </button>
+                    {savingId === product.id ? "Đang lưu..." : "Tự động lưu"}
+                  </span>
                 </td>
               </tr>
             ))}
