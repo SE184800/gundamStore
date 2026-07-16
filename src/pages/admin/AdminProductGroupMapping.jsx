@@ -8,6 +8,21 @@ import {
   setAdminProductGroupsApi,
 } from "../../services/AdminCatalogApiService";
 
+function clearStorefrontProductCache() {
+  try {
+    Object.keys(localStorage).forEach((key) => {
+      if (
+        key.startsWith("gundam-public-api-cache:") &&
+        key.includes("/api/products")
+      ) {
+        localStorage.removeItem(key);
+      }
+    });
+  } catch {
+    // Ignore storage errors.
+  }
+}
+
 export default function AdminProductGroupMapping() {
   const [products, setProducts] = useState([]);
   const [groups, setGroups] = useState([]);
@@ -88,10 +103,16 @@ export default function AdminProductGroupMapping() {
       setProducts((prev) =>
         prev.map((item) =>
           item.id === product.id
-            ? { ...updated, groupIds: updated.groupIds || nextGroupIds }
+            ? {
+                ...item,
+                ...updated,
+                groupIds: updated.groupIds || nextGroupIds,
+              }
             : item
         )
       );
+
+      clearStorefrontProductCache();
     } catch (error) {
       setProducts((prev) =>
         prev.map((item) =>
