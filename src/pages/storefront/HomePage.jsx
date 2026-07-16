@@ -539,138 +539,86 @@ function CategorySidebar({ categoryTree, lang }) {
 
     setExpandedRootId((current) => {
       const currentStillExists = roots.some(
-        (root) =>
-          root.id === current &&
-          (root.children || []).some((child) => child?.active !== false)
+        (root) => root.id === current && (root.children || []).some((child) => child?.active !== false)
       );
-
       return currentStillExists ? current : firstExpandable?.id || "";
     });
   }, [categoryTree]);
 
   const getCategoryHref = (category) => {
-    const rawKey =
-      category.id === "all"
-        ? ""
-        : category.id ||
-          category.backendCategoryId ||
-          category.slug ||
-          category.code ||
-          "";
-
-    const fallback = rawKey
-      ? `/shop?category=${encodeURIComponent(rawKey)}`
-      : "/shop";
-
+    const rawKey = category.id === "all" ? "" : category.id || category.backendCategoryId || category.slug || category.code || "";
+    const fallback = rawKey ? `/shop?category=${encodeURIComponent(rawKey)}` : "/shop";
     return getSafeHref(category.ctaUrl || fallback, fallback);
   };
 
   return (
-    <aside className="self-start rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+    <aside className="self-start rounded-2xl border border-slate-200 bg-white p-3 shadow-sm sm:p-4">
       <div className="mb-3">
-        <div className="text-[10px] font-black uppercase tracking-[0.22em] text-blue-700">
-          Category
-        </div>
-
+        <div className="text-[10px] font-black uppercase tracking-[0.22em] text-blue-700">Category</div>
         <h3 className="mt-0.5 text-lg font-black text-slate-950">
           {lang === "vi" ? "Dòng sản phẩm" : "Product lines"}
         </h3>
-
         <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">
-          {lang === "vi"
-            ? "Chọn cấp cha hoặc dòng con để xem sản phẩm"
-            : "Choose a parent or child line to view products"}
+          {lang === "vi" ? "Chọn nhóm hoặc dòng sản phẩm cần xem" : "Choose a group or product line"}
         </p>
       </div>
 
       <div className="space-y-2">
         {roots.map((root) => {
-          const children = (root.children || []).filter(
-            (child) => child?.active !== false
-          );
-
+          const children = (root.children || []).filter((child) => child?.active !== false);
           const hasChildren = children.length > 0;
           const expanded = hasChildren && expandedRootId === root.id;
-
-          const rootName = text(
-            root.name,
-            lang,
-            root.label || root.code || "Category"
-          );
-
+          const rootName = text(root.name, lang, root.label || root.code || "Category");
           const rootCount = Number(
-            root.productCount ||
-              root.count ||
-              children.reduce(
-                (sum, child) =>
-                  sum + Number(child.productCount || child.count || 0),
-                0
-              )
+            root.productCount || root.count || children.reduce((sum, child) => sum + Number(child.productCount || child.count || 0), 0)
           );
 
           return (
-            <div
+            <section
               key={root.id || root.code || rootName}
-              className="overflow-hidden rounded-2xl border border-slate-200 bg-white"
+              className={`overflow-hidden rounded-2xl border transition ${expanded ? "border-blue-200 bg-blue-50/40" : "border-slate-200 bg-white"}`}
             >
-              <div className="flex items-stretch bg-slate-50">
+              <div
+                className="grid w-full items-stretch"
+                style={{ gridTemplateColumns: hasChildren ? "minmax(0, 1fr) 48px" : "minmax(0, 1fr)" }}
+              >
                 <a
                   href={getCategoryHref(root)}
                   title={root.titleInternal || rootName}
                   aria-label={root.altText || rootName}
-                  className="flex min-w-0 flex-1 items-center justify-between gap-2 px-3 py-3 text-sm font-black text-slate-900 transition hover:bg-blue-50 hover:text-blue-700"
+                  className="flex min-w-0 items-center justify-between gap-3 px-3 py-3 text-left transition hover:bg-blue-50"
                 >
-                  <span className="line-clamp-2">{rootName}</span>
-                  <span className="shrink-0 text-[11px] font-black text-slate-400">
-                    ({rootCount})
+                  <span className="min-w-0">
+                    <span className="block break-words text-sm font-black leading-5 text-slate-950">
+                      {rootName}
+                    </span>
+                    <span className="mt-0.5 block text-[10px] font-bold text-blue-600">
+                      {lang === "vi" ? "Xem tất cả trong nhóm" : "View all in group"}
+                    </span>
+                  </span>
+                  <span className="shrink-0 rounded-full bg-slate-100 px-2 py-1 text-[10px] font-black text-slate-500">
+                    {rootCount}
                   </span>
                 </a>
 
                 {hasChildren && (
                   <button
                     type="button"
-                    onClick={() =>
-                      setExpandedRootId((current) =>
-                        current === root.id ? "" : root.id
-                      )
-                    }
+                    onClick={() => setExpandedRootId((current) => current === root.id ? "" : root.id)}
                     aria-expanded={expanded}
-                    aria-label={
-                      expanded
-                        ? "Thu gọn dòng sản phẩm con"
-                        : "Mở dòng sản phẩm con"
-                    }
-                    className="flex w-11 shrink-0 items-center justify-center border-l border-slate-200 text-slate-500 transition hover:bg-blue-50 hover:text-blue-700"
+                    aria-label={expanded ? "Thu gọn dòng sản phẩm con" : "Mở dòng sản phẩm con"}
+                    className="flex min-h-14 items-center justify-center border-l border-slate-200 text-slate-500 transition hover:bg-blue-100 hover:text-blue-700"
                   >
-                    <ChevronRight
-                      size={17}
-                      className={`transition-transform duration-200 ${
-                        expanded ? "rotate-90" : ""
-                      }`}
-                    />
+                    <ChevronRight size={18} className={`transition-transform duration-200 ${expanded ? "rotate-90" : ""}`} />
                   </button>
                 )}
               </div>
 
               {expanded && (
-                <div className="grid grid-cols-2 gap-2 border-t border-slate-100 bg-slate-50/60 p-2">
+                <div className="grid gap-px border-t border-blue-100 bg-slate-200 sm:grid-cols-2">
                   {children.map((child) => {
-                    const childName = text(
-                      child.name,
-                      lang,
-                      child.label || child.code || "Category"
-                    );
-
-                    const imageUrl =
-                      child.icon ||
-                      child.imageUrl ||
-                      child.image ||
-                      child.mainImage ||
-                      "";
-
-                    const childCount = Number(
-                      child.productCount || child.count || 0
-                    );
+                    const childName = text(child.name, lang, child.label || child.code || "Category");
+                    const childCount = Number(child.productCount || child.count || 0);
 
                     return (
                       <a
@@ -678,41 +626,22 @@ function CategorySidebar({ categoryTree, lang }) {
                         href={getCategoryHref(child)}
                         title={child.titleInternal || childName}
                         aria-label={child.altText || childName}
-                        className="group overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-md"
+                        className="group flex min-w-0 items-center gap-2.5 bg-white px-3 py-3 text-left transition hover:bg-blue-50"
                       >
-                        <div className="flex h-20 items-center justify-center bg-white p-1.5">
-                          {imageUrl ? (
-                            <img
-                              src={imageUrl}
-                              alt=""
-                              className="h-full w-full object-contain"
-                              loading="lazy"
-                              decoding="async"
-                            />
-                          ) : (
-                            <Package
-                              size={28}
-                              className="text-blue-200 transition group-hover:text-blue-500"
-                            />
-                          )}
-                        </div>
-
-                        <div className="border-t border-slate-100 px-2 py-2">
-                          <div className="line-clamp-2 min-h-8 text-[11px] font-black leading-4 text-slate-900 group-hover:text-blue-700">
-                            {childName}
-                          </div>
-
-                          <div className="mt-1 text-[10px] font-bold text-slate-400">
-                            {childCount}{" "}
-                            {lang === "vi" ? "sản phẩm" : "products"}
-                          </div>
-                        </div>
+                        <span className="h-2 w-2 shrink-0 rounded-full bg-blue-500" />
+                        <span className="min-w-0 flex-1 break-words text-xs font-black leading-4 text-slate-800 group-hover:text-blue-700">
+                          {childName}
+                        </span>
+                        <span className="shrink-0 rounded-full bg-slate-100 px-2 py-1 text-[10px] font-black text-slate-500">
+                          {childCount}
+                        </span>
+                        <ChevronRight size={14} className="shrink-0 text-slate-300 group-hover:text-blue-600" />
                       </a>
                     );
                   })}
                 </div>
               )}
-            </div>
+            </section>
           );
         })}
       </div>
