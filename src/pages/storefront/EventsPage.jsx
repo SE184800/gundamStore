@@ -1,6 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import PageShell from "../../components/common/PageShell";
-import { useCms } from "../../store/CmsStore";
+import { getPublicEventsApi } from "../../services/ContentApiService";
 import {
   Clock3,
   ExternalLink,
@@ -135,28 +135,66 @@ function daysUntil(date) {
 }
 
 export default function EventsPage() {
-  const { state } = useCms();
+  const [events, setEvents] = useState([]);
+  const [month, setMonth] = useState(new Date());
+  const [selected, setSelected] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const events = (state.events && state.events.length ? state.events : fallbackEvents)
-    .filter((event) => event.active !== false)
-    .map((event) => ({
-      ...event,
-      lat: Number(event.lat || 10.7769),
-      lng: Number(event.lng || 106.7009),
-      agenda: Array.isArray(event.agenda) ? event.agenda : [],
-      attendees: Number(event.attendees || 0),
-    }));
+  useEffect(() => {
+    let alive = true;
 
-  const [month, setMonth] = useState(new Date(2026, 5, 1));
-  const [selected, setSelected] = useState(events[0] || fallbackEvents[0]);
+    getPublicEventsApi()
+      .then((rows) => {
+        if (!alive) return;
+
+        const normalized = (Array.isArray(rows) ? rows : [])
+          .filter((event) => event.active !== false)
+          .map((event) => ({
+            ...event,
+            lat: Number(event.lat || 10.7769),
+            lng: Number(event.lng || 106.7009),
+            agenda: Array.isArray(event.agenda) ? event.agenda : [],
+            attendees: Number(event.attendees || 0),
+          }));
+
+        setEvents(normalized);
+        setSelected(normalized[0] || null);
+
+        if (normalized[0]?.date) {
+          const firstDate = new Date(normalized[0].date);
+          if (!Number.isNaN(firstDate.getTime())) {
+            setMonth(
+              new Date(firstDate.getFullYear(), firstDate.getMonth(), 1)
+            );
+          }
+        }
+      })
+      .catch((error) => {
+        console.error("PUBLIC_EVENTS_LOAD_ERROR", error);
+        if (alive) {
+          setEvents([]);
+          setSelected(null);
+        }
+      })
+      .finally(() => {
+        if (alive) setLoading(false);
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   const visibleEvents = useMemo(
     () =>
-      events.filter((e) => {
-        const d = new Date(e.date);
-        return d.getFullYear() === month.getFullYear() && d.getMonth() === month.getMonth();
+      events.filter((event) => {
+        const date = new Date(event.date);
+        return (
+          date.getFullYear() === month.getFullYear() &&
+          date.getMonth() === month.getMonth()
+        );
       }),
-    [month]
+    [events, month]
   );
 
   const daysInMonth = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
@@ -172,6 +210,18 @@ export default function EventsPage() {
       return d.getFullYear() === next.getFullYear() && d.getMonth() === next.getMonth();
     });
     if (nextEvents[0]) setSelected(nextEvents[0]);
+  }
+
+  if (!selected) {
+    return (
+      <PageShell>
+        <main className="mx-auto max-w-[1440px] px-4 py-16 text-center lg:px-8">
+          <div className="rounded-3xl border border-slate-200 bg-white p-8 font-bold text-slate-500">
+            {loading ? "Đang tải sự kiện..." : "Chưa có sự kiện được công bố."}
+          </div>
+        </main>
+      </PageShell>
+    );
   }
 
   return (

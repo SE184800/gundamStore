@@ -1,11 +1,15 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Edit3, Plus, Trash2, UploadCloud } from "lucide-react";
 import AdminDrawer from "../../components/admin/AdminDrawer";
 import AdminPageHeader from "../../components/admin/AdminPageHeader";
 import AdminStatusBadge from "../../components/admin/AdminStatusBadge";
 import { AdminSelect, AdminTextField, AdminTextarea, AdminToggle } from "../../components/admin/AdminField";
-import { useCms } from "../../store/CmsStore";
-import { fileToBase64 } from "../../utils/mediaUpload";
+import {
+  deleteAdminNewsApi,
+  getAdminNewsApi,
+  saveAdminNewsApi,
+} from "../../services/ContentApiService";
+import { uploadAdminMediaImages } from "../../services/AdminMediaApiService";
 
 const emptyArticle = {
   id: "",
@@ -31,11 +35,23 @@ function makeSlug(value = "") {
 }
 
 export default function AdminNews() {
-  const { state, actions } = useCms();
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(emptyArticle);
+  const [rows, setRows] = useState([]);
+  const [error, setError] = useState("");
 
-  const rows = state.news || [];
+  async function reload() {
+    try {
+      setRows(await getAdminNewsApi());
+      setError("");
+    } catch (loadError) {
+      setError(loadError?.message || "Cannot load news.");
+    }
+  }
+
+  useEffect(() => {
+    void reload();
+  }, []);
 
   function patch(field, value) {
     setDraft((prev) => ({
@@ -48,8 +64,22 @@ export default function AdminNews() {
   async function uploadImage(event) {
     const file = event.target.files?.[0];
     if (!file) return;
-    const base64 = await fileToBase64(file);
-    patch("image", base64);
+    const result = await uploadAdminMediaImages([file]);
+    const uploaded =
+      result?.images?.[0] ||
+      result?.files?.[0] ||
+      result?.media?.[0] ||
+      null;
+
+    patch(
+      "image",
+      uploaded?.cardUrl ||
+        uploaded?.url ||
+        uploaded?.imageUrl ||
+        uploaded?.publicUrl ||
+        result?.url ||
+        ""
+    );
     event.target.value = "";
   }
 
@@ -67,16 +97,37 @@ export default function AdminNews() {
     setOpen(true);
   }
 
-  function saveArticle() {
-    actions.saveNewsArticle({
-      ...draft,
-      slug: draft.slug || makeSlug(draft.title),
-      content: String(draft.contentText || "")
-        .split("\n")
-        .map((x) => x.trim())
-        .filter(Boolean),
-    });
-    setOpen(false);
+  async function saveArticle() {
+    try {
+      await saveAdminNewsApi({
+        ...draft,
+        slug: draft.slug || makeSlug(draft.title),
+        content: String(draft.contentText || "")
+          .split("\n")
+          .map((x) => x.trim())
+          .filter(Boolean),
+      });
+
+      setOpen(false);
+      await reload();
+    } catch (saveError) {
+      setError(
+        saveError?.message || "Cannot save news article."
+      );
+    }
+  }
+
+  async function deleteArticle(id) {
+    if (!window.confirm("Xóa bài viết này?")) return;
+
+    try {
+      await deleteAdminNewsApi(id);
+      await reload();
+    } catch (deleteError) {
+      setError(
+        deleteError?.message || "Cannot delete news article."
+      );
+    }
   }
 
   return (
@@ -92,6 +143,12 @@ export default function AdminNews() {
           </button>
         }
       />
+
+      {error && (
+        <section className="mb-4 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-bold text-red-700">
+          {error}
+        </section>
+      )}
 
       <section className="overflow-hidden rounded-md border border-slate-200 bg-white">
         <div className="overflow-x-auto">
@@ -115,7 +172,7 @@ export default function AdminNews() {
                       <Edit3 size={14} className="mr-1 inline" />
                       Edit
                     </button>
-                    <button onClick={() => actions.deleteNewsArticle(item.id)} className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-600">
+                    <button onClick={() => void deleteArticle(item.id)} className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-600">
                       <Trash2 size={14} />
                     </button>
                   </td>

@@ -1,11 +1,15 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Download, Edit3, Plus, Trash2, Users } from "lucide-react";
 import AdminDrawer from "../../components/admin/AdminDrawer";
 import AdminPageHeader from "../../components/admin/AdminPageHeader";
 import AdminStatusBadge from "../../components/admin/AdminStatusBadge";
 import { AdminSelect, AdminTextField, AdminTextarea, AdminToggle } from "../../components/admin/AdminField";
-import { useCms } from "../../store/CmsStore";
-import { getEventRegistrations, getEventRegistrationSummary, updateEventRegistrationStatus } from "../../services/EventRegistrationService";
+import {
+  deleteAdminEventApi,
+  getAdminEventsApi,
+  saveAdminEventApi,
+  updateAdminEventRegistrationApi,
+} from "../../services/ContentApiService";
 
 const emptyEvent = {
   id: "",
@@ -32,19 +36,56 @@ const emptyEvent = {
 };
 
 export default function AdminEvents() {
-  const { state, actions } = useCms();
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(emptyEvent);
   const [selectedEventId, setSelectedEventId] = useState("all");
-  const [refreshKey, setRefreshKey] = useState(0);
+  const [rows, setRows] = useState([]);
+  const [allRegistrations, setAllRegistrations] = useState([]);
+  const [error, setError] = useState("");
 
-  const rows = state.events || [];
-  const registrationSummary = useMemo(() => getEventRegistrationSummary(), [refreshKey]);
+  async function reload() {
+    try {
+      const data = await getAdminEventsApi();
+      setRows(data.events);
+      setAllRegistrations(data.registrations);
+      setError("");
+    } catch (loadError) {
+      setError(loadError?.message || "Cannot load events.");
+    }
+  }
+
+  useEffect(() => {
+    void reload();
+  }, []);
+
+  const registrationSummary = useMemo(
+    () => ({
+      total: allRegistrations.length,
+      pending: allRegistrations.filter(
+        (item) =>
+          String(item.status).toUpperCase() === "PENDING"
+      ).length,
+      confirmed: allRegistrations.filter(
+        (item) =>
+          String(item.status).toUpperCase() === "CONFIRMED"
+      ).length,
+      cancelled: allRegistrations.filter(
+        (item) =>
+          String(item.status).toUpperCase() === "CANCELLED"
+      ).length,
+    }),
+    [allRegistrations]
+  );
+
   const registrations = useMemo(() => {
-    const allRows = getEventRegistrations();
-    if (selectedEventId === "all") return allRows;
-    return allRows.filter((item) => item.eventId === selectedEventId);
-  }, [selectedEventId, refreshKey]);
+    if (selectedEventId === "all") {
+      return allRegistrations;
+    }
+
+    return allRegistrations.filter(
+      (item) => item.eventId === selectedEventId
+    );
+  }, [selectedEventId, allRegistrations]);
 
   function patch(field, value) {
     setDraft((prev) => ({ ...prev, [field]: value }));
@@ -65,9 +106,19 @@ export default function AdminEvents() {
   }
 
 
-  function updateRegistration(id, status) {
-    updateEventRegistrationStatus(id, status);
-    setRefreshKey((value) => value + 1);
+  async function updateRegistration(id, status) {
+    try {
+      await updateAdminEventRegistrationApi(
+        id,
+        status.toUpperCase()
+      );
+      await reload();
+    } catch (updateError) {
+      setError(
+        updateError?.message ||
+          "Cannot update registration."
+      );
+    }
   }
 
   function exportRegistrations() {
@@ -97,18 +148,37 @@ export default function AdminEvents() {
     URL.revokeObjectURL(url);
   }
 
-  function saveEvent() {
-    actions.saveEvent({
-      ...draft,
-      attendees: Number(draft.attendees || 0),
-      lat: Number(draft.lat || 0),
-      lng: Number(draft.lng || 0),
-      agenda: String(draft.agendaText || "")
-        .split("\n")
-        .map((x) => x.trim())
-        .filter(Boolean),
-    });
-    setOpen(false);
+  async function saveEvent() {
+    try {
+      await saveAdminEventApi({
+        ...draft,
+        attendees: Number(draft.attendees || 0),
+        lat: Number(draft.lat || 0),
+        lng: Number(draft.lng || 0),
+        agenda: String(draft.agendaText || "")
+          .split("\n")
+          .map((x) => x.trim())
+          .filter(Boolean),
+      });
+
+      setOpen(false);
+      await reload();
+    } catch (saveError) {
+      setError(saveError?.message || "Cannot save event.");
+    }
+  }
+
+  async function deleteEvent(id) {
+    if (!window.confirm("Xóa sự kiện này?")) return;
+
+    try {
+      await deleteAdminEventApi(id);
+      await reload();
+    } catch (deleteError) {
+      setError(
+        deleteError?.message || "Cannot delete event."
+      );
+    }
   }
 
   return (
@@ -125,6 +195,11 @@ export default function AdminEvents() {
         }
       />
 
+      {error && (
+        <section className="mb-4 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-bold text-red-700">
+          {error}
+        </section>
+      )}
 
       <section className="mb-6 grid gap-4 md:grid-cols-4">
         <div className="rounded-3xl bg-white p-5 shadow-sm">
@@ -246,7 +321,7 @@ export default function AdminEvents() {
                       <Edit3 size={14} className="mr-1 inline" />
                       Edit
                     </button>
-                    <button onClick={() => actions.deleteEvent(event.id)} className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-600">
+                    <button onClick={() => void deleteEvent(event.id)} className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-600">
                       <Trash2 size={14} />
                     </button>
                   </td>

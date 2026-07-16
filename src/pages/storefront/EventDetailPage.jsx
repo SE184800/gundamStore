@@ -1,7 +1,10 @@
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import PageShell from "../../components/common/PageShell";
-import { useCms, useLang } from "../../store/CmsStore";
-import { seedEvents } from "../../data/events";
+import { useLang } from "../../store/CmsStore";
+import {
+  getPublicEventByIdApi,
+  registerEventApi,
+} from "../../services/ContentApiService";
 import {
   CalendarDays,
   CheckCircle2,
@@ -13,7 +16,6 @@ import {
   Users,
   Video,
 } from "lucide-react";
-import { getEventRegistrations, registerEvent } from "../../services/EventRegistrationService";
 
 function getCopy(lang) {
   return {
@@ -51,18 +53,39 @@ function getSlotNumber(slots = "") {
 }
 
 export default function EventDetailPage() {
-  const { state } = useCms();
   const [lang] = useLang();
   const t = getCopy(lang);
 
   const id = window.location.pathname.split("/").pop();
-  const events = state.events?.length ? state.events : seedEvents;
-  const event = events.find((item) => item.id === id) || events[0];
+  const [event, setEvent] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const agenda = Array.isArray(event.agenda) ? event.agenda : [];
-  const registrations = useMemo(() => getEventRegistrations(event.id), [event.id]);
-  const slotNumber = getSlotNumber(event.slots);
-  const availableSlots = slotNumber ? Math.max(0, slotNumber - registrations.length) : null;
+  useEffect(() => {
+    let alive = true;
+
+    getPublicEventByIdApi(id)
+      .then((row) => {
+        if (alive) setEvent(row || null);
+      })
+      .catch((error) => {
+        console.error("PUBLIC_EVENT_DETAIL_ERROR", error);
+        if (alive) setEvent(null);
+      })
+      .finally(() => {
+        if (alive) setLoading(false);
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, [id]);
+
+  const agenda = Array.isArray(event?.agenda) ? event.agenda : [];
+  const registeredCount = Number(event?.attendees || 0);
+  const slotNumber = getSlotNumber(event?.slots);
+  const availableSlots = slotNumber
+    ? Math.max(0, slotNumber - registeredCount)
+    : null;
 
   const [form, setForm] = useState({
     name: "",
@@ -77,18 +100,38 @@ export default function EventDetailPage() {
     setForm((prev) => ({ ...prev, [field]: value }));
   }
 
-  function submitRegistration(eventSubmit) {
+  async function submitRegistration(eventSubmit) {
     eventSubmit.preventDefault();
     setError("");
     setMessage("");
 
     try {
-      registerEvent(event, form);
+      await registerEventApi(event.id, form);
       setMessage(t.success);
       setForm({ name: "", phone: "", email: "", note: "" });
+      setEvent((current) =>
+        current
+          ? {
+              ...current,
+              attendees: Number(current.attendees || 0) + 1,
+            }
+          : current
+      );
     } catch (err) {
       setError(err?.message || "Registration failed.");
     }
+  }
+
+  if (!event) {
+    return (
+      <PageShell>
+        <main className="mx-auto max-w-[1200px] px-4 py-16 text-center">
+          <div className="rounded-3xl border border-slate-200 bg-white p-8 font-bold text-slate-500">
+            {loading ? "Đang tải sự kiện..." : "Không tìm thấy sự kiện."}
+          </div>
+        </main>
+      </PageShell>
+    );
   }
 
   return (
@@ -108,7 +151,7 @@ export default function EventDetailPage() {
           </p>
 
           <div className="mt-6 grid gap-3 md:grid-cols-3">
-            <MiniStat label={t.registered} value={registrations.length} />
+            <MiniStat label={t.registered} value={registeredCount} />
             <MiniStat label={lang === "en" ? "Slots left" : "Còn slot"} value={availableSlots ?? "Public"} />
             <MiniStat label="Status" value={event.status || "-"} />
           </div>

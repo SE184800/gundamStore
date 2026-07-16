@@ -1,8 +1,8 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CalendarDays, ChevronRight, Newspaper, Search, Sparkles, Tag, X } from "lucide-react";
 import PageShell from "../../components/common/PageShell";
-import { seedNews } from "../../data/news";
-import { useCms, useLang } from "../../store/CmsStore";
+import { useLang } from "../../store/CmsStore";
+import { getPublicNewsApi } from "../../services/ContentApiService";
 
 function getCopy(lang) {
   return {
@@ -62,21 +62,36 @@ function getCategoryLabel(key, t) {
 }
 
 export default function NewsPage() {
-  const { state } = useCms();
   const [lang] = useLang();
   const t = getCopy(lang);
 
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("all");
+  const [newsRows, setNewsRows] = useState([]);
+
+  useEffect(() => {
+    let alive = true;
+
+    getPublicNewsApi()
+      .then((rows) => {
+        if (alive) setNewsRows(Array.isArray(rows) ? rows : []);
+      })
+      .catch((error) => {
+        console.error("PUBLIC_NEWS_LOAD_ERROR", error);
+        if (alive) setNewsRows([]);
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   const articles = useMemo(() => {
-    return (state.news && state.news.length ? state.news : seedNews)
-      .filter((item) => item.status !== "Draft")
-      .map((item) => ({
-        ...item,
-        category: item.category || getArticleCategory(item),
-      }));
-  }, [state.news]);
+    return newsRows.map((item) => ({
+      ...item,
+      category: item.category || getArticleCategory(item),
+    }));
+  }, [newsRows]);
 
   const categories = [
     "all",

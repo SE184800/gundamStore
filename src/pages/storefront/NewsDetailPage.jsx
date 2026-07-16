@@ -1,12 +1,43 @@
+import { useEffect, useState } from "react";
 import PageShell from "../../components/common/PageShell";
-import { seedNews } from "../../data/news";
-import { useCms } from "../../store/CmsStore";
+import { getPublicNewsBySlugApi } from "../../services/ContentApiService";
 
 export default function NewsDetailPage() {
-  const { state } = useCms();
-  const articles = state.news && state.news.length ? state.news : seedNews;
   const slug = window.location.pathname.split("/").pop();
-  const article = articles.find((item) => item.slug === slug) || articles[0];
+  const [article, setArticle] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let alive = true;
+
+    getPublicNewsBySlugApi(slug)
+      .then((row) => {
+        if (alive) setArticle(row || null);
+      })
+      .catch((error) => {
+        console.error("PUBLIC_NEWS_DETAIL_ERROR", error);
+        if (alive) setArticle(null);
+      })
+      .finally(() => {
+        if (alive) setLoading(false);
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, [slug]);
+
+  if (!article) {
+    return (
+      <PageShell>
+        <main className="mx-auto max-w-[1100px] px-4 py-16 text-center">
+          <div className="rounded-3xl border border-slate-200 bg-white p-8 font-bold text-slate-500">
+            {loading ? "Đang tải bài viết..." : "Không tìm thấy bài viết."}
+          </div>
+        </main>
+      </PageShell>
+    );
+  }
 
   return (
     <PageShell>
@@ -22,7 +53,7 @@ export default function NewsDetailPage() {
             <p className="mt-4 text-sm font-semibold text-slate-500">{article.date}</p>
 
             <div className="mt-8 space-y-5 text-base font-semibold leading-8 text-slate-700">
-              {article.content.map((p) => (
+              {(Array.isArray(article.content) ? article.content : []).map((p) => (
                 <p key={p}>{p}</p>
               ))}
             </div>
