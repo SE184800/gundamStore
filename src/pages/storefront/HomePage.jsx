@@ -164,10 +164,13 @@ function getSectionProducts(products, section, displayMappings = []) {
     .map((mapping) => mapping.productId);
 
   if (mappedProductIds.length > 0) {
-    return products
+    const mappedProducts = products
       .filter((product) => mappedProductIds.includes(product.id))
-      .sort((a, b) => mappedProductIds.indexOf(a.id) - mappedProductIds.indexOf(b.id))
-      .slice(0, Number(section.limit || 8));
+      .sort((a, b) => mappedProductIds.indexOf(a.id) - mappedProductIds.indexOf(b.id));
+
+    if (mappedProducts.length > 0) {
+      return mappedProducts.slice(0, Number(section.limit || 8));
+    }
   }
 
   return products
@@ -185,7 +188,14 @@ function mergeCmsSections(homeSections) {
       });
 
       if (cms?.enabled === false) return null;
-      return { ...base, ...(cms || {}), dataSource: cms?.dataSource || cms?.source || base.dataSource };
+
+      return {
+        ...base,
+        ...(cms || {}),
+        id: base.id,
+        title: base.title,
+        dataSource: base.dataSource,
+      };
     })
     .filter(Boolean)
     .sort((a, b) => Number(a.sort || 0) - Number(b.sort || 0));
@@ -897,7 +907,12 @@ export default function HomePage() {
                 displayMappings={state.productDisplayMappings || []}
                 lang={lang}
                 actions={actions}
-                badge={index === 0 ? "NEW" : index === 1 ? "ORDER" : index === 2 ? "HOT" : "SALE"}
+                badge={{
+                  new_arrivals: "NEW",
+                  order_items: "ORDER",
+                  best_sellers: "HOT",
+                  sale_products: "SALE",
+                }[section.dataSource] || "NEW"}
               />
             ))}
           </div>
