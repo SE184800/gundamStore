@@ -562,7 +562,7 @@ function CategorySidebar({ categoryTree, lang }) {
   };
 
   return (
-    <aside className="self-start rounded-2xl border border-slate-200 bg-white p-3 shadow-sm sm:p-4">
+    <aside className="hidden self-start rounded-2xl border border-slate-200 bg-white p-3 shadow-sm sm:p-4 lg:block">
       <div className="mb-3">
         <div className="text-[10px] font-black uppercase tracking-[0.22em] text-blue-700">Category</div>
         <h3 className="mt-0.5 text-lg font-black text-slate-950">
@@ -893,6 +893,55 @@ export default function HomePage() {
           error={bannerApiError}
         />
         <TrustStrip lang={lang} />
+
+        <section className="mx-auto max-w-[1200px] px-4 pb-3 lg:hidden">
+          <div className="mobile-hide-scrollbar flex gap-2 overflow-x-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
+            <a
+              href="/shop"
+              className="shrink-0 rounded-full bg-blue-700 px-4 py-2.5 text-xs font-black text-white"
+            >
+              {lang === "vi" ? "Tất cả sản phẩm" : "All products"}
+            </a>
+
+            {categoryTree.slice(0, 4).map((root) => {
+              const rootName = text(
+                root.name,
+                lang,
+                root.label || root.code || "Category"
+              );
+
+              const rawKey =
+                root.id ||
+                root.backendCategoryId ||
+                root.slug ||
+                root.code ||
+                "";
+
+              const href = getSafeHref(
+                root.ctaUrl ||
+                  `/shop?category=${encodeURIComponent(rawKey)}`,
+                "/shop"
+              );
+
+              return (
+                <a
+                  key={root.id || root.code || rootName}
+                  href={href}
+                  className="max-w-[180px] shrink-0 truncate rounded-full border border-blue-100 bg-blue-50 px-4 py-2.5 text-xs font-black text-blue-700"
+                >
+                  {rootName}
+                </a>
+              );
+            })}
+
+            <a
+              href="/shop"
+              className="shrink-0 rounded-full border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs font-black text-slate-700"
+            >
+              {lang === "vi" ? "Xem danh mục →" : "View categories →"}
+            </a>
+          </div>
+        </section>
 
         <main className="mx-auto grid max-w-[1200px] gap-4 px-4 pb-8 lg:grid-cols-[300px_1fr]">
           <CategorySidebar categoryTree={categoryTree} lang={lang} />
