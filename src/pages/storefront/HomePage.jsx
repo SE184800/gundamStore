@@ -559,7 +559,7 @@ function CategorySidebar({ categoryTree, lang }) {
           {lang === "vi" ? "Dòng sản phẩm" : "Product lines"}
         </h3>
         <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">
-          {lang === "vi" ? "Chọn nhóm hoặc dòng sản phẩm cần xem" : "Choose a group or product line"}
+          {lang === "vi" ? "Chọn nhóm cha hoặc dòng sản phẩm con" : "Choose a parent group or child line"}
         </p>
       </div>
 
@@ -576,28 +576,24 @@ function CategorySidebar({ categoryTree, lang }) {
           return (
             <section
               key={root.id || root.code || rootName}
-              className={`overflow-hidden rounded-2xl border transition ${expanded ? "border-blue-200 bg-blue-50/40" : "border-slate-200 bg-white"}`}
+              className={`overflow-hidden rounded-2xl border transition ${expanded ? "border-blue-700 shadow-md shadow-blue-100" : "border-slate-200 bg-white"}`}
             >
-              <div
-                className="grid w-full items-stretch"
-                style={{ gridTemplateColumns: hasChildren ? "minmax(0, 1fr) 48px" : "minmax(0, 1fr)" }}
-              >
+              <div className={`relative w-full ${expanded ? "bg-gradient-to-r from-blue-700 to-blue-600" : "bg-white"}`}>
                 <a
                   href={getCategoryHref(root)}
                   title={root.titleInternal || rootName}
                   aria-label={root.altText || rootName}
-                  className="flex min-w-0 items-center justify-between gap-3 px-3 py-3 text-left transition hover:bg-blue-50"
+                  className={`block w-full px-3 py-3 text-left transition ${expanded ? "hover:bg-white/10" : "hover:bg-blue-50"}`}
+                  style={{ paddingRight: hasChildren ? "60px" : "12px" }}
                 >
-                  <span className="min-w-0">
-                    <span className="block break-words text-sm font-black leading-5 text-slate-950">
-                      {rootName}
-                    </span>
-                    <span className="mt-0.5 block text-[10px] font-bold text-blue-600">
-                      {lang === "vi" ? "Xem tất cả trong nhóm" : "View all in group"}
-                    </span>
+                  <span
+                    className={`block whitespace-normal text-sm font-black leading-5 ${expanded ? "text-white" : "text-slate-950"}`}
+                    style={{ wordBreak: "normal", overflowWrap: "normal", hyphens: "none" }}
+                  >
+                    {rootName}
                   </span>
-                  <span className="shrink-0 rounded-full bg-slate-100 px-2 py-1 text-[10px] font-black text-slate-500">
-                    {rootCount}
+                  <span className={`mt-1 block text-[10px] font-bold ${expanded ? "text-blue-100" : "text-blue-600"}`}>
+                    {rootCount} {lang === "vi" ? "sản phẩm · Xem toàn bộ nhóm" : "products · View entire group"}
                   </span>
                 </a>
 
@@ -607,7 +603,7 @@ function CategorySidebar({ categoryTree, lang }) {
                     onClick={() => setExpandedRootId((current) => current === root.id ? "" : root.id)}
                     aria-expanded={expanded}
                     aria-label={expanded ? "Thu gọn dòng sản phẩm con" : "Mở dòng sản phẩm con"}
-                    className="flex min-h-14 items-center justify-center border-l border-slate-200 text-slate-500 transition hover:bg-blue-100 hover:text-blue-700"
+                    className={`absolute inset-y-0 right-0 flex w-12 items-center justify-center border-l transition ${expanded ? "border-white/20 text-white hover:bg-white/10" : "border-slate-200 text-slate-500 hover:bg-blue-50 hover:text-blue-700"}`}
                   >
                     <ChevronRight size={18} className={`transition-transform duration-200 ${expanded ? "rotate-90" : ""}`} />
                   </button>
@@ -615,30 +611,41 @@ function CategorySidebar({ categoryTree, lang }) {
               </div>
 
               {expanded && (
-                <div className="grid gap-px border-t border-blue-100 bg-slate-200 sm:grid-cols-2">
-                  {children.map((child) => {
-                    const childName = text(child.name, lang, child.label || child.code || "Category");
-                    const childCount = Number(child.productCount || child.count || 0);
+                <div className="border-t border-blue-600 bg-slate-50 p-2">
+                  <div className="mb-1.5 px-2 text-[9px] font-black uppercase tracking-[0.18em] text-slate-400">
+                    {lang === "vi" ? "Dòng sản phẩm con" : "Child product lines"}
+                  </div>
 
-                    return (
-                      <a
-                        key={child.id || child.code || childName}
-                        href={getCategoryHref(child)}
-                        title={child.titleInternal || childName}
-                        aria-label={child.altText || childName}
-                        className="group flex min-w-0 items-center gap-2.5 bg-white px-3 py-3 text-left transition hover:bg-blue-50"
-                      >
-                        <span className="h-2 w-2 shrink-0 rounded-full bg-blue-500" />
-                        <span className="min-w-0 flex-1 break-words text-xs font-black leading-4 text-slate-800 group-hover:text-blue-700">
-                          {childName}
-                        </span>
-                        <span className="shrink-0 rounded-full bg-slate-100 px-2 py-1 text-[10px] font-black text-slate-500">
-                          {childCount}
-                        </span>
-                        <ChevronRight size={14} className="shrink-0 text-slate-300 group-hover:text-blue-600" />
-                      </a>
-                    );
-                  })}
+                  <div className="space-y-1.5 border-l-2 border-blue-200 pl-2">
+                    {children.map((child) => {
+                      const childName = text(child.name, lang, child.label || child.code || "Category");
+                      const childCount = Number(child.productCount || child.count || 0);
+
+                      return (
+                        <a
+                          key={child.id || child.code || childName}
+                          href={getCategoryHref(child)}
+                          title={child.titleInternal || childName}
+                          aria-label={child.altText || childName}
+                          className="group relative block w-full rounded-xl border border-slate-100 bg-white px-3 py-2.5 pr-9 text-left shadow-sm transition hover:border-blue-200 hover:bg-blue-50"
+                        >
+                          <span
+                            className="block whitespace-normal text-xs font-black leading-4 text-slate-800 group-hover:text-blue-700"
+                            style={{ wordBreak: "normal", overflowWrap: "normal", hyphens: "none" }}
+                          >
+                            {childName}
+                          </span>
+                          <span className="mt-1 block text-[10px] font-bold text-slate-400">
+                            {childCount} {lang === "vi" ? "sản phẩm" : "products"}
+                          </span>
+                          <ChevronRight
+                            size={15}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 transition group-hover:text-blue-600"
+                          />
+                        </a>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
             </section>
@@ -648,7 +655,6 @@ function CategorySidebar({ categoryTree, lang }) {
     </aside>
   );
 }
-
 function ProductSection({ section, products, displayMappings, lang, actions, badge }) {
   const t = copy[lang];
   const sectionProducts = getSectionProducts(products, section, displayMappings);
