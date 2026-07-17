@@ -681,7 +681,7 @@ function ProductInfo({ product, lang, actions, onPreorder }) {
       <div className="mt-5 grid gap-3 sm:grid-cols-2">
         {preorder ? (
           <button
-            onClick={() => onPreorder ? onPreorder(product, qty) : actions.addToCart(product.id, qty)}
+            onClick={() => onPreorder ? onPreorder(currentProduct, qty) : actions.addToCart(currentProduct.id, qty)}
             className="rounded-2xl bg-violet-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-violet-200 hover:bg-violet-700 sm:col-span-2"
           >
             {t.preorderNow}

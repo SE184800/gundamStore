@@ -55,6 +55,16 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
   const desc = resolveText(product?.description, lang, short);
   const image = getImage(product);
   const price = Number(product?.finalPrice || product?.effectivePrice || product?.price || 0);
+  const hasVariants =
+    Boolean(product?.hasVariants) &&
+    Array.isArray(product?.variants) &&
+    product.variants.length > 0;
+  const priceMin = Number(product?.priceMin ?? price) || 0;
+  const priceMax = Number(product?.priceMax ?? priceMin) || priceMin;
+  const hasPriceRange = hasVariants && priceMax > priceMin;
+  const displayPrice = hasPriceRange
+    ? `${formatCurrency(priceMin)} - ${formatCurrency(priceMax)}`
+    : formatCurrency(priceMin || price);
   const commercialDiscount = hasCommercialDiscount(product);
   const oldPrice = commercialDiscount
     ? Number(product?.compareAtPrice || product?.oldPrice || product?.originalPrice || 0)
@@ -86,6 +96,12 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
   function addCart(e) {
     e?.preventDefault?.();
     e?.stopPropagation?.();
+
+    if (hasVariants) {
+      window.location.href = detailUrl;
+      return false;
+    }
+
     if (!state?.user) {
       setToastConfig({ show: true, type: "error", message: `Vui lòng đăng nhập để tiếp tục` });
       setTimeout(() => setToastConfig((prev) => ({ ...prev, show: false })), 2500);
@@ -115,6 +131,12 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
   function buyNow(e) {
     e?.preventDefault?.();
     e?.stopPropagation?.();
+
+    if (hasVariants) {
+      window.location.href = detailUrl;
+      return false;
+    }
+
     if (!state?.user) {
       setToastConfig({ show: true, type: "error", message: `Vui lòng đăng nhập để tiếp tục` });
       setTimeout(() => setToastConfig((prev) => ({ ...prev, show: false })), 2500);
@@ -236,7 +258,7 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
           <div className="mb-4 flex items-end justify-between">
             <div>
               {oldPrice ? <div className="text-xs font-bold text-slate-400 line-through">{formatCurrency(oldPrice)}</div> : null}
-              <div className="text-base font-black text-slate-950 sm:text-lg">{formatCurrency(price)}</div>
+              <div className="text-base font-black text-slate-950 sm:text-lg">{displayPrice}</div>
             </div>
 
             <div className="flex items-center gap-1 rounded-full bg-amber-50 px-2 py-1 text-xs font-black text-amber-600">
@@ -277,7 +299,11 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
               className={`flex w-full items-center justify-center gap-2 rounded-2xl px-3 py-3 text-sm font-black text-white shadow-lg transition hover:scale-[1.01] ${isOutOfStock ? "cursor-not-allowed bg-slate-300 shadow-none" : "bg-blue-700 shadow-blue-100 hover:bg-blue-800"}`}
             >
               <ShoppingCart size={17} />
-              {isOutOfStock ? outOfStockLabel : t("product.addToCart")}
+              {isOutOfStock
+                ? outOfStockLabel
+                : hasVariants
+                  ? (lang === "en" ? "Select options" : "Chọn phân loại")
+                  : t("product.addToCart")}
             </button>
           )}
         </div>
@@ -298,7 +324,7 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
                 <h2 className="mt-2 text-2xl font-black text-slate-950">{name}</h2>
                 <p className="mt-3 text-sm font-semibold leading-6 text-slate-500">{desc}</p>
                 <div className="mt-4 flex items-end gap-3">
-                  <div className="text-3xl font-black text-blue-700">{formatCurrency(price)}</div>
+                  <div className="text-3xl font-black text-blue-700">{displayPrice}</div>
                   {oldPrice ? <div className="text-sm font-bold text-slate-400 line-through">{formatCurrency(oldPrice)}</div> : null}
                 </div>
                 <div className="mt-5 flex items-center gap-3">
