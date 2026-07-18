@@ -20,6 +20,15 @@ import {
   updateAdminHeroSettings,
 } from "../../services/BannerApiService";
 
+function cleanBannerMediaUrl(value = "") {
+  const url = String(value || "").trim();
+
+  return url.toLowerCase().startsWith("data:") ||
+    url.toLowerCase().includes(";base64,")
+    ? ""
+    : url;
+}
+
 const emptyBanner = {
   id: "",
   titleInternal: "",
@@ -120,8 +129,12 @@ export default function AdminCMSBanners() {
     setDraft({
       ...emptyBanner,
       ...banner,
-      mainImage: banner.mainImage || banner.imageUrl || "",
-      imageUrl: banner.imageUrl || banner.mainImage || "",
+      mainImage: cleanBannerMediaUrl(banner.mainImage || banner.imageUrl || ""),
+      imageUrl: cleanBannerMediaUrl(banner.imageUrl || banner.mainImage || ""),
+      mobileImage: cleanBannerMediaUrl(banner.mobileImage),
+      tabletImage: cleanBannerMediaUrl(banner.tabletImage),
+      desktopImage: cleanBannerMediaUrl(banner.desktopImage),
+      videoUrl: cleanBannerMediaUrl(banner.videoUrl),
       fitMode: banner.fitMode || "cover",
       status: banner.status || "Draft",
     });
@@ -130,7 +143,7 @@ export default function AdminCMSBanners() {
 
   function normalizePayload() {
     const cta = normalizeSafeCtaUrl(draft.ctaUrl, { fallback: "/shop" });
-    const mainImage = draft.mainImage || draft.imageUrl;
+    const mainImage = cleanBannerMediaUrl(draft.mainImage || draft.imageUrl);
 
     if (!mainImage) {
       throw new Error(
@@ -154,11 +167,11 @@ export default function AdminCMSBanners() {
       placement: draft.placement || "Homepage Hero",
       mediaType: draft.mediaType || "image",
       mainImage,
-      imageUrl: draft.imageUrl || mainImage,
-      mobileImage: draft.mobileImage || "",
-      tabletImage: draft.tabletImage || "",
-      desktopImage: draft.desktopImage || "",
-      videoUrl: draft.videoUrl || "",
+      imageUrl: cleanBannerMediaUrl(draft.imageUrl) || mainImage,
+      mobileImage: cleanBannerMediaUrl(draft.mobileImage),
+      tabletImage: cleanBannerMediaUrl(draft.tabletImage),
+      desktopImage: cleanBannerMediaUrl(draft.desktopImage),
+      videoUrl: cleanBannerMediaUrl(draft.videoUrl),
       ctaUrl: cta.value,
       status: draft.status || "Draft",
       active: draft.active !== false,
