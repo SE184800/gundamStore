@@ -68,6 +68,7 @@ export default function AdminCMSBanners() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [uploadingField, setUploadingField] = useState("");
 
   function patch(field, value) {
     setDraft((prev) => ({ ...prev, [field]: value }));
@@ -102,7 +103,7 @@ export default function AdminCMSBanners() {
 
     if (!file) return;
 
-    setUploadingField?.(targetField);
+    setUploadingField(targetField);
 
     try {
       const isVideo = file.type.startsWith("video/");
@@ -187,7 +188,7 @@ export default function AdminCMSBanners() {
         err?.message || "Không thể upload banner."
       );
     } finally {
-      setUploadingField?.("");
+      setUploadingField("");
       event.target.value = "";
     }
   }
