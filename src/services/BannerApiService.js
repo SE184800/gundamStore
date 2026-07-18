@@ -1,4 +1,4 @@
-import { apiRequest } from "./ApiClient";
+import { apiRequest, clearPublicApiCache } from "./ApiClient";
 import { validateImageUrlForPerformance } from "../utils/imagePerformanceValidation";
 
 const HOMEPAGE_HERO_MAX_BANNERS = 3;
@@ -60,7 +60,14 @@ export async function createAdminBanner(payload) {
     method: "POST",
     body: toRequestBody(payload),
   });
-  return data?.banner;
+  if (!data?.success || !data?.banner) {
+    throw new Error(
+      data?.message || "Backend did not create the banner."
+    );
+  }
+
+  clearPublicApiCache(["/api/banners/home"]);
+  return data.banner;
 }
 
 export async function updateAdminBanner(id, payload) {
@@ -69,13 +76,23 @@ export async function updateAdminBanner(id, payload) {
     method: "PATCH",
     body: toRequestBody(payload),
   });
-  return data?.banner;
+  if (!data?.success || !data?.banner) {
+    throw new Error(
+      data?.message || "Backend did not update the banner."
+    );
+  }
+
+  clearPublicApiCache(["/api/banners/home"]);
+  return data.banner;
 }
 
 export async function deleteAdminBanner(id) {
-  return apiRequest("/api/admin/banners/" + id, {
+  const data = await apiRequest("/api/admin/banners/" + id, {
     method: "DELETE",
   });
+
+  clearPublicApiCache(["/api/banners/home"]);
+  return data;
 }
 
 export async function getAdminHeroSettings() {

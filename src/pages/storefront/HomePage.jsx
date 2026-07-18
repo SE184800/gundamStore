@@ -159,24 +159,15 @@ function productMatchesSource(product, source) {
   return getProductCollectionKeys(product).includes(key);
 }
 
-function getSectionProducts(products, section, displayMappings = []) {
+function getSectionProducts(products, section) {
   if (!Array.isArray(products)) return [];
 
-  const source = normalizeCollection(section.dataSource || section.id || "");
-  const mappedProductIds = (displayMappings || [])
-    .filter((mapping) => Array.isArray(mapping.collectionKeys) && mapping.collectionKeys.map(normalizeCollection).includes(source))
-    .map((mapping) => mapping.productId);
+  const source = normalizeCollection(
+    section.dataSource || section.id || ""
+  );
 
-  if (mappedProductIds.length > 0) {
-    const mappedProducts = products
-      .filter((product) => mappedProductIds.includes(product.id))
-      .sort((a, b) => mappedProductIds.indexOf(a.id) - mappedProductIds.indexOf(b.id));
-
-    if (mappedProducts.length > 0) {
-      return mappedProducts.slice(0, Number(section.limit || 8));
-    }
-  }
-
+  // PostgreSQL ProductGroup là nguồn duy nhất cho các block homepage.
+  // Không dùng mapping CMS/localStorage cũ.
   return products
     .filter((product) => productMatchesSource(product, source))
     .slice(0, Number(section.limit || 8));
@@ -718,9 +709,9 @@ function CategorySidebar({ categoryTree, lang }) {
   );
 }
 
-function ProductSection({ section, products, displayMappings, lang, actions, badge }) {
+function ProductSection({ section, products, lang, actions, badge }) {
   const t = copy[lang];
-  const sectionProducts = getSectionProducts(products, section, displayMappings);
+  const sectionProducts = getSectionProducts(products, section);
   const title = text(section.title, lang, t.newArrivals);
 
   return (
@@ -1154,7 +1145,6 @@ export default function HomePage() {
                 key={section.id}
                 section={section}
                 products={products}
-                displayMappings={state.productDisplayMappings || []}
                 lang={lang}
                 actions={actions}
                 badge={{

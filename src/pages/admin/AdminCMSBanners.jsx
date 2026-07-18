@@ -42,7 +42,7 @@ const emptyBanner = {
   desktopImage: "",
   videoUrl: "",
   ctaUrl: "/shop",
-  status: "Draft",
+  status: "Live",
   active: true,
   priority: 1,
   fitMode: "cover",
@@ -499,6 +499,42 @@ export default function AdminCMSBanners() {
                 </label>
               ))}
             </div>
+
+            {(draft.mainImage ||
+              draft.imageUrl ||
+              draft.mobileImage ||
+              draft.desktopImage ||
+              draft.videoUrl) && (
+              <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white p-3">
+                <div className="mb-2 text-xs font-black uppercase tracking-wide text-slate-500">
+                  Preview
+                </div>
+
+                {draft.videoUrl ? (
+                  <video
+                    src={draft.videoUrl}
+                    controls
+                    muted
+                    className="max-h-72 w-full rounded-xl object-contain"
+                  />
+                ) : (
+                  <img
+                    src={
+                      draft.desktopImage ||
+                      draft.mainImage ||
+                      draft.imageUrl ||
+                      draft.mobileImage
+                    }
+                    alt={
+                      draft.altText ||
+                      draft.titleInternal ||
+                      "Banner preview"
+                    }
+                    className="max-h-72 w-full rounded-xl bg-slate-100 object-contain"
+                  />
+                )}
+              </div>
+            )}
 
             <div className="mt-4 grid gap-4 md:grid-cols-2">
               <AdminTextField
