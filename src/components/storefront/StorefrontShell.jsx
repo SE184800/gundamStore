@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import HeaderCart from "../layout/HeaderCart";
 import { useCms } from "../../store/CmsStore";
 import { useI18n } from "../../i18n";
-import { User, ChevronDown, Settings, Heart, LogOut, Globe, Home, Package, ClipboardList, Gift, Users, Headphones } from "lucide-react";
+import { User, ChevronDown, Settings, Heart, LogOut, Globe, Home, Package, ClipboardList, Gift, Headphones } from "lucide-react";
 function getStoreNavigationItems(lang = "vi") {
   return [
     {
@@ -29,12 +29,6 @@ function getStoreNavigationItems(lang = "vi") {
       label: lang === "en" ? "Deals" : "Ưu đãi",
       icon: Gift,
       match: (pathname) => pathname.startsWith("/promotions") || pathname.startsWith("/flash-sale"),
-    },
-    {
-      to: "/community-gallery",
-      label: lang === "en" ? "Community" : "Cộng đồng",
-      icon: Users,
-      match: (pathname) => pathname.startsWith("/community-gallery") || pathname.startsWith("/news") || pathname.startsWith("/events"),
     },
     {
       to: "/support",

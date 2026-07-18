@@ -595,10 +595,10 @@ body {
   }
 }
 
-/* Bottom tab based on PC navigation: Home / Products / Orders / Deals / Community / Support */
+/* Bottom tab navigation: Home / Products / Orders / Deals / Support */
 @media (max-width: 767px) {
   .mobile-bottom-tabs {
-    grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
     left: 8px !important;
     right: 8px !important;
     bottom: calc(7px + env(safe-area-inset-bottom)) !important;
@@ -649,7 +649,7 @@ body {
     bottom: calc(7px + env(safe-area-inset-bottom)) !important;
     z-index: 99999 !important;
     display: grid !important;
-    grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
     gap: 3px !important;
     padding: 6px !important;
     border: 1px solid rgba(226, 232, 240, 0.95) !important;
