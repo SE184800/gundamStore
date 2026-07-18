@@ -1,4 +1,4 @@
-﻿import { apiRequest, getStoredAccountToken } from "./ApiClient";
+import { apiRequest, getStoredAccountToken } from "./ApiClient";
 import { mapBackendOrderForStorefront } from "./StorefrontOrderLookupApiService";
 
 const PRODUCT_ALIASES = {
@@ -149,6 +149,16 @@ export function buildCreateOrderPayload({
   pricing,
 }) {
   return {
+    orderType: draft.orderType === "preorder" ? "preorder" : "normal",
+    preorder: draft.orderType === "preorder"
+      ? {
+          eta: draft.preorder?.eta || "",
+          depositRate: Number(draft.preorder?.depositRate || 0.3),
+          fullAmount: Number(draft.preorder?.fullAmount || pricing.subtotal || 0),
+          depositAmount: Number(draft.preorder?.depositAmount || pricing.total || 0),
+          remainingAmount: Number(draft.preorder?.remainingAmount || 0),
+        }
+      : null,
     customerName: customer.name,
     customerPhone: customer.phone,
     customerEmail: customer.email || "",

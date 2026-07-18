@@ -1160,7 +1160,16 @@ export default function ProductDetailPage() {
       orderType: ORDER_TYPE.PREORDER,
       items: [
         {
-          id: product.id,
+          id: product.variantId ? `${product.id}::${product.variantId}` : product.id,
+          productId: product.backendProductId || product.productId || product.id,
+          backendProductId: product.backendProductId || product.productId || product.id,
+          sku: product.sku || "",
+          slug: product.slug || "",
+          variantId: product.variantId || "",
+          backendVariantId: product.variantId || "",
+          variantSku: product.variantSku || "",
+          variantName: product.variantName || "",
+          variantOptions: product.variantOptions || null,
           name: productName(product, lang),
           image,
           price: unitPrice,

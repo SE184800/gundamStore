@@ -388,94 +388,36 @@ export default function CheckoutPage() {
     };
 
     try {
-      if (!isPreorder) {
-        const apiPayload = {
-          ...buildCreateOrderPayload({
-            customer: cleanCustomer,
-            draft,
-            pricing,
-          }),
-          voucherCode: pricing.voucherCode || "",
-          discount: pricing.discount,
-          shippingDiscount: pricing.shippingDiscount,
-        };
+      const apiPayload = {
+        ...buildCreateOrderPayload({
+          customer: cleanCustomer,
+          draft,
+          pricing,
+        }),
+        voucherCode: isPreorder ? "" : (pricing.voucherCode || ""),
+        discount: isPreorder ? 0 : pricing.discount,
+        shippingDiscount: isPreorder ? 0 : pricing.shippingDiscount,
+      };
 
-        const apiOrder = await createStorefrontOrderApi(apiPayload);
-        const mappedOrder = mapBackendOrderForStorefront(apiOrder);
+      const apiOrder = await createStorefrontOrderApi(apiPayload);
+      const mappedOrder = mapBackendOrderForStorefront(apiOrder);
 
-        saveOrderSuccessSnapshot(mappedOrder, cleanCustomer);
-
-        clearCartItems(draft.items.map((item) => item.id));
-        clearCheckoutDraft();
-
-        navigate(`/order-success/${mappedOrder.orderCode || mappedOrder.id}`);
-        return;
-      }
-
-      const order = createOrder({
-        orderType: ORDER_TYPE.PREORDER,
-        preorder: draft.preorder || null,
-        customer: cleanCustomer,
-        items: draft.items.map((item) => ({
-          ...item,
-          name: getItemName(item, lang),
-        })),
-        subtotal: pricing.subtotal,
-        shippingFee: pricing.shippingFee,
-        discount: pricing.discount,
-        shippingDiscount: pricing.shippingDiscount,
-        voucherCode: pricing.voucherCode,
-        total: pricing.total,
-        paymentMethod: customer.paymentMethod,
-        shippingMethod: customer.shippingMethod,
-      });
-
-      saveOrderSuccessSnapshot(order, cleanCustomer);
-
+      saveOrderSuccessSnapshot(mappedOrder, cleanCustomer);
       clearCartItems(draft.items.map((item) => item.id));
       clearCheckoutDraft();
 
-      navigate(`/order-success/${order.orderCode || order.id}`);
+      navigate(`/order-success/${mappedOrder.orderCode || mappedOrder.id}`);
     } catch (error) {
       console.error("Create order API failed", error);
 
-      if (!isPreorder) {
-        setErrors([
-          error?.message ||
-          (lang === "en"
-            ? "Cannot create backend order. Please check product mapping or stock."
-            : "Không thể tạo đơn backend. Vui lòng kiểm tra mapping sản phẩm hoặc tồn kho."),
-        ]);
-        setApiNotice("");
-        return;
-      }
+      setErrors([
+        error?.message ||
+        (lang === "en"
+          ? "Cannot create the order. Please check product mapping, variant or availability."
+          : "Không thể tạo đơn hàng. Vui lòng kiểm tra sản phẩm, phân loại hoặc trạng thái pre-order."),
+      ]);
 
-      setApiNotice(t.apiFallback);
-
-      const order = createOrder({
-        orderType: ORDER_TYPE.PREORDER,
-        preorder: draft.preorder || null,
-        customer: cleanCustomer,
-        items: draft.items.map((item) => ({
-          ...item,
-          name: getItemName(item, lang),
-        })),
-        subtotal: pricing.subtotal,
-        shippingFee: pricing.shippingFee,
-        discount: pricing.discount,
-        shippingDiscount: pricing.shippingDiscount,
-        voucherCode: pricing.voucherCode,
-        total: pricing.total,
-        paymentMethod: customer.paymentMethod,
-        shippingMethod: customer.shippingMethod,
-      });
-
-      saveOrderSuccessSnapshot(order, cleanCustomer);
-
-      clearCartItems(draft.items.map((item) => item.id));
-      clearCheckoutDraft();
-
-      navigate(`/order-success/${order.orderCode || order.id}`);
+      setApiNotice("");
     } finally {
       setPlacingOrder(false);
     }

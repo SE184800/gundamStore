@@ -279,11 +279,6 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                if (!state?.user) {
-                  setToastConfig({ show: true, type: "error", message: "Vui lòng đăng nhập để tiếp tục" });
-                  setTimeout(() => setToastConfig((prev) => ({ ...prev, show: false })), 2500);
-                  return;
-                }
                 window.location.href = detailUrl;
               }}
               className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 px-3 py-3 text-sm font-black text-white shadow-lg shadow-amber-100 transition hover:scale-[1.01]"
