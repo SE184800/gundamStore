@@ -9,8 +9,11 @@ import {
   AdminToggle,
 } from "../../components/admin/AdminField";
 import { useLang } from "../../store/CmsStore";
-import { fileToBase64 } from "../../utils/mediaUpload";
 import { normalizeSafeCtaUrl } from "../../utils/urlSafety";
+import {
+  uploadAdminMediaImages,
+  uploadAdminMediaVideo,
+} from "../../services/AdminMediaApiService";
 import {
   createAdminBanner,
   deleteAdminBanner,
@@ -99,23 +102,92 @@ export default function AdminCMSBanners() {
 
     if (!file) return;
 
+    setUploadingField?.(targetField);
+
     try {
-      const base64 = await fileToBase64(file, { mediaKind: "banner" });
       const isVideo = file.type.startsWith("video/");
+
+      const upload = isVideo
+        ? await uploadAdminMediaVideo(file)
+        : await uploadAdminMediaImages([file]);
+
+      const uploadedUrl = isVideo
+        ? upload?.videoUrl || upload?.video?.url || upload?.url
+        : upload?.images?.[0]?.detailUrl ||
+          upload?.images?.[0]?.cardUrl ||
+          upload?.images?.[0]?.url ||
+          upload?.imageUrl ||
+          upload?.url;
+
+      if (!uploadedUrl) {
+        throw new Error(
+          "Upload thành công nhưng backend không trả về URL Supabase."
+        );
+      }
+
+      if (
+        String(uploadedUrl).startsWith("data:") ||
+        String(uploadedUrl).includes(";base64,")
+      ) {
+        throw new Error(
+          "Backend trả về dữ liệu base64 không hợp lệ."
+        );
+      }
 
       setDraft((prev) => ({
         ...prev,
-        mediaType: isVideo ? "video" : file.type.includes("gif") ? "gif" : "image",
-        mainImage: !isVideo && targetField === "mainImage" ? base64 : prev.mainImage,
-        imageUrl: !isVideo && targetField === "mainImage" ? base64 : prev.imageUrl,
-        mobileImage: !isVideo && targetField === "mobileImage" ? base64 : prev.mobileImage,
-        tabletImage: !isVideo && targetField === "tabletImage" ? base64 : prev.tabletImage,
-        desktopImage: !isVideo && targetField === "desktopImage" ? base64 : prev.desktopImage,
-        videoUrl: isVideo ? base64 : prev.videoUrl,
+        mediaType: isVideo
+          ? "video"
+          : file.type.includes("gif")
+            ? "gif"
+            : "image",
+
+        mainImage:
+          !isVideo && targetField === "mainImage"
+            ? uploadedUrl
+            : prev.mainImage,
+
+        imageUrl:
+          !isVideo && targetField === "mainImage"
+            ? uploadedUrl
+            : prev.imageUrl,
+
+        mobileImage:
+          !isVideo && targetField === "mobileImage"
+            ? uploadedUrl
+            : prev.mobileImage,
+
+        tabletImage:
+          !isVideo && targetField === "tabletImage"
+            ? uploadedUrl
+            : prev.tabletImage,
+
+        desktopImage:
+          !isVideo && targetField === "desktopImage"
+            ? uploadedUrl
+            : prev.desktopImage,
+
+        videoUrl: isVideo
+          ? uploadedUrl
+          : prev.videoUrl,
       }));
+
+      setError("");
+      setMessage(
+        lang === "en"
+          ? "Media uploaded. Click Save banner to publish."
+          : "Đã upload lên Supabase. Bấm Save banner để lưu."
+      );
     } catch (err) {
-      window.alert(err?.message || "Invalid banner media file.");
+      console.error("BANNER_UPLOAD_ERROR", err);
+      setError(
+        err?.message || "Không thể upload banner."
+      );
+      window.alert(
+        err?.message || "Không thể upload banner."
+      );
     } finally {
+      setUploadingField?.("");
       event.target.value = "";
     }
   }
