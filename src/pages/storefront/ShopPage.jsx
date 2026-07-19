@@ -35,6 +35,8 @@ const text = {
     outOfStock: "Hết hàng",
     clear: "Xóa lọc",
     apply: "Áp dụng",
+    perPage: "Hiển thị",
+    productsPerPage: "sản phẩm / trang",
   },
   en: {
     home: "Home",
@@ -62,10 +64,41 @@ const text = {
     outOfStock: "Out of stock",
     clear: "Clear",
     apply: "Apply",
+    perPage: "Show",
+    productsPerPage: "products / page",
   },
 };
 
-const PAGE_SIZE = 12;
+const DEFAULT_PAGE_SIZE = 12;
+const PAGE_SIZE_OPTIONS = [6, 12, 24, 36, 48];
+
+function buildPaginationItems(currentPage, totalPages) {
+  if (totalPages <= 7) {
+    return Array.from({ length: totalPages }, (_, index) => index + 1);
+  }
+
+  const pages = [...new Set([
+    1,
+    2,
+    currentPage - 1,
+    currentPage,
+    currentPage + 1,
+    totalPages - 1,
+    totalPages,
+  ])]
+    .filter((page) => page >= 1 && page <= totalPages)
+    .sort((a, b) => a - b);
+
+  return pages.flatMap((page, index) => {
+    const previousPage = pages[index - 1];
+
+    if (index > 0 && page - previousPage > 1) {
+      return [`ellipsis-${previousPage}-${page}`, page];
+    }
+
+    return [page];
+  });
+}
 
 function normalize(value = "") {
   return String(value || "")
@@ -377,7 +410,29 @@ export default function ShopPage() {
   const [mobileCategoryOpen, setMobileCategoryOpen] = useState(false);
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
   const [categorySearch, setCategorySearch] = useState("");
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [currentPage, setCurrentPage] = useState(() => {
+    try {
+      const value = Number(
+        new URLSearchParams(window.location.search).get("page")
+      );
+      return Number.isInteger(value) && value > 0 ? value : 1;
+    } catch {
+      return 1;
+    }
+  });
+
+  const [pageSize, setPageSize] = useState(() => {
+    try {
+      const value = Number(
+        new URLSearchParams(window.location.search).get("limit")
+      );
+      return PAGE_SIZE_OPTIONS.includes(value)
+        ? value
+        : DEFAULT_PAGE_SIZE;
+    } catch {
+      return DEFAULT_PAGE_SIZE;
+    }
+  });
   const [productsFromApi, setProductsFromApi] = useState([]);
   const [categoryTreeFromApi, setCategoryTreeFromApi] = useState([]);
   const [catalogError, setCatalogError] = useState("");
@@ -459,9 +514,77 @@ export default function ShopPage() {
     return result;
   }, [productsFromApi, query, selectedCategoryId, selectedNode, stock, sort, lang]);
 
-  const visibleProducts = useMemo(() => filteredProducts.slice(0, visibleCount), [filteredProducts, visibleCount]);
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredProducts.length / pageSize)
+  );
 
-  useEffect(() => { setVisibleCount(PAGE_SIZE); }, [query, selectedCategoryId, stock, sort]);
+  const paginationItems = useMemo(
+    () => buildPaginationItems(currentPage, totalPages),
+    [currentPage, totalPages]
+  );
+
+  const visibleProducts = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredProducts.slice(start, start + pageSize);
+  }, [filteredProducts, currentPage, pageSize]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [query, selectedCategoryId, stock, sort]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
+  useEffect(() => {
+    try {
+      const url = new URL(window.location.href);
+
+      if (currentPage > 1) {
+        url.searchParams.set("page", String(currentPage));
+      } else {
+        url.searchParams.delete("page");
+      }
+
+      if (pageSize !== DEFAULT_PAGE_SIZE) {
+        url.searchParams.set("limit", String(pageSize));
+      } else {
+        url.searchParams.delete("limit");
+      }
+
+      window.history.replaceState(
+        {},
+        "",
+        `${url.pathname}${url.search}${url.hash}`
+      );
+    } catch {
+      // Pagination vẫn hoạt động nếu History API không khả dụng.
+    }
+  }, [currentPage, pageSize]);
+
+  function changePage(page) {
+    const nextPage = Math.min(Math.max(page, 1), totalPages);
+    if (nextPage === currentPage) return;
+
+    setCurrentPage(nextPage);
+
+    window.requestAnimationFrame(() => {
+      document
+        .getElementById("shop-product-grid")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
+
+  function changePageSize(value) {
+    const nextSize = Number(value);
+    if (!PAGE_SIZE_OPTIONS.includes(nextSize)) return;
+
+    setPageSize(nextSize);
+    setCurrentPage(1);
+  }
 
   function resetFilters() {
     setQuery("");
@@ -551,12 +674,44 @@ export default function ShopPage() {
 
             <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs font-bold text-slate-500">
               <span>{filteredProducts.length} {t.result}</span>
-              {(selectedCategoryId !== "all" || stock !== "all" || query) && <button onClick={resetFilters} className="font-black text-blue-600">{t.clear}</button>}
+
+              <label className="ml-auto flex min-h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3">
+                <span className="font-black text-slate-500">
+                  {t.perPage}
+                </span>
+                <select
+                  value={pageSize}
+                  onChange={(event) => changePageSize(event.target.value)}
+                  aria-label={t.productsPerPage}
+                  className="bg-transparent font-black text-slate-800 outline-none"
+                >
+                  {PAGE_SIZE_OPTIONS.map((size) => (
+                    <option key={size} value={size}>
+                      {size}
+                    </option>
+                  ))}
+                </select>
+                <span className="hidden sm:inline">
+                  {t.productsPerPage}
+                </span>
+              </label>
+
+              {(selectedCategoryId !== "all" || stock !== "all" || query) && (
+                <button
+                  onClick={resetFilters}
+                  className="font-black text-blue-600"
+                >
+                  {t.clear}
+                </button>
+              )}
             </div>
           </div>
 
           {filteredProducts.length > 0 ? (
-            <div className="shop-mobile-grid grid grid-cols-2 gap-3 sm:grid-cols-2 xl:grid-cols-3 sm:gap-4">
+            <div
+              id="shop-product-grid"
+              className="shop-mobile-grid scroll-mt-28 grid grid-cols-2 gap-3 sm:grid-cols-2 xl:grid-cols-3 sm:gap-4"
+            >
               {visibleProducts.map((product) => <ProductCard key={product.id} product={product} lang={lang} actions={actions} />)}
             </div>
           ) : (
@@ -566,10 +721,63 @@ export default function ShopPage() {
             </div>
           )}
 
-          {visibleCount < filteredProducts.length && (
-            <div className="flex items-center justify-center rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
-              <button type="button" onClick={() => setVisibleCount((count) => Math.min(count + PAGE_SIZE, filteredProducts.length))} className="rounded-2xl bg-blue-700 px-5 py-3 text-sm font-black text-white shadow-lg shadow-blue-100 hover:bg-blue-800">{t.loadMore}</button>
-            </div>
+          {filteredProducts.length > pageSize && (
+            <nav
+              aria-label={
+                lang === "vi"
+                  ? "Phân trang sản phẩm"
+                  : "Product pagination"
+              }
+              className="flex flex-wrap items-center justify-center gap-2 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm"
+            >
+              <button
+                type="button"
+                onClick={() => changePage(currentPage - 1)}
+                disabled={currentPage === 1}
+                aria-label={lang === "vi" ? "Trang trước" : "Previous page"}
+                className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-35"
+              >
+                <ChevronLeft size={18} />
+              </button>
+
+              {paginationItems.map((item) =>
+                typeof item === "number" ? (
+                  <button
+                    key={item}
+                    type="button"
+                    onClick={() => changePage(item)}
+                    aria-current={
+                      item === currentPage ? "page" : undefined
+                    }
+                    className={`h-10 min-w-10 rounded-xl px-3 text-sm font-black ${
+                      item === currentPage
+                        ? "bg-blue-700 text-white shadow-lg shadow-blue-100"
+                        : "border border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+                    }`}
+                  >
+                    {item}
+                  </button>
+                ) : (
+                  <span
+                    key={item}
+                    aria-hidden="true"
+                    className="px-1 text-sm font-black text-slate-400"
+                  >
+                    ...
+                  </span>
+                )
+              )}
+
+              <button
+                type="button"
+                onClick={() => changePage(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                aria-label={lang === "vi" ? "Trang sau" : "Next page"}
+                className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-35"
+              >
+                <ChevronRight size={18} />
+              </button>
+            </nav>
           )}
         </div>
       </section>
