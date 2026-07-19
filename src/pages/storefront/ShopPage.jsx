@@ -707,6 +707,66 @@ export default function ShopPage() {
             </div>
           </div>
 
+          {filteredProducts.length > pageSize && (
+            <nav
+              aria-label={
+                lang === "vi"
+                  ? "Phân trang sản phẩm phía trên"
+                  : "Top product pagination"
+              }
+              className="flex flex-wrap items-center justify-center gap-2 rounded-3xl border border-slate-200 bg-white p-3 shadow-sm"
+            >
+              <button
+                type="button"
+                onClick={() => changePage(currentPage - 1)}
+                disabled={currentPage === 1}
+                aria-label={lang === "vi" ? "Trang trước" : "Previous page"}
+                className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-35"
+              >
+                <ChevronLeft size={18} />
+              </button>
+
+              {paginationItems.map((item) =>
+                typeof item === "number" ? (
+                  <button
+                    key={`top-${item}`}
+                    type="button"
+                    onClick={() => changePage(item)}
+                    aria-current={
+                      item === currentPage ? "page" : undefined
+                    }
+                    aria-label={`${lang === "vi" ? "Trang" : "Page"} ${item}`}
+                    className={`h-10 min-w-10 rounded-xl px-3 text-sm font-black ${
+                      item === currentPage
+                        ? "bg-blue-700 text-white shadow-lg shadow-blue-100"
+                        : "border border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+                    }`}
+                  >
+                    {item}
+                  </button>
+                ) : (
+                  <span
+                    key={`top-${item}`}
+                    aria-hidden="true"
+                    className="px-1 text-sm font-black text-slate-400"
+                  >
+                    ...
+                  </span>
+                )
+              )}
+
+              <button
+                type="button"
+                onClick={() => changePage(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                aria-label={lang === "vi" ? "Trang sau" : "Next page"}
+                className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-35"
+              >
+                <ChevronRight size={18} />
+              </button>
+            </nav>
+          )}
+
           {filteredProducts.length > 0 ? (
             <div
               id="shop-product-grid"
