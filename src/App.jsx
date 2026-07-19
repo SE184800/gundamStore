@@ -3,15 +3,15 @@ import { Gift, Home, Package, ShieldCheck, ShoppingBag } from "lucide-react";
 import SeoManager from "./components/common/SeoManager";
 import { lazy, Suspense } from "react";
 import { Link, Navigate, Route, Routes, useLocation } from "react-router-dom";
-import Register from "./components/Register.jsx";
 // 🛠️ GIỮ LẠI CÁC ĐƯỜNG IMPORT KHÔNG DÙNG LAZY
 import AddToCartBridge from "./components/cart/AddToCartBridge";
 import { useI18n } from "./i18n";
-import Login from "./components/Login"; // Route Login mới tinh của bạn
 import AdminProtectedRoute from "./components/admin/AdminProtectedRoute";
-import ForgotPassword from "./components/ForgotPassword.jsx";
-import ResetPassword from "./components/ResetPassword.jsx";
 // 🛠️ DANH SÁCH LAZY LOADING (Đã dọn dẹp sạch sẽ, không bị trùng với import tĩnh)
+const Register = lazy(() => import("./components/Register.jsx"));
+const Login = lazy(() => import("./components/Login"));
+const ForgotPassword = lazy(() => import("./components/ForgotPassword.jsx"));
+const ResetPassword = lazy(() => import("./components/ResetPassword.jsx"));
 const HomePage = lazy(() => import("./pages/storefront/HomePage"));
 const ShopPage = lazy(() => import("./pages/storefront/ShopPage"));
 const AccessoriesPage = lazy(() => import("./pages/storefront/AccessoriesPage"));

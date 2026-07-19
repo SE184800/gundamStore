@@ -1,24 +1,16 @@
 import { authService } from "../services/AuthService";
 import { clearStoredAccountToken, setStoredAccountToken, clearStoredAdminSession } from "../services/ApiClient";
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
-import {
-  enrichProductsWithBackendIds,
-  getStorefrontProductsFromApi,
-} from "../services/StorefrontProductApiService";
 import { seedNews } from "../data/news";
 import { seedEvents } from "../data/events";
 import {
-  seedProducts,
   seedBanners,
   seedHomeSections,
-  seedCategories,
   seedReviews,
   seedOrders,
   seedTickets,
   seedChats,
   seedAnalytics,
-  seedProductCategoryMappings,
-  seedProductDisplayMappings,
 } from "../data/seed";
 
 const STORAGE_KEY = "gundam_store_vn_v2_cms";
