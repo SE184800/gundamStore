@@ -5,7 +5,7 @@ import ProductCard from "../../components/storefront/ProductCard";
 import { useCms, useLang } from "../../store/CmsStore";
 import {
   getStorefrontCategoryTreeFromApi,
-  getStorefrontProductsForStorefront,
+  getStorefrontProductsPageFromApi,
 } from "../../services/StorefrontProductApiService";
 
 const text = {
@@ -26,6 +26,7 @@ const text = {
     priceLow: "Giá thấp đến cao",
     priceHigh: "Giá cao đến thấp",
     noProducts: "Không có sản phẩm phù hợp.",
+    loading: "Đang tải...",
     loadMore: "Xem thêm sản phẩm",
     result: "sản phẩm phù hợp",
     quickForYou: "Gợi ý nhanh",
@@ -55,6 +56,7 @@ const text = {
     priceLow: "Price low to high",
     priceHigh: "Price high to low",
     noProducts: "No products match.",
+    loading: "Loading...",
     loadMore: "Load more",
     result: "matching products",
     quickForYou: "Quick picks",
@@ -111,46 +113,6 @@ function normalize(value = "") {
 function getName(item = {}, lang = "vi") {
   if (typeof item.name === "string") return item.name;
   return item.name?.[lang] || item.nameVi || item.nameEn || item.label || item.code || item.id || "";
-}
-
-function getProductName(product = {}, lang = "vi") {
-  if (typeof product.name === "string") return product.name;
-  return product.name?.[lang] || product.name?.vi || product.name?.en || product.nameVi || product.nameEn || "";
-}
-
-function hasDiscount(product = {}) {
-  const price = Number(product.finalPrice || product.price || 0);
-  const oldPrice = Number(product.compareAtPrice || product.oldPrice || 0);
-  return Boolean(product.activePromotion) || Number(product.discountAmount || 0) > 0 || (oldPrice > price && price > 0);
-}
-
-function getStockStatus(product = {}) {
-  const status = normalize(product.status);
-  const stock = Number(product.stock || product.totalStock || 0);
-  if (status.includes("pre")) return "preorder";
-  if (hasDiscount(product)) return "sale";
-  if (stock <= 0 || status.includes("out")) return "outOfStock";
-  return "inStock";
-}
-
-function productSearchText(product = {}, lang = "vi") {
-  return [
-    getProductName(product, lang),
-    product.sku,
-    product.slug,
-    product.brand,
-    product.grade,
-    product.scale,
-    product.status,
-    product.category?.nameVi,
-    product.category?.nameEn,
-  ].filter(Boolean).join(" ");
-}
-
-function productCategoryKeys(product = {}) {
-  return [product.categoryId, product.category?.id, product.category?.slug, product.category?.code]
-    .filter(Boolean)
-    .map(String);
 }
 
 function normalizeTreeNode(node = {}, lang = "vi") {
@@ -433,9 +395,12 @@ export default function ShopPage() {
       return DEFAULT_PAGE_SIZE;
     }
   });
-  const [productsFromApi, setProductsFromApi] = useState([]);
   const [categoryTreeFromApi, setCategoryTreeFromApi] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [productMeta, setProductMeta] = useState({ total: 0, totalPages: 1 });
+  const [productsLoading, setProductsLoading] = useState(true);
   const [catalogError, setCatalogError] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState(query);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -444,17 +409,19 @@ export default function ShopPage() {
   }, []);
 
   useEffect(() => {
+    const timer = setTimeout(() => setDebouncedQuery(query), 300);
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  useEffect(() => {
     let alive = true;
-    Promise.all([getStorefrontProductsForStorefront(), getStorefrontCategoryTreeFromApi()])
-      .then(([products, categoryData]) => {
+    getStorefrontCategoryTreeFromApi()
+      .then((categoryData) => {
         if (!alive) return;
-        setProductsFromApi(products || []);
         setCategoryTreeFromApi(Array.isArray(categoryData?.tree) ? categoryData.tree : []);
-        setCatalogError("");
       })
       .catch((error) => {
         if (!alive) return;
-        setProductsFromApi([]);
         setCategoryTreeFromApi([]);
         setCatalogError(error?.message || "Storefront catalog sync skipped.");
       });
@@ -482,56 +449,60 @@ export default function ShopPage() {
 
   const selectedNode = useMemo(() => findNode(categoryTree, selectedCategoryId), [categoryTree, selectedCategoryId]);
   const catalogProductCount = useMemo(
-    () => (productsFromApi || []).filter((product) => product.active !== false).length,
-    [productsFromApi]
+    () => categoryTree.reduce((sum, node) => sum + Number(node.count || node.productCount || 0), 0),
+    [categoryTree]
   );
 
-  const filteredProducts = useMemo(() => {
-    let result = (productsFromApi || []).filter((product) => product.active !== false);
+  const categoryIdsParam = useMemo(() => {
+    if (selectedCategoryId === "all") return [];
+    return selectedNode?.categoryIds?.length ? selectedNode.categoryIds : [selectedCategoryId];
+  }, [selectedCategoryId, selectedNode]);
+  const categoryIdsKey = categoryIdsParam.join(",");
 
-    if (query) {
-      const q = normalize(query);
-      result = result.filter((product) => normalize(productSearchText(product, lang)).includes(q));
-    }
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedQuery, categoryIdsKey, stock, sort]);
 
-    if (selectedCategoryId !== "all") {
-      const selectedIds = selectedNode?.categoryIds?.length ? selectedNode.categoryIds : [selectedCategoryId];
-      result = result.filter((product) => {
-        const keys = productCategoryKeys(product);
-        return selectedIds.some((id) => keys.includes(String(id)));
+  useEffect(() => {
+    let alive = true;
+    setProductsLoading(true);
+    getStorefrontProductsPageFromApi({
+      page: currentPage,
+      limit: pageSize,
+      q: debouncedQuery,
+      categoryIds: categoryIdsParam,
+      stock,
+      sort,
+    })
+      .then(({ products: pageProducts, meta }) => {
+        if (!alive) return;
+        setProducts(pageProducts);
+        setProductMeta(meta);
+        setCatalogError("");
+      })
+      .catch((error) => {
+        if (!alive) return;
+        setProducts([]);
+        setProductMeta({ total: 0, totalPages: 1 });
+        setCatalogError(error?.message || "Storefront product sync skipped.");
+      })
+      .finally(() => {
+        if (alive) setProductsLoading(false);
       });
-    }
+    return () => { alive = false; };
+    // categoryIdsKey mirrors categoryIdsParam contents; categoryIdsParam itself is intentionally omitted to avoid refetching on array identity changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage, pageSize, debouncedQuery, categoryIdsKey, stock, sort]);
 
-    if (stock !== "all") {
-      result = result.filter((product) => getStockStatus(product) === stock);
-    }
-
-    if (sort === "popular") result = [...result].sort((a, b) => Number(b.sold || 0) - Number(a.sold || 0));
-    if (sort === "newest") result = [...result].sort((a, b) => new Date(b.createdAt || b.updatedAt || 0).getTime() - new Date(a.createdAt || a.updatedAt || 0).getTime());
-    if (sort === "priceLow") result = [...result].sort((a, b) => Number(a.price || 0) - Number(b.price || 0));
-    if (sort === "priceHigh") result = [...result].sort((a, b) => Number(b.price || 0) - Number(a.price || 0));
-
-    return result;
-  }, [productsFromApi, query, selectedCategoryId, selectedNode, stock, sort, lang]);
-
-  const totalPages = Math.max(
-    1,
-    Math.ceil(filteredProducts.length / pageSize)
-  );
+  const totalPages = Math.max(1, Number(productMeta.totalPages) || 1);
+  const totalResultCount = Number(productMeta.total) || 0;
 
   const paginationItems = useMemo(
     () => buildPaginationItems(currentPage, totalPages),
     [currentPage, totalPages]
   );
 
-  const visibleProducts = useMemo(() => {
-    const start = (currentPage - 1) * pageSize;
-    return filteredProducts.slice(start, start + pageSize);
-  }, [filteredProducts, currentPage, pageSize]);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [query, selectedCategoryId, stock, sort]);
+  const visibleProducts = products;
 
   useEffect(() => {
     if (currentPage > totalPages) {
@@ -673,7 +644,7 @@ export default function ShopPage() {
             </div>
 
             <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs font-bold text-slate-500">
-              <span>{filteredProducts.length} {t.result}</span>
+              <span>{productsLoading ? t.loading : `${totalResultCount} ${t.result}`}</span>
 
               <label className="ml-auto flex min-h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3">
                 <span className="font-black text-slate-500">
@@ -707,7 +678,7 @@ export default function ShopPage() {
             </div>
           </div>
 
-          {filteredProducts.length > pageSize && (
+          {totalResultCount > pageSize && (
             <nav
               aria-label={
                 lang === "vi"
@@ -767,7 +738,7 @@ export default function ShopPage() {
             </nav>
           )}
 
-          {filteredProducts.length > 0 ? (
+          {visibleProducts.length > 0 ? (
             <div
               id="shop-product-grid"
               className="shop-mobile-grid scroll-mt-28 grid grid-cols-2 gap-3 sm:grid-cols-2 xl:grid-cols-3 sm:gap-4"
@@ -776,12 +747,12 @@ export default function ShopPage() {
             </div>
           ) : (
             <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-10 text-center shadow-sm">
-              <div className="text-lg font-black text-slate-950">{t.noProducts}</div>
+              <div className="text-lg font-black text-slate-950">{productsLoading ? t.loading : t.noProducts}</div>
               <button onClick={resetFilters} className="mt-4 rounded-2xl bg-blue-700 px-5 py-3 text-sm font-black text-white shadow-lg shadow-blue-100 hover:bg-blue-800">{t.clear}</button>
             </div>
           )}
 
-          {filteredProducts.length > pageSize && (
+          {totalResultCount > pageSize && (
             <nav
               aria-label={
                 lang === "vi"

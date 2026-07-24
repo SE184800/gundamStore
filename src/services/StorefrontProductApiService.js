@@ -255,6 +255,38 @@ export async function getStorefrontProductsFromApi() {
   return products;
 }
 
+export async function getStorefrontProductsPageFromApi({
+  page = 1,
+  limit = 24,
+  q = "",
+  categoryIds = [],
+  stock = "all",
+  sort = "popular",
+} = {}) {
+  const params = new URLSearchParams();
+  params.set("page", String(page));
+  params.set("limit", String(limit));
+  if (q) params.set("q", q);
+  if (stock && stock !== "all") params.set("stock", stock);
+  if (sort) params.set("sort", sort);
+  const categoryKeys = (Array.isArray(categoryIds) ? categoryIds : [categoryIds]).filter(Boolean);
+  if (categoryKeys.length) params.set("categoryIds", categoryKeys.join(","));
+
+  const data = await publicJsonRequest(`/products?${params.toString()}`);
+  const products = Array.isArray(data?.products) ? data.products : [];
+  if (!data?.success) throw new Error("Storefront product listing sync skipped.");
+
+  return {
+    products: dedupeStorefrontProducts(products.map(mapBackendProductToStorefront)),
+    meta: {
+      page: Number(data.meta?.page) || page,
+      limit: Number(data.meta?.limit) || limit,
+      total: Number(data.meta?.total) || 0,
+      totalPages: Number(data.meta?.totalPages) || 1,
+    },
+  };
+}
+
 export async function getStorefrontHomeProductsFromApi() {
   const data = await publicJsonRequest("/products/home");
   const products = Array.isArray(data?.products) ? data.products : Array.isArray(data?.data) ? data.data : [];

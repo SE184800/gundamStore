@@ -2,11 +2,17 @@
 
 Ung dung thuong mai dien tu Gundam Store gom storefront, admin portal, backend API va database.
 
+## ⚠️ This repo's `backend/` folder is NOT the source of truth
+
+The real backend lives in a separate repo — `tatm0967005-art/gundam-store-team` (`backend/`) — and that is what's deployed to Render. The `backend/` folder in *this* repo is a stale, out-of-date snapshot (missing recent features such as generic media/video upload, and containing a leftover in-memory cache hack that was never in the real backend). It is not kept in sync and must not be used as a reference or edited expecting it to affect production.
+
+**Do not run** `npm run backend:dev`, `npm run backend:check`, `npm run backend:seed*`, or `cd backend && npx prisma db push` from this repo — they operate on this stale local copy only, not on the deployed backend or the real database. To work on the backend, clone/use `tatm0967005-art/gundam-store-team` instead.
+
 ## Architecture overview
 
-- Frontend: React/Vite storefront + admin portal.
-- Backend: Node.js/Express API.
-- Database: PostgreSQL managed by Prisma.
+- Frontend: React/Vite storefront + admin portal (this repo).
+- Backend: Node.js/Express API — **separate repo**, `tatm0967005-art/gundam-store-team`, deployed on Render.
+- Database: PostgreSQL (Neon) managed by Prisma, schema owned by the backend repo.
 - Auth/RBAC: JWT-based admin/account authentication with role/permission checks.
 - Core modules: product catalog, pricing, inventory, orders, wishlist, restock alerts, banner/CMS.
 
@@ -15,14 +21,9 @@ Ung dung thuong mai dien tu Gundam Store gom storefront, admin portal, backend A
 Run install and validation:
 
 - npm install
-- npm run backend:check
 - npm run build
 
-Run backend:
-
-- npm run backend:dev
-
-Run frontend:
+Frontend only (this repo does not run the real backend — see warning above):
 
 - npm run dev -- --host 0.0.0.0
 
@@ -48,15 +49,7 @@ Backend variables:
 
 ## Database
 
-Validate schema:
-
-- npm run backend:check
-
-For sandbox drift-only environments:
-
-- cd backend
-- npx prisma db push
-- cd ..
+Schema/database changes are owned by the `tatm0967005-art/gundam-store-team` repo (see warning above) — validate and apply them there, not against this repo's `backend/` folder.
 
 For production, use reviewed migrations and backup the database before applying schema changes. Do not run prisma migrate reset on shared or production databases.
 
@@ -87,8 +80,8 @@ Admin:
 
 Before customer handover:
 
-- npm run backend:check
-- npm run build
+- npm run build (this repo)
+- backend validation runs in `tatm0967005-art/gundam-store-team` (see warning above)
 
 Smoke test:
 
