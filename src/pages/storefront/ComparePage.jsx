@@ -1,8 +1,12 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { GitCompareArrows, Search, Trash2, X } from "lucide-react";
 import PageShell from "../../components/common/PageShell";
-import { useCms, useLang } from "../../store/CmsStore";
+import { useLang } from "../../store/CmsStore";
 import { addCompare, clearCompare, getCompareIds, removeCompare } from "../../services/CompareService";
+import {
+  getStorefrontProductDetailForStorefront,
+  getStorefrontProductsPageFromApi,
+} from "../../services/StorefrontProductApiService";
 
 function getCopy(lang) {
   return {
@@ -12,6 +16,7 @@ function getCopy(lang) {
         ? "Compare price, grade, scale, stock, status and build difficulty before choosing."
         : "So sánh giá, grade, scale, tồn kho, tình trạng và độ khó build trước khi chọn.",
     search: lang === "en" ? "Search product to compare..." : "Tìm sản phẩm để so sánh...",
+    searching: lang === "en" ? "Searching..." : "Đang tìm...",
     selected: lang === "en" ? "Selected" : "Đã chọn",
     clear: lang === "en" ? "Clear compare" : "Xóa so sánh",
     empty: lang === "en" ? "No products selected." : "Chưa chọn sản phẩm để so sánh.",
@@ -39,44 +44,79 @@ function getProductName(product, lang) {
 }
 
 function productImage(product) {
-  return product.media?.card || product.imageUrl || product.images?.[0] || "/images/products/hi-nu.jpg";
+  return product.cardUrl || product.media?.card || product.imageUrl || product.images?.[0] || "/images/products/hi-nu.jpg";
 }
 
 export default function ComparePage() {
-  const { state } = useCms();
   const [lang] = useLang();
   const t = getCopy(lang);
 
   const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [version, setVersion] = useState(0);
+  const [selectedProducts, setSelectedProducts] = useState([]);
+  const [searchResults, setSearchResults] = useState([]);
+  const [searchLoading, setSearchLoading] = useState(false);
 
   const compareIds = useMemo(() => getCompareIds(), [version]);
+  const compareIdsKey = compareIds.join(",");
 
-  const selectedProducts = useMemo(() => {
-    return (state.products || []).filter((product) => compareIds.includes(product.id));
-  }, [state.products, compareIds]);
+  useEffect(() => {
+    let alive = true;
 
-  const searchResults = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return [];
+    if (!compareIds.length) {
+      setSelectedProducts([]);
+      return;
+    }
 
-    return (state.products || [])
-      .filter((product) => {
-        const text = [
-          getProductName(product, lang),
-          product.sku,
-          product.grade,
-          product.scale,
-          product.brand,
-        ]
-          .filter(Boolean)
-          .join(" ")
-          .toLowerCase();
+    Promise.all(
+      compareIds.map((id) => getStorefrontProductDetailForStorefront(id).catch(() => null))
+    ).then((items) => {
+      if (!alive) return;
+      const found = items.filter(Boolean);
+      const ordered = compareIds
+        .map((id) => found.find((product) => product.id === id))
+        .filter(Boolean);
+      setSelectedProducts(ordered);
+    });
 
-        return text.includes(q);
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [compareIdsKey]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedQuery(query.trim()), 300);
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  useEffect(() => {
+    let alive = true;
+
+    if (!debouncedQuery) {
+      setSearchResults([]);
+      setSearchLoading(false);
+      return;
+    }
+
+    setSearchLoading(true);
+
+    getStorefrontProductsPageFromApi({ q: debouncedQuery, limit: 6 })
+      .then(({ products }) => {
+        if (alive) setSearchResults(products);
       })
-      .slice(0, 6);
-  }, [state.products, query, lang]);
+      .catch(() => {
+        if (alive) setSearchResults([]);
+      })
+      .finally(() => {
+        if (alive) setSearchLoading(false);
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, [debouncedQuery]);
 
   function refresh() {
     setVersion((value) => value + 1);
@@ -85,6 +125,8 @@ export default function ComparePage() {
   function add(productId) {
     addCompare(productId);
     setQuery("");
+    setDebouncedQuery("");
+    setSearchResults([]);
     refresh();
   }
 
@@ -139,7 +181,13 @@ export default function ComparePage() {
                 </button>
               )}
 
-              {searchResults.length > 0 && (
+              {searchLoading && (
+                <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-30 overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 text-center text-xs font-bold text-slate-500 shadow-xl">
+                  {t.searching}
+                </div>
+              )}
+
+              {!searchLoading && searchResults.length > 0 && (
                 <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-30 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
                   {searchResults.map((product) => (
                     <button
@@ -147,7 +195,7 @@ export default function ComparePage() {
                       onClick={() => add(product.id)}
                       className="flex w-full items-center gap-3 border-b p-3 text-left hover:bg-slate-50"
                     >
-                      <img src={productImage(product)} alt="" className="h-12 w-12 rounded-xl object-cover" />
+                      <img src={productImage(product)} alt="" loading="lazy" className="h-12 w-12 rounded-xl object-cover" />
                       <span className="flex-1 text-sm font-black">{getProductName(product, lang)}</span>
                       <span className="rounded-xl bg-cyan-50 px-3 py-1 text-xs font-black text-cyan-700">{t.add}</span>
                     </button>
@@ -191,7 +239,7 @@ export default function ComparePage() {
                         >
                           <X size={14} />
                         </button>
-                        <img src={productImage(product)} alt="" className="h-32 w-full rounded-xl object-cover" />
+                        <img src={productImage(product)} alt="" loading="lazy" className="h-32 w-full rounded-xl object-cover" />
                         <div className="mt-3 line-clamp-2 text-sm font-black text-slate-950">{getProductName(product, lang)}</div>
                         <a href={`/product/${product.slug || product.id}`} className="mt-3 inline-block rounded-xl bg-blue-700 px-3 py-2 text-xs font-black text-white">
                           {t.detail}

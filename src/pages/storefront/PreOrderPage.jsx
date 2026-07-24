@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   CalendarClock,
@@ -9,8 +9,9 @@ import {
   Zap,
 } from "lucide-react";
 import PageShell from "../../components/common/PageShell";
-import { useCms, useLang } from "../../store/CmsStore";
+import { useLang } from "../../store/CmsStore";
 import { saveCheckoutDraft } from "../../services/CartService";
+import { getStorefrontProductsPageFromApi } from "../../services/StorefrontProductApiService";
 import {
   ORDER_TYPE,
   PAYMENT_STATUS,
@@ -41,6 +42,8 @@ function getCopy(lang) {
     nowOpen: lang === "en" ? "Now open" : "Đang mở",
     openProducts: lang === "en" ? "Open pre-order products" : "Sản phẩm đang mở pre-order",
     items: lang === "en" ? "items" : "sản phẩm",
+    loading: lang === "en" ? "Loading pre-order products..." : "Đang tải sản phẩm pre-order...",
+    empty: lang === "en" ? "No pre-order products available right now." : "Hiện chưa có sản phẩm pre-order nào.",
     fullPrice: lang === "en" ? "Full price" : "Giá sản phẩm",
     depositNow: lang === "en" ? "Deposit now" : "Cọc trước",
     remaining: lang === "en" ? "Remaining" : "Còn lại",
@@ -83,6 +86,7 @@ function getProductShort(product, lang) {
 
 function getProductImage(product) {
   return (
+    product?.cardUrl ||
     product?.media?.card ||
     product?.media?.home ||
     product?.media?.detailMain ||
@@ -94,17 +98,33 @@ function getProductImage(product) {
 
 export default function PreOrderPage() {
   const navigate = useNavigate();
-  const { state } = useCms();
   const [lang] = useLang();
   const t = getCopy(lang);
 
-  const products = state.products || [];
-  const rows = useMemo(
-    () => products.filter((p) => String(p.status || "").toLowerCase().includes("pre")),
-    [products]
-  );
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const displayRows = rows.length ? rows : products.slice(0, 4);
+  useEffect(() => {
+    let alive = true;
+    setLoading(true);
+
+    getStorefrontProductsPageFromApi({ stock: "preorder", limit: 24, sort: "newest" })
+      .then(({ products: items }) => {
+        if (alive) setProducts(items);
+      })
+      .catch(() => {
+        if (alive) setProducts([]);
+      })
+      .finally(() => {
+        if (alive) setLoading(false);
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const displayRows = products;
 
   function startPreorder(product) {
     const price = Number(product.price) || 0;
@@ -197,70 +217,80 @@ export default function PreOrderPage() {
             </span>
           </div>
 
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {displayRows.map((product) => {
-              const price = Number(product.price) || 0;
-              const deposit = calculatePreorderDeposit(price);
-              const name = getProductName(product, lang);
-              const short = getProductShort(product, lang);
+          {loading ? (
+            <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-10 text-center text-sm font-bold text-slate-500">
+              {t.loading}
+            </div>
+          ) : displayRows.length === 0 ? (
+            <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-10 text-center text-sm font-bold text-slate-500">
+              {t.empty}
+            </div>
+          ) : (
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {displayRows.map((product) => {
+                const price = Number(product.price) || 0;
+                const deposit = calculatePreorderDeposit(price);
+                const name = getProductName(product, lang);
+                const short = getProductShort(product, lang);
 
-              return (
-                <article
-                  key={product.id}
-                  className="overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl"
-                >
-                  <div className="relative aspect-square bg-slate-100">
-                    <img
-                      src={getProductImage(product)}
-                      alt={name}
-                      loading="lazy"
-                      className="h-full w-full object-cover"
-                    />
-                    <div className="absolute left-3 top-3 rounded-full bg-amber-400 px-3 py-1 text-[11px] font-black text-slate-950">
-                      PRE-ORDER
-                    </div>
-                  </div>
-
-                  <div className="p-4">
-                    <h3 className="line-clamp-2 min-h-[44px] text-base font-black leading-snug text-slate-950">
-                      {name}
-                    </h3>
-                    <p className="mt-2 line-clamp-2 text-sm font-semibold leading-6 text-slate-500">
-                      {short}
-                    </p>
-
-                    <div className="mt-4 space-y-2 rounded-2xl bg-amber-50 p-3 text-sm">
-                      <div className="flex justify-between">
-                        <span className="font-bold text-amber-800">{t.fullPrice}</span>
-                        <b>{money(deposit.fullAmount)}</b>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="font-bold text-amber-800">{t.depositNow}</span>
-                        <b className="text-red-600">{money(deposit.depositAmount)}</b>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="font-bold text-amber-800">{t.remaining}</span>
-                        <b>{money(deposit.remainingAmount)}</b>
+                return (
+                  <article
+                    key={product.id}
+                    className="overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl"
+                  >
+                    <div className="relative aspect-square bg-slate-100">
+                      <img
+                        src={getProductImage(product)}
+                        alt={name}
+                        loading="lazy"
+                        className="h-full w-full object-cover"
+                      />
+                      <div className="absolute left-3 top-3 rounded-full bg-amber-400 px-3 py-1 text-[11px] font-black text-slate-950">
+                        PRE-ORDER
                       </div>
                     </div>
 
-                    <div className="mt-3 rounded-2xl bg-blue-50 p-3 text-xs font-bold leading-5 text-blue-700">
-                      {t.etaLabel}: {product.eta || getPreorderEtaText(lang)}
-                    </div>
+                    <div className="p-4">
+                      <h3 className="line-clamp-2 min-h-[44px] text-base font-black leading-snug text-slate-950">
+                        {name}
+                      </h3>
+                      <p className="mt-2 line-clamp-2 text-sm font-semibold leading-6 text-slate-500">
+                        {short}
+                      </p>
 
-                    <button
-                      type="button"
-                      onClick={() => startPreorder(product)}
-                      className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 py-3 text-sm font-black text-white shadow-lg shadow-blue-100 transition hover:bg-blue-700"
-                    >
-                      <Zap size={16} />
-                      {t.preorderNow}
-                    </button>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
+                      <div className="mt-4 space-y-2 rounded-2xl bg-amber-50 p-3 text-sm">
+                        <div className="flex justify-between">
+                          <span className="font-bold text-amber-800">{t.fullPrice}</span>
+                          <b>{money(deposit.fullAmount)}</b>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="font-bold text-amber-800">{t.depositNow}</span>
+                          <b className="text-red-600">{money(deposit.depositAmount)}</b>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="font-bold text-amber-800">{t.remaining}</span>
+                          <b>{money(deposit.remainingAmount)}</b>
+                        </div>
+                      </div>
+
+                      <div className="mt-3 rounded-2xl bg-blue-50 p-3 text-xs font-bold leading-5 text-blue-700">
+                        {t.etaLabel}: {product.eta || getPreorderEtaText(lang)}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => startPreorder(product)}
+                        className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 py-3 text-sm font-black text-white shadow-lg shadow-blue-100 transition hover:bg-blue-700"
+                      >
+                        <Zap size={16} />
+                        {t.preorderNow}
+                      </button>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          )}
         </section>
 
         <section className="mt-8 grid gap-5 lg:grid-cols-2">
