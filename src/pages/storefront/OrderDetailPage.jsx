@@ -284,7 +284,7 @@ function RequestModal({ type, lang, onClose, onSubmit }) {
           <button onClick={onClose} className="rounded-2xl border px-5 py-3 font-black text-slate-700">
             {t.close}
           </button>
-          <button onClick={submit} className="rounded-2xl bg-blue-600 px-5 py-3 font-black text-white">
+          <button onClick={submit} className="rounded-2xl bg-blue-700 px-5 py-3 font-black text-white">
             {t.submit}
           </button>
         </div>
@@ -355,7 +355,7 @@ export default function OrderDetailPage() {
         <main className="min-h-screen bg-slate-50 p-10">
           <div className="mx-auto max-w-3xl rounded-3xl bg-white p-10 text-center">
             <h1 className="text-2xl font-black">{t.notFound}</h1>
-            <Link to="/order-lookup" className="mt-5 inline-block rounded-2xl bg-blue-600 px-6 py-3 font-black text-white">
+            <Link to="/order-lookup" className="mt-5 inline-block rounded-2xl bg-blue-700 px-6 py-3 font-black text-white">
               {t.back}
             </Link>
           </div>
@@ -513,7 +513,7 @@ export default function OrderDetailPage() {
                   <div
                     key={step}
                     className={`rounded-2xl p-4 text-center text-sm font-black ${
-                      active ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-400"
+                      active ? "bg-blue-700 text-white" : "bg-slate-100 text-slate-400"
                     }`}
                   >
                     <CheckCircle2 className="mx-auto mb-2" size={20} />
@@ -695,7 +695,7 @@ export default function OrderDetailPage() {
               <div className="rounded-3xl bg-white p-6 shadow-sm">
                 <button
                   onClick={buyAgain}
-                  className="w-full rounded-2xl bg-blue-600 py-4 font-black text-white"
+                  className="w-full rounded-2xl bg-blue-700 py-4 font-black text-white"
                 >
                   <RotateCcw size={18} className="mr-2 inline" />
                   {t.buyAgain}

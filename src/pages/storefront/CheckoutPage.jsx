@@ -272,7 +272,7 @@ export default function CheckoutPage() {
             <h1 className="text-2xl font-black">{t.noDraft}</h1>
             <button
               onClick={() => navigate("/cart")}
-              className="mt-5 rounded-2xl bg-blue-600 px-6 py-3 font-black text-white"
+              className="mt-5 rounded-2xl bg-blue-700 px-6 py-3 font-black text-white"
             >
               {t.backCart}
             </button>
@@ -726,7 +726,7 @@ export default function CheckoutPage() {
               <button
                 onClick={submitOrder}
                 disabled={placingOrder}
-                className="mt-6 w-full rounded-2xl bg-blue-600 py-4 font-black text-white shadow-lg hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                className="mt-6 w-full rounded-2xl bg-blue-700 py-4 font-black text-white shadow-lg hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {placingOrder ? t.placing : t.placeOrder}
               </button>

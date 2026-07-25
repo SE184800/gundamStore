@@ -252,7 +252,7 @@ export default function CartPage() {
               {cart.length === 0 ? (
                 <div className="rounded-3xl bg-white p-16 text-center shadow-sm">
                   <div className="text-2xl font-black text-slate-800">{t.empty}</div>
-                  <Link to="/shop" className="mt-5 inline-block rounded-2xl bg-blue-600 px-6 py-3 font-black text-white">
+                  <Link to="/shop" className="mt-5 inline-block rounded-2xl bg-blue-700 px-6 py-3 font-black text-white">
                     {t.shopNow}
                   </Link>
                 </div>
@@ -465,7 +465,7 @@ export default function CartPage() {
 
               <button
                 onClick={goCheckout}
-                className="mt-6 w-full rounded-2xl bg-blue-600 py-4 font-black text-white shadow-lg hover:bg-blue-700"
+                className="mt-6 w-full rounded-2xl bg-blue-700 py-4 font-black text-white shadow-lg hover:bg-blue-800"
               >
                 {t.checkout} ({selectedItems.length})
               </button>

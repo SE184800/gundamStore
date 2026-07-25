@@ -129,7 +129,7 @@ export default function AccountDashboardPage() {
             <div className="mt-8 rounded-3xl bg-white p-10 text-center">
               <AlertCircle className="mx-auto text-amber-500" size={42} />
               <div className="mt-4 font-black text-slate-700">{error}</div>
-              <Link to="/login" className="mt-5 inline-flex rounded-2xl bg-blue-600 px-5 py-3 text-sm font-black text-white">
+              <Link to="/login" className="mt-5 inline-flex rounded-2xl bg-blue-700 px-5 py-3 text-sm font-black text-white">
                 {t.login}
               </Link>
             </div>
@@ -144,7 +144,7 @@ export default function AccountDashboardPage() {
                     <h2 className="mt-3 text-xl font-black text-slate-950">{account.name}</h2>
                     <p className="mt-1 text-sm font-bold text-slate-500">{account.email}</p>
                     <div className="mt-4 grid gap-2">
-                      <Link to="/account/profile" className="rounded-2xl bg-blue-600 px-4 py-3 text-sm font-black text-white">
+                      <Link to="/account/profile" className="rounded-2xl bg-blue-700 px-4 py-3 text-sm font-black text-white">
                         <UserRound size={16} className="mr-1 inline" />
                         {t.viewProfile}
                       </Link>

@@ -148,7 +148,7 @@ export default function OrderSuccessPage() {
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
             <Link
               to={`/order-lookup?code=${encodeURIComponent(publicCode)}${successSnapshot?.lookup?.phone ? `&phone=${encodeURIComponent(successSnapshot.lookup.phone)}` : ""}`}
-              className="rounded-2xl bg-blue-600 px-6 py-4 font-black text-white"
+              className="rounded-2xl bg-blue-700 px-6 py-4 font-black text-white"
             >
               <PackageSearch size={18} className="mr-2 inline" />
               {t.detail}

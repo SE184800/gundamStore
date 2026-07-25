@@ -162,7 +162,7 @@ export default function OrderLookupPage() {
                 className={`rounded-2xl px-6 py-3 font-black text-white shadow-lg ${
                   loading
                     ? "cursor-not-allowed bg-slate-400"
-                    : "bg-blue-600 hover:bg-blue-700"
+                    : "bg-blue-700 hover:bg-blue-800"
                 }`}
               >
                 <Search size={18} className="mr-2 inline" />
@@ -213,7 +213,7 @@ export default function OrderLookupPage() {
                     <button
                       type="button"
                       onClick={() => setShowDetail((value) => !value)}
-                      className="mt-4 inline-block rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white"
+                      className="mt-4 inline-block rounded-xl bg-blue-700 px-4 py-2 text-sm font-black text-white"
                     >
                       {showDetail ? t.hideDetail : t.viewDetail}
                     </button>
