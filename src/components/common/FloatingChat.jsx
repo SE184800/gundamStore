@@ -2,6 +2,8 @@ import { useState, useMemo, useRef, useEffect } from "react";
 import { Bot, MessageCircle, Users, X, Send } from "lucide-react";
 import { useCms } from "../../store/CmsStore";
 import { useI18n } from "../../i18n";
+import useToast from "../../hooks/useToast";
+import Toast from "../../utils/Toast";
 
 const defaultCommunications = [
   { id: "1", name: "Zalo hỗ trợ CSKH", platform: "Zalo", value: "https://zalo.me/0931817801", status: "Active", active: true },
@@ -31,6 +33,7 @@ export default function FloatingChat() {
   const [chatType, setChatType] = useState("ai");
   const { t } = useI18n();
   const chatRef = useRef(null);
+  const { toast, notify, dismiss } = useToast();
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -74,7 +77,7 @@ export default function FloatingChat() {
   const handleNavigation = (e, url, defaultPrefix) => {
     e.preventDefault();
     if (!url || url.trim() === "" || url === defaultPrefix) {
-      alert(t("chat.notAvailable") || "Đường link đang bảo trì hoặc không khả dụng. Vui lòng quay lại sau!");
+      notify("error", t("chat.notAvailable") || "Đường link đang bảo trì hoặc không khả dụng. Vui lòng quay lại sau!");
       return;
     }
     window.open(url, "_blank", "noopener,noreferrer");
@@ -82,6 +85,7 @@ export default function FloatingChat() {
 
   return (
     <div ref={chatRef} className="fixed bottom-0 right-0 z-[9999]">
+      <Toast show={toast.show} type={toast.type} message={toast.message} onClose={dismiss} />
       <div className="hidden md:flex fixed bottom-5 right-5 flex-col items-end gap-2">
         {open && (
           <div className="absolute bottom-[230px] right-0 w-[320px] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl animate-in fade-in slide-in-from-bottom-5 duration-200">
@@ -91,7 +95,7 @@ export default function FloatingChat() {
                   <div className="text-sm font-black">{t("chat.title") || "Trung Tâm Hỗ Trợ"}</div>
                   <div className="text-xs font-semibold text-white/80">{t("chat.subtitle") || "Tư vấn giải đáp 24/7"}</div>
                 </div>
-                <button onClick={() => setOpen(false)} className="rounded-full bg-white/20 p-2 hover:bg-white/30 transition-colors"><X size={16} /></button>
+                <button onClick={() => setOpen(false)} aria-label={t("chat.close") || "Đóng"} className="rounded-full bg-white/20 p-2 hover:bg-white/30 transition-colors"><X size={16} /></button>
               </div>
               <div className="flex rounded-xl bg-black/20 p-1 text-xs font-bold">
                 <button onClick={() => setChatType("ai")} className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-1.5 transition-all ${chatType === "ai" ? "bg-white text-blue-700 shadow-sm" : "text-white hover:bg-white/10"}`}><Bot size={14} /> {t("chat.aiTab") || "AI Chatbot"}</button>
@@ -108,9 +112,21 @@ export default function FloatingChat() {
                 <div className="max-w-[85%] rounded-2xl bg-white p-3 text-sm font-semibold text-slate-700 shadow-sm">{t("chat.staffWelcome") || "Chào bạn! Tư vấn viên sẽ kết nối và phản hồi bạn ngay trong giây lát nhé."}</div>
               )}
             </div>
-            <div className="flex items-center gap-2 border-t border-slate-200 p-3">
-              <input className="min-w-0 flex-1 rounded-2xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-500" placeholder={chatType === "ai" ? t("chat.aiPlaceholder") : t("chat.staffPlaceholder")} />
-              <button className="rounded-2xl bg-blue-700 p-3 text-white hover:bg-blue-800 transition-colors"><Send size={16} /></button>
+            <div className="border-t border-slate-200 p-3">
+              <div className="flex items-center gap-2">
+                <input
+                  disabled
+                  aria-label={t("chat.comingSoon") || "Nhắn tin trực tiếp sắp ra mắt"}
+                  className="min-w-0 flex-1 cursor-not-allowed rounded-2xl border border-slate-200 bg-slate-100 px-3 py-2 text-sm text-slate-400 outline-none"
+                  placeholder={t("chat.comingSoon") || "Nhắn tin trực tiếp sắp ra mắt"}
+                />
+                <button disabled aria-label={t("chat.send") || "Gửi"} className="cursor-not-allowed rounded-2xl bg-slate-200 p-3 text-slate-400">
+                  <Send size={16} />
+                </button>
+              </div>
+              <p className="mt-2 text-[11px] font-semibold text-slate-400">
+                {t("chat.comingSoonHint") || "Liên hệ ngay qua Zalo hoặc Messenger bên dưới."}
+              </p>
             </div>
           </div>
         )}
@@ -182,7 +198,7 @@ export default function FloatingChat() {
                   <div className="text-xs font-black">{t("chat.title") || "Trung Tâm Hỗ Trợ"}</div>
                   <div className="text-[10px] font-semibold text-white/80">{t("chat.subtitle") || "Tư vấn giải đáp 24/7"}</div>
                 </div>
-                <button onClick={() => setOpen(false)} className="rounded-xl bg-white/10 p-1.5"><X size={14} /></button>
+                <button onClick={() => setOpen(false)} aria-label={t("chat.close") || "Đóng"} className="rounded-xl bg-white/10 p-1.5"><X size={14} /></button>
               </div>
               <div className="flex rounded-lg bg-black/20 p-0.5 text-[11px] font-bold">
                 <button
@@ -211,9 +227,21 @@ export default function FloatingChat() {
               )}
             </div>
 
-            <div className="flex items-center gap-2 p-2.5 bg-white border-t border-slate-100">
-              <input className="min-w-0 flex-1 rounded-xl border bg-slate-50 px-3 py-2 text-xs outline-none focus:border-blue-400 focus:bg-white transition" placeholder={chatType === "ai" ? t("chat.aiPlaceholder") : t("chat.staffPlaceholder")} />
-              <button className="rounded-xl bg-blue-700 p-2 text-white hover:bg-blue-800 transition"><Send size={12} /></button>
+            <div className="p-2.5 bg-white border-t border-slate-100">
+              <div className="flex items-center gap-2">
+                <input
+                  disabled
+                  aria-label={t("chat.comingSoon") || "Nhắn tin trực tiếp sắp ra mắt"}
+                  className="min-w-0 flex-1 cursor-not-allowed rounded-xl border bg-slate-100 px-3 py-2 text-xs text-slate-400 outline-none"
+                  placeholder={t("chat.comingSoon") || "Nhắn tin trực tiếp sắp ra mắt"}
+                />
+                <button disabled aria-label={t("chat.send") || "Gửi"} className="cursor-not-allowed rounded-xl bg-slate-200 p-2 text-slate-400">
+                  <Send size={12} />
+                </button>
+              </div>
+              <p className="mt-1.5 text-[10px] font-semibold text-slate-400">
+                {t("chat.comingSoonHint") || "Liên hệ ngay qua Zalo hoặc Messenger bên dưới."}
+              </p>
             </div>
           </div>
         )}

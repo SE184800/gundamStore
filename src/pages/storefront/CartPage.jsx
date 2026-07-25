@@ -8,6 +8,7 @@ import PageShell from "../../components/common/PageShell";
 import { SHIPPING_METHODS, getLocalized, getShippingMethod } from "../../constants/orderConfig";
 import { useI18n } from "../../i18n";
 import Toast from "../../utils/Toast";
+import useToast from "../../hooks/useToast";
 
 const money = (n) => (Number(n) || 0).toLocaleString("vi-VN") + "đ";
 
@@ -70,7 +71,7 @@ function isSameCartItem(a = {}, b = {}) {
 }
 
 export default function CartPage() {
-  const [toast, setToast] = useState({ show: false, type: "", message: "" });
+  const { toast, notify, dismiss } = useToast();
   const navigate = useNavigate();
   const { lang } = useI18n();
   const t = getCopy(lang);
@@ -98,11 +99,10 @@ export default function CartPage() {
     if (!voucherCode) return;
 
     const delayDebounce = setTimeout(() => {
-      setToast({
-        show: true,
-        type: voucher.valid ? "success" : "error",
-        message: voucher.message || (voucher.valid ? "Áp dụng voucher thành công!" : "Mã giảm giá không hợp lệ.")
-      });
+      notify(
+        voucher.valid ? "success" : "error",
+        voucher.message || (voucher.valid ? "Áp dụng voucher thành công!" : "Mã giảm giá không hợp lệ.")
+      );
     }, 800);
 
     return () => clearTimeout(delayDebounce);
@@ -136,11 +136,7 @@ export default function CartPage() {
     const available = getAvailable(item);
 
     if ((item.quantity || 1) >= available) {
-      setToast({
-        show: true,
-        type: "warning",
-        message: `${t.stockAlert} ${available} ${t.stockAlertSuffix}`
-      });
+      notify("warning", `${t.stockAlert} ${available} ${t.stockAlertSuffix}`);
       return;
     }
 
@@ -150,14 +146,6 @@ export default function CartPage() {
       )
     );
   }
-  useEffect(() => {
-    if (toast.show) {
-      const timer = setTimeout(() => {
-        setToast({ show: false, type: "", message: "" });
-      }, 2000); // 3 giây tự động reset
-      return () => clearTimeout(timer);
-    }
-  }, [toast.show]);
   function decreaseQty(item) {
     updateCart(
       cart.map((x) =>
@@ -175,11 +163,7 @@ export default function CartPage() {
 
   function goCheckout() {
     if (!selectedItems.length) {
-      setToast({
-        show: true,
-        type: "error",
-        message: t.selectAtLeastOne
-      });
+      notify("error", t.selectAtLeastOne);
       return;
     }
 
@@ -188,11 +172,10 @@ export default function CartPage() {
     );
 
     if (invalidItem) {
-      setToast({
-        show: true,
-        type: "error",
-        message: `${getItemName(invalidItem, lang)}: ${t.stockAlert} ${getAvailable(invalidItem)} ${t.stockAlertSuffix}`
-      });
+      notify(
+        "error",
+        `${getItemName(invalidItem, lang)}: ${t.stockAlert} ${getAvailable(invalidItem)} ${t.stockAlertSuffix}`
+      );
       return;
     }
 
@@ -359,11 +342,7 @@ export default function CartPage() {
                         onClick={() => {
                           const nextCart = cart.filter((x) => !isSameCartItem(x, item));
                           updateCart(nextCart);
-                          setToast({
-                            show: true,
-                            type: "error",
-                            message: lang === "en" ? "Removed product from cart." : "Đã xóa sản phẩm khỏi giỏ hàng."
-                          });
+                          notify("error", lang === "en" ? "Removed product from cart." : "Đã xóa sản phẩm khỏi giỏ hàng.");
                         }}
                         className="rounded-xl bg-red-50 p-3 text-red-500 hover:bg-red-100"
                       >
@@ -480,16 +459,7 @@ export default function CartPage() {
           </div>
         </div>
       </main>
-      {toast.show && (
-        <div className="fixed bottom-5 right-5 z-[9999] animate-in fade-in slide-in-from-bottom-4 duration-300">
-          <Toast
-            show={toast.show}
-            type={toast.type}
-            message={toast.message}
-            onClose={() => setToast({ ...toast, show: false })}
-          />
-        </div>
-      )}
+      <Toast show={toast.show} type={toast.type} message={toast.message} onClose={dismiss} />
     </PageShell>
   );
 }

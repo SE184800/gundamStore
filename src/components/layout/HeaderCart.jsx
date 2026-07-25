@@ -4,14 +4,11 @@ import { useEffect, useState } from "react";
 import { forceCartBadgeSync, getCartCount } from "../../services/CartService";
 import { useCms } from "../../store/CmsStore";
 import Toast from "../../utils/Toast";
+import useToast from "../../hooks/useToast";
 export default function HeaderCart() {
   const [count, setCount] = useState(() => getCartCount());
   const { state, actions } = useCms();
-  const [toastConfig, setToastConfig] = useState({
-    show: false,
-    type: "success",
-    message: ""
-  });
+  const { toast, notify, dismiss } = useToast();
   function sync(event) {
     const next =
       typeof event?.detail?.totalQty === "number"
@@ -42,20 +39,13 @@ export default function HeaderCart() {
 
   return (
     <>
-      <Toast show={toastConfig.show} type={toastConfig.type} message={toastConfig.message} />
+      <Toast show={toast.show} type={toast.type} message={toast.message} onClose={dismiss} />
       <Link
         to="/cart"
         onClick={(e) => {
           if (!state?.user) {
             e.preventDefault();
-            setToastConfig({
-              show: true,
-              type: "error",
-              message: `Vui lòng đăng nhập để tiếp tục !`
-            });
-            setTimeout(() => {
-              setToastConfig((prev) => ({ ...prev, show: false }));
-            }, 2500);
+            notify("error", `Vui lòng đăng nhập để tiếp tục !`);
           }
         }}
         className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-lg transition hover:scale-105 hover:bg-blue-700"

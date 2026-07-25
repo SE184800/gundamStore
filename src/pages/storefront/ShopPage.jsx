@@ -298,11 +298,16 @@ function CategoryBottomSheet({ t, lang, tree, activeId, onSelect, onClose, allCo
       <div className="absolute inset-x-0 bottom-0 max-h-[86vh] overflow-hidden rounded-t-[2rem] bg-white shadow-2xl">
         <div className="sticky top-0 z-10 border-b border-slate-100 bg-white px-4 py-4">
           <div className="flex items-center justify-between gap-3">
-            <button type="button" onClick={() => (root ? setRootId(null) : onClose())} className="rounded-full bg-slate-100 p-2 text-slate-700">
+            <button
+              type="button"
+              onClick={() => (root ? setRootId(null) : onClose())}
+              aria-label={root ? (lang === "en" ? "Back" : "Quay lại") : (lang === "en" ? "Close" : "Đóng")}
+              className="rounded-full bg-slate-100 p-2 text-slate-700"
+            >
               {root ? <ChevronLeft size={18} /> : <X size={18} />}
             </button>
             <div className="min-w-0 flex-1 text-center text-base font-black text-slate-950">{root ? root.name : t.categoryMenu}</div>
-            <button type="button" onClick={onClose} className="rounded-full bg-slate-100 p-2 text-slate-700"><X size={18} /></button>
+            <button type="button" onClick={onClose} aria-label={lang === "en" ? "Close" : "Đóng"} className="rounded-full bg-slate-100 p-2 text-slate-700"><X size={18} /></button>
           </div>
         </div>
 
@@ -620,7 +625,15 @@ export default function ShopPage() {
               <div className="flex min-w-0 flex-1 items-center rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
                 <Search size={18} className="text-blue-600" />
                 <input value={query} onChange={(event) => setQuery(event.target.value)} className="w-full bg-transparent px-3 text-sm font-semibold outline-none placeholder:text-slate-400" placeholder={t.search} />
-                {query && <button onClick={() => setQuery("")} className="rounded-lg p-1 text-slate-400 hover:bg-white hover:text-slate-700"><X size={16} /></button>}
+                {query && (
+                  <button
+                    onClick={() => setQuery("")}
+                    aria-label={lang === "en" ? "Clear search" : "Xóa tìm kiếm"}
+                    className="rounded-lg p-1 text-slate-400 hover:bg-white hover:text-slate-700"
+                  >
+                    <X size={16} />
+                  </button>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
@@ -820,7 +833,7 @@ export default function ShopPage() {
           <div className="ml-auto h-full w-full max-w-md overflow-y-auto rounded-none bg-white p-5 shadow-2xl sm:rounded-l-3xl">
             <div className="mb-4 flex items-center justify-between">
               <div className="text-lg font-black text-slate-950">{t.filters}</div>
-              <button onClick={() => setMobileFilterOpen(false)} className="rounded-xl bg-slate-100 p-2 text-slate-600"><X size={18} /></button>
+              <button onClick={() => setMobileFilterOpen(false)} aria-label={lang === "en" ? "Close" : "Đóng"} className="rounded-xl bg-slate-100 p-2 text-slate-600"><X size={18} /></button>
             </div>
             <div className="grid gap-2">
               {["all", "inStock", "preorder", "sale", "outOfStock"].map((value) => (

@@ -39,6 +39,8 @@ import PageShell from "../../components/common/PageShell";
 import { cancelMyStorefrontOrderApi, getMyStorefrontOrderByIdApi } from "../../services/StorefrontOrderApiService";
 import { createStorefrontComplaintApi } from "../../services/StorefrontComplaintApiService";
 import { useLang } from "../../store/CmsStore";
+import useToast from "../../hooks/useToast";
+import Toast from "../../utils/Toast";
 
 const money = (n) => (Number(n) || 0).toLocaleString("vi-VN") + "đ";
 
@@ -238,10 +240,11 @@ function RequestModal({ type, lang, onClose, onSubmit }) {
   const reasons = type === "return" ? RETURN_REASONS : CANCEL_REASONS;
   const [reason, setReason] = useState(reasons[0]?.value || "");
   const [note, setNote] = useState("");
+  const [error, setError] = useState("");
 
   function submit() {
     if (!reason) {
-      alert(t.chooseReason);
+      setError(t.chooseReason);
       return;
     }
 
@@ -280,6 +283,12 @@ function RequestModal({ type, lang, onClose, onSubmit }) {
           />
         </label>
 
+        {error && (
+          <div className="mt-4 rounded-2xl bg-red-50 px-4 py-3 text-sm font-black text-red-600">
+            {error}
+          </div>
+        )}
+
         <div className="mt-6 flex justify-end gap-3">
           <button onClick={onClose} className="rounded-2xl border px-5 py-3 font-black text-slate-700">
             {t.close}
@@ -298,6 +307,7 @@ export default function OrderDetailPage() {
   const navigate = useNavigate();
   const [lang] = useLang();
   const t = getCopy(lang);
+  const { toast, notify, dismiss } = useToast();
 
   const [refreshKey, setRefreshKey] = useState(0);
   const [modalType, setModalType] = useState(null);
@@ -405,10 +415,10 @@ export default function OrderDetailPage() {
 
     try {
       requestPreorderBalancePayment(order.id, String(note || "").trim());
-      alert(t.requestSent);
+      notify("success", t.requestSent);
       setRefreshKey((value) => value + 1);
     } catch (error) {
-      alert(error?.message || "Request failed.");
+      notify("error", error?.message || "Request failed.");
     }
   }
 
@@ -418,14 +428,14 @@ export default function OrderDetailPage() {
         if (isBackendOrder) {
           const updated = await cancelMyStorefrontOrderApi(order.id, { reason, note });
           setBackendOrder(updated);
-          alert(t.cancelledSuccess);
+          notify("success", t.cancelledSuccess);
           setModalType(null);
           setRefreshKey((value) => value + 1);
           return;
         }
 
         cancelOrderDirectly(order.id, reason, note);
-        alert(t.cancelledSuccess);
+        notify("success", t.cancelledSuccess);
         navigate("/orders");
         return;
       }
@@ -448,7 +458,7 @@ export default function OrderDetailPage() {
             priority: "MEDIUM",
           });
 
-          alert(t.requestSent);
+          notify("success", t.requestSent);
           setModalType(null);
           setRefreshKey((value) => value + 1);
           return;
@@ -457,16 +467,17 @@ export default function OrderDetailPage() {
         requestReturnOrder(order.id, reason, note);
       }
 
-      alert(t.requestSent);
+      notify("success", t.requestSent);
       setModalType(null);
       setRefreshKey((value) => value + 1);
     } catch (error) {
-      alert(error?.message || "Request failed.");
+      notify("error", error?.message || "Request failed.");
     }
   }
 
   return (
     <PageShell>
+      <Toast show={toast.show} type={toast.type} message={toast.message} onClose={dismiss} />
       <main className="min-h-screen bg-[#F5F7FB] px-4 py-6 md:px-6 md:py-8">
         <div className="mx-auto max-w-7xl">
           <Link to="/orders" className="font-black text-blue-600">

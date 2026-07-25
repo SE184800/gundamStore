@@ -6,6 +6,7 @@ import { resolveText, useI18n } from "../../i18n";
 import { addProductToCart, forceCartBadgeSync, saveBuyNowDraft, validateCartStock } from "../../services/CartService";
 import { addMyWishlistItem, hasAccountToken } from "../../services/AccountApiService";
 import Toast from "../../utils/Toast";
+import useToast from "../../hooks/useToast";
 import { useCms } from "../../store/CmsStore";
 function getImage(product) {
   return (
@@ -43,12 +44,7 @@ function ProductCard({ product, lang: langProp, actions, badge, onAddToCart }) {
   const [wishlistSaving, setWishlistSaving] = useState(false);
   const [wishlistSaved, setWishlistSaved] = useState(false);
   const [wishlistMessage, setWishlistMessage] = useState("");
-
-  const [toastConfig, setToastConfig] = useState({
-    show: false,
-    type: "success",
-    message: ""
-  });
+  const { toast: toastConfig, notify, dismiss } = useToast(2500);
 
   const name = resolveText(product?.name, lang, t("product.defaultName"));
   const short = resolveText(product?.short, lang, t("product.defaultShort"));
@@ -86,7 +82,8 @@ function ProductCard({ product, lang: langProp, actions, badge, onAddToCart }) {
 
   function showCartError(result) {
     const available = Number(result?.available || 0);
-    alert(
+    notify(
+      "error",
       lang === "en"
         ? `Only ${available} item(s) available.`
         : `Sản phẩm này chỉ còn ${available} sản phẩm trong kho.`
@@ -103,13 +100,11 @@ function ProductCard({ product, lang: langProp, actions, badge, onAddToCart }) {
     }
 
     if (!state?.user) {
-      setToastConfig({ show: true, type: "error", message: `Vui lòng đăng nhập để tiếp tục` });
-      setTimeout(() => setToastConfig((prev) => ({ ...prev, show: false })), 2500);
+      notify("error", `Vui lòng đăng nhập để tiếp tục`);
       return false;
     }
     if (isOutOfStock) {
-      setToastConfig({ show: true, type: "error", message: outOfStockLabel });
-      setTimeout(() => setToastConfig((prev) => ({ ...prev, show: false })), 2500);
+      notify("error", outOfStockLabel);
       return false;
     }
     const validation = validateCartStock(product, qty);
@@ -122,8 +117,7 @@ function ProductCard({ product, lang: langProp, actions, badge, onAddToCart }) {
     else addProductToCart(product, qty);
 
     forceCartBadgeSync();
-    setToastConfig({ show: true, type: "success", message: `Đã thêm sản phẩm vào giỏ hàng thành công!` });
-    setTimeout(() => setToastConfig((prev) => ({ ...prev, show: false })), 2500);
+    notify("success", `Đã thêm sản phẩm vào giỏ hàng thành công!`);
     actions?.track?.("add_to_cart", { productId: product?.id, qty });
     return true;
   }
@@ -138,13 +132,11 @@ function ProductCard({ product, lang: langProp, actions, badge, onAddToCart }) {
     }
 
     if (!state?.user) {
-      setToastConfig({ show: true, type: "error", message: `Vui lòng đăng nhập để tiếp tục` });
-      setTimeout(() => setToastConfig((prev) => ({ ...prev, show: false })), 2500);
+      notify("error", `Vui lòng đăng nhập để tiếp tục`);
       return false;
     }
     if (isOutOfStock) {
-      setToastConfig({ show: true, type: "error", message: outOfStockLabel });
-      setTimeout(() => setToastConfig((prev) => ({ ...prev, show: false })), 2500);
+      notify("error", outOfStockLabel);
       return;
     }
 
@@ -307,7 +299,12 @@ function ProductCard({ product, lang: langProp, actions, badge, onAddToCart }) {
       {quickOpen && createPortal(
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm" onClick={() => setQuickOpen(false)}>
           <div className="relative max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-4xl bg-white p-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <button type="button" onClick={() => setQuickOpen(false)} className="absolute right-4 top-4 z-10 rounded-full bg-slate-100 p-2 text-slate-600 hover:bg-slate-200">
+            <button
+              type="button"
+              onClick={() => setQuickOpen(false)}
+              aria-label={lang === "en" ? "Close" : "Đóng"}
+              className="absolute right-4 top-4 z-10 rounded-full bg-slate-100 p-2 text-slate-600 hover:bg-slate-200"
+            >
               <X size={18} />
             </button>
             <div className="grid gap-5 md:grid-cols-[1fr_1fr]">
@@ -337,12 +334,7 @@ function ProductCard({ product, lang: langProp, actions, badge, onAddToCart }) {
         </div>,
         document.body
       )}
-      <Toast
-        show={toastConfig.show}
-        type={toastConfig.type}
-        message={toastConfig.message}
-        onClose={() => setToastConfig((prev) => ({ ...prev, show: false }))}
-      />
+      <Toast show={toastConfig.show} type={toastConfig.type} message={toastConfig.message} onClose={dismiss} />
     </>
   );
 }

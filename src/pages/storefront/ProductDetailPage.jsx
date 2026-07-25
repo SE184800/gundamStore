@@ -28,6 +28,8 @@ import {
   Zap,
 } from "lucide-react";
 import PageShell from "../../components/common/PageShell";
+import useToast from "../../hooks/useToast";
+import Toast from "../../utils/Toast";
 import { useCms } from "../../store/CmsStore";
 import { translateStaticText } from "../../i18n";
 import { addProductToCart, forceCartBadgeSync, saveBuyNowDraft, saveCheckoutDraft, validateCartStock } from "../../services/CartService";
@@ -413,6 +415,7 @@ function ProductInfo({ product, lang, actions, onPreorder }) {
   const [alertMessage, setAlertMessage] = useState("");
   const [alertError, setAlertError] = useState("");
   const navigate = useNavigate();
+  const { toast, notify, dismiss } = useToast();
 
   useEffect(() => {
     if (!variants.length) {
@@ -441,7 +444,8 @@ function ProductInfo({ product, lang, actions, onPreorder }) {
 
   function showCartError(result) {
     const available = Number(result?.available || 0);
-    alert(
+    notify(
+      "error",
       lang === "en"
         ? `Only ${available} item(s) available.`
         : `Sản phẩm này chỉ còn ${available} sản phẩm trong kho.`
@@ -573,6 +577,7 @@ function ProductInfo({ product, lang, actions, onPreorder }) {
 
   return (
     <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm lg:p-6">
+      <Toast show={toast.show} type={toast.type} message={toast.message} onClose={dismiss} />
       <div className="flex flex-wrap gap-2">
         <span className={`rounded-xl px-3 py-1 text-xs font-black text-white ${preorder ? "bg-violet-600" : isOutOfStock ? "bg-slate-500" : "bg-emerald-600"}`}>
           {preorder ? t.preorder : isOutOfStock ? t.outOfStock : t.inStock}

@@ -68,9 +68,11 @@ export default function NewsPage() {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("all");
   const [newsRows, setNewsRows] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let alive = true;
+    setLoading(true);
 
     getPublicNewsApi()
       .then((rows) => {
@@ -79,6 +81,9 @@ export default function NewsPage() {
       .catch((error) => {
         console.error("PUBLIC_NEWS_LOAD_ERROR", error);
         if (alive) setNewsRows([]);
+      })
+      .finally(() => {
+        if (alive) setLoading(false);
       });
 
     return () => {
@@ -154,7 +159,11 @@ export default function NewsPage() {
                 className="w-full bg-transparent px-3 text-sm font-semibold outline-none"
               />
               {query && (
-                <button onClick={() => setQuery("")} className="rounded-xl p-1 text-slate-400 hover:bg-white">
+                <button
+                  onClick={() => setQuery("")}
+                  aria-label={lang === "en" ? "Clear search" : "Xóa tìm kiếm"}
+                  className="rounded-xl p-1 text-slate-400 hover:bg-white"
+                >
                   <X size={16} />
                 </button>
               )}
@@ -237,7 +246,11 @@ export default function NewsPage() {
         <section className="mt-8">
           <h2 className="text-3xl font-black text-slate-950">{t.latest}</h2>
 
-          {rest.length === 0 ? (
+          {loading ? (
+            <div className="mt-5 rounded-4xl border border-dashed border-slate-300 bg-white p-10 text-center font-black text-slate-400">
+              {lang === "en" ? "Loading..." : "Đang tải..."}
+            </div>
+          ) : rest.length === 0 ? (
             <div className="mt-5 rounded-4xl border border-dashed border-slate-300 bg-white p-10 text-center font-black text-slate-400">
               {t.noNews}
             </div>

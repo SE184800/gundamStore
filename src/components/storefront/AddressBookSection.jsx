@@ -1,5 +1,5 @@
 import { Loader2, MapPin, Pencil, Plus, Star, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLang } from "../../store/CmsStore";
 import {
   createMyAddress,
@@ -123,6 +123,8 @@ export default function AddressBookSection() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [confirmDeleteId, setConfirmDeleteId] = useState("");
+  const confirmDeleteTimer = useRef(null);
   const [error, setError] = useState("");
 
   async function loadAddresses() {
@@ -140,6 +142,9 @@ export default function AddressBookSection() {
 
   useEffect(() => {
     loadAddresses();
+    return () => {
+      if (confirmDeleteTimer.current) clearTimeout(confirmDeleteTimer.current);
+    };
   }, []);
 
   function patch(key, value) {
@@ -224,9 +229,20 @@ export default function AddressBookSection() {
     }
   }
 
-  async function removeAddress(id) {
-    if (!window.confirm(t.deleteConfirm)) return;
+  function handleDeleteClick(id) {
+    if (confirmDeleteId !== id) {
+      if (confirmDeleteTimer.current) clearTimeout(confirmDeleteTimer.current);
+      setConfirmDeleteId(id);
+      confirmDeleteTimer.current = setTimeout(() => setConfirmDeleteId(""), 3000);
+      return;
+    }
 
+    if (confirmDeleteTimer.current) clearTimeout(confirmDeleteTimer.current);
+    setConfirmDeleteId("");
+    removeAddress(id);
+  }
+
+  async function removeAddress(id) {
     try {
       setMessage("");
       setError("");
@@ -373,11 +389,15 @@ export default function AddressBookSection() {
 
                     <button
                       type="button"
-                      onClick={() => removeAddress(item.id)}
-                      className="inline-flex items-center gap-1 rounded-xl bg-red-50 px-3 py-2 text-xs font-black text-red-600 hover:bg-red-100"
+                      onClick={() => handleDeleteClick(item.id)}
+                      className={`inline-flex items-center gap-1 rounded-xl px-3 py-2 text-xs font-black ${
+                        confirmDeleteId === item.id
+                          ? "bg-red-600 text-white hover:bg-red-700"
+                          : "bg-red-50 text-red-600 hover:bg-red-100"
+                      }`}
                     >
                       <Trash2 size={14} />
-                      {t.delete}
+                      {confirmDeleteId === item.id ? t.deleteConfirm : t.delete}
                     </button>
                   </div>
                 </div>

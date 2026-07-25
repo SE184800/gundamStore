@@ -25,6 +25,7 @@ import Logo from "./Logo";
 import { useCms } from "../../store/CmsStore";
 import { Link } from "react-router-dom";
 import Toast from "../../utils/Toast";
+import useToast from "../../hooks/useToast";
 import { createPortal } from "react-dom";
 function isActive(pathname, item) {
   if (item.href === "/") return pathname === "/";
@@ -39,7 +40,7 @@ export default function Header() {
   const [displayLang, setDisplayLang] = useState(() => lang || "vi");
   const location = useLocation();
   const navigate = useNavigate();
-  const [toast, setToast] = useState({ show: false, type: "", message: "" });
+  const { toast, notify, dismiss } = useToast(3000);
   const { state, actions } = useCms();
   const menuRef = useRef(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -125,16 +126,12 @@ export default function Header() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-  function triggerToast(type, message) {
-    setToast({ show: true, type, message });
-    setTimeout(() => setToast({ show: false, type: "", message: "" }), 3000);
-  }
   useEffect(() => {
     setDisplayLang(lang);
   }, [lang]);
   function handleLogout() {
     setUserMenuOpen(false);
-    triggerToast("success", "Đăng xuất thành công !");
+    notify("success", "Đăng xuất thành công !");
     actions.logout();
   }
   function submitHeaderSearch(event) {
@@ -150,7 +147,7 @@ export default function Header() {
 
   return (
     <>
-      <Toast show={toast.show} type={toast.type} message={toast.message} />
+      <Toast show={toast.show} type={toast.type} message={toast.message} onClose={dismiss} />
       <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 shadow-sm backdrop-blur">
         {/* Khung chính của Header: Chuyển sang min-h để ôm được 2 hàng trên Mobile */}
         <div className="mx-auto flex min-h-[64px] py-2 max-w-[1440px] flex-col md:flex-row items-stretch md:items-center gap-2 md:gap-3 px-4 lg:px-8">

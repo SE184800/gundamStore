@@ -172,6 +172,42 @@ Trạng thái xử lý được ghi rõ trong ngoặc ở đầu mỗi mục n�
 
 ---
 
+## PHẦN E — STOREFRONT: BUG THẬT + PERFORMANCE + UX/UI (audit riêng cho `src/pages/storefront/` + components dùng chung)
+
+### E1. 6 route hiển thị "0 sản phẩm" vĩnh viễn — ĐÃ FIX, ĐÃ COMMIT
+
+- [Đã fix] - `PromotionsPage.jsx`, `CampaignCollectionPage.jsx` (`/flash-sale`, `/restock`, `/limited`, `/coming-soon`), `AccessoriesPage.jsx` - Cả 3 file đọc `state.products` từ `CmsStore`, nhưng field này luôn là `[]` (bị `stripMasterDataFromLocalState()` xóa mỗi lần load) — không có API nào từng đổ dữ liệu vào. 6 route này luôn trống dù backend có sản phẩm thật. - Đã chuyển cả 3 sang gọi `getStorefrontProductsForStorefront()` (giống HomePage/ShopPage), cập nhật lại filter mỗi campaign để dùng field thật (`product.collections`, `product.price/oldPrice`, tên sản phẩm) thay vì field ảo (`product.tags`, `product.groupIds` dạng chuỗi người đọc được — thực tế `groupIds` là id backend, không phải nhãn "sale"/"restock"...). Thêm loading/empty state cho cả 3 trang.
+
+### E2. Gửi đánh giá sản phẩm bị lỗi hoàn toàn — ĐÃ FIX, ĐÃ COMMIT
+
+- [Đã fix] - `ProductDetailPage.jsx:995` gọi `createStorefrontReviewApi(...)` nhưng chỉ import `getStorefrontProductReviewsApi` — mọi lần khách bấm "Gửi đánh giá" đều lỗi ngầm (`ReferenceError`, bị catch và hiện thông báo lỗi chung chung). - Thêm import còn thiếu.
+
+### E3. Sổ địa chỉ hiện text thô `{t.title}`, `{t.edit}`... — ĐÃ FIX, ĐÃ COMMIT
+
+- [Đã fix] - `AddressBookSection.jsx` - 9 key trong object `copy.vi` chứa nguyên văn chuỗi `"{t.title}"`, `"{t.edit}"`... (lỗi copy-paste, không phải interpolation thật) — hiển thị y nguyên cho mọi user tiếng Việt ở `/account/profile`. - Thay bằng tiếng Việt thật, đối chiếu bản `en` bên cạnh.
+
+### E4. Badge giỏ hàng không sync khi sửa ngay trên trang Cart — ĐÃ FIX, ĐÃ COMMIT
+
+- [Đã fix] - `CartPage.jsx` `updateCart()` gọi `emitCartUpdated` chưa từng được import (`typeof emitCartUpdated === "function"` luôn `false`) trong khi `saveCart` (đã import, tự gọi `emitCartUpdated` bên trong) không được dùng. - Thay bằng gọi thẳng `saveCart(next)`.
+
+### E5. Performance: ProductCard chưa memo, ProductDetailPage tải cả catalog để lấy 4 sản phẩm liên quan — ĐÃ FIX, ĐÃ COMMIT
+
+- [Đã fix] - `ProductCard.jsx` không bọc `React.memo` — gõ tìm kiếm ở `ShopPage` re-render toàn bộ lưới sản phẩm dù props không đổi. - Bọc `React.memo(ProductCard)`.
+- [Đã fix] - `ProductDetailPage.jsx:1135` gọi `getStorefrontProductsForStorefront()` (toàn bộ catalog) chỉ để lọc lấy 4 sản phẩm liên quan. - Đổi sang `getStorefrontProductsPageFromApi({ categoryIds: [product.categoryId], limit: 8 })`, chỉ chạy sau khi biết category của sản phẩm.
+- [Đã fix] - `CartPage.getAvailable()` parse lại 2 blob localStorage tồn kho cho mỗi dòng giỏ hàng, trên mọi render (kể cả gõ mã giảm giá). - Gộp thành 1 `useMemo` theo `cart`.
+- [Chưa xử lý, cần backend] - `ComparePage.jsx` gọi `getStorefrontProductDetailForStorefront` riêng lẻ cho từng sản phẩm so sánh (tối đa 3, đã chạy song song qua `Promise.all`, không phải waterfall tuần tự). Backend `/api/products` không có tham số `ids` để gộp thành 1 request. - Cần thêm `ids` filter ở backend nếu muốn tối ưu tiếp; tác động thực tế thấp vì so sánh tối đa 3 sản phẩm.
+
+### E6. UX: `alert()`/`window.confirm()` trên storefront, thiếu loading state, thiếu aria-label — ĐÃ FIX, ĐÃ COMMIT
+
+- [Đã fix] - `OrderDetailPage.jsx` (7 `alert()`), `ProductDetailPage.jsx`, `ProductCard.jsx`, `HeaderCart.jsx`, `Header.jsx` (toast tự chế trùng `useToast`) - Thay toàn bộ bằng `useToast`/`Toast` đã có sẵn (dùng ở admin từ phiên trước). `RequestModal` (trong `OrderDetailPage`) đổi validate `alert()` sang banner lỗi inline.
+- [Đã fix] - `AddressBookSection.jsx:228` `window.confirm()` khi xóa địa chỉ - Thay bằng pattern "bấm lần 2 để xác nhận" (nút đổi màu + text trong 3s), không dùng dialog trình duyệt.
+- [Giữ nguyên có chủ đích] - `OrderDetailPage.jsx:412` `window.prompt()` cho "yêu cầu thanh toán phần còn lại" - Đây là code chết: nút gọi hàm này chỉ hiện khi `!isBackendOrder`, nhưng `isBackendOrder` bị hard-code `true` (đơn hàng đã chuyển hẳn sang backend thật) → nút không bao giờ render. Không sửa `window.prompt` vì đường này không thể chạy tới; không đổi logic gate `isBackendOrder` vì `requestPreorderBalancePayment`/`requestCancelOrder` (OrderService) vẫn chỉ thao tác trên local mock order, gọi trên đơn backend thật sẽ ném lỗi "Order not found" — đây là quyết định kiến trúc lớn hơn phạm vi audit UX, cần quyết định riêng nếu muốn bật lại 2 tính năng này.
+- [Đã fix] - `NewsPage.jsx` chớp "Không có bài viết phù hợp" trước khi API load xong (chưa có `loading` state) - Thêm `loading` state, hiện "Đang tải..." trong lúc chờ.
+- [Đã fix] - `FloatingChat.jsx` - Alert dùng cho lỗi Zalo/Messenger link → đổi sang toast. Ô nhập + nút Send không có xử lý gì (giả, gõ và bấm không có phản hồi) → disable cả 2, thêm caption hướng dẫn dùng Zalo/Messenger bên dưới thay vì giữ UI giả ngụ ý chat trực tiếp hoạt động.
+- [Đã fix] - Thêm `aria-label` cho các nút icon-only còn thiếu: nút đóng category sheet/filter drawer (`ShopPage.jsx`), nút xóa tìm kiếm (`ShopPage.jsx`, `NewsPage.jsx`), nút đóng Quick View (`ProductCard.jsx`), nút đóng chat panel (`FloatingChat.jsx`).
+
+---
+
 ## Tổng kết mức độ ưu tiên đề xuất xử lý tiếp theo
 
 1. 🔴 A4 — Sửa `/compare` và `/pre-order` (bug chức năng thật, khách hàng thấy trang trống).
@@ -179,4 +215,7 @@ Trạng thái xử lý được ghi rõ trong ngoặc ở đầu mỗi mục n�
 3. 🟠 B1/D0 — Áp dụng phân trang server-side thật cho Admin Orders (`take:100`) và Admin Products (`take:500`) — đã xác định chính xác vị trí, chỉ còn code ở phiên backend.
 4. 🟡 A1, B2, B3, B5, C5 — Các cải thiện mức trung bình/thấp, làm khi có thời gian.
 5. C1, C3 — Chờ quyết định của bạn về việc xóa hẳn hay tiếp tục giữ cảnh báo.
-6. ✅ D1, D2 (một phần), D4 — Đã fix xong trong phiên này (toast thay alert, dọn trang admin chết, đồng bộ màu CTA).
+6. ✅ D1, D2 (một phần), D4 — Đã fix xong (toast thay alert, dọn trang admin chết, đồng bộ màu CTA).
+7. ✅ E1-E6 — Đã fix xong trong phiên này (6 route trống, review hỏng, sổ địa chỉ hiện text thô, badge giỏ hàng không sync, memo hóa ProductCard, gọn fetch related products/cart stock, alert()/confirm() → toast, loading state NewsPage, aria-label).
+8. 🟡 E5 (ComparePage batch fetch) — Cần backend thêm filter `ids` cho `/api/products` nếu muốn tối ưu tiếp; tác động thấp, không cấp bách.
+9. Cân nhắc riêng: có nên bật lại tính năng "yêu cầu hủy mềm" + "yêu cầu thanh toán phần còn lại preorder" trên storefront không — hiện đang là code chết vì 2 tính năng này (`OrderService.requestCancelOrder`/`requestPreorderBalancePayment`) chưa từng được nối sang backend thật.
