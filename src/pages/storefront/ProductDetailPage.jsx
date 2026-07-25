@@ -608,7 +608,7 @@ function ProductInfo({ product, lang, actions, onPreorder }) {
                 >
                   <div className="h-14 w-14 overflow-hidden rounded-xl bg-slate-100">
                     {variant.imageUrl ? (
-                      <img src={variant.imageUrl} alt="" className="h-full w-full object-cover" />
+                      <img src={variant.imageUrl} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
                     ) : (
                       <GundamVisual tone={product.tone || "blue"} />
                     )}

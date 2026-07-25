@@ -228,7 +228,7 @@ export default function AdminInventory() {
                   <td className="px-4 py-3">
                     <div className="flex gap-3">
                       <div className="h-14 w-14 overflow-hidden rounded-2xl border bg-slate-50">
-                        {product.imageUrl ? <img src={product.imageUrl} alt="" className="h-full w-full object-cover" /> : null}
+                        {product.imageUrl ? <img src={product.imageUrl} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" /> : null}
                       </div>
                       <div>
                         <div className="font-black text-slate-950">{product.nameVi}</div>

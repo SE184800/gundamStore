@@ -317,7 +317,7 @@ export default function AdminCMSBanners() {
       return <video src={url} className="h-16 w-28 rounded-md object-cover" muted />;
     }
 
-    return <img src={url} alt={banner.altText || banner.titleInternal || "Banner"} className="h-16 w-28 rounded-md object-cover" />;
+    return <img src={url} alt={banner.altText || banner.titleInternal || "Banner"} loading="lazy" decoding="async" className="h-16 w-28 rounded-md object-cover" />;
   }
 
   return (
@@ -603,6 +603,8 @@ export default function AdminCMSBanners() {
                       draft.titleInternal ||
                       "Banner preview"
                     }
+                    loading="lazy"
+                    decoding="async"
                     className="max-h-72 w-full rounded-xl bg-slate-100 object-contain"
                   />
                 )}

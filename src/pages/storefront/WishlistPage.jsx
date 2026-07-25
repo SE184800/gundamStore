@@ -208,7 +208,7 @@ function ProductRow({ product, lang, t, removing, onRemove, onAddToCart }) {
   return (
     <article className="grid gap-4 border-b border-slate-100 py-5 last:border-b-0 md:grid-cols-[180px_1fr_210px] md:items-center">
       <Link to={`/product/${product.slug || product.id}`} className="overflow-hidden rounded-2xl bg-slate-100">
-        <img src={product.imageUrl} alt={name} className="h-40 w-full object-cover md:h-28" />
+        <img src={product.imageUrl} alt={name} loading="lazy" decoding="async" className="h-40 w-full object-cover md:h-28" />
       </Link>
 
       <div>

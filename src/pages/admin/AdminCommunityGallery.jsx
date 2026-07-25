@@ -74,7 +74,7 @@ export default function AdminCommunityGallery() {
         {rows.map((item) => (
           <article key={item.id} className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
             <div className="h-72 bg-slate-100">
-              <img src={item.imageUrl} alt={item.title} className="h-full w-full object-cover" />
+              <img src={item.imageUrl} alt={item.title} loading="lazy" decoding="async" className="h-full w-full object-cover" />
             </div>
 
             <div className="p-5">

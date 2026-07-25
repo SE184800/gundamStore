@@ -95,11 +95,11 @@ export function normalizeCartItem(item = {}, product = null) {
     variantOptions: item.variantOptions || product?.variantOptions || null,
     name: item.name || product?.name || product?.title || "Gundam Product",
     image:
-      item.image ||
-      item.imageUrl ||
       product?.media?.card ||
       product?.media?.home ||
       product?.media?.detailMain ||
+      item.image ||
+      item.imageUrl ||
       product?.imageUrl ||
       product?.images?.[0] ||
       "/images/products/hi-nu.jpg",

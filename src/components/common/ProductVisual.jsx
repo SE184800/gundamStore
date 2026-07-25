@@ -12,7 +12,7 @@ export default function ProductVisual({ tone = "blue", large = false, imageUrl =
   if (imageUrl) {
     return (
       <div className="relative h-full w-full overflow-hidden rounded-2xl bg-slate-100">
-        <img src={imageUrl} alt="" className="h-full w-full object-cover" />
+        <img src={imageUrl} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
       </div>
     );
   }

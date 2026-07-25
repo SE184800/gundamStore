@@ -185,7 +185,7 @@ export function AdminImageUploader({
       <div className="rounded-md border border-dashed border-slate-300 bg-slate-50 p-4">
         <div className="flex min-h-36 items-center justify-center overflow-hidden rounded-md border border-slate-200 bg-white">
           {preview ? (
-            <img src={preview} alt="" className="h-full max-h-56 w-full object-cover" />
+            <img src={preview} alt="" loading="lazy" decoding="async" className="h-full max-h-56 w-full object-cover" />
           ) : (
             <div className="text-center">
               <ImagePlus className="mx-auto text-slate-300" size={32} />
@@ -273,7 +273,7 @@ export function AdminMultiImageUploader({
             {images.map((src, index) => (
               <div key={`${src}-${index}`} className="overflow-hidden rounded-md border border-slate-200 bg-white">
                 <div className="h-36 bg-slate-100">
-                  <img src={src} alt="" className="h-full w-full object-cover" />
+                  <img src={src} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
                 </div>
                 <div className="flex items-center justify-between gap-2 p-2">
                   <span className="text-[11px] font-black text-slate-500">

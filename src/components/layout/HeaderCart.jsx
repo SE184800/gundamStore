@@ -31,15 +31,12 @@ export default function HeaderCart() {
     window.addEventListener("focus", sync);
     document.addEventListener("visibilitychange", sync);
 
-    const timer = window.setInterval(sync, 200);
-
     return () => {
       window.removeEventListener("gundam-cart-updated", sync);
       window.removeEventListener("cart:updated", sync);
       window.removeEventListener("storage", sync);
       window.removeEventListener("focus", sync);
       document.removeEventListener("visibilitychange", sync);
-      window.clearInterval(timer);
     };
   }, []);
 

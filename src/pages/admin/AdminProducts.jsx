@@ -1857,7 +1857,7 @@ export default function AdminProducts() {
                     <td className="px-4 py-3">
                       <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl border bg-slate-50">
                         {product.imageUrl ? (
-                          <img src={product.imageUrl} alt="" className="h-full w-full object-cover" />
+                          <img src={product.imageUrl} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
                         ) : (
                           <ImagePlus size={20} className="text-slate-300" />
                         )}

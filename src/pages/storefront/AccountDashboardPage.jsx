@@ -245,7 +245,7 @@ export default function AccountDashboardPage() {
                         <Link key={item.id} to={`/product/${item.product?.slug || item.productId}`} className="rounded-2xl bg-slate-50 p-3 hover:bg-blue-50">
                           <div className="aspect-square rounded-xl bg-white">
                             {item.product?.imageUrl ? (
-                              <img src={item.product.imageUrl} alt={item.product.nameVi || item.product.sku} className="h-full w-full rounded-xl object-cover" />
+                              <img src={item.product.imageUrl} alt={item.product.nameVi || item.product.sku} loading="lazy" decoding="async" className="h-full w-full rounded-xl object-cover" />
                             ) : null}
                           </div>
                           <div className="mt-2 line-clamp-2 text-sm font-black text-slate-950">

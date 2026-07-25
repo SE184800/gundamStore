@@ -177,7 +177,7 @@ export default function AdminNews() {
                     </button>
                   </td>
                   <td className="px-4 py-3">
-                    <img src={item.image} className="h-14 w-24 rounded-md object-cover bg-slate-100" />
+                    <img src={item.image} alt="" loading="lazy" decoding="async" className="h-14 w-24 rounded-md object-cover bg-slate-100" />
                   </td>
                   <td className="px-4 py-3 font-black text-slate-950">{item.title}</td>
                   <td className="px-4 py-3">{item.tag}</td>
@@ -212,7 +212,7 @@ export default function AdminNews() {
               Upload image
               <input type="file" accept="image/*" className="hidden" onChange={uploadImage} />
             </label>
-            {draft.image && <img src={draft.image} className="mt-4 h-40 rounded-md object-cover" />}
+            {draft.image && <img src={draft.image} alt="" loading="lazy" decoding="async" className="mt-4 h-40 rounded-md object-cover" />}
           </div>
 
           <AdminTextarea label="Nội dung bài viết" tip="Mỗi đoạn xuống một dòng. CMS V1 dùng paragraph đơn giản." rows={8} value={draft.contentText} onChange={(v) => patch("contentText", v)} />
