@@ -3,6 +3,8 @@ import { RefreshCcw, Save } from "lucide-react";
 import AdminPageHeader from "../../components/admin/AdminPageHeader";
 import { AdminSelect, AdminTextarea, AdminTextField } from "../../components/admin/AdminField";
 import { logoutAdmin } from "../../services/AdminAuthService";
+import useToast from "../../hooks/useToast";
+import Toast from "../../utils/Toast";
 import {
   createStockAdjustmentApi,
   getInventoryDashboardApi,
@@ -18,6 +20,7 @@ const REASONS = [
 ];
 
 export default function AdminInventoryAdjustments() {
+  const { toast, notify, dismiss } = useToast();
   const [products, setProducts] = useState([]);
   const [adjustments, setAdjustments] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -99,14 +102,15 @@ export default function AdminInventoryAdjustments() {
       });
 
       await reload();
-      alert("Đã điều chỉnh tồn kho.");
+      notify("success", "Đã điều chỉnh tồn kho.");
     } catch (error) {
-      alert(error?.message || "Create stock adjustment failed.");
+      notify("error", error?.message || "Create stock adjustment failed.");
     }
   }
 
   return (
     <>
+      <Toast show={toast.show} type={toast.type} message={toast.message} onClose={dismiss} />
       <AdminPageHeader
         eyebrow="Inventory Management"
         title="Điều chỉnh tồn kho"

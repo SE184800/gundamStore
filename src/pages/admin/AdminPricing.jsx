@@ -5,6 +5,8 @@ import { AdminTextarea, AdminTextField, AdminToggle } from "../../components/adm
 import AdminPageHeader from "../../components/admin/AdminPageHeader";
 import { formatCurrency } from "../../utils/format";
 import { logoutAdmin } from "../../services/AdminAuthService";
+import useToast from "../../hooks/useToast";
+import Toast from "../../utils/Toast";
 import {
   createSellingPriceApi,
   deactivateSellingPriceApi,
@@ -80,6 +82,7 @@ const emptyDraft = {
 };
 
 export default function AdminPricing() {
+  const { toast, notify, dismiss } = useToast();
   const [products, setProducts] = useState([]);
   const [prices, setPrices] = useState([]);
   const [query, setQuery] = useState("");
@@ -281,7 +284,7 @@ export default function AdminPricing() {
       setDrawerOpen(false);
       await reload();
     } catch (error) {
-      alert(error?.message || "Save selling price failed.");
+      notify("error", error?.message || "Save selling price failed.");
     }
   }
 
@@ -292,12 +295,13 @@ export default function AdminPricing() {
       await deactivateSellingPriceApi(row.id);
       await reload();
     } catch (error) {
-      alert(error?.message || "Deactivate selling price failed.");
+      notify("error", error?.message || "Deactivate selling price failed.");
     }
   }
 
   return (
     <>
+      <Toast show={toast.show} type={toast.type} message={toast.message} onClose={dismiss} />
       <AdminPageHeader
         eyebrow="Pricing Management"
         title="Giá bán theo giá vốn bình quân"

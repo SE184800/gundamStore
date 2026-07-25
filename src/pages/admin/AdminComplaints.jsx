@@ -4,6 +4,8 @@ import AdminDrawer from "../../components/admin/AdminDrawer";
 import { AdminSelect, AdminTextarea, AdminTextField } from "../../components/admin/AdminField";
 import AdminPageHeader from "../../components/admin/AdminPageHeader";
 import { formatCurrency } from "../../utils/format";
+import useToast from "../../hooks/useToast";
+import Toast from "../../utils/Toast";
 import {
   addAdminComplaintCommentApi,
   getAdminComplaintDetailApi,
@@ -59,6 +61,7 @@ function shortDate(value) {
 }
 
 export default function AdminComplaints() {
+  const { toast, notify, dismiss } = useToast();
   const [tickets, setTickets] = useState([]);
   const [summary, setSummary] = useState({});
   const [status, setStatus] = useState("ALL");
@@ -119,7 +122,7 @@ export default function AdminComplaints() {
         returnTracking: item.returnTracking || "",
       });
     } catch (error) {
-      alert(error?.message || "Cannot open ticket.");
+      notify("error", error?.message || "Cannot open ticket.");
       setDrawerOpen(false);
     }
   }
@@ -136,9 +139,9 @@ export default function AdminComplaints() {
       setDetail(ticket);
       setCommentDraft("");
       await reload();
-      alert("Ticket updated.");
+      notify("success", "Ticket updated.");
     } catch (error) {
-      alert(error?.message || "Cannot update ticket.");
+      notify("error", error?.message || "Cannot update ticket.");
     }
   }
 
@@ -154,7 +157,7 @@ export default function AdminComplaints() {
       setDetail(item);
       setCommentDraft("");
     } catch (error) {
-      alert(error?.message || "Cannot add comment.");
+      notify("error", error?.message || "Cannot add comment.");
     }
   }
 
@@ -166,12 +169,13 @@ export default function AdminComplaints() {
       });
       await reload();
     } catch (error) {
-      alert(error?.message || "Cannot update status.");
+      notify("error", error?.message || "Cannot update status.");
     }
   }
 
   return (
     <>
+      <Toast show={toast.show} type={toast.type} message={toast.message} onClose={dismiss} />
       <AdminPageHeader
         eyebrow="Customer service"
         title="Return / Refund / Complaint Center"

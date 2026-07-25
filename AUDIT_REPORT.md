@@ -141,10 +141,42 @@ Trạng thái xử lý được ghi rõ trong ngoặc ở đầu mỗi mục n�
 
 ---
 
+## PHẦN D — ADMIN: PERFORMANCE & DESIGN (audit riêng cho toàn bộ `src/pages/admin/`)
+
+### D0. Giới hạn dữ liệu ẩn phía backend — làm sai lệch tìm kiếm/lọc (P1, backend)
+
+- [🟠 Chưa xử lý, cần backend] - `backend/src/controllers/orderController.js:861` (`listAdminOrders`, `take: 100`) - `AdminOrders.jsx` gọi `getAdminOrdersFromApi()` không truyền tham số phân trang nào → chỉ luôn thấy 100 đơn mới nhất. Tìm kiếm/lọc client-side (`AdminOrders.jsx:230-234`) chỉ chạy trên 100 dòng này, đơn cũ hơn biến mất khỏi kết quả tìm kiếm mà không có cảnh báo gì. - Đề xuất: thêm tham số `page/limit` thật cho `listAdminOrders` + UI phân trang, giống pattern đã làm cho A0 (`/shop`).
+- [🟠 Chưa xử lý, cần backend] - `backend/src/controllers/productController.js:594` (`listAdminProducts`, `take: 500`) - Tương tự, `AdminProducts.jsx:1405` gọi không tham số, chỉ thấy 500 sản phẩm. - Đề xuất tương tự A0.
+- [Thông tin] - `backend/src/controllers/fulfillmentController.js:146` (`take: 300`) - Cùng pattern, mức độ ảnh hưởng thấp hơn (hàng đợi fulfillment thường xuyên rỗng bớt do xử lý xong). - Không cấp bách bằng 2 mục trên.
+- Đây chính là phần việc cụ thể của B1 (đã nêu ở tổng kết trước) — B1 giờ có số liệu chính xác để bắt tay làm ở phiên backend.
+
+### D1. `alert()` dùng cho cả báo lỗi và xác nhận thành công — ĐÃ FIX, ĐÃ COMMIT
+
+- [Đã fix] - 21 file `src/pages/admin/*.jsx` (59 lời gọi `alert()`/`window.alert()`) - Mọi luồng lưu/cập nhật đều dùng popup trình duyệt chặn thao tác, kể cả khi thành công. - Thêm `src/hooks/useToast.js` (hook quản lý state) tái dùng component `src/utils/Toast.jsx` sẵn có (đã dùng ở storefront), thay toàn bộ `alert()` bằng `notify("success"|"error", message)`. Giữ nguyên `confirm()` (native, không đổi).
+- [Đã fix] - `src/pages/admin/AdminCMSBanners.jsx:184-187` - Có `window.alert()` trùng lặp hoàn toàn với `setError()` đã hiển thị inline ngay bên dưới. - Xóa `window.alert()` dư thừa, giữ `setError`.
+
+### D2/D3. Trang admin trùng chức năng + border-radius rời rạc — ĐÃ XỬ LÝ MỘT PHẦN
+
+- [Đã xóa, đã commit] - `src/pages/admin/AdminBanners.jsx` - Code chết thật sự: có `lazy()` import ở `App.jsx` nhưng KHÔNG có `<Route>` nào render, sidebar "Banner" trỏ sang `AdminCMSBanners` khác. - Đã xóa file + import, xác nhận build sạch.
+- [Đã fix] - `AdminAnalytics.jsx`, `AdminChats.jsx`, `AdminHomeBuilder.jsx`, `AdminSettings.jsx` - Có route + nav link thật (không phải trang trùng/chết), nhưng tự vẽ header riêng (`rounded-[2rem]`) khác với chuẩn `AdminPageHeader` (`rounded-md`) dùng ở phần lớn trang admin khác. - Đã chuyển cả 4 sang dùng `AdminPageHeader` chung.
+- [Giữ nguyên theo quyết định trước] - `AdminCategories.jsx`, `AdminProductCategoryMapping.jsx`, `AdminProductDisplayMapping.jsx` - Đã có banner cảnh báo từ phiên trước (xem C3), người dùng chọn giữ nguyên, không xóa/không restyle thêm.
+- [Thông tin, chưa xử lý] - 4 trang `AdminAnalytics`/`AdminChats`/`AdminHomeBuilder`/`AdminSettings` đọc/ghi dữ liệu qua `useCms()` (state cục bộ trong trình duyệt), không gọi API backend thật — ví dụ Analytics hiện toàn số liệu demo, không phải hành vi khách hàng thật. Đây là câu hỏi kiến trúc lớn hơn (có nên nối các trang này vào backend thật không), ngoài phạm vi audit performance/design — chỉ ghi nhận.
+
+### D4. Màu nút CTA lệch chuẩn `blue-700` — ĐÃ FIX, ĐÃ COMMIT
+
+- [Đã fix] - `AdminOrders.jsx:877` (Lưu vận chuyển), `AdminComplaints.jsx:260` (Verify), `AdminFulfillment.jsx:348,457` (Confirm) - Dùng `bg-blue-600` trong khi toàn bộ nút CTA chính khác đã chuẩn hóa `bg-blue-700 hover:bg-blue-800` từ phiên trước. - Đã đổi 4 nút này sang `bg-blue-700 hover:bg-blue-800`. Không đổi `emerald-600` (Deliver/Approve/Resolved — màu "tích cực" có chủ đích riêng, khác CTA chính) và `bg-slate-900` (nút Search — quy ước phụ nhất quán).
+
+### D6-D8. Loading state / table styling / horizontal scroll — không xử lý
+
+- [Thông tin, không cấp bách] - Loading state đa số dùng text ("Loading...") thay vì spinner, chỉ 2 trang lệch dùng spinner. Table styling nhìn chung nhất quán. `min-w-[Npx]` gây scroll ngang là quy ước có chủ đích cho bảng dữ liệu dày đặc, không phải lỗi. - Không đề xuất xử lý trừ khi có yêu cầu cụ thể.
+
+---
+
 ## Tổng kết mức độ ưu tiên đề xuất xử lý tiếp theo
 
 1. 🔴 A4 — Sửa `/compare` và `/pre-order` (bug chức năng thật, khách hàng thấy trang trống).
 2. 🔴 A5 — Sửa validate publish sản phẩm đơn (P3, backend).
-3. 🟠 B1 — Áp dụng phân trang server-side cho các trang admin lớn (Products, Orders trước tiên).
+3. 🟠 B1/D0 — Áp dụng phân trang server-side thật cho Admin Orders (`take:100`) và Admin Products (`take:500`) — đã xác định chính xác vị trí, chỉ còn code ở phiên backend.
 4. 🟡 A1, B2, B3, B5, C5 — Các cải thiện mức trung bình/thấp, làm khi có thời gian.
 5. C1, C3 — Chờ quyết định của bạn về việc xóa hẳn hay tiếp tục giữ cảnh báo.
+6. ✅ D1, D2 (một phần), D4 — Đã fix xong trong phiên này (toast thay alert, dọn trang admin chết, đồng bộ màu CTA).

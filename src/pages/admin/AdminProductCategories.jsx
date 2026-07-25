@@ -4,6 +4,8 @@ import AdminDrawer from "../../components/admin/AdminDrawer";
 import { AdminTextarea, AdminTextField, AdminToggle } from "../../components/admin/AdminField";
 import AdminPageHeader from "../../components/admin/AdminPageHeader";
 import { logoutAdmin } from "../../services/AdminAuthService";
+import useToast from "../../hooks/useToast";
+import Toast from "../../utils/Toast";
 import {
   assignAdminCategoryToGroupApi,
   createAdminCategoryApi,
@@ -79,6 +81,7 @@ function matchesQuery(item = {}, query = "") {
 }
 
 export default function AdminProductCategories() {
+  const { toast, notify, dismiss } = useToast();
   const [groups, setGroups] = useState([]);
   const [categories, setCategories] = useState([]);
   const [tree, setTree] = useState([]);
@@ -167,7 +170,7 @@ export default function AdminProductCategories() {
 
   async function save() {
     if (!draft.nameVi.trim() || !draft.code.trim() || !draft.slug.trim()) {
-      alert("Vui lòng nhập Tên VI, Code và Slug.");
+      notify("error", "Vui lòng nhập Tên VI, Code và Slug.");
       return;
     }
 
@@ -186,7 +189,7 @@ export default function AdminProductCategories() {
       setDrawerOpen(false);
       await reload();
     } catch (error) {
-      alert(error?.message || "Lưu danh mục thất bại.");
+      notify("error", error?.message || "Lưu danh mục thất bại.");
     } finally {
       setSaving(false);
     }
@@ -198,7 +201,7 @@ export default function AdminProductCategories() {
       await deleteAdminCategoryGroupApi(item.id);
       await reload();
     } catch (error) {
-      alert(error?.message || "Xóa danh mục cấp cha thất bại.");
+      notify("error", error?.message || "Xóa danh mục cấp cha thất bại.");
     }
   }
 
@@ -208,12 +211,13 @@ export default function AdminProductCategories() {
       await deleteAdminCategoryApi(item.id);
       await reload();
     } catch (error) {
-      alert(error?.message || "Xóa danh mục cấp con thất bại.");
+      notify("error", error?.message || "Xóa danh mục cấp con thất bại.");
     }
   }
 
   return (
     <>
+      <Toast show={toast.show} type={toast.type} message={toast.message} onClose={dismiss} />
       <AdminPageHeader
         eyebrow="Product Management"
         title="Danh mục sản phẩm 2 cấp"

@@ -4,6 +4,8 @@ import AdminDrawer from "../../components/admin/AdminDrawer";
 import { AdminTextarea, AdminTextField, AdminToggle } from "../../components/admin/AdminField";
 import AdminPageHeader from "../../components/admin/AdminPageHeader";
 import { logoutAdmin } from "../../services/AdminAuthService";
+import useToast from "../../hooks/useToast";
+import Toast from "../../utils/Toast";
 import {
   createAdminGroupApi,
   deleteAdminGroupApi,
@@ -43,6 +45,7 @@ function makeCode(value = "") {
 }
 
 export default function AdminProductGroups() {
+  const { toast, notify, dismiss } = useToast();
   const [rows, setRows] = useState([]);
   const [query, setQuery] = useState("");
   const [draft, setDraft] = useState(empty);
@@ -113,7 +116,7 @@ export default function AdminProductGroups() {
       setDrawerOpen(false);
       await reload();
     } catch (error) {
-      alert(error?.message || "Save product group failed.");
+      notify("error", error?.message || "Save product group failed.");
     }
   }
 
@@ -125,6 +128,7 @@ export default function AdminProductGroups() {
 
   return (
     <>
+      <Toast show={toast.show} type={toast.type} message={toast.message} onClose={dismiss} />
       <AdminPageHeader
         eyebrow="Product Management"
         title="Product Groups"

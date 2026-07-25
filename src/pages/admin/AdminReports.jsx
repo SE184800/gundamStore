@@ -13,6 +13,8 @@ import {
 } from "lucide-react";
 import AdminPageHeader from "../../components/admin/AdminPageHeader";
 import { formatCurrency } from "../../utils/format";
+import useToast from "../../hooks/useToast";
+import Toast from "../../utils/Toast";
 import {
   downloadAdminReportCsv,
   getAdminReportCenterApi,
@@ -129,6 +131,7 @@ function TablePreview({ type, rows = [] }) {
 }
 
 export default function AdminReports() {
+  const { toast, notify, dismiss } = useToast();
   const [period, setPeriod] = useState("30d");
   const [reportType, setReportType] = useState("orders");
   const [data, setData] = useState(null);
@@ -170,7 +173,7 @@ export default function AdminReports() {
     try {
       await downloadAdminReportCsv(reportType, period);
     } catch (error) {
-      alert(error?.message || "Export failed.");
+      notify("error", error?.message || "Export failed.");
     } finally {
       setExporting(false);
     }
@@ -178,6 +181,7 @@ export default function AdminReports() {
 
   return (
     <>
+      <Toast show={toast.show} type={toast.type} message={toast.message} onClose={dismiss} />
       <AdminPageHeader
         eyebrow="Reports & Export"
         title="Reports / Export Center"

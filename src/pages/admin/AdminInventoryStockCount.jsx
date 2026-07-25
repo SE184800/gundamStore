@@ -3,6 +3,8 @@ import { RefreshCcw, Save } from "lucide-react";
 import AdminPageHeader from "../../components/admin/AdminPageHeader";
 import { AdminTextarea, AdminTextField } from "../../components/admin/AdminField";
 import { logoutAdmin } from "../../services/AdminAuthService";
+import useToast from "../../hooks/useToast";
+import Toast from "../../utils/Toast";
 import {
   createStockCountApi,
   getInventoryDashboardApi,
@@ -14,6 +16,7 @@ function todayInput() {
 }
 
 export default function AdminInventoryStockCount() {
+  const { toast, notify, dismiss } = useToast();
   const [products, setProducts] = useState([]);
   const [counts, setCounts] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -87,7 +90,7 @@ export default function AdminInventoryStockCount() {
   async function saveCount() {
     try {
       if (!changedItems.length) {
-        alert("Không có chênh lệch tồn kho để ghi nhận.");
+        notify("error", "Không có chênh lệch tồn kho để ghi nhận.");
         return;
       }
 
@@ -103,14 +106,15 @@ export default function AdminInventoryStockCount() {
       });
 
       await reload();
-      alert("Đã ghi nhận kiểm tồn và cập nhật chênh lệch.");
+      notify("success", "Đã ghi nhận kiểm tồn và cập nhật chênh lệch.");
     } catch (error) {
-      alert(error?.message || "Create stock count failed.");
+      notify("error", error?.message || "Create stock count failed.");
     }
   }
 
   return (
     <>
+      <Toast show={toast.show} type={toast.type} message={toast.message} onClose={dismiss} />
       <AdminPageHeader
         eyebrow="Inventory Management"
         title="Kiểm tồn / Stock Count"

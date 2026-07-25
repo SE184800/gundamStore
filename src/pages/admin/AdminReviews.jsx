@@ -3,6 +3,8 @@ import { CheckCircle2, EyeOff, MessageSquareReply, RefreshCcw, Search, Star, Tra
 import AdminDrawer from "../../components/admin/AdminDrawer";
 import { AdminSelect, AdminTextarea } from "../../components/admin/AdminField";
 import AdminPageHeader from "../../components/admin/AdminPageHeader";
+import useToast from "../../hooks/useToast";
+import Toast from "../../utils/Toast";
 import {
   deleteAdminReviewApi,
   getAdminReviewsApi,
@@ -43,6 +45,7 @@ function productName(product = {}) {
 }
 
 export default function AdminReviews() {
+  const { toast, notify, dismiss } = useToast();
   const [reviews, setReviews] = useState([]);
   const [status, setStatus] = useState("ALL");
   const [query, setQuery] = useState("");
@@ -96,7 +99,7 @@ export default function AdminReviews() {
       });
       await reload();
     } catch (error) {
-      alert(error?.message || "Update review failed.");
+      notify("error", error?.message || "Update review failed.");
     }
   }
 
@@ -113,7 +116,7 @@ export default function AdminReviews() {
       setDraft(null);
       await reload();
     } catch (error) {
-      alert(error?.message || "Save reply failed.");
+      notify("error", error?.message || "Save reply failed.");
     }
   }
 
@@ -124,12 +127,13 @@ export default function AdminReviews() {
       await deleteAdminReviewApi(review.id);
       await reload();
     } catch (error) {
-      alert(error?.message || "Delete review failed.");
+      notify("error", error?.message || "Delete review failed.");
     }
   }
 
   return (
     <>
+      <Toast show={toast.show} type={toast.type} message={toast.message} onClose={dismiss} />
       <AdminPageHeader
         eyebrow="Customer trust"
         title="Review & Rating Moderation"

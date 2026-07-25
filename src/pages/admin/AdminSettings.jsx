@@ -2,6 +2,8 @@ import { Download, RefreshCcw, Upload } from "lucide-react";
 import { useRef, useState } from "react";
 import { useCms, useLang } from "../../store/CmsStore";
 import AdminPageHeader from "../../components/admin/AdminPageHeader";
+import useToast from "../../hooks/useToast";
+import Toast from "../../utils/Toast";
 
 const text = {
   vi: { title: "Cấu hình & Dữ liệu", desc: "Export/import/reset dữ liệu CMS localStorage. Dùng để backup khi test trên GitHub Codespaces/Vercel.", export: "Export JSON", import: "Import JSON", reset: "Reset dữ liệu demo", copied: "Đã export dữ liệu. Copy nội dung bên dưới.", paste: "Dán JSON vào đây rồi Import" },
@@ -9,6 +11,7 @@ const text = {
 };
 
 export default function AdminSettings() {
+  const { toast, notify, dismiss } = useToast();
   const { actions } = useCms();
   const [lang] = useLang();
   const t = text[lang];
@@ -25,14 +28,15 @@ export default function AdminSettings() {
   function importData() {
     try {
       actions.importData(json);
-      alert("Imported successfully");
+      notify("success", "Imported successfully");
     } catch (e) {
-      alert("Invalid JSON");
+      notify("error", "Invalid JSON");
     }
   }
 
   return (
     <>
+      <Toast show={toast.show} type={toast.type} message={toast.message} onClose={dismiss} />
       <AdminPageHeader title={t.title} desc={t.desc} />
       <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex flex-wrap gap-3">

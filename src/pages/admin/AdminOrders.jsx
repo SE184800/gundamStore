@@ -20,6 +20,8 @@ import {
 import { formatCurrency } from "../../utils/format";
 import { useLang } from "../../store/CmsStore";
 import { logoutAdmin } from "../../services/AdminAuthService";
+import useToast from "../../hooks/useToast";
+import Toast from "../../utils/Toast";
 import {
   getAdminOrdersFromApi,
   updateAdminOrderPaymentApi,
@@ -139,6 +141,7 @@ function escapePrintHtml(value = "") {
 }
 
 export default function AdminOrders() {
+  const { toast, notify, dismiss } = useToast();
   const [lang] = useLang();
   const t = getCopy(lang);
 
@@ -306,7 +309,7 @@ export default function AdminOrders() {
       await updateAdminOrderStatusApi(order.id, status, note);
       await reload();
     } catch (error) {
-      alert(error?.message || "Update status failed.");
+      notify("error", error?.message || "Update status failed.");
     }
   }
 
@@ -333,7 +336,7 @@ export default function AdminOrders() {
       });
       await reload();
     } catch (error) {
-      alert(error?.message || "Update payment failed.");
+      notify("error", error?.message || "Update payment failed.");
     }
   }
 
@@ -350,9 +353,9 @@ export default function AdminOrders() {
       const refreshed = rows.find((order) => order.id === orderId || order.orderCode === orderId);
       if (refreshed) openOrderDetail(refreshed);
 
-      alert("Đã lưu thanh toán.");
+      notify("success", "Đã lưu thanh toán.");
     } catch (error) {
-      alert(error?.message || "Save payment failed.");
+      notify("error", error?.message || "Save payment failed.");
     }
   }
 
@@ -373,9 +376,9 @@ export default function AdminOrders() {
       const refreshed = rows.find((item) => item.id === orderId || item.orderCode === orderId);
       if (refreshed) openOrderDetail(refreshed);
 
-      alert("Đã lưu vận chuyển.");
+      notify("success", "Đã lưu vận chuyển.");
     } catch (error) {
-      alert(error?.message || "Save shipping failed.");
+      notify("error", error?.message || "Save shipping failed.");
     }
   }
 
@@ -459,6 +462,7 @@ export default function AdminOrders() {
 
   return (
     <div className="space-y-6">
+      <Toast show={toast.show} type={toast.type} message={toast.message} onClose={dismiss} />
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-sm font-black uppercase tracking-[0.25em] text-blue-600">

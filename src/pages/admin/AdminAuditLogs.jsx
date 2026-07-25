@@ -11,6 +11,8 @@ import {
 } from "lucide-react";
 import AdminDrawer from "../../components/admin/AdminDrawer";
 import AdminPageHeader from "../../components/admin/AdminPageHeader";
+import useToast from "../../hooks/useToast";
+import Toast from "../../utils/Toast";
 import {
   downloadAdminAuditLogsCsv,
   getAdminAuditLogsApi,
@@ -73,6 +75,7 @@ function JsonBlock({ value }) {
 }
 
 export default function AdminAuditLogs() {
+  const { toast, notify, dismiss } = useToast();
   const [period, setPeriod] = useState("7d");
   const [action, setAction] = useState("ALL");
   const [entity, setEntity] = useState("ALL");
@@ -126,7 +129,7 @@ export default function AdminAuditLogs() {
     try {
       await downloadAdminAuditLogsCsv(params);
     } catch (error) {
-      alert(error?.message || "Export failed.");
+      notify("error", error?.message || "Export failed.");
     } finally {
       setExporting(false);
     }
@@ -139,6 +142,7 @@ export default function AdminAuditLogs() {
 
   return (
     <>
+      <Toast show={toast.show} type={toast.type} message={toast.message} onClose={dismiss} />
       <AdminPageHeader
         eyebrow="Security & Governance"
         title="Audit Log / Admin Activity Center"

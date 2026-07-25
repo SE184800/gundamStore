@@ -184,9 +184,6 @@ export default function AdminCMSBanners() {
       setError(
         err?.message || "Không thể upload banner."
       );
-      window.alert(
-        err?.message || "Không thể upload banner."
-      );
     } finally {
       setUploadingField("");
       event.target.value = "";

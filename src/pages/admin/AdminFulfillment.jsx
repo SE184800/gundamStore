@@ -4,6 +4,8 @@ import AdminDrawer from "../../components/admin/AdminDrawer";
 import { AdminSelect, AdminTextarea, AdminTextField } from "../../components/admin/AdminField";
 import AdminPageHeader from "../../components/admin/AdminPageHeader";
 import { formatCurrency } from "../../utils/format";
+import useToast from "../../hooks/useToast";
+import Toast from "../../utils/Toast";
 import {
   bulkAdminFulfillmentActionApi,
   getAdminFulfillmentOrdersApi,
@@ -107,6 +109,7 @@ function printPackingList(order) {
 }
 
 export default function AdminFulfillment() {
+  const { toast, notify, dismiss } = useToast();
   const [orders, setOrders] = useState([]);
   const [pickList, setPickList] = useState([]);
   const [summary, setSummary] = useState({});
@@ -186,7 +189,7 @@ export default function AdminFulfillment() {
       });
       await reload();
     } catch (error) {
-      alert(error?.message || "Fulfillment update failed.");
+      notify("error", error?.message || "Fulfillment update failed.");
     }
   }
 
@@ -202,13 +205,13 @@ export default function AdminFulfillment() {
       setDrawerOpen(false);
       await reload();
     } catch (error) {
-      alert(error?.message || "Ship order failed.");
+      notify("error", error?.message || "Ship order failed.");
     }
   }
 
   async function bulkAction(action) {
     if (!selectedIds.length) {
-      alert("Select at least one order.");
+      notify("error", "Select at least one order.");
       return;
     }
 
@@ -218,12 +221,13 @@ export default function AdminFulfillment() {
       await bulkAdminFulfillmentActionApi(selectedIds, action, `Bulk ${action}`);
       await reload();
     } catch (error) {
-      alert(error?.message || "Bulk action failed.");
+      notify("error", error?.message || "Bulk action failed.");
     }
   }
 
   return (
     <>
+      <Toast show={toast.show} type={toast.type} message={toast.message} onClose={dismiss} />
       <AdminPageHeader
         eyebrow="Operations"
         title="Shipping / Fulfillment Center"

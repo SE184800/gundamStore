@@ -6,6 +6,8 @@ import AdminPageHeader from "../../components/admin/AdminPageHeader";
 import { formatCurrency } from "../../utils/format";
 import { logoutAdmin } from "../../services/AdminAuthService";
 import { getAdminProductsFromApi } from "../../services/AdminProductApiService";
+import useToast from "../../hooks/useToast";
+import Toast from "../../utils/Toast";
 import {
   createAdminPromotionApi,
   deactivateAdminPromotionApi,
@@ -117,6 +119,7 @@ const emptyDraft = {
 };
 
 export default function AdminPromotions() {
+  const { toast, notify, dismiss } = useToast();
   const [promotions, setPromotions] = useState([]);
   const [products, setProducts] = useState([]);
   const [query, setQuery] = useState("");
@@ -260,7 +263,7 @@ export default function AdminPromotions() {
     const errors = getPromotionValidationErrors(draft, products);
 
     if (errors.length) {
-      alert(errors.join("\n"));
+      notify("error", errors.join("\n"));
       return;
     }
 
@@ -288,7 +291,7 @@ export default function AdminPromotions() {
       setDrawerOpen(false);
       await reload();
     } catch (error) {
-      alert(error?.message || "Save promotion failed.");
+      notify("error", error?.message || "Save promotion failed.");
     }
   }
 
@@ -299,12 +302,13 @@ export default function AdminPromotions() {
       await deactivateAdminPromotionApi(item.id);
       await reload();
     } catch (error) {
-      alert(error?.message || "Deactivate promotion failed.");
+      notify("error", error?.message || "Deactivate promotion failed.");
     }
   }
 
   return (
     <>
+      <Toast show={toast.show} type={toast.type} message={toast.message} onClose={dismiss} />
       <AdminPageHeader
         eyebrow="Pricing & Promotion"
         title="Promotions"

@@ -4,6 +4,8 @@ import AdminDrawer from "../../components/admin/AdminDrawer";
 import { AdminSelect, AdminTextarea, AdminTextField, AdminToggle } from "../../components/admin/AdminField";
 import AdminPageHeader from "../../components/admin/AdminPageHeader";
 import { formatCurrency } from "../../utils/format";
+import useToast from "../../hooks/useToast";
+import Toast from "../../utils/Toast";
 import {
   createAdminVoucherApi,
   deactivateAdminVoucherApi,
@@ -99,6 +101,7 @@ function isEffective(voucher = {}) {
 }
 
 export default function AdminVouchers() {
+  const { toast, notify, dismiss } = useToast();
   const [vouchers, setVouchers] = useState([]);
   const [query, setQuery] = useState("");
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -164,7 +167,7 @@ export default function AdminVouchers() {
       const payload = buildPayload(draft);
 
       if (payload.type === "PERCENT" && payload.value > 100) {
-        alert("Percent cannot exceed 100%.");
+        notify("error", "Percent cannot exceed 100%.");
         return;
       }
 
@@ -177,7 +180,7 @@ export default function AdminVouchers() {
       setDrawerOpen(false);
       await reload();
     } catch (error) {
-      alert(error?.message || "Save voucher failed.");
+      notify("error", error?.message || "Save voucher failed.");
     }
   }
 
@@ -188,12 +191,13 @@ export default function AdminVouchers() {
       await deactivateAdminVoucherApi(item.id);
       await reload();
     } catch (error) {
-      alert(error?.message || "Deactivate voucher failed.");
+      notify("error", error?.message || "Deactivate voucher failed.");
     }
   }
 
   return (
     <>
+      <Toast show={toast.show} type={toast.type} message={toast.message} onClose={dismiss} />
       <AdminPageHeader
         eyebrow="Commercial Management"
         title="Vouchers / Coupons"

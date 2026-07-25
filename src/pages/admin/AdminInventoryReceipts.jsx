@@ -5,6 +5,8 @@ import { AdminSelect, AdminTextarea, AdminTextField } from "../../components/adm
 import { formatCurrency } from "../../utils/format";
 import { logoutAdmin } from "../../services/AdminAuthService";
 import { getAdminCatalogReferenceApi } from "../../services/AdminCatalogApiService";
+import useToast from "../../hooks/useToast";
+import Toast from "../../utils/Toast";
 import {
   createPurchaseReceiptApi,
   getInventoryDashboardApi,
@@ -24,6 +26,7 @@ function makeEmptyLine() {
 }
 
 export default function AdminInventoryReceipts() {
+  const { toast, notify, dismiss } = useToast();
   const [products, setProducts] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
   const [receipts, setReceipts] = useState([]);
@@ -146,14 +149,15 @@ export default function AdminInventoryReceipts() {
       });
 
       await reload();
-      alert("Đã tạo phiếu nhập hàng và cập nhật tồn kho / giá vốn bình quân.");
+      notify("success", "Đã tạo phiếu nhập hàng và cập nhật tồn kho / giá vốn bình quân.");
     } catch (error) {
-      alert(error?.message || "Create receipt failed.");
+      notify("error", error?.message || "Create receipt failed.");
     }
   }
 
   return (
     <>
+      <Toast show={toast.show} type={toast.type} message={toast.message} onClose={dismiss} />
       <AdminPageHeader
         eyebrow="Inventory Management"
         title="Nhập hàng / Goods Receipt"

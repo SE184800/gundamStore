@@ -4,6 +4,8 @@ import AdminDrawer from "../../components/admin/AdminDrawer";
 import { AdminSelect, AdminTextarea, AdminTextField, AdminToggle } from "../../components/admin/AdminField";
 import AdminPageHeader from "../../components/admin/AdminPageHeader";
 import { formatCurrency } from "../../utils/format";
+import useToast from "../../hooks/useToast";
+import Toast from "../../utils/Toast";
 import {
   createAdminCustomerNoteApi,
   getAdminCustomerDetailApi,
@@ -49,6 +51,7 @@ function shortDate(value) {
 }
 
 export default function AdminCustomers() {
+  const { toast, notify, dismiss } = useToast();
   const [customers, setCustomers] = useState([]);
   const [summary, setSummary] = useState(null);
   const [query, setQuery] = useState("");
@@ -113,7 +116,7 @@ export default function AdminCustomers() {
         active: item.active !== false,
       });
     } catch (error) {
-      alert(error?.message || "Cannot load customer detail.");
+      notify("error", error?.message || "Cannot load customer detail.");
       setDrawerOpen(false);
     } finally {
       setDetailLoading(false);
@@ -136,7 +139,7 @@ export default function AdminCustomers() {
       setNoteDraft({ type: "NOTE", content: "" });
       await reload();
     } catch (error) {
-      alert(error?.message || "Cannot add note.");
+      notify("error", error?.message || "Cannot add note.");
     }
   }
 
@@ -148,14 +151,15 @@ export default function AdminCustomers() {
       const item = await getAdminCustomerDetailApi(detail.customerKey);
       setDetail(item);
       await reload();
-      alert("Customer profile updated.");
+      notify("success", "Customer profile updated.");
     } catch (error) {
-      alert(error?.message || "Cannot update customer.");
+      notify("error", error?.message || "Cannot update customer.");
     }
   }
 
   return (
     <>
+      <Toast show={toast.show} type={toast.type} message={toast.message} onClose={dismiss} />
       <AdminPageHeader
         eyebrow="Customer operations"
         title="Customer / CRM Center"

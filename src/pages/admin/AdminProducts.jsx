@@ -26,6 +26,8 @@ import {
   updateAdminProductApi,
 } from "../../services/AdminProductApiService";
 import { uploadAdminProductImages } from "../../services/AdminMediaApiService";
+import useToast from "../../hooks/useToast";
+import Toast from "../../utils/Toast";
 
 const emptyDraft = {
   id: "",
@@ -1081,13 +1083,13 @@ function ProductBulkImportExportPanel({ onImported }) {
     if (!file) return;
 
     if (!file.name.toLowerCase().endsWith(".csv") && !file.type.includes("csv")) {
-      alert("Vui lòng chọn file CSV. File này có thể mở và chỉnh sửa trực tiếp bằng Excel.");
+      notify("error", "Vui lòng chọn file CSV. File này có thể mở và chỉnh sửa trực tiếp bằng Excel.");
       event.target.value = "";
       return;
     }
 
     if (file.size > 2 * 1024 * 1024) {
-      alert("File CSV quá lớn. Dung lượng tối đa 2MB.");
+      notify("error", "File CSV quá lớn. Dung lượng tối đa 2MB.");
       event.target.value = "";
       return;
     }
@@ -1164,12 +1166,12 @@ function ProductBulkImportExportPanel({ onImported }) {
 
   async function commitImport() {
     if (!preview) {
-      alert("Vui lòng bấm Preview trước khi Commit.");
+      notify("error", "Vui lòng bấm Preview trước khi Commit.");
       return;
     }
 
     if (preview.errorRows > 0) {
-      alert("File còn dòng lỗi. Vui lòng sửa CSV rồi Preview lại.");
+      notify("error", "File còn dòng lỗi. Vui lòng sửa CSV rồi Preview lại.");
       return;
     }
 
@@ -1379,6 +1381,7 @@ function ProductBulkImportExportPanel({ onImported }) {
 }
 
 export default function AdminProducts() {
+  const { toast, notify, dismiss } = useToast();
   const [lang] = useLang();
   const t = getCopy(lang);
 
@@ -1566,7 +1569,7 @@ export default function AdminProducts() {
         setPricePrompt(saved);
       }
     } catch (error) {
-      alert(error?.message || "Save product failed.");
+      notify("error", error?.message || "Save product failed.");
     }
   }
 
@@ -1604,7 +1607,7 @@ export default function AdminProducts() {
     const issues = getProductIssueStatus(product);
 
     if (shouldPublish && issues.length) {
-      alert(`Không thể publish. Thiếu: ${issues.join(", ")}`);
+      notify("error", `Không thể publish. Thiếu: ${issues.join(", ")}`);
       return;
     }
 
@@ -1618,7 +1621,7 @@ export default function AdminProducts() {
       await updateAdminProductApi(product.id, next);
       await reload();
     } catch (error) {
-      alert(error?.message || "Update publish status failed.");
+      notify("error", error?.message || "Update publish status failed.");
     }
   }
 
@@ -1629,12 +1632,13 @@ export default function AdminProducts() {
       await deleteAdminProductApi(product.id);
       await reload();
     } catch (error) {
-      alert(error?.message || "Xóa sản phẩm thất bại.");
+      notify("error", error?.message || "Xóa sản phẩm thất bại.");
     }
   }
 
   return (
     <>
+      <Toast show={toast.show} type={toast.type} message={toast.message} onClose={dismiss} />
       {pricePrompt && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/50 p-4">
           <div className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl">

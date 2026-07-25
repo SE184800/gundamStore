@@ -14,6 +14,8 @@ import {
 import AdminDrawer from "../../components/admin/AdminDrawer";
 import { AdminSelect, AdminTextField, AdminToggle } from "../../components/admin/AdminField";
 import AdminPageHeader from "../../components/admin/AdminPageHeader";
+import useToast from "../../hooks/useToast";
+import Toast from "../../utils/Toast";
 import {
   createAdminRoleApi,
   createAdminUserApi,
@@ -78,6 +80,7 @@ function emptyRoleDraft() {
 }
 
 export default function AdminUsers() {
+  const { toast, notify, dismiss } = useToast();
   const [tab, setTab] = useState("users");
   const [users, setUsers] = useState([]);
   const [roles, setRoles] = useState([]);
@@ -169,7 +172,7 @@ export default function AdminUsers() {
         : [];
 
       if (passwordErrors.length) {
-        alert(`Mật khẩu cần: ${passwordErrors.join(", ")}.`);
+        notify("error", `Mật khẩu cần: ${passwordErrors.join(", ")}.`);
         return;
       }
 
@@ -195,7 +198,7 @@ export default function AdminUsers() {
       setTemporaryPassword(created.temporaryPassword || "");
       await reload();
     } catch (error) {
-      alert(error?.message || "Cannot save user.");
+      notify("error", error?.message || "Cannot save user.");
     }
   }
 
@@ -216,7 +219,7 @@ export default function AdminUsers() {
       setRoleDrawerOpen(false);
       await reload();
     } catch (error) {
-      alert(error?.message || "Cannot save role.");
+      notify("error", error?.message || "Cannot save role.");
     }
   }
 
@@ -234,6 +237,7 @@ export default function AdminUsers() {
 
   return (
     <>
+      <Toast show={toast.show} type={toast.type} message={toast.message} onClose={dismiss} />
       <AdminPageHeader
         eyebrow="Access control"
         title="Admin User / Role / Permission Center"

@@ -4,6 +4,8 @@ import AdminDrawer from "../../components/admin/AdminDrawer";
 import { AdminTextarea, AdminTextField, AdminToggle } from "../../components/admin/AdminField";
 import AdminPageHeader from "../../components/admin/AdminPageHeader";
 import { logoutAdmin } from "../../services/AdminAuthService";
+import useToast from "../../hooks/useToast";
+import Toast from "../../utils/Toast";
 import {
   createAdminSupplierApi,
   deleteAdminSupplierApi,
@@ -34,6 +36,7 @@ function makeCode(value = "") {
 }
 
 export default function AdminSuppliers() {
+  const { toast, notify, dismiss } = useToast();
   const [rows, setRows] = useState([]);
   const [query, setQuery] = useState("");
   const [draft, setDraft] = useState(empty);
@@ -101,7 +104,7 @@ export default function AdminSuppliers() {
       setDrawerOpen(false);
       await reload();
     } catch (error) {
-      alert(error?.message || "Save supplier failed.");
+      notify("error", error?.message || "Save supplier failed.");
     }
   }
 
@@ -113,6 +116,7 @@ export default function AdminSuppliers() {
 
   return (
     <>
+      <Toast show={toast.show} type={toast.type} message={toast.message} onClose={dismiss} />
       <AdminPageHeader
         eyebrow="Product Management"
         title="Suppliers"

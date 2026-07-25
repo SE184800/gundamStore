@@ -5,6 +5,8 @@ import AdminPageHeader from "../../components/admin/AdminPageHeader";
 import AdminStatusBadge from "../../components/admin/AdminStatusBadge";
 import { AdminSelect, AdminTextField, AdminToggle } from "../../components/admin/AdminField";
 import { useCms } from "../../store/CmsStore";
+import useToast from "../../hooks/useToast";
+import Toast from "../../utils/Toast";
 
 // 1. 🛠️ ĐÃ SỬA: Thêm status mặc định vào cấu trúc trống ban đầu
 const emptyCommunication = { id: "", name: "", platform: "Zalo", value: "", status: "Active", active: true };
@@ -17,6 +19,7 @@ const defaultCommunications = [
 ];
 
 export default function AdminCommunication() {
+  const { toast, notify, dismiss } = useToast();
   const { state, actions } = useCms();
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(emptyCommunication);
@@ -56,7 +59,7 @@ export default function AdminCommunication() {
 
   function saveCommunication() {
     if (!draft.name.trim() || !draft.value.trim()) {
-      alert("Vui lòng nhập đầy đủ thông tin!");
+      notify("error", "Vui lòng nhập đầy đủ thông tin!");
       return;
     }
 
@@ -77,6 +80,7 @@ export default function AdminCommunication() {
 
   return (
     <>
+      <Toast show={toast.show} type={toast.type} message={toast.message} onClose={dismiss} />
       <AdminPageHeader
         eyebrow="Customer Service"
         title="Communication Links"

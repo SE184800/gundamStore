@@ -5,6 +5,8 @@ import { AdminTextField } from "../../components/admin/AdminField";
 import AdminDrawer from "../../components/admin/AdminDrawer";
 import { formatCurrency } from "../../utils/format";
 import { logoutAdmin } from "../../services/AdminAuthService";
+import useToast from "../../hooks/useToast";
+import Toast from "../../utils/Toast";
 import {
   adjustAdminProductInventoryApi,
   getAdminInventoryLogsApi,
@@ -37,6 +39,7 @@ function logTypeLabel(type) {
 }
 
 export default function AdminInventory() {
+  const { toast, notify, dismiss } = useToast();
   const [products, setProducts] = useState([]);
   const [logs, setLogs] = useState([]);
   const [query, setQuery] = useState("");
@@ -130,7 +133,7 @@ export default function AdminInventory() {
   async function saveAdjust() {
     try {
       if (!String(adjust.reason || "").trim()) {
-        alert("Vui lòng chọn lý do điều chỉnh tồn kho.");
+        notify("error", "Vui lòng chọn lý do điều chỉnh tồn kho.");
         return;
       }
 
@@ -142,12 +145,13 @@ export default function AdminInventory() {
       setDrawerOpen(false);
       await reload();
     } catch (error) {
-      alert(error?.message || "Adjust inventory failed.");
+      notify("error", error?.message || "Adjust inventory failed.");
     }
   }
 
   return (
     <>
+      <Toast show={toast.show} type={toast.type} message={toast.message} onClose={dismiss} />
       <AdminPageHeader
         eyebrow="Product Management"
         title="Inventory Management"
