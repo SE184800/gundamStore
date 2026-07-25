@@ -8,6 +8,10 @@ import {
   setAdminProductGroupsApi,
 } from "../../services/AdminCatalogApiService";
 
+function isHomepageGroup(group) {
+  return !String(group?.code || "").toUpperCase().startsWith("COLLECTION_");
+}
+
 function clearStorefrontProductCache() {
   try {
     Object.keys(localStorage).forEach((key) => {
@@ -30,6 +34,7 @@ export default function AdminProductGroupMapping() {
   const [savingId, setSavingId] = useState("");
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState("");
+  const [showAllGroups, setShowAllGroups] = useState(false);
 
   async function reload() {
     setLoading(true);
@@ -71,6 +76,11 @@ export default function AdminProductGroupMapping() {
         .includes(q)
     );
   }, [products, query]);
+
+  const visibleGroups = useMemo(
+    () => (showAllGroups ? groups : groups.filter(isHomepageGroup)),
+    [groups, showAllGroups]
+  );
 
   async function toggleAndSave(product, groupId) {
     if (savingId) return;
@@ -153,6 +163,28 @@ export default function AdminProductGroupMapping() {
           <Search size={16} className="text-slate-400" />
           <input value={query} onChange={(e) => setQuery(e.target.value)} className="w-full bg-transparent px-2 text-sm outline-none" placeholder="Tìm sản phẩm..." />
         </div>
+
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <span className="text-xs font-black uppercase text-slate-400">Hiển thị nhóm:</span>
+          <button
+            type="button"
+            onClick={() => setShowAllGroups(false)}
+            className={`rounded-xl px-3 py-1.5 text-xs font-black ${
+              !showAllGroups ? "bg-blue-700 text-white" : "bg-slate-100 text-slate-600 hover:bg-blue-50"
+            }`}
+          >
+            4 nhóm trang chủ
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowAllGroups(true)}
+            className={`rounded-xl px-3 py-1.5 text-xs font-black ${
+              showAllGroups ? "bg-blue-700 text-white" : "bg-slate-100 text-slate-600 hover:bg-blue-50"
+            }`}
+          >
+            Tất cả nhóm ({groups.length})
+          </button>
+        </div>
       </section>
 
       <section className="overflow-x-auto rounded-md border border-slate-200 bg-white">
@@ -184,7 +216,7 @@ export default function AdminProductGroupMapping() {
                 <td className="px-4 py-3 text-slate-600">{product.category?.nameVi || "-"}</td>
                 <td className="px-4 py-3">
                   <div className="flex flex-wrap gap-2">
-                    {groups.map((group) => {
+                    {visibleGroups.map((group) => {
                       const checked = product.groupIds?.includes(group.id);
                       return (
                         <button
