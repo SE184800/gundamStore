@@ -12,6 +12,88 @@ function isHomepageGroup(group) {
   return !String(group?.code || "").toUpperCase().startsWith("COLLECTION_");
 }
 
+function csvEscape(value) {
+  const str = String(value ?? "");
+  return /[",\n]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str;
+}
+
+function buildGroupMappingCsv(products, groupsForColumns) {
+  const header = ["SKU", "Ten san pham", ...groupsForColumns.map((group) => group.nameVi || group.code)];
+  const lines = [header.map(csvEscape).join(",")];
+
+  for (const product of products) {
+    const groupIds = Array.isArray(product.groupIds) ? product.groupIds : [];
+    const row = [
+      product.sku || "",
+      product.nameVi || "",
+      ...groupsForColumns.map((group) => (groupIds.includes(group.id) ? "x" : "")),
+    ];
+    lines.push(row.map(csvEscape).join(","));
+  }
+
+  return lines.join("\n");
+}
+
+function parseCsv(text) {
+  const rows = [];
+  let row = [];
+  let field = "";
+  let inQuotes = false;
+
+  for (let i = 0; i < text.length; i += 1) {
+    const char = text[i];
+
+    if (inQuotes) {
+      if (char === '"') {
+        if (text[i + 1] === '"') {
+          field += '"';
+          i += 1;
+        } else {
+          inQuotes = false;
+        }
+      } else {
+        field += char;
+      }
+      continue;
+    }
+
+    if (char === '"') {
+      inQuotes = true;
+    } else if (char === ",") {
+      row.push(field);
+      field = "";
+    } else if (char === "\n" || char === "\r") {
+      if (char === "\r" && text[i + 1] === "\n") i += 1;
+      row.push(field);
+      field = "";
+      if (row.some((cell) => cell !== "")) rows.push(row);
+      row = [];
+    } else {
+      field += char;
+    }
+  }
+
+  if (field !== "" || row.length) {
+    row.push(field);
+    if (row.some((cell) => cell !== "")) rows.push(row);
+  }
+
+  return rows;
+}
+
+function downloadTextFile(filename, text) {
+  const blob = new Blob([text], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
 function clearStorefrontProductCache() {
   try {
     Object.keys(localStorage).forEach((key) => {
@@ -35,6 +117,8 @@ export default function AdminProductGroupMapping() {
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState("");
   const [showAllGroups, setShowAllGroups] = useState(false);
+  const [importBusy, setImportBusy] = useState(false);
+  const [importMessage, setImportMessage] = useState("");
 
   async function reload() {
     setLoading(true);
@@ -138,6 +222,112 @@ export default function AdminProductGroupMapping() {
     }
   }
 
+  function handleExportCsv() {
+    const csv = buildGroupMappingCsv(products, visibleGroups);
+    downloadTextFile("product-group-mapping.csv", csv);
+  }
+
+  async function handleImportCsv(event) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    if (!file.name.toLowerCase().endsWith(".csv") && !file.type.includes("csv")) {
+      setImportMessage("Vui lòng chọn file CSV.");
+      return;
+    }
+
+    setImportBusy(true);
+    setImportMessage("");
+
+    try {
+      const text = await file.text();
+      const parsedRows = parseCsv(text);
+      if (!parsedRows.length) {
+        setImportMessage("File CSV trống.");
+        return;
+      }
+
+      const [header, ...dataRows] = parsedRows;
+      const skuIdx = header.findIndex((cell) => cell.trim().toLowerCase() === "sku");
+      if (skuIdx === -1) {
+        setImportMessage("File CSV thiếu cột SKU.");
+        return;
+      }
+
+      const columnGroups = header
+        .map((cell, idx) => {
+          if (idx === skuIdx) return null;
+          const label = cell.trim();
+          const group = visibleGroups.find((g) => (g.nameVi || g.code) === label || g.code === label);
+          return group ? { idx, group } : null;
+        })
+        .filter(Boolean);
+
+      if (!columnGroups.length) {
+        setImportMessage("Không tìm thấy cột nhóm hợp lệ trong file (tên cột phải khớp tên nhóm đang hiển thị).");
+        return;
+      }
+
+      let updated = 0;
+      let unchanged = 0;
+      const problems = [];
+
+      for (const row of dataRows) {
+        const sku = (row[skuIdx] || "").trim();
+        if (!sku) continue;
+
+        const product = products.find((item) => item.sku === sku);
+        if (!product) {
+          problems.push(`${sku} (không tìm thấy)`);
+          continue;
+        }
+
+        const currentGroupIds = Array.isArray(product.groupIds) ? product.groupIds.filter(Boolean) : [];
+        const nextGroupIdSet = new Set(currentGroupIds);
+
+        for (const { idx, group } of columnGroups) {
+          const cellValue = (row[idx] || "").trim();
+          if (cellValue) nextGroupIdSet.add(group.id);
+          else nextGroupIdSet.delete(group.id);
+        }
+
+        const nextGroupIds = Array.from(nextGroupIdSet);
+        const isSame =
+          nextGroupIds.length === currentGroupIds.length &&
+          nextGroupIds.every((id) => currentGroupIds.includes(id));
+
+        if (isSame) {
+          unchanged += 1;
+          continue;
+        }
+
+        try {
+          const updatedProduct = await setAdminProductGroupsApi(product.id, nextGroupIds);
+          setProducts((prev) =>
+            prev.map((item) =>
+              item.id === product.id
+                ? { ...item, ...updatedProduct, groupIds: updatedProduct.groupIds || nextGroupIds }
+                : item
+            )
+          );
+          updated += 1;
+        } catch (error) {
+          problems.push(`${sku} (${error?.message || "lỗi lưu"})`);
+        }
+      }
+
+      clearStorefrontProductCache();
+
+      const problemText = problems.length
+        ? ` Vấn đề: ${problems.slice(0, 10).join(", ")}${problems.length > 10 ? "..." : ""}`
+        : "";
+      setImportMessage(`Đã cập nhật ${updated} sản phẩm, giữ nguyên ${unchanged}.${problemText}`);
+    } finally {
+      setImportBusy(false);
+    }
+  }
+
   return (
     <>
       <AdminPageHeader
@@ -145,12 +335,31 @@ export default function AdminProductGroupMapping() {
         title="Product Group Mapping"
         desc="Bấm vào nhóm để gán hoặc bỏ gán. Thay đổi được tự động lưu ngay vào database."
         action={
-          <button onClick={() => void reload()} className="rounded-md border border-slate-300 bg-white px-4 py-2 text-xs font-black text-slate-700 hover:bg-slate-50">
-            <RefreshCcw size={15} className="mr-1 inline" />
-            Refresh
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={handleExportCsv}
+              className="rounded-md border border-emerald-200 bg-white px-4 py-2 text-xs font-black text-emerald-700 hover:bg-emerald-50"
+            >
+              Tải CSV xuống
+            </button>
+            <label className="cursor-pointer rounded-md border border-blue-200 bg-white px-4 py-2 text-xs font-black text-blue-700 hover:bg-blue-50">
+              {importBusy ? "Đang xử lý..." : "Tải CSV lên"}
+              <input type="file" accept=".csv,text/csv" onChange={handleImportCsv} disabled={importBusy} className="hidden" />
+            </label>
+            <button onClick={() => void reload()} className="rounded-md border border-slate-300 bg-white px-4 py-2 text-xs font-black text-slate-700 hover:bg-slate-50">
+              <RefreshCcw size={15} className="mr-1 inline" />
+              Refresh
+            </button>
+          </div>
         }
       />
+
+      {importMessage && (
+        <section className="mb-4 rounded-3xl border border-blue-100 bg-blue-50 p-4 text-sm font-bold text-blue-800">
+          {importMessage}
+        </section>
+      )}
 
       <section className="mb-4 rounded-3xl border border-emerald-100 bg-emerald-50 p-4 text-sm font-bold text-emerald-800">
         PostgreSQL Mapping · {loading ? "Loading..." : `${products.length} products · ${groups.length} groups`}
@@ -162,6 +371,12 @@ export default function AdminProductGroupMapping() {
         <div className="flex items-center rounded-md border border-slate-300 bg-white px-3 py-2">
           <Search size={16} className="text-slate-400" />
           <input value={query} onChange={(e) => setQuery(e.target.value)} className="w-full bg-transparent px-2 text-sm outline-none" placeholder="Tìm sản phẩm..." />
+        </div>
+
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <span className="text-xs font-black text-slate-500">
+            Tải CSV xuống, đánh dấu <b>x</b> vào ô nhóm muốn gán, xoá <b>x</b> để bỏ gán, rồi tải file lên lại. Cột nhóm nào không có trong file sẽ được giữ nguyên.
+          </span>
         </div>
 
         <div className="mt-3 flex flex-wrap items-center gap-2">
