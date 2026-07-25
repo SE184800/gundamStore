@@ -7,7 +7,7 @@ import {
   getOrderStatusToneClass,
   maskPhone,
 } from "../../constants/orderConfig";
-import StorefrontShell from "../../components/storefront/StorefrontShell";
+import PageShell from "../../components/common/PageShell";
 import { useLang } from "../../store/CmsStore";
 
 const money = (n) => (Number(n) || 0).toLocaleString("vi-VN") + "đ";
@@ -107,7 +107,7 @@ export default function OrderLookupPage() {
   }
 
   return (
-    <StorefrontShell>
+    <PageShell>
       <main className="min-h-screen bg-[#F5F7FB] px-4 py-8 md:px-6 md:py-10">
         <div className="mx-auto max-w-5xl">
           <p className="text-sm font-black uppercase tracking-[0.2em] text-blue-600">
@@ -255,6 +255,6 @@ export default function OrderLookupPage() {
           </div>
         </div>
       </main>
-    </StorefrontShell>
+    </PageShell>
   );
 }

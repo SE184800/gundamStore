@@ -10,7 +10,7 @@ import {
   getOrderStatusToneClass,
   maskPhone,
 } from "../../constants/orderConfig";
-import StorefrontShell from "../../components/storefront/StorefrontShell";
+import PageShell from "../../components/common/PageShell";
 import { useLang } from "../../store/CmsStore";
 import { hasAccountToken } from "../../services/AccountApiService";
 import { getMyStorefrontOrdersApi } from "../../services/StorefrontOrderApiService";
@@ -129,7 +129,7 @@ export default function MyOrdersPage() {
   const tabs = getTabs(t);
 
   return (
-    <StorefrontShell>
+    <PageShell>
       <main className="min-h-screen bg-[#F5F7FB] px-4 py-8 md:px-6">
         <div className="mx-auto max-w-7xl">
           <p className="text-sm font-black uppercase tracking-[0.2em] text-blue-600">
@@ -265,6 +265,6 @@ export default function MyOrdersPage() {
           )}
         </div>
       </main>
-    </StorefrontShell>
+    </PageShell>
   );
 }

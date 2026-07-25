@@ -4,7 +4,7 @@ import { Minus, Plus, Trash2, TicketPercent, ShieldCheck, Truck } from "lucide-r
 import { getCart, saveCart, saveCheckoutDraft } from "../../services/CartService";
 import { applyVoucher } from "../../services/VoucherService";
 import { getStock } from "../../services/InventoryService";
-import StorefrontShell from "../../components/storefront/StorefrontShell";
+import PageShell from "../../components/common/PageShell";
 import { SHIPPING_METHODS, getLocalized, getShippingMethod } from "../../constants/orderConfig";
 import { useI18n } from "../../i18n";
 import Toast from "../../utils/Toast";
@@ -213,7 +213,7 @@ export default function CartPage() {
   }
 
   return (
-    <StorefrontShell>
+    <PageShell>
       <main className="min-h-screen bg-[#F5F7FB] px-4 py-6 md:px-6 md:py-8">
         <div className="mx-auto max-w-7xl">
           <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
@@ -483,6 +483,6 @@ export default function CartPage() {
           />
         </div>
       )}
-    </StorefrontShell>
+    </PageShell>
   );
 }

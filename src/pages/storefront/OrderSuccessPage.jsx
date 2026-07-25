@@ -6,7 +6,7 @@ import {
   getOrderSuccessSnapshot,
   getStorefrontOrderByIdFromApi,
 } from "../../services/StorefrontOrderLookupApiService";
-import StorefrontShell from "../../components/storefront/StorefrontShell";
+import PageShell from "../../components/common/PageShell";
 import { useLang } from "../../store/CmsStore";
 
 const money = (n) => (Number(n) || 0).toLocaleString("vi-VN") + "đ";
@@ -88,7 +88,7 @@ export default function OrderSuccessPage() {
   }, [id]);
 
   return (
-    <StorefrontShell>
+    <PageShell>
       <main className="min-h-screen bg-slate-50 px-4 py-8 md:px-6 md:py-10">
         <div className="mx-auto max-w-3xl rounded-3xl bg-white p-6 text-center shadow-sm md:p-8">
           <CheckCircle2 className="mx-auto text-green-500" size={72} />
@@ -171,6 +171,6 @@ export default function OrderSuccessPage() {
           </div>
         </div>
       </main>
-    </StorefrontShell>
+    </PageShell>
   );
 }

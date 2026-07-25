@@ -10,7 +10,7 @@ import {
   ShieldCheck,
   Ticket,
 } from "lucide-react";
-import StorefrontShell from "../../components/storefront/StorefrontShell";
+import PageShell from "../../components/common/PageShell";
 import SeoMeta from "../../components/storefront/SeoMeta";
 import { useLang } from "../../store/CmsStore";
 import { createStorefrontComplaintApi } from "../../services/StorefrontComplaintApiService";
@@ -125,7 +125,7 @@ export default function StorefrontSupportPage({ defaultType = "COMPLAINT" }) {
   }
 
   return (
-    <StorefrontShell>
+    <PageShell>
       <SeoMeta
         title={t.title}
         description={t.desc}
@@ -276,6 +276,6 @@ export default function StorefrontSupportPage({ defaultType = "COMPLAINT" }) {
           </section>
         </div>
       </main>
-    </StorefrontShell>
+    </PageShell>
   );
 }

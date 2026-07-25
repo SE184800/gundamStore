@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { ArrowLeft, CheckCircle2, FileText, Headphones } from "lucide-react";
-import StorefrontShell from "../../components/storefront/StorefrontShell";
+import PageShell from "../../components/common/PageShell";
 import SeoMeta from "../../components/storefront/SeoMeta";
 import { useLang } from "../../store/CmsStore";
 import { POLICY_PAGES } from "../../data/policyPages";
@@ -12,7 +12,7 @@ export default function PolicyPage({ pageKey = "faq" }) {
   const description = lang === "en" ? page.descriptionEn : page.descriptionVi;
 
   return (
-    <StorefrontShell>
+    <PageShell>
       <SeoMeta title={title} description={description} />
 
       <main className="min-h-screen bg-[#F5F7FB] px-4 py-8 md:px-6">
@@ -79,6 +79,6 @@ export default function PolicyPage({ pageKey = "faq" }) {
           </section>
         </div>
       </main>
-    </StorefrontShell>
+    </PageShell>
   );
 }

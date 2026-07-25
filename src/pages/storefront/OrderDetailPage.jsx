@@ -35,7 +35,7 @@ import {
   maskPhone,
 } from "../../constants/orderConfig";
 import { getCart, saveCart } from "../../services/CartService";
-import StorefrontShell from "../../components/storefront/StorefrontShell";
+import PageShell from "../../components/common/PageShell";
 import { cancelMyStorefrontOrderApi, getMyStorefrontOrderByIdApi } from "../../services/StorefrontOrderApiService";
 import { createStorefrontComplaintApi } from "../../services/StorefrontComplaintApiService";
 import { useLang } from "../../store/CmsStore";
@@ -339,19 +339,19 @@ export default function OrderDetailPage() {
 
   if (backendLoading && !order) {
     return (
-      <StorefrontShell>
+      <PageShell>
         <main className="min-h-screen bg-slate-50 p-10">
           <div className="mx-auto max-w-3xl rounded-3xl bg-white p-10 text-center">
             <h1 className="text-2xl font-black">Đang tải đơn hàng...</h1>
           </div>
         </main>
-      </StorefrontShell>
+      </PageShell>
     );
   }
 
   if (!order) {
     return (
-      <StorefrontShell>
+      <PageShell>
         <main className="min-h-screen bg-slate-50 p-10">
           <div className="mx-auto max-w-3xl rounded-3xl bg-white p-10 text-center">
             <h1 className="text-2xl font-black">{t.notFound}</h1>
@@ -360,7 +360,7 @@ export default function OrderDetailPage() {
             </Link>
           </div>
         </main>
-      </StorefrontShell>
+      </PageShell>
     );
   }
 
@@ -466,7 +466,7 @@ export default function OrderDetailPage() {
   }
 
   return (
-    <StorefrontShell>
+    <PageShell>
       <main className="min-h-screen bg-[#F5F7FB] px-4 py-6 md:px-6 md:py-8">
         <div className="mx-auto max-w-7xl">
           <Link to="/orders" className="font-black text-blue-600">
@@ -761,6 +761,6 @@ export default function OrderDetailPage() {
           />
         )}
       </main>
-    </StorefrontShell>
+    </PageShell>
   );
 }

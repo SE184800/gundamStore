@@ -17,7 +17,7 @@ import {
   mapBackendOrderForStorefront,
   saveOrderSuccessSnapshot,
 } from "../../services/StorefrontOrderLookupApiService";
-import StorefrontShell from "../../components/storefront/StorefrontShell";
+import PageShell from "../../components/common/PageShell";
 import { getMyAccount, getMyAddresses, hasAccountToken } from "../../services/AccountApiService";
 import {
   ORDER_TYPE,
@@ -266,7 +266,7 @@ export default function CheckoutPage() {
 
   if (!draft) {
     return (
-      <StorefrontShell>
+      <PageShell>
         <main className="min-h-screen bg-slate-50 p-10">
           <div className="mx-auto max-w-3xl rounded-3xl bg-white p-10 text-center">
             <h1 className="text-2xl font-black">{t.noDraft}</h1>
@@ -278,7 +278,7 @@ export default function CheckoutPage() {
             </button>
           </div>
         </main>
-      </StorefrontShell>
+      </PageShell>
     );
   }
 
@@ -424,7 +424,7 @@ export default function CheckoutPage() {
   }
 
   return (
-    <StorefrontShell>
+    <PageShell>
       <main className="min-h-screen bg-[#F5F7FB] px-4 py-6 md:px-6 md:py-8">
         <div className="mx-auto max-w-7xl">
           <p className="text-sm font-black uppercase tracking-[0.2em] text-blue-600">
@@ -741,6 +741,6 @@ export default function CheckoutPage() {
           </div>
         </div>
       </main>
-    </StorefrontShell>
+    </PageShell>
   );
 }

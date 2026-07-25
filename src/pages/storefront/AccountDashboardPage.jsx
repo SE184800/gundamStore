@@ -12,7 +12,7 @@ import {
   UserRound,
   WalletCards,
 } from "lucide-react";
-import StorefrontShell from "../../components/storefront/StorefrontShell";
+import PageShell from "../../components/common/PageShell";
 import { useLang } from "../../store/CmsStore";
 import { hasAccountToken } from "../../services/AccountApiService";
 import { getMyAccountDashboardApi } from "../../services/AccountDashboardApiService";
@@ -113,7 +113,7 @@ export default function AccountDashboardPage() {
   const defaultAddress = dashboard?.defaultAddress || null;
 
   return (
-    <StorefrontShell>
+    <PageShell>
       <main className="min-h-screen bg-[#F5F7FB] px-4 py-8 md:px-6">
         <div className="mx-auto max-w-7xl">
           <p className="text-sm font-black uppercase tracking-[0.2em] text-blue-600">{t.eyebrow}</p>
@@ -267,6 +267,6 @@ export default function AccountDashboardPage() {
           )}
         </div>
       </main>
-    </StorefrontShell>
+    </PageShell>
   );
 }
