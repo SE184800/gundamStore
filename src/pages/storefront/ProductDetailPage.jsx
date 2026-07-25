@@ -41,7 +41,7 @@ import { isCompareSaved, toggleCompare } from "../../services/CompareService";
 import { registerRestockAlert } from "../../services/RestockAlertService";
 import {
   getStorefrontProductDetailForStorefront,
-  getStorefrontProductsForStorefront,
+  getStorefrontProductsPageFromApi,
 } from "../../services/StorefrontProductApiService";
 import {
   createStorefrontReviewApi,
@@ -1132,8 +1132,21 @@ export default function ProductDetailPage() {
         if (alive) setDetailLoading(false);
       });
 
-    getStorefrontProductsForStorefront()
-      .then((items) => {
+    return () => {
+      alive = false;
+    };
+  }, [slug, t.notFound]);
+
+  const relatedCategoryId = product?.categoryId || product?.category?.id || "";
+
+  useEffect(() => {
+    let alive = true;
+
+    getStorefrontProductsPageFromApi({
+      categoryIds: relatedCategoryId ? [relatedCategoryId] : [],
+      limit: 8,
+    })
+      .then(({ products: items }) => {
         if (alive) setRelatedDbProducts(items || []);
       })
       .catch(() => {
@@ -1143,7 +1156,7 @@ export default function ProductDetailPage() {
     return () => {
       alive = false;
     };
-  }, [slug, t.notFound]);
+  }, [relatedCategoryId]);
 
   function startPreorderCheckout(product, qty = 1) {
     const quantity = Math.max(1, Number(qty) || 1);

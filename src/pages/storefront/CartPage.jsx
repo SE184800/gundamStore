@@ -113,10 +113,23 @@ export default function CartPage() {
     setCart(fixed);
   }
 
+  const availableMap = useMemo(() => {
+    const map = new Map();
+    cart.forEach((item) => {
+      const available =
+        Number(
+          getStock(item.backendProductId || item.productId || item.id || item.slug || item.sku)
+            .available
+        ) ||
+        Number(item.stock || 0) ||
+        0;
+      map.set(getCartIdentity(item), available);
+    });
+    return map;
+  }, [cart]);
+
   function getAvailable(item) {
-    return Number(
-      getStock(item.backendProductId || item.productId || item.id || item.slug || item.sku).available
-    ) || Number(item.stock || 0) || 0;
+    return availableMap.get(getCartIdentity(item)) || 0;
   }
 
   function increaseQty(item) {

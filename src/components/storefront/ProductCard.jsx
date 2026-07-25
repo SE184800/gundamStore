@@ -33,7 +33,7 @@ function hasCommercialDiscount(product = {}) {
     (finalPrice > 0 && compareAtPrice > finalPrice);
 }
 
-export default function ProductCard({ product, lang: langProp, actions, badge, onAddToCart }) {
+function ProductCard({ product, lang: langProp, actions, badge, onAddToCart }) {
   const i18n = useI18n();
   const lang = langProp || i18n.lang;
   const t = i18n.t;
@@ -346,3 +346,5 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
     </>
   );
 }
+
+export default React.memo(ProductCard);
