@@ -306,7 +306,7 @@ export default function Header() {
                     {item.children && <ChevronDown size={15} />}
                   </a>
                   {item.children && (
-                    <div className="invisible absolute left-0 top-full z-50 mt-3 w-[360px] translate-y-2 rounded-[26px] border border-slate-200 bg-white p-3 opacity-0 shadow-[0_30px_90px_rgba(15,23,42,0.16)] transition-all duration-200 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100">
+                    <div className="invisible absolute left-0 top-full z-50 mt-3 w-[360px] translate-y-2 rounded-4xl border border-slate-200 bg-white p-3 opacity-0 shadow-[0_30px_90px_rgba(15,23,42,0.16)] transition-all duration-200 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100">
                       <div className="mb-2 rounded-2xl bg-gradient-to-br from-blue-50 to-slate-50 p-4">
                         <div className="text-xs font-black uppercase tracking-[0.2em] text-blue-700">{item.label}</div>
                         <div className="mt-1 text-sm font-semibold text-slate-500">{t("common.quickSelect")}</div>

@@ -92,7 +92,7 @@ export default function CommunityGalleryPage() {
   return (
     <PageShell>
       <main className="mx-auto max-w-[1440px] px-4 py-8 lg:px-8">
-        <section className="relative overflow-hidden rounded-[36px] bg-slate-950 p-8 text-white shadow-xl">
+        <section className="relative overflow-hidden rounded-6xl bg-slate-950 p-8 text-white shadow-xl">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_30%,rgba(168,85,247,0.35),transparent_35%)]" />
           <div className="relative z-10 max-w-4xl">
             <div className="inline-flex items-center gap-2 rounded-full bg-violet-600 px-4 py-2 text-xs font-black uppercase tracking-[0.25em]">
@@ -127,7 +127,7 @@ export default function CommunityGalleryPage() {
             ) : (
               <div className="mt-5 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
                 {filtered.map((item) => (
-                  <article key={item.id} className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl">
+                  <article key={item.id} className="overflow-hidden rounded-4xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl">
                     <div className="relative h-72 bg-slate-100">
                       <img src={item.imageUrl} alt={item.title} loading="lazy" className="h-full w-full object-cover" />
                       <div className="absolute left-3 top-3 rounded-full bg-white/95 px-3 py-1 text-xs font-black text-violet-700">
@@ -149,7 +149,7 @@ export default function CommunityGalleryPage() {
             )}
           </div>
 
-          <aside className="h-fit rounded-[30px] border border-violet-100 bg-violet-50 p-6 shadow-sm lg:sticky lg:top-24">
+          <aside className="h-fit rounded-5xl border border-violet-100 bg-violet-50 p-6 shadow-sm lg:sticky lg:top-24">
             <h2 className="text-2xl font-black text-slate-950">{t.submitTitle}</h2>
 
             {message && (

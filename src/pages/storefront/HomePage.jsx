@@ -250,7 +250,7 @@ function getHeroBanners(banners = [], settings = {}) {
 function NoBannerConfigured({ lang }) {
   return (
     <section className="mx-auto max-w-[1440px] px-4 pt-4 lg:px-8">
-      <div className="flex min-h-[280px] items-center justify-center rounded-[28px] border border-dashed border-slate-300 bg-white text-center shadow-sm">
+      <div className="flex min-h-[280px] items-center justify-center rounded-4xl border border-dashed border-slate-300 bg-white text-center shadow-sm">
         <div className="px-6">
           <div className="text-sm font-black uppercase tracking-[0.24em] text-slate-400">
             {lang === "en" ? "Homepage Banner" : "Banner trang chủ"}
@@ -390,7 +390,7 @@ function HeroV3Bento({ banners, lang, actions, settings }) {
           lang={lang}
           actions={actions}
           priority
-          className="h-[320px] rounded-[24px] border border-slate-200 shadow-[0_24px_80px_rgba(15,23,42,0.12)] sm:h-[420px] sm:rounded-[30px]"
+          className="h-[320px] rounded-3xl border border-slate-200 shadow-[0_24px_80px_rgba(15,23,42,0.12)] sm:h-[420px] sm:rounded-5xl"
           mediaClassName="transition duration-700 hover:scale-[1.01]"
         />
 
@@ -402,7 +402,7 @@ function HeroV3Bento({ banners, lang, actions, settings }) {
                 banner={banner}
                 lang={lang}
                 actions={actions}
-                className="h-[203px] rounded-[26px] border border-slate-200 shadow-lg"
+                className="h-[203px] rounded-4xl border border-slate-200 shadow-lg"
                 mediaClassName="transition duration-500 hover:scale-[1.02]"
               />
             ))}
@@ -474,7 +474,7 @@ function HeroV2Classic({ banners, lang, actions, settings }) {
   return (
     <section className="image-first-hero mx-auto max-w-[1440px] px-4 pt-4 lg:px-8">
       <div
-        className="mobile-no-overflow relative overflow-hidden rounded-[24px] border border-blue-100 bg-white shadow-[0_20px_70px_rgba(37,99,235,0.12)] sm:rounded-[34px] sm:shadow-[0_30px_110px_rgba(37,99,235,0.16)]"
+        className="mobile-no-overflow relative overflow-hidden rounded-3xl border border-blue-100 bg-white shadow-[0_20px_70px_rgba(37,99,235,0.12)] sm:rounded-6xl sm:shadow-[0_30px_110px_rgba(37,99,235,0.16)]"
         onMouseEnter={() => setPaused(true)}
         onMouseLeave={() => setPaused(false)}
       >

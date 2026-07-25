@@ -42,7 +42,7 @@ export default function NewsDetailPage() {
   return (
     <PageShell>
       <main className="mx-auto max-w-[1100px] px-4 py-8 lg:px-8">
-        <article className="overflow-hidden rounded-[36px] border border-slate-200 bg-white shadow-sm">
+        <article className="overflow-hidden rounded-6xl border border-slate-200 bg-white shadow-sm">
           <div className="h-[460px] bg-slate-100">
             <img src={article.image} alt="" loading="eager" decoding="async" className="h-full w-full object-cover" />
           </div>

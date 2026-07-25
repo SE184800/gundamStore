@@ -185,7 +185,7 @@ function Select({ label, value, onChange, children }) {
 function AccountSidebar({ profile, wishlistCount, onLogout, menuItems, t }) {
   return (
     <aside className="space-y-4">
-      <section className="rounded-[28px] border border-slate-200 bg-white p-5 text-center shadow-sm">
+      <section className="rounded-4xl border border-slate-200 bg-white p-5 text-center shadow-sm">
         <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-blue-700 text-2xl font-black text-white shadow-lg shadow-blue-100">
           {String(profile?.name || "US").slice(0, 2).toUpperCase()}
         </div>
@@ -211,7 +211,7 @@ function AccountSidebar({ profile, wishlistCount, onLogout, menuItems, t }) {
         </div>
       </section>
 
-      <nav className="rounded-[28px] border border-slate-200 bg-white p-2 shadow-sm">
+      <nav className="rounded-4xl border border-slate-200 bg-white p-2 shadow-sm">
         {menuItems.map((item) => {
           const Icon = item.icon;
 
@@ -352,7 +352,7 @@ export default function AccountProfilePage() {
           </div>
 
           {loading ? (
-            <div className="mt-8 flex min-h-[320px] items-center justify-center rounded-[28px] bg-white shadow-sm">
+            <div className="mt-8 flex min-h-[320px] items-center justify-center rounded-4xl bg-white shadow-sm">
               <Loader2 className="animate-spin text-blue-700" size={36} />
             </div>
           ) : (
@@ -365,7 +365,7 @@ export default function AccountProfilePage() {
                 t={t}
               />
 
-              <section className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm md:p-6">
+              <section className="rounded-4xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
                 <div className="flex items-center gap-3 border-b border-slate-100 pb-5">
                   <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-50 text-blue-700">
                     <User size={20} />

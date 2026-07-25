@@ -170,7 +170,7 @@ export default function PreOrderPage() {
   return (
     <PageShell>
       <main className="mx-auto max-w-[1440px] px-4 py-8 lg:px-8">
-        <section className="relative overflow-hidden rounded-[36px] bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 p-8 text-white shadow-[0_30px_120px_rgba(15,23,42,0.25)]">
+        <section className="relative overflow-hidden rounded-6xl bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 p-8 text-white shadow-[0_30px_120px_rgba(15,23,42,0.25)]">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_75%_35%,rgba(59,130,246,0.35),transparent_35%)]" />
           <div className="relative z-10 grid gap-8 lg:grid-cols-[1fr_360px] lg:items-end">
             <div className="max-w-3xl">
@@ -185,7 +185,7 @@ export default function PreOrderPage() {
               </p>
             </div>
 
-            <div className="rounded-[28px] border border-white/10 bg-white/10 p-5 backdrop-blur">
+            <div className="rounded-4xl border border-white/10 bg-white/10 p-5 backdrop-blur">
               <div className="flex items-center gap-2 text-sm font-black text-amber-200">
                 <ShieldCheck size={18} />
                 {t.trust}
@@ -204,7 +204,7 @@ export default function PreOrderPage() {
           <Step icon={PackageCheck} title={`4. ${t.receive}`} desc={t.receiveDesc} />
         </section>
 
-        <section className="mt-8 rounded-[32px] border border-slate-200 bg-white p-5 shadow-sm">
+        <section className="mt-8 rounded-5xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
             <div>
               <div className="inline-flex rounded-full bg-amber-50 px-3 py-1 text-xs font-black uppercase text-amber-700">
@@ -236,7 +236,7 @@ export default function PreOrderPage() {
                 return (
                   <article
                     key={product.id}
-                    className="overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl"
+                    className="overflow-hidden rounded-4xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl"
                   >
                     <div className="relative aspect-square bg-slate-100">
                       <img
@@ -294,7 +294,7 @@ export default function PreOrderPage() {
         </section>
 
         <section className="mt-8 grid gap-5 lg:grid-cols-2">
-          <div className="rounded-[30px] border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="rounded-5xl border border-slate-200 bg-white p-6 shadow-sm">
             <h3 className="text-2xl font-black text-slate-950">{t.policyTitle}</h3>
             <div className="mt-4 space-y-3 text-sm font-semibold leading-7 text-slate-600">
               <p>• {t.policy1}</p>
@@ -303,7 +303,7 @@ export default function PreOrderPage() {
             </div>
           </div>
 
-          <div className="rounded-[30px] bg-gradient-to-br from-blue-700 to-cyan-500 p-6 text-white shadow-xl">
+          <div className="rounded-5xl bg-gradient-to-br from-blue-700 to-cyan-500 p-6 text-white shadow-xl">
             <h3 className="text-2xl font-black">{t.consultTitle}</h3>
             <p className="mt-3 text-sm font-semibold leading-7 text-white/85">
               {t.consultDesc}
@@ -323,7 +323,7 @@ export default function PreOrderPage() {
 
 function Step({ icon: Icon, title, desc }) {
   return (
-    <article className="rounded-[26px] border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-xl">
+    <article className="rounded-4xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-xl">
       <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-700">
         <Icon size={22} />
       </div>

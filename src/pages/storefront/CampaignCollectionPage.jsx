@@ -147,7 +147,7 @@ export default function CampaignCollectionPage({ type = "flash-sale" }) {
   return (
     <PageShell>
       <main className="mx-auto max-w-[1440px] px-4 py-8 lg:px-8">
-        <section className={`relative overflow-hidden rounded-[36px] bg-gradient-to-br ${config.tone} p-8 text-white shadow-[0_30px_120px_rgba(15,23,42,0.25)]`}>
+        <section className={`relative overflow-hidden rounded-6xl bg-gradient-to-br ${config.tone} p-8 text-white shadow-[0_30px_120px_rgba(15,23,42,0.25)]`}>
           <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,.12)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.12)_1px,transparent_1px)] bg-[size:36px_36px] opacity-30" />
           <div className="relative z-10 grid gap-8 lg:grid-cols-[1fr_360px] lg:items-end">
             <div className="max-w-4xl">
@@ -194,7 +194,7 @@ export default function CampaignCollectionPage({ type = "flash-sale" }) {
           </a>
         </section>
 
-        <section id="campaign-products" className="mt-8 rounded-[32px] border border-slate-200 bg-white p-5 shadow-sm">
+        <section id="campaign-products" className="mt-8 rounded-5xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
             <div>
               <div className="inline-flex rounded-full bg-blue-50 px-3 py-1 text-xs font-black uppercase text-blue-700">
@@ -226,7 +226,7 @@ export default function CampaignCollectionPage({ type = "flash-sale" }) {
           </div>
         </section>
 
-        <section className="mt-8 rounded-[32px] border border-blue-100 bg-blue-50 p-6">
+        <section className="mt-8 rounded-5xl border border-blue-100 bg-blue-50 p-6">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <div className="text-xs font-black uppercase tracking-[0.22em] text-blue-700">

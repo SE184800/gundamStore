@@ -11,7 +11,7 @@ export default function FAQPage() {
   return (
     <PageShell>
       <main className="mx-auto max-w-[1100px] px-4 py-8 lg:px-8">
-        <section className="rounded-[36px] bg-slate-950 p-8 text-white">
+        <section className="rounded-6xl bg-slate-950 p-8 text-white">
           <div className="text-xs font-black uppercase tracking-[0.25em] text-blue-300">Support</div>
           <h1 className="mt-4 text-5xl font-black">FAQ</h1>
           <p className="mt-3 text-sm font-semibold text-white/70">Các câu hỏi thường gặp khi mua Gundam/Gunpla.</p>
@@ -19,7 +19,7 @@ export default function FAQPage() {
 
         <section className="mt-8 space-y-4">
           {faqs.map(([q, a]) => (
-            <article key={q} className="rounded-[26px] border border-slate-200 bg-white p-6 shadow-sm">
+            <article key={q} className="rounded-4xl border border-slate-200 bg-white p-6 shadow-sm">
               <h2 className="text-xl font-black text-slate-950">{q}</h2>
               <p className="mt-2 text-sm font-semibold leading-7 text-slate-600">{a}</p>
             </article>

@@ -137,7 +137,7 @@ export default function EventDetailPage() {
   return (
     <PageShell>
       <main className="mx-auto max-w-[1200px] px-4 py-8 lg:px-8">
-        <section className="overflow-hidden rounded-[36px] bg-slate-950 p-8 text-white shadow-xl">
+        <section className="overflow-hidden rounded-6xl bg-slate-950 p-8 text-white shadow-xl">
           <div className="inline-flex rounded-full bg-blue-700 px-4 py-2 text-xs font-black uppercase tracking-[0.25em]">
             {label(event, lang)}
           </div>
@@ -159,7 +159,7 @@ export default function EventDetailPage() {
 
         <section className="mt-8 grid gap-6 lg:grid-cols-[1fr_420px]">
           <div className="space-y-6">
-            <div className="rounded-[30px] border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="rounded-5xl border border-slate-200 bg-white p-6 shadow-sm">
               <h2 className="text-2xl font-black text-slate-950">{t.agenda}</h2>
 
               <div className="mt-5 space-y-3">
@@ -186,7 +186,7 @@ export default function EventDetailPage() {
               )}
             </div>
 
-            <form onSubmit={submitRegistration} className="rounded-[30px] border border-blue-100 bg-blue-50 p-6 shadow-sm">
+            <form onSubmit={submitRegistration} className="rounded-5xl border border-blue-100 bg-blue-50 p-6 shadow-sm">
               <h2 className="flex items-center gap-2 text-2xl font-black text-slate-950">
                 <UserPlus size={24} className="text-blue-700" />
                 {t.register}
@@ -243,7 +243,7 @@ export default function EventDetailPage() {
             </form>
           </div>
 
-          <aside className="h-fit rounded-[30px] border border-slate-200 bg-white p-6 shadow-sm lg:sticky lg:top-24">
+          <aside className="h-fit rounded-5xl border border-slate-200 bg-white p-6 shadow-sm lg:sticky lg:top-24">
             <h2 className="text-2xl font-black text-slate-950">{t.eventInfo}</h2>
 
             <div className="mt-5 space-y-3">

@@ -76,7 +76,7 @@ export default function Footer() {
             ))}
           </div>
 
-          {/* <div className="rounded-[28px] border border-white/10 bg-white/5 p-5">
+          {/* <div className="rounded-4xl border border-white/10 bg-white/5 p-5">
             <h3 className="text-xl font-black">{t("footer.newsletterTitle")}</h3>
             <p className="mt-2 text-sm font-semibold leading-6 text-white/60">
               {t("footer.newsletterDesc")}

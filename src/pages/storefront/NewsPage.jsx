@@ -127,7 +127,7 @@ export default function NewsPage() {
           <span className="text-slate-950">{t.news}</span>
         </div>
 
-        <section className="relative overflow-hidden rounded-[36px] bg-slate-950 p-8 text-white shadow-[0_30px_120px_rgba(15,23,42,0.25)]">
+        <section className="relative overflow-hidden rounded-6xl bg-slate-950 p-8 text-white shadow-[0_30px_120px_rgba(15,23,42,0.25)]">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_30%,rgba(37,99,235,0.35),transparent_35%)]" />
           <div className="relative z-10 max-w-4xl">
             <div className="inline-flex items-center gap-2 rounded-full bg-blue-700 px-4 py-2 text-xs font-black uppercase tracking-[0.25em]">
@@ -143,7 +143,7 @@ export default function NewsPage() {
           </div>
         </section>
 
-        <section className="mt-6 rounded-[30px] border border-slate-200 bg-white p-4 shadow-sm">
+        <section className="mt-6 rounded-5xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
             <div className="flex flex-1 items-center rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
               <Search size={18} className="text-blue-600" />
@@ -180,7 +180,7 @@ export default function NewsPage() {
 
         {featured && (
           <section className="mt-8 grid gap-6 lg:grid-cols-[1.4fr_0.6fr]">
-            <a href={`/news/${featured.slug}`} className="group overflow-hidden rounded-[36px] bg-slate-950 shadow-xl">
+            <a href={`/news/${featured.slug}`} className="group overflow-hidden rounded-6xl bg-slate-950 shadow-xl">
               <div className="relative h-[420px]">
                 <img
                   src={featured.image}
@@ -200,7 +200,7 @@ export default function NewsPage() {
               </div>
             </a>
 
-            <aside className="rounded-[32px] border border-slate-200 bg-white p-6 shadow-sm">
+            <aside className="rounded-5xl border border-slate-200 bg-white p-6 shadow-sm">
               <div className="text-xs font-black uppercase tracking-[0.25em] text-blue-700">{t.trending}</div>
               <h2 className="mt-2 text-2xl font-black text-slate-950">{lang === "en" ? "Top reads" : "Tin nổi bật"}</h2>
               <div className="mt-5 space-y-4">
@@ -218,7 +218,7 @@ export default function NewsPage() {
           </section>
         )}
 
-        <section className="mt-8 rounded-[30px] border border-blue-100 bg-blue-50 p-6">
+        <section className="mt-8 rounded-5xl border border-blue-100 bg-blue-50 p-6">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.22em] text-blue-700">
@@ -238,13 +238,13 @@ export default function NewsPage() {
           <h2 className="text-3xl font-black text-slate-950">{t.latest}</h2>
 
           {rest.length === 0 ? (
-            <div className="mt-5 rounded-[28px] border border-dashed border-slate-300 bg-white p-10 text-center font-black text-slate-400">
+            <div className="mt-5 rounded-4xl border border-dashed border-slate-300 bg-white p-10 text-center font-black text-slate-400">
               {t.noNews}
             </div>
           ) : (
             <div className="mt-5 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
               {rest.map((item) => (
-                <a key={item.id} href={`/news/${item.slug}`} className="group overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl">
+                <a key={item.id} href={`/news/${item.slug}`} className="group overflow-hidden rounded-4xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl">
                   <div className="h-56 overflow-hidden bg-slate-100">
                     <img
                       src={item.image}

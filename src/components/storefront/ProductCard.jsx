@@ -190,7 +190,7 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
 
   return (
     <>
-      <article className="product-card-mobile group overflow-hidden rounded-[22px] border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:border-blue-200 hover:shadow-xl sm:rounded-[24px]">
+      <article className="product-card-mobile group overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:border-blue-200 hover:shadow-xl sm:rounded-3xl">
         <a href={detailUrl} className="block">
           <div className="relative aspect-square overflow-hidden bg-slate-100">
             {badge && (
@@ -306,7 +306,7 @@ export default function ProductCard({ product, lang: langProp, actions, badge, o
 
       {quickOpen && createPortal(
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm" onClick={() => setQuickOpen(false)}>
-          <div className="relative max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-[28px] bg-white p-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+          <div className="relative max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-4xl bg-white p-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <button type="button" onClick={() => setQuickOpen(false)} className="absolute right-4 top-4 z-10 rounded-full bg-slate-100 p-2 text-slate-600 hover:bg-slate-200">
               <X size={18} />
             </button>

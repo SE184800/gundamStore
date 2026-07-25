@@ -100,7 +100,7 @@ export default function AdminChangePasswordPage() {
 
   return (
     <main className="min-h-screen bg-slate-100 px-4 py-10">
-      <section className="mx-auto max-w-xl rounded-[32px] border border-slate-200 bg-white p-6 shadow-xl sm:p-8">
+      <section className="mx-auto max-w-xl rounded-5xl border border-slate-200 bg-white p-6 shadow-xl sm:p-8">
         <div className="flex items-start gap-4">
           <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-blue-700 text-white">
             <KeyRound size={26} />

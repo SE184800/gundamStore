@@ -155,7 +155,7 @@ function RouteLoading() {
   return (
     <div className="min-h-[60vh] bg-[#F5F7FB] px-4 py-10">
       <div className="mx-auto max-w-[1440px]">
-        <div className="animate-pulse rounded-[32px] border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="animate-pulse rounded-5xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="h-4 w-36 rounded-full bg-slate-200" />
           <div className="mt-5 h-10 w-2/3 rounded-2xl bg-slate-200" />
           <div className="mt-4 h-4 w-1/2 rounded-full bg-slate-200" />

@@ -227,7 +227,7 @@ export default function EventsPage() {
   return (
     <PageShell>
       <main className="mx-auto max-w-[1440px] px-4 py-8 lg:px-8">
-        <section className="relative overflow-hidden rounded-[36px] bg-slate-950 p-8 text-white shadow-[0_30px_120px_rgba(15,23,42,0.25)]">
+        <section className="relative overflow-hidden rounded-6xl bg-slate-950 p-8 text-white shadow-[0_30px_120px_rgba(15,23,42,0.25)]">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_75%_30%,rgba(37,99,235,0.38),transparent_34%),radial-gradient(circle_at_20%_75%,rgba(168,85,247,0.32),transparent_30%)]" />
           <div className="relative z-10 grid gap-8 lg:grid-cols-[1fr_360px]">
             <div>
@@ -242,7 +242,7 @@ export default function EventsPage() {
               </p>
             </div>
 
-            <div className="rounded-[28px] border border-white/10 bg-white/10 p-5 backdrop-blur">
+            <div className="rounded-4xl border border-white/10 bg-white/10 p-5 backdrop-blur">
               <div className="text-xs font-black uppercase tracking-widest text-blue-200">Selected Event</div>
               <div className="mt-3 text-2xl font-black">{selected.title}</div>
               <div className="mt-4 grid grid-cols-2 gap-3">
@@ -254,7 +254,7 @@ export default function EventsPage() {
         </section>
 
         <section className="mt-6 grid gap-6 xl:grid-cols-[1fr_420px]">
-          <section className="overflow-hidden rounded-[32px] border border-slate-200 bg-white p-5 shadow-sm">
+          <section className="overflow-hidden rounded-5xl border border-slate-200 bg-white p-5 shadow-sm">
             <div className="mb-5">
               <div className="text-xs font-black uppercase tracking-[0.22em] text-blue-700">OpenStreetMap</div>
               <h2 className="mt-1 text-3xl font-black text-slate-950">Bản đồ sự kiện thật</h2>
@@ -263,7 +263,7 @@ export default function EventsPage() {
               </p>
             </div>
 
-            <div className="h-[500px] overflow-hidden rounded-[28px] border border-slate-200">
+            <div className="h-[500px] overflow-hidden rounded-4xl border border-slate-200">
               <MapContainer center={[15, 105]} zoom={3} scrollWheelZoom={false} className="h-full w-full">
                 <TileLayer
                   attribution='&copy; OpenStreetMap contributors'
@@ -292,7 +292,7 @@ export default function EventsPage() {
             </div>
           </section>
 
-          <aside className="rounded-[32px] border border-slate-200 bg-white p-5 shadow-sm">
+          <aside className="rounded-5xl border border-slate-200 bg-white p-5 shadow-sm">
             <span className={`rounded-full border px-3 py-1 text-xs font-black uppercase ${toneClass(selected)}`}>
               {label(selected)}
             </span>
@@ -349,7 +349,7 @@ export default function EventsPage() {
           </aside>
         </section>
 
-        <section className="mt-8 rounded-[32px] border border-slate-200 bg-white p-5 shadow-sm">
+        <section className="mt-8 rounded-5xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="mb-5 flex items-center justify-between gap-3">
             <button onClick={() => changeMonth(-1)} className="rounded-full border border-slate-200 px-4 py-3 text-sm font-black hover:bg-slate-50">‹ Tháng trước</button>
             <div className="text-center">
@@ -386,7 +386,7 @@ export default function EventsPage() {
           </div>
         </section>
 
-        <section className="mt-8 rounded-[32px] border border-slate-200 bg-white p-5 shadow-sm">
+        <section className="mt-8 rounded-5xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="mb-5 flex items-center justify-between">
             <div>
               <div className="text-xs font-black uppercase tracking-[0.22em] text-blue-700">Monthly Events</div>
@@ -401,7 +401,7 @@ export default function EventsPage() {
                 <button
                   key={event.id}
                   onClick={() => setSelected(event)}
-                  className="group rounded-[26px] border border-slate-200 bg-slate-50 p-5 text-left transition hover:-translate-y-1 hover:border-blue-300 hover:bg-white hover:shadow-xl"
+                  className="group rounded-4xl border border-slate-200 bg-slate-50 p-5 text-left transition hover:-translate-y-1 hover:border-blue-300 hover:bg-white hover:shadow-xl"
                 >
                   <span className={`rounded-full border px-3 py-1 text-xs font-black uppercase ${toneClass(event)}`}>
                     {label(event)}
@@ -414,7 +414,7 @@ export default function EventsPage() {
               ))}
             </div>
           ) : (
-            <div className="rounded-[24px] bg-slate-50 p-8 text-center">
+            <div className="rounded-3xl bg-slate-50 p-8 text-center">
               <div className="text-lg font-black text-slate-950">Chưa có sự kiện trong tháng này</div>
               <div className="mt-2 text-sm font-semibold text-slate-500">Hãy chuyển tháng khác hoặc theo dõi cập nhật mới.</div>
             </div>

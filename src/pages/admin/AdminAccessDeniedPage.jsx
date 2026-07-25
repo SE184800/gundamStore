@@ -8,7 +8,7 @@ export default function AdminAccessDeniedPage() {
 
   return (
     <main className="min-h-screen bg-[#F5F7FB] px-4 py-10">
-      <section className="mx-auto max-w-3xl rounded-[36px] border border-red-100 bg-white p-8 text-center shadow-sm">
+      <section className="mx-auto max-w-3xl rounded-6xl border border-red-100 bg-white p-8 text-center shadow-sm">
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-red-50 text-red-600">
           <ShieldAlert size={34} />
         </div>

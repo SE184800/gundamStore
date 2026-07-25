@@ -584,7 +584,7 @@ export default function ShopPage() {
           <span>{t.home}</span><ChevronRight size={15} /><span className="text-slate-950">{t.shopPage}</span>
         </div>
 
-        <div className="relative overflow-hidden rounded-[22px] border border-blue-100 bg-white p-4 shadow-xl shadow-blue-100/60 sm:rounded-[2rem] sm:p-6 lg:p-8">
+        <div className="relative overflow-hidden rounded-3xl border border-blue-100 bg-white p-4 shadow-xl shadow-blue-100/60 sm:rounded-[2rem] sm:p-6 lg:p-8">
           <div className="absolute inset-0 bg-gradient-to-br from-white via-blue-50 to-cyan-50" />
           <div className="relative">
             <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-blue-100 bg-white px-3 py-1 text-xs font-black text-blue-700"><Sparkles size={14} />{t.shopPage}</div>
@@ -593,7 +593,7 @@ export default function ShopPage() {
           </div>
         </div>
 
-        <div className="mt-4 rounded-[22px] border border-slate-200 bg-white p-3 shadow-sm sm:rounded-3xl sm:p-4">
+        <div className="mt-4 rounded-3xl border border-slate-200 bg-white p-3 shadow-sm sm:rounded-3xl sm:p-4">
           <div className="mb-3 flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-slate-500"><Filter size={15} className="text-blue-600" />{t.quickForYou}</div>
           <div className="mobile-hide-scrollbar flex gap-2 overflow-x-auto pb-1">
             {quickChips.map((chip) => (
@@ -605,7 +605,7 @@ export default function ShopPage() {
 
       <section className="mx-auto grid max-w-[1440px] gap-5 px-3 py-4 sm:px-4 lg:grid-cols-[320px_1fr] lg:px-8">
         <aside className="hidden lg:block">
-          <div className="sticky top-24 rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="sticky top-24 rounded-4xl border border-slate-200 bg-white p-4 shadow-sm">
             <div className="mb-4 flex items-center justify-between gap-3">
               <div className="flex items-center gap-2 text-sm font-black text-slate-950"><SlidersHorizontal size={17} className="text-blue-600" />{t.categoryMenu}</div>
               <button onClick={resetFilters} className="rounded-xl bg-slate-50 px-3 py-1.5 text-[11px] font-black text-slate-500 hover:bg-slate-100">{t.clear}</button>

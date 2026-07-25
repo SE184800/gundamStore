@@ -153,7 +153,7 @@ export default function ComparePage() {
   return (
     <PageShell>
       <main className="mx-auto max-w-[1440px] px-4 py-8 lg:px-8">
-        <section className="relative overflow-hidden rounded-[36px] bg-slate-950 p-8 text-white shadow-xl">
+        <section className="relative overflow-hidden rounded-6xl bg-slate-950 p-8 text-white shadow-xl">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_30%,rgba(14,165,233,0.35),transparent_35%)]" />
           <div className="relative z-10">
             <div className="inline-flex items-center gap-2 rounded-full bg-cyan-600 px-4 py-2 text-xs font-black uppercase tracking-[0.25em]">

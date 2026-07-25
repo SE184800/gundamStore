@@ -57,7 +57,7 @@ export default function AdminLoginPage() {
   return (
     <main className="min-h-screen bg-[#F5F7FB] px-4 py-10">
       <section className="mx-auto grid max-w-6xl gap-6 lg:grid-cols-[1fr_420px] lg:items-center">
-        <div className="overflow-hidden rounded-[36px] bg-slate-950 p-8 text-white shadow-xl">
+        <div className="overflow-hidden rounded-6xl bg-slate-950 p-8 text-white shadow-xl">
           <div className="inline-flex items-center gap-2 rounded-full bg-blue-700 px-4 py-2 text-xs font-black uppercase tracking-[0.25em]">
             <ShieldCheck size={15} />
             Admin Security
@@ -76,7 +76,7 @@ export default function AdminLoginPage() {
           </div>
         </div>
 
-        <form onSubmit={submit} className="rounded-[32px] border border-slate-200 bg-white p-6 shadow-sm">
+        <form onSubmit={submit} className="rounded-5xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="mb-5 flex items-center gap-3">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-700 text-white">
               <LockKeyhole size={24} />
