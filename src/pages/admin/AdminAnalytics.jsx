@@ -1,5 +1,6 @@
 import { Activity, BarChart3, Eye, Search, ShoppingBag, CreditCard, CheckCircle2 } from "lucide-react";
 import { useCms, useLang } from "../../store/CmsStore";
+import AdminPageHeader from "../../components/admin/AdminPageHeader";
 
 const text = {
   vi: { title: "Behavior Analytics", desc: "Theo dõi page_view, product_view, search, add_to_cart, checkout_started, order_created và chat.", funnel: "Phễu chuyển đổi", latest: "Event mới nhất" },
@@ -28,10 +29,7 @@ export default function AdminAnalytics() {
 
   return (
     <>
-      <section className="rounded-[2rem] border border-blue-100 bg-white p-6 shadow-xl shadow-blue-100/50">
-        <h1 className="text-3xl font-black text-slate-950">{t.title}</h1>
-        <p className="mt-2 text-sm leading-6 text-slate-600">{t.desc}</p>
-      </section>
+      <AdminPageHeader title={t.title} desc={t.desc} />
       <section className="grid gap-5 xl:grid-cols-[1fr_420px]">
         <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="mb-5 flex items-center gap-2 text-xl font-black text-slate-950"><BarChart3 className="text-blue-600" />{t.funnel}</div>

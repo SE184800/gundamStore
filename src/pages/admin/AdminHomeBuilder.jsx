@@ -1,6 +1,7 @@
 import { ArrowDown, ArrowUp, Eye, EyeOff, Plus, Trash2 } from "lucide-react";
 import { useCms, useLang } from "../../store/CmsStore";
 import { getText } from "../../utils/format";
+import AdminPageHeader from "../../components/admin/AdminPageHeader";
 
 const text = {
   vi: { title: "Landing Page Builder", desc: "Bật/tắt, đổi thứ tự, chỉnh tiêu đề và nguồn dữ liệu cho từng section trang chủ.", add: "Thêm section", enabled: "Hiển thị", type: "Loại", source: "Nguồn dữ liệu", rows: "Dòng", columns: "Cột", save: "Tự lưu vào localStorage" },
@@ -32,11 +33,16 @@ export default function AdminHomeBuilder() {
 
   return (
     <>
-      <section className="rounded-[2rem] border border-blue-100 bg-white p-6 shadow-xl shadow-blue-100/50">
-        <h1 className="text-3xl font-black text-slate-950">{t.title}</h1>
-        <p className="mt-2 text-sm leading-6 text-slate-600">{t.desc}</p>
-        <div className="mt-4 flex gap-3"><button onClick={addSection} className="rounded-2xl bg-blue-700 px-5 py-3 text-sm font-black text-white hover:bg-blue-800"><Plus className="mr-2 inline" size={16}/>{t.add}</button><span className="rounded-2xl border border-emerald-100 bg-emerald-50 px-5 py-3 text-sm font-black text-emerald-700">{t.save}</span></div>
-      </section>
+      <AdminPageHeader
+        title={t.title}
+        desc={t.desc}
+        action={
+          <div className="flex gap-3">
+            <button onClick={addSection} className="rounded-2xl bg-blue-700 px-5 py-3 text-sm font-black text-white hover:bg-blue-800"><Plus className="mr-2 inline" size={16}/>{t.add}</button>
+            <span className="rounded-2xl border border-emerald-100 bg-emerald-50 px-5 py-3 text-sm font-black text-emerald-700">{t.save}</span>
+          </div>
+        }
+      />
 
       <section className="space-y-3">
         {sections.map((section, idx) => (

@@ -1,6 +1,7 @@
 import { Send } from "lucide-react";
 import { useState } from "react";
 import { useCms, useLang } from "../../store/CmsStore";
+import AdminPageHeader from "../../components/admin/AdminPageHeader";
 
 const text = {
   vi: { title: "Trung tâm CSKH / Chat", desc: "Tin nhắn từ chatbox storefront sẽ xuất hiện tại đây.", reply: "Nhập phản hồi...", send: "Gửi" },
@@ -23,10 +24,7 @@ export default function AdminChats() {
 
   return (
     <>
-      <section className="rounded-[2rem] border border-blue-100 bg-white p-6 shadow-xl shadow-blue-100/50">
-        <h1 className="text-3xl font-black text-slate-950">{t.title}</h1>
-        <p className="mt-2 text-sm leading-6 text-slate-600">{t.desc}</p>
-      </section>
+      <AdminPageHeader title={t.title} desc={t.desc} />
       <section className="grid gap-5 lg:grid-cols-[360px_1fr]">
         <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="space-y-2">

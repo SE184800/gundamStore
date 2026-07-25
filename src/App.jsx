@@ -52,7 +52,6 @@ const AdminCMSBanners = lazy(() => import("./pages/admin/AdminCMSBanners"));
 const AdminNews = lazy(() => import("./pages/admin/AdminNews"));
 const AdminEvents = lazy(() => import("./pages/admin/AdminEvents"));
 const AdminHomeBuilder = lazy(() => import("./pages/admin/AdminHomeBuilder"));
-const AdminBanners = lazy(() => import("./pages/admin/AdminBanners"));
 const AdminProducts = lazy(() => import("./pages/admin/AdminProducts"));
 const AdminProductCategories = lazy(() => import("./pages/admin/AdminProductCategories"));
 const AdminSuppliers = lazy(() => import("./pages/admin/AdminSuppliers"));

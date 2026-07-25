@@ -1,6 +1,7 @@
 import { Download, RefreshCcw, Upload } from "lucide-react";
 import { useRef, useState } from "react";
 import { useCms, useLang } from "../../store/CmsStore";
+import AdminPageHeader from "../../components/admin/AdminPageHeader";
 
 const text = {
   vi: { title: "Cấu hình & Dữ liệu", desc: "Export/import/reset dữ liệu CMS localStorage. Dùng để backup khi test trên GitHub Codespaces/Vercel.", export: "Export JSON", import: "Import JSON", reset: "Reset dữ liệu demo", copied: "Đã export dữ liệu. Copy nội dung bên dưới.", paste: "Dán JSON vào đây rồi Import" },
@@ -32,10 +33,7 @@ export default function AdminSettings() {
 
   return (
     <>
-      <section className="rounded-[2rem] border border-blue-100 bg-white p-6 shadow-xl shadow-blue-100/50">
-        <h1 className="text-3xl font-black text-slate-950">{t.title}</h1>
-        <p className="mt-2 text-sm leading-6 text-slate-600">{t.desc}</p>
-      </section>
+      <AdminPageHeader title={t.title} desc={t.desc} />
       <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex flex-wrap gap-3">
           <button onClick={exportData} className="rounded-2xl bg-blue-700 px-5 py-3 text-sm font-black text-white hover:bg-blue-800"><Download className="mr-2 inline" size={16}/>{t.export}</button>
