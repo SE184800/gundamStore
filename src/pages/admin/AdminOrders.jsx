@@ -22,6 +22,7 @@ import { useLang } from "../../store/CmsStore";
 import { logoutAdmin } from "../../services/AdminAuthService";
 import useToast from "../../hooks/useToast";
 import Toast from "../../utils/Toast";
+import { escapePrintHtml } from "../../utils/escapePrintHtml";
 import {
   getAdminOrdersFromApi,
   updateAdminOrderPaymentApi,
@@ -129,15 +130,6 @@ function getAllowedStatusOptions(status) {
 
 function isTerminalStatus(status) {
   return [ORDER_STATUS.CANCELLED, ORDER_STATUS.REFUNDED, ORDER_STATUS.COMPLETED].includes(status);
-}
-
-function escapePrintHtml(value = "") {
-  return String(value ?? "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
 }
 
 export default function AdminOrders() {

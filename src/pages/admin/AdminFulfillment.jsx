@@ -6,6 +6,7 @@ import AdminPageHeader from "../../components/admin/AdminPageHeader";
 import { formatCurrency } from "../../utils/format";
 import useToast from "../../hooks/useToast";
 import Toast from "../../utils/Toast";
+import { escapePrintHtml } from "../../utils/escapePrintHtml";
 import {
   bulkAdminFulfillmentActionApi,
   getAdminFulfillmentOrdersApi,
@@ -56,12 +57,19 @@ function shortDate(value) {
 }
 
 function printablePackingList(order) {
+  const orderCode = escapePrintHtml(order.orderCode || "");
+  const customerName = escapePrintHtml(order.customer?.name || "");
+  const customerPhone = escapePrintHtml(order.customer?.phone || "");
+  const customerAddress = escapePrintHtml(order.customer?.address || "");
+
   const rows = (order.items || [])
     .map((item) => {
+      const sku = escapePrintHtml(item.sku || "");
+      const name = escapePrintHtml(item.variantName || item.name || "");
       return `
         <tr>
-          <td>${item.sku || ""}</td>
-          <td>${item.variantName || item.name || ""}</td>
+          <td>${sku}</td>
+          <td>${name}</td>
           <td style="text-align:right">${item.quantity || 0}</td>
         </tr>`;
     })
@@ -70,7 +78,7 @@ function printablePackingList(order) {
   return `
     <html>
       <head>
-        <title>Packing List ${order.orderCode}</title>
+        <title>Packing List ${orderCode}</title>
         <style>
           body { font-family: Arial, sans-serif; padding: 24px; }
           h1 { font-size: 22px; margin-bottom: 4px; }
@@ -82,11 +90,11 @@ function printablePackingList(order) {
       </head>
       <body>
         <h1>Packing List</h1>
-        <div>Order: <strong>${order.orderCode}</strong></div>
+        <div>Order: <strong>${orderCode}</strong></div>
         <div class="box">
-          <div><strong>Customer:</strong> ${order.customer?.name || ""}</div>
-          <div><strong>Phone:</strong> ${order.customer?.phone || ""}</div>
-          <div><strong>Address:</strong> ${order.customer?.address || ""}</div>
+          <div><strong>Customer:</strong> ${customerName}</div>
+          <div><strong>Phone:</strong> ${customerPhone}</div>
+          <div><strong>Address:</strong> ${customerAddress}</div>
         </div>
         <table>
           <thead>
