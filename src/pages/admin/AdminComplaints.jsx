@@ -257,7 +257,7 @@ export default function AdminComplaints() {
 
             <div className="mt-4 flex flex-wrap gap-2">
               {ticket.status === "NEW" && (
-                <button onClick={() => void quickStatus(ticket, "VERIFYING")} className="rounded-xl bg-blue-600 px-3 py-2 text-xs font-black text-white">
+                <button onClick={() => void quickStatus(ticket, "VERIFYING")} className="rounded-xl bg-blue-700 px-3 py-2 text-xs font-black text-white hover:bg-blue-800">
                   Verify
                 </button>
               )}

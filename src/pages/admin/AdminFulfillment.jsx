@@ -345,7 +345,7 @@ export default function AdminFulfillment() {
                   <td className="px-4 py-3 font-black text-emerald-600">{formatCurrency(order.total)}</td>
                   <td className="px-4 py-3">
                     <div className="flex flex-wrap gap-2">
-                      {order.canConfirm && <button onClick={() => void runAction(order, "CONFIRM")} className="rounded-xl bg-blue-600 px-3 py-2 text-xs font-black text-white">Confirm</button>}
+                      {order.canConfirm && <button onClick={() => void runAction(order, "CONFIRM")} className="rounded-xl bg-blue-700 px-3 py-2 text-xs font-black text-white hover:bg-blue-800">Confirm</button>}
                       {order.canPack && <button onClick={() => void runAction(order, "PACK")} className="rounded-xl bg-violet-600 px-3 py-2 text-xs font-black text-white">Pack</button>}
                       {order.canShip && <button onClick={() => openDetail(order)} className="rounded-xl bg-cyan-600 px-3 py-2 text-xs font-black text-white">Ship</button>}
                       {order.canDeliver && <button onClick={() => void runAction(order, "DELIVER")} className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-black text-white">Deliver</button>}
@@ -454,7 +454,7 @@ export default function AdminFulfillment() {
                 <Printer size={14} className="mr-1 inline" />
                 Print packing list
               </button>
-              {selectedOrder.canConfirm && <button onClick={() => void runAction(selectedOrder, "CONFIRM")} className="rounded-2xl bg-blue-600 px-4 py-3 text-xs font-black text-white">Confirm</button>}
+              {selectedOrder.canConfirm && <button onClick={() => void runAction(selectedOrder, "CONFIRM")} className="rounded-2xl bg-blue-700 px-4 py-3 text-xs font-black text-white hover:bg-blue-800">Confirm</button>}
               {selectedOrder.canPack && <button onClick={() => void runAction(selectedOrder, "PACK")} className="rounded-2xl bg-violet-600 px-4 py-3 text-xs font-black text-white">Pack</button>}
               {selectedOrder.canDeliver && <button onClick={() => void runAction(selectedOrder, "DELIVER")} className="rounded-2xl bg-emerald-600 px-4 py-3 text-xs font-black text-white">Mark delivered</button>}
               {selectedOrder.canComplete && <button onClick={() => void runAction(selectedOrder, "COMPLETE")} className="rounded-2xl bg-slate-900 px-4 py-3 text-xs font-black text-white">Complete</button>}

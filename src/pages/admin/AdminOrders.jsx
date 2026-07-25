@@ -874,7 +874,7 @@ export default function AdminOrders() {
                   />
                   <button
                     onClick={() => void saveShipping(selectedOrder.id)}
-                    className="rounded-2xl bg-blue-600 py-3 font-black text-white"
+                    className="rounded-2xl bg-blue-700 py-3 font-black text-white hover:bg-blue-800"
                   >
                     <Truck size={17} className="mr-2 inline" />
                     {t.saveShipping}
