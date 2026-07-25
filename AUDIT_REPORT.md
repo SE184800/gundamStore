@@ -137,7 +137,27 @@ Trạng thái xử lý được ghi rõ trong ngoặc ở đầu mỗi mục n�
 
 ### C5. Dead code phát hiện khi audit hiệu năng (bonus)
 
-- [Chưa xử lý] - `src/pages/storefront/CheckoutPage/` (thư mục, chứa `AddressDropdownForm.jsx` + `ShippingAddress.jsx`, dùng `formik`+`yup`) - 0 tham chiếu từ bất kỳ file nào trong `src/`. `CheckoutPage.jsx` (file, đang chạy thật) không dùng formik/yup. - Đề xuất: xác nhận với người phụ trách trước rồi xóa, cùng nhóm xử lý với C3 (dead code review).
+- [Đã fix, đã commit] - `src/pages/storefront/CheckoutPage/` (thư mục, chứa `AddressDropdownForm.jsx` + `ShippingAddress.jsx`, dùng `formik`+`yup`) - 0 tham chiếu từ bất kỳ file nào trong `src/`. `CheckoutPage.jsx` (file, đang chạy thật) không dùng formik/yup. - Đã xóa (commit `9989b40`). `formik`/`yup` vẫn giữ trong `package.json` vì `Register.jsx`/`ResetPassword.jsx` vẫn dùng thật — không phải dependency mồ côi.
+
+### C6. Quét dead code toàn diện (20 file + 3 npm package) — ĐÃ FIX, ĐÃ COMMIT
+
+Mỗi file dưới đây được xác minh 2 lần bằng `grep -rn` tên file/component trên toàn bộ `src/` (loại trừ chính nó) — 0 kết quả, và không có `import()` động nào trỏ tới.
+
+- [Đã xóa] - `src/services/AuthService.jsx` - Trùng tên với `AuthService.js` (file thật đang được `CmsStore.jsx` import qua specifier không đuôi file `"../services/AuthService"` → Vite resolve `.js` trước `.jsx` → bản `.jsx` không bao giờ được load).
+- [Đã xóa] - `src/services/AxiosClient.jsx` - Chỉ được `AuthService.jsx` (đã xóa ở trên) import, không còn consumer nào khác.
+- [Đã xóa] - `src/services/CustomerService.js`, `FulfillmentService.js`, `ReportService.js`, `WishlistService.js`, `PaymentService.js`, `EventRegistrationService.js` - Các service localStorage cũ, mỗi trang live tương ứng (`AdminCustomers`, `AdminFulfillment`, `AdminReports`, `WishlistPage`, `OrderDetailPage`, `EventDetailPage`) đã chuyển sang gọi `*ApiService` thật từ lâu.
+- [Đã xóa] - `src/services/sapoStorefrontService.js` - Không còn consumer nào (tích hợp Sapo cũ, đã bỏ).
+- [Đã xóa] - `src/pages/admin/AdminPricingInventory.jsx` - Route `pricing-inventory` trong `App.jsx` dùng `<Navigate>` inline, không import file này.
+- [Đã xóa] - `src/pages/admin/productAdminV4Helpers.js` - Leftover từ refactor "V4" đã bỏ dở, `AdminProducts.jsx` không còn dùng.
+- [Đã xóa] - `src/components/GlobalCart.jsx` - Chính comment đầu file ghi "Legacy GlobalCart disabled", component chỉ `return null`, cũng không còn được import ở đâu.
+- [Đã xóa] - `src/components/storefront/DynamicHomeSection.jsx` - Bị thay thế bởi `Hero`/`HeroV3Bento`/`HeroV2Classic`/`ProductSection` viết inline trong `HomePage.jsx`.
+- [Đã xóa] - `src/components/admin/CategoryGroupManager.jsx` - Bị thay thế bởi logic quản lý category-group viết inline trong `AdminProductCategories.jsx` (cùng gọi `AdminCatalogApiService`).
+- [Đã xóa] - `src/components/admin/AdminActionButton.jsx` + `src/services/AdminActionPermissionService.js` - Cặp component+service permission-gating được viết ra nhưng chưa từng gắn vào trang admin nào.
+- [Đã xóa] - `src/components/admin/PermissionGate.jsx` - Dùng `hasPermission` từ `AdminPermissionService.js`, nhưng chính nó không được dùng ở đâu. Giữ nguyên `AdminPermissionService.js` vì export khác (`canAccessAdminPath`) vẫn được `AdminProtectedRoute.jsx` dùng thật.
+- [Đã xóa] - `src/components/common/LanguageToggle.jsx` - Không còn nav-link/usage nào (Header/Footer tự xử lý đổi ngôn ngữ theo cách khác).
+- [Đã xóa] - `src/utils/mediaUpload.js` - Bị thay thế bởi `AdminMediaApiService` (upload thật lên backend) ở mọi trang admin.
+- [Đã xóa] - `src/data/hcmdata.jsx` - 353 dòng dữ liệu tĩnh quận/huyện TP.HCM, không còn nơi nào tham chiếu (luồng địa chỉ đã chuyển sang nguồn khác).
+- [Đã gỡ khỏi package.json] - `framer-motion`, `use-places-autocomplete` - Không có import nào trong `src/`. `axios` - Chỉ được import bởi 2 file đã xóa ở trên (`AuthService.jsx`, `sapoStorefrontService.js`); lớp API thật (`ApiClient.js`) dùng `fetch` gốc.
 
 ---
 
