@@ -24,8 +24,8 @@ import {
   PAYMENT_METHODS,
   SHIPPING_METHODS,
   getLocalized,
-  getShippingMethod,
 } from "../../constants/orderConfig";
+import { getStorefrontShippingMethodsApi } from "../../services/ShippingApiService";
 import { useLang } from "../../store/CmsStore";
 
 const money = (n) => (Number(n) || 0).toLocaleString("vi-VN") + "đ";
@@ -138,6 +138,17 @@ export default function CheckoutPage() {
 
   const [savedAddresses, setSavedAddresses] = useState([]);
   const [selectedAddressId, setSelectedAddressId] = useState("");
+  const [shippingMethods, setShippingMethods] = useState(SHIPPING_METHODS);
+
+  useEffect(() => {
+    let alive = true;
+    getStorefrontShippingMethodsApi().then((methods) => {
+      if (alive && Array.isArray(methods) && methods.length) setShippingMethods(methods);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   function applySavedAddress(address) {
     if (!address) return;
@@ -211,7 +222,8 @@ export default function CheckoutPage() {
     };
   }, []);
 
-  const selectedShipping = getShippingMethod(customer.shippingMethod);
+  const selectedShipping =
+    shippingMethods.find((item) => item.value === customer.shippingMethod) || shippingMethods[0];
   const isPreorder = draft?.orderType === ORDER_TYPE.PREORDER;
 
   const pricing = useMemo(() => {
@@ -568,7 +580,7 @@ export default function CheckoutPage() {
                 </h2>
 
                 <div className="mt-5 grid gap-4 md:grid-cols-2">
-                  {SHIPPING_METHODS.map((method) => (
+                  {shippingMethods.map((method) => (
                     <label
                       key={method.value}
                       className={`cursor-pointer rounded-2xl border p-4 hover:border-blue-500 ${customer.shippingMethod === method.value ? "border-blue-500 ring-2 ring-blue-100" : ""

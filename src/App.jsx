@@ -69,6 +69,7 @@ const AdminCategories = lazy(() => import("./pages/admin/AdminCategories"));
 const AdminProductCategoryMapping = lazy(() => import("./pages/admin/AdminProductCategoryMapping"));
 const AdminProductDisplayMapping = lazy(() => import("./pages/admin/AdminProductDisplayMapping"));
 const AdminOrders = lazy(() => import("./pages/admin/AdminOrders"));
+const AdminShipping = lazy(() => import("./pages/admin/AdminShipping"));
 const AdminFulfillment = lazy(() => import("./pages/admin/AdminFulfillment"));
 const AdminCustomers = lazy(() => import("./pages/admin/AdminCustomers"));
 const AdminChats = lazy(() => import("./pages/admin/AdminChats"));
@@ -275,6 +276,7 @@ export default function App() {
 
             {/* Customer Operations */}
             <Route path="orders" element={<AdminOrders />} />
+            <Route path="shipping" element={<AdminShipping />} />
             <Route path="fulfillment" element={<AdminFulfillment />} />
             <Route path="customers" element={<AdminCustomers />} />
             <Route path="chats" element={<AdminChats />} />

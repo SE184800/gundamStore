@@ -5,7 +5,8 @@ import { getCart, saveCart, saveCheckoutDraft } from "../../services/CartService
 import { applyVoucher } from "../../services/VoucherService";
 import { getStock } from "../../services/InventoryService";
 import PageShell from "../../components/common/PageShell";
-import { SHIPPING_METHODS, getLocalized, getShippingMethod } from "../../constants/orderConfig";
+import { SHIPPING_METHODS, getLocalized } from "../../constants/orderConfig";
+import { getStorefrontShippingMethodsApi } from "../../services/ShippingApiService";
 import { useI18n } from "../../i18n";
 import Toast from "../../utils/Toast";
 import useToast from "../../hooks/useToast";
@@ -78,6 +79,17 @@ export default function CartPage() {
   const [cart, setCart] = useState(() => getCart());
   const [voucherCode, setVoucherCode] = useState("");
   const [shippingMethod, setShippingMethod] = useState("FAST");
+  const [shippingMethods, setShippingMethods] = useState(SHIPPING_METHODS);
+
+  useEffect(() => {
+    let alive = true;
+    getStorefrontShippingMethodsApi().then((methods) => {
+      if (alive && Array.isArray(methods) && methods.length) setShippingMethods(methods);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   const selectedItems = cart.filter((item) => item.selected !== false);
 
@@ -85,7 +97,8 @@ export default function CartPage() {
     (sum, item) => sum + (Number(item.price) || 0) * (Number(item.quantity) || 1),
     0
   );
-  const selectedShipping = getShippingMethod(shippingMethod);
+  const selectedShipping =
+    shippingMethods.find((item) => item.value === shippingMethod) || shippingMethods[0];
   const baseShippingFee = selectedItems.length ? Number(selectedShipping.fee || 0) : 0;
   const voucher = applyVoucher(voucherCode, subtotal, baseShippingFee);
 
@@ -396,7 +409,7 @@ export default function CartPage() {
                 </div>
 
                 <div className="grid gap-2">
-                  {SHIPPING_METHODS.map((method) => (
+                  {shippingMethods.map((method) => (
                     <label
                       key={method.value}
                       className={`cursor-pointer rounded-2xl border bg-white p-3 text-sm ${shippingMethod === method.value ? "border-blue-500 ring-2 ring-blue-100" : "border-slate-200"

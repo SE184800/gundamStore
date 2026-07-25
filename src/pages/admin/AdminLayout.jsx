@@ -15,6 +15,7 @@ import {
   MessageCircle,
   Package,
   Percent,
+  Route,
   Search,
   Settings,
   ShieldAlert,
@@ -67,6 +68,7 @@ const copy = {
     vouchers: "Voucher / Coupon",
     sales: "Bán hàng & đơn hàng",
     orders: "Đơn hàng",
+    shipping: "Phương thức vận chuyển",
     fulfillment: "Xử lý giao hàng",
     customers: "Khách hàng / CRM",
     restockAlerts: "Báo hàng / Restock",
@@ -119,6 +121,7 @@ const copy = {
     vouchers: "Vouchers / Coupons",
     sales: "Sales & Orders",
     orders: "Orders",
+    shipping: "Shipping Methods",
     fulfillment: "Fulfillment",
     customers: "Customers / CRM",
     restockAlerts: "Restock Alerts",
@@ -232,6 +235,7 @@ function getPageTitle(pathname, t) {
   if (pathname.includes("/admin/fulfillment")) return t.fulfillment;
   if (pathname.includes("/admin/customers")) return t.customers;
   if (pathname.includes("/admin/orders")) return t.orders;
+  if (pathname.includes("/admin/shipping")) return t.shipping;
   if (pathname.includes("/admin/restock-alerts")) return t.restockAlerts;
   if (pathname.includes("/admin/news")) return t.news;
   if (pathname.includes("/admin/events")) return t.events;
@@ -302,6 +306,7 @@ export default function AdminLayout() {
 
             <NavGroup title={t.sales}>
               <NavItem to="/admin/orders" icon={ShoppingCart} label={t.orders} />
+              <NavItem to="/admin/shipping" icon={Route} label={t.shipping} />
               <NavItem to="/admin/fulfillment" icon={Truck} label={t.fulfillment} />
               <NavItem to="/admin/customers" icon={Users} label={t.customers} />
               <NavItem to="/admin/restock-alerts" icon={Bell} label={t.restockAlerts} />
