@@ -1,10 +1,13 @@
 import { useMemo, useState } from "react";
-import { Search } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Search, AlertTriangle } from "lucide-react";
 import { useCms, useLang } from "../../store/CmsStore";
 import { getText } from "../../utils/format";
 
 const text = {
   vi: {
+    staleWarningPrefix: "Trang này không còn được dùng, dữ liệu chỉ là demo cục bộ, không đồng bộ với hệ thống thật. Vui lòng dùng ",
+    staleWarningLink: "Quản lý danh mục",
     title: "Product Category Mapping",
     desc: "Gán sản phẩm vào một hoặc nhiều danh mục. Trang shop sẽ lọc sản phẩm dựa trên mapping này.",
     search: "Tìm sản phẩm...",
@@ -12,6 +15,8 @@ const text = {
     empty: "Chưa có danh mục",
   },
   en: {
+    staleWarningPrefix: "This page is no longer used. Its data is local demo-only data and is not synced with the real system. Please use ",
+    staleWarningLink: "Category Management",
     title: "Product Category Mapping",
     desc: "Assign products to one or more categories. The shop page filters products using this mapping.",
     search: "Search products...",
@@ -57,6 +62,15 @@ export default function AdminProductCategoryMapping() {
 
   return (
     <>
+      <section className="flex items-start gap-3 rounded-3xl border border-amber-200 bg-amber-50 p-4 text-amber-800">
+        <AlertTriangle size={20} className="mt-0.5 shrink-0" />
+        <p className="text-sm font-bold leading-6">
+          {t.staleWarningPrefix}
+          <Link to="/admin/product-categories" className="underline">{t.staleWarningLink}</Link>
+          {" "}(/admin/product-categories).
+        </p>
+      </section>
+
       <section className="rounded-[2rem] border border-blue-100 bg-white p-6 shadow-xl shadow-blue-100/50">
         <h1 className="text-3xl font-black text-slate-950">{t.title}</h1>
         <p className="mt-2 text-sm leading-6 text-slate-600">{t.desc}</p>
