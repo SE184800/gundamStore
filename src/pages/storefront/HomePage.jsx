@@ -727,7 +727,7 @@ function ProductSection({ section, products, lang, actions, badge }) {
       </div>
 
       {sectionProducts.length ? (
-        <div className="home-mobile-product-grid grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="home-mobile-product-grid grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {sectionProducts.map((product) => (
             <ProductCard key={product.id} product={product} lang={lang} actions={actions} />
           ))}
