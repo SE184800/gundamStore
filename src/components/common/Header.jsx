@@ -213,7 +213,7 @@ export default function Header() {
             <div className="group relative flex h-11 items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3.5 text-sm font-semibold text-slate-700 shadow-sm transition-all hover:bg-slate-100 hover:border-slate-300 cursor-pointer">
               <Globe size={16} className="text-slate-500" />
               <ChevronDown size={14} className="text-slate-400 transition-transform duration-300 group-hover:rotate-180" />
-              <div className="absolute right-0 top-full z-[99] pt-2 hidden w-32 group-hover:block">
+              <div className="absolute right-0 top-full z-50 pt-2 hidden w-32 group-hover:block">
                 <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-1.5 shadow-xl animate-in fade-in slide-in-from-top-1 duration-200">
                   <button
                     type="button"
@@ -249,7 +249,7 @@ export default function Header() {
                   <ChevronDown size={14} className={`text-blue-500 transition-transform duration-300 ${userMenuOpen ? "rotate-180" : ""}`} />
                 </button>
                 {userMenuOpen && (
-                  <div className="absolute right-0 top-full z-[99] mt-2 w-52 rounded-2xl border border-slate-100 bg-white p-1.5 shadow-[0_20px_50px_rgba(15,23,42,0.12)] animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="absolute right-0 top-full z-50 mt-2 w-52 rounded-2xl border border-slate-100 bg-white p-1.5 shadow-[0_20px_50px_rgba(15,23,42,0.12)] animate-in fade-in slide-in-from-top-2 duration-200">
                     <Link to="/profile" onClick={() => setUserMenuOpen(false)} className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-xs font-bold text-slate-700 transition hover:bg-slate-50 hover:text-blue-600">
                       <Settings size={15} className="text-slate-400 group-hover:text-blue-600" />
                       {t("header.userProfile")}

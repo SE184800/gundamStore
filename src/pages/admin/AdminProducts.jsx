@@ -1636,7 +1636,7 @@ export default function AdminProducts() {
   return (
     <>
       {pricePrompt && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/50 p-4">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/50 p-4">
           <div className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl">
             <div className="text-xs font-black uppercase tracking-[0.2em] text-blue-700">
               Product pricing required
