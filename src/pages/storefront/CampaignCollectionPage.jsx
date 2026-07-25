@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   BellRing,
   CalendarClock,
@@ -11,6 +11,7 @@ import {
 import PageShell from "../../components/common/PageShell";
 import ProductCard from "../../components/storefront/ProductCard";
 import { useCms, useLang } from "../../store/CmsStore";
+import { getStorefrontProductsForStorefront } from "../../services/StorefrontProductApiService";
 
 const campaignConfig = {
   "flash-sale": {
@@ -25,12 +26,10 @@ const campaignConfig = {
     icon: Flame,
     badge: "SALE",
     filter: (product) => {
-      const tags = product.tags || product.groupIds || [];
+      const collections = product.collections || [];
       return (
-        Number(product.oldPrice || product.originalPrice || 0) > Number(product.price || 0) ||
-        tags.includes("sale") ||
-        tags.includes("hot") ||
-        String(product.status || "").toLowerCase().includes("sale")
+        collections.includes("sale_products") ||
+        Number(product.oldPrice || product.compareAtPrice || 0) > Number(product.price || 0)
       );
     },
   },
@@ -45,11 +44,7 @@ const campaignConfig = {
     tone: "from-blue-800 via-cyan-500 to-sky-200",
     icon: PackageCheck,
     badge: "RESTOCK",
-    filter: (product) => {
-      const tags = product.tags || product.groupIds || [];
-      const status = String(product.status || "").toLowerCase();
-      return tags.includes("restock") || status.includes("restock") || Number(product.stock || 0) > 0;
-    },
+    filter: (product) => Number(product.stock || 0) > 0,
   },
   limited: {
     eyebrow: { vi: "Limited / P-Bandai", en: "Limited / P-Bandai" },
@@ -63,15 +58,7 @@ const campaignConfig = {
     icon: ShieldCheck,
     badge: "LIMITED",
     filter: (product) => {
-      const text = [
-        product.name?.vi,
-        product.name?.en,
-        product.name,
-        product.title,
-        product.tags?.join?.(" "),
-        product.groupIds?.join?.(" "),
-        product.status,
-      ]
+      const text = [product.name?.vi, product.name?.en, product.name, product.title]
         .filter(Boolean)
         .join(" ")
         .toLowerCase();
@@ -96,17 +83,7 @@ const campaignConfig = {
     tone: "from-slate-950 via-blue-700 to-cyan-300",
     icon: CalendarClock,
     badge: "COMING SOON",
-    filter: (product) => {
-      const status = String(product.status || "").toLowerCase();
-      const tags = product.tags || product.groupIds || [];
-      return (
-        status.includes("pre") ||
-        status.includes("coming") ||
-        tags.includes("coming-soon") ||
-        tags.includes("preorder") ||
-        Boolean(product.preorder?.enabled)
-      );
-    },
+    filter: (product) => (product.collections || []).includes("order_items"),
   },
 };
 
@@ -130,13 +107,32 @@ function CampaignMiniStat({ label, value }) {
 }
 
 export default function CampaignCollectionPage({ type = "flash-sale" }) {
-  const { state, actions } = useCms();
+  const { actions } = useCms();
   const [lang] = useLang();
+  const [allProducts, setAllProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let alive = true;
+    setLoading(true);
+    getStorefrontProductsForStorefront()
+      .then((list) => {
+        if (alive) setAllProducts(Array.isArray(list) ? list : []);
+      })
+      .catch(() => {
+        if (alive) setAllProducts([]);
+      })
+      .finally(() => {
+        if (alive) setLoading(false);
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   const config = campaignConfig[type] || campaignConfig["flash-sale"];
   const Icon = config.icon;
 
-  const allProducts = state.products || [];
   const products = useMemo(() => {
     const result = allProducts.filter((product) => product.active !== false && config.filter(product));
     return result.length ? result : allProducts.filter((product) => product.active !== false).slice(0, 8);
@@ -213,17 +209,27 @@ export default function CampaignCollectionPage({ type = "flash-sale" }) {
             )}
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {topProducts.map((product) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                lang={lang}
-                actions={actions}
-                badge={config.badge}
-              />
-            ))}
-          </div>
+          {loading ? (
+            <div className="py-10 text-center text-sm font-black text-slate-400">
+              {lang === "en" ? "Loading..." : "Đang tải..."}
+            </div>
+          ) : topProducts.length === 0 ? (
+            <div className="py-10 text-center text-sm font-black text-slate-400">
+              {lang === "en" ? "No products in this campaign yet." : "Chưa có sản phẩm cho chiến dịch này."}
+            </div>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {topProducts.map((product) => (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  lang={lang}
+                  actions={actions}
+                  badge={config.badge}
+                />
+              ))}
+            </div>
+          )}
         </section>
 
         <section className="mt-8 rounded-5xl border border-blue-100 bg-blue-50 p-6">

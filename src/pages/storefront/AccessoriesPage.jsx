@@ -1,14 +1,35 @@
+import { useEffect, useState } from "react";
 import PageShell from "../../components/common/PageShell";
 import ProductCard from "../../components/storefront/ProductCard";
 import { useCms, useLang } from "../../store/CmsStore";
+import { getStorefrontProductsForStorefront } from "../../services/StorefrontProductApiService";
 
 export default function AccessoriesPage() {
-  const { state, actions } = useCms();
+  const { actions } = useCms();
   const [lang] = useLang();
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const products = state.products || [];
+  useEffect(() => {
+    let alive = true;
+    setLoading(true);
+    getStorefrontProductsForStorefront()
+      .then((list) => {
+        if (alive) setProducts(Array.isArray(list) ? list : []);
+      })
+      .catch(() => {
+        if (alive) setProducts([]);
+      })
+      .finally(() => {
+        if (alive) setLoading(false);
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
   const rows = products.filter((p) => {
-    const value = `${p.categoryId || ""} ${p.grade || ""} ${p.name?.vi || ""} ${p.name?.en || ""}`.toLowerCase();
+    const value = `${p.category?.nameVi || ""} ${p.category?.nameEn || ""} ${p.grade || ""} ${p.name?.vi || ""} ${p.name?.en || ""}`.toLowerCase();
     return value.includes("tool") || value.includes("decal") || value.includes("accessory") || value.includes("phụ kiện");
   });
 
@@ -39,11 +60,21 @@ export default function AccessoriesPage() {
             <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-black text-blue-700">{rows.length} items</span>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {rows.map((product) => (
-              <ProductCard key={product.id} product={product} lang={lang} actions={actions} badge="ACCESSORY" />
-            ))}
-          </div>
+          {loading ? (
+            <div className="py-10 text-center text-sm font-black text-slate-400">
+              {lang === "en" ? "Loading..." : "Đang tải..."}
+            </div>
+          ) : rows.length === 0 ? (
+            <div className="py-10 text-center text-sm font-black text-slate-400">
+              {lang === "en" ? "No accessories found yet." : "Chưa có phụ kiện phù hợp."}
+            </div>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {rows.map((product) => (
+                <ProductCard key={product.id} product={product} lang={lang} actions={actions} badge="ACCESSORY" />
+              ))}
+            </div>
+          )}
         </section>
       </main>
     </PageShell>

@@ -1,6 +1,8 @@
+import { useEffect, useState } from "react";
 import PageShell from "../../components/common/PageShell";
 import ProductCard from "../../components/storefront/ProductCard";
 import { useCms, useLang } from "../../store/CmsStore";
+import { getStorefrontProductsForStorefront } from "../../services/StorefrontProductApiService";
 import {
   BellRing,
   Flame,
@@ -30,18 +32,35 @@ function getCopy(lang) {
 }
 
 export default function PromotionsPage() {
-  const { state, actions } = useCms();
+  const { actions } = useCms();
   const [lang] = useLang();
   const t = getCopy(lang);
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const products = state.products || [];
+  useEffect(() => {
+    let alive = true;
+    setLoading(true);
+    getStorefrontProductsForStorefront()
+      .then((list) => {
+        if (alive) setProducts(Array.isArray(list) ? list : []);
+      })
+      .catch(() => {
+        if (alive) setProducts([]);
+      })
+      .finally(() => {
+        if (alive) setLoading(false);
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
   const deals = products.filter((product) => {
-    const tags = product.tags || product.groupIds || [];
+    const collections = product.collections || [];
     return (
-      Number(product.oldPrice || product.originalPrice || 0) > Number(product.price || 0) ||
-      tags.includes("sale") ||
-      tags.includes("hot") ||
-      String(product.status || "").toLowerCase().includes("sale")
+      collections.includes("sale_products") ||
+      Number(product.oldPrice || product.compareAtPrice || 0) > Number(product.price || 0)
     );
   });
 
@@ -102,11 +121,21 @@ export default function PromotionsPage() {
             </a>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {displayDeals.slice(0, 4).map((product) => (
-              <ProductCard key={product.id} product={product} lang={lang} actions={actions} badge="SALE" />
-            ))}
-          </div>
+          {loading ? (
+            <div className="py-10 text-center text-sm font-black text-slate-400">
+              {lang === "en" ? "Loading..." : "Đang tải..."}
+            </div>
+          ) : displayDeals.length === 0 ? (
+            <div className="py-10 text-center text-sm font-black text-slate-400">
+              {lang === "en" ? "No deals right now." : "Hiện chưa có sản phẩm khuyến mãi."}
+            </div>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {displayDeals.slice(0, 4).map((product) => (
+                <ProductCard key={product.id} product={product} lang={lang} actions={actions} badge="SALE" />
+              ))}
+            </div>
+          )}
         </section>
       </main>
     </PageShell>

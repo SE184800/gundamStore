@@ -109,14 +109,8 @@ export default function CartPage() {
   }, [voucher.valid, voucherCode]);
 
   function updateCart(next) {
-
-    localStorage.setItem("gundam-cart-final", JSON.stringify(next));
-
-    if (typeof emitCartUpdated === "function") {
-      emitCartUpdated(next);
-    }
-
-    setCart([...next]);
+    const fixed = saveCart(next);
+    setCart(fixed);
   }
 
   function getAvailable(item) {
