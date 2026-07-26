@@ -34,6 +34,14 @@ function hasCommercialDiscount(product = {}) {
     (finalPrice > 0 && compareAtPrice > finalPrice);
 }
 
+function hasPreorderTag(product = {}) {
+  const collections = Array.isArray(product.collections) ? product.collections : [];
+  return collections.some((collection) => {
+    const key = String(collection || "").toLowerCase();
+    return key.includes("preorder") || key.includes("pre_order") || key === "order_items";
+  });
+}
+
 function ProductCard({ product, lang: langProp, actions, badge, onAddToCart }) {
   const i18n = useI18n();
   const lang = langProp || i18n.lang;
@@ -72,7 +80,7 @@ function ProductCard({ product, lang: langProp, actions, badge, onAddToCart }) {
   const soldCount = Number(product?.sold) || 0;
   const stock = Number(product?.stock ?? 0);
   const detailUrl = getProductUrl(product);
-  const isPreorder = String(product?.status || "").toLowerCase().includes("pre");
+  const isPreorder = String(product?.status || "").toLowerCase().includes("pre") || hasPreorderTag(product);
   const isOutOfStock = !isPreorder && stock <= 0;
   const maxQty = isPreorder ? 99 : Math.max(1, stock);
   const outOfStockLabel = lang === "en" ? "Out of stock" : "Hết hàng";

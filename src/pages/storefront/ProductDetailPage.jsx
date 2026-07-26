@@ -264,9 +264,22 @@ function productDesc(product, lang, fallback) {
   return productLongDesc(product, lang, fallback);
 }
 
+function hasPreorderTag(product = {}) {
+  const collections = Array.isArray(product.collections) ? product.collections : [];
+  return collections.some((collection) => {
+    const key = String(collection || "").toLowerCase();
+    return key.includes("preorder") || key.includes("pre_order") || key === "order_items";
+  });
+}
+
 function isPreorder(product) {
   const status = String(product.status || "").toLowerCase();
-  return Boolean(product.preorder?.enabled || status.includes("pre") || status.includes("order"));
+  return Boolean(
+    product.preorder?.enabled ||
+    status.includes("pre") ||
+    status.includes("order") ||
+    hasPreorderTag(product)
+  );
 }
 
 function isSale(product) {
