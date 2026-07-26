@@ -727,11 +727,19 @@ function ProductSection({ section, products, lang, actions, badge, isFirst = fal
       </div>
 
       {sectionProducts.length ? (
-        <div className="home-mobile-product-grid grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-3">
-          {sectionProducts.map((product) => (
-            <ProductCard key={product.id} product={product} lang={lang} actions={actions} />
-          ))}
-        </div>
+        sectionProducts.length === 1 ? (
+          <div className="home-mobile-product-grid grid grid-cols-1 gap-3">
+            <div className="max-w-xs">
+              <ProductCard product={sectionProducts[0]} lang={lang} actions={actions} />
+            </div>
+          </div>
+        ) : (
+          <div className="home-mobile-product-grid grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-3">
+            {sectionProducts.map((product) => (
+              <ProductCard key={product.id} product={product} lang={lang} actions={actions} />
+            ))}
+          </div>
+        )
       ) : (
         <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-sm font-bold text-slate-500">{t.empty}</div>
       )}
@@ -860,6 +868,20 @@ function ContentHighlights({ news = [], events = [], lang = "vi" }) {
 
 function LoyaltyBubble({ lang }) {
   const t = copy[lang];
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    function handleScroll() {
+      setVisible(window.scrollY > 600);
+    }
+
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  if (!visible) return null;
+
   return (
     <div className="fixed bottom-5 left-5 z-40 hidden sm:block">
       <button className="group flex items-center gap-3 rounded-full border border-amber-200 bg-white px-4 py-3 text-left shadow-2xl shadow-amber-100 transition hover:-translate-y-0.5 hover:border-amber-300 hover:bg-amber-50">

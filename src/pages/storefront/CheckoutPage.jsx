@@ -6,7 +6,7 @@ import {
   clearCheckoutDraft,
   clearCartItems,
 } from "../../services/CartService";
-import { validateStorefrontVoucherApi } from "../../services/StorefrontVoucherApiService";
+import { validateStorefrontVoucherApi, translateVoucherMessage } from "../../services/StorefrontVoucherApiService";
 import { createOrder } from "../../services/OrderService";
 import {
   buildCreateOrderPayload,
@@ -329,11 +329,11 @@ export default function CheckoutPage() {
         shippingDiscount: Number(result.shippingDiscount || 0),
         voucher: result.voucher || null,
       });
-      setVoucherMessage(result.message || t.voucherApplied);
+      setVoucherMessage(translateVoucherMessage(result.message, lang) || t.voucherApplied);
       setDraft((prev) => prev ? { ...prev, voucherCode: result.code } : prev);
     } catch (error) {
       setAppliedVoucher(null);
-      setVoucherMessage(error?.message || "Voucher invalid.");
+      setVoucherMessage(translateVoucherMessage(error?.message, lang) || "Mã giảm giá không hợp lệ.");
       setDraft((prev) => prev ? { ...prev, voucherCode: "" } : prev);
     } finally {
       setVoucherBusy(false);

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Minus, Plus, Trash2, TicketPercent, ShieldCheck, Truck } from "lucide-react";
 import { getCart, saveCart, saveCheckoutDraft } from "../../services/CartService";
-import { validateStorefrontVoucherApi } from "../../services/StorefrontVoucherApiService";
+import { validateStorefrontVoucherApi, translateVoucherMessage } from "../../services/StorefrontVoucherApiService";
 import { getStock } from "../../services/InventoryService";
 import PageShell from "../../components/common/PageShell";
 import ProductCard from "../../components/storefront/ProductCard";
@@ -156,20 +156,18 @@ export default function CartPage() {
       validateStorefrontVoucherApi({ code, subtotal, shippingFee: baseShippingFee })
         .then((result) => {
           if (!alive) return;
-          const message = result.message || "Áp dụng voucher thành công!";
+          const message = translateVoucherMessage(result.message, lang) || "Áp dụng voucher thành công!";
           setAppliedVoucher({
             valid: true,
             discount: Number(result.discount) || 0,
             shippingDiscount: Number(result.shippingDiscount) || 0,
             message,
           });
-          notify("success", message);
         })
         .catch((error) => {
           if (!alive) return;
-          const message = error?.message || "Mã giảm giá không hợp lệ.";
+          const message = translateVoucherMessage(error?.message, lang) || "Mã giảm giá không hợp lệ.";
           setAppliedVoucher({ valid: false, discount: 0, shippingDiscount: 0, message });
-          notify("error", message);
         })
         .finally(() => {
           if (alive) setVoucherChecking(false);

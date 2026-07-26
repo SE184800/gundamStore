@@ -234,8 +234,15 @@ function productName(product, lang) {
   return text(product.name, lang, product.title || "Gundam Model Kit");
 }
 
+function collapseBlankLines(value = "") {
+  return String(value || "")
+    .replace(/\r\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 function productLongDesc(product, lang, fallback) {
-  return text(product.description, lang, product.desc || fallback);
+  return collapseBlankLines(text(product.description, lang, product.desc || fallback));
 }
 
 function firstNonEmptyLine(value = "") {
@@ -321,6 +328,12 @@ function mergeProductVariant(product = {}, variant = null) {
 }
 
 function GundamVisual({ tone = "blue", imageUrl, large = false, priority = false, alt = "", zoom = false }) {
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    setLoaded(false);
+  }, [imageUrl]);
+
   const toneMap = {
     blue: "from-blue-950 via-blue-600 to-sky-100",
     cyan: "from-cyan-900 via-cyan-500 to-blue-100",
@@ -334,13 +347,15 @@ function GundamVisual({ tone = "blue", imageUrl, large = false, priority = false
   if (imageUrl) {
     return (
       <div className={`relative h-full overflow-hidden rounded-2xl bg-slate-100 ${zoom ? "group cursor-zoom-in" : ""}`}>
+        {!loaded && <div className="absolute inset-0 animate-pulse bg-slate-200" />}
         <img
           src={imageUrl}
           alt={alt}
-          className={`h-full w-full object-cover ${zoom ? "transition duration-500 group-hover:scale-125" : ""}`}
+          className={`h-full w-full object-cover transition duration-300 ${loaded ? "opacity-100" : "opacity-0"} ${zoom ? "group-hover:scale-125" : ""}`}
           loading={priority ? "eager" : "lazy"}
           fetchPriority={priority ? "high" : undefined}
           decoding="async"
+          onLoad={() => setLoaded(true)}
         />
         <div className="absolute inset-0 bg-gradient-to-tr from-slate-950/20 via-transparent to-white/20" />
       </div>
@@ -394,7 +409,7 @@ function QuantitySelector({ qty, setQty, maxQty = 99, disabled = false }) {
   );
 }
 
-function ProductInfo({ product, lang, actions, onPreorder }) {
+function ProductInfo({ product, lang, actions, onPreorder, reviewCount = 0 }) {
   const t = copy[lang];
   const variants = useMemo(() => getActiveVariants(product), [product]);
   const [selectedVariantId, setSelectedVariantId] = useState("");
@@ -434,7 +449,7 @@ function ProductInfo({ product, lang, actions, onPreorder }) {
   const oldPrice = Number(currentProduct.compareAtPrice || currentProduct.oldPrice || 0);
   const save = oldPrice > price ? oldPrice - price : 0;
   const ratingValue = Number(product.rating) || 0;
-  const hasRating = ratingValue > 0;
+  const hasRating = ratingValue > 0 && reviewCount > 0;
   const preorderDeposit = preorder ? calculatePreorderDeposit(price) : null;
   const preorderEtaText = product.preorder?.eta || product.eta || getPreorderEtaText(lang);
 
@@ -1023,7 +1038,7 @@ function Reviews({ product, reviews, lang, onSubmitted }) {
 
   const avgRating = reviews.length
     ? reviews.reduce((sum, review) => sum + Number(review.rating || 0), 0) / reviews.length
-    : Number(product.rating) || 0;
+    : 0;
 
   return (
     <section className="mx-auto max-w-[1440px] px-4 py-4 lg:px-8">
@@ -1327,7 +1342,7 @@ export default function ProductDetailPage() {
               </div>
             </div>
 
-            <ProductInfo product={product} lang={lang} actions={actions} onPreorder={startPreorderCheckout} />
+            <ProductInfo product={product} lang={lang} actions={actions} onPreorder={startPreorderCheckout} reviewCount={productReviews.length} />
           </div>
         </section>
 
