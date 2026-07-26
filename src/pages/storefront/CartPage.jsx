@@ -217,7 +217,7 @@ export default function CartPage() {
 
   return (
     <PageShell>
-      <main className="min-h-screen bg-[#F5F7FB] px-4 py-6 md:px-6 md:py-8">
+      <main className="min-h-screen bg-[#F5F7FB] px-4 pb-28 pt-6 md:px-6 md:pt-8 lg:pb-8">
         <div className="mx-auto max-w-7xl">
           <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
@@ -236,7 +236,7 @@ export default function CartPage() {
 
           <div className="grid gap-6 lg:grid-cols-[1fr_390px]">
             <section className="space-y-4">
-              <div className="hidden rounded-2xl bg-white px-5 py-4 text-sm font-black text-slate-500 shadow-sm md:grid md:grid-cols-[40px_1fr_130px_140px_150px_70px]">
+              <div className="hidden rounded-2xl bg-white px-5 py-3 text-xs font-black uppercase tracking-wide text-slate-400 shadow-sm md:grid md:grid-cols-[40px_1fr_110px_130px_130px_56px]">
                 <div>
                   <input
                     type="checkbox"
@@ -246,9 +246,9 @@ export default function CartPage() {
                   />
                 </div>
                 <div>{t.product}</div>
-                <div>{t.price}</div>
-                <div>{t.quantity}</div>
-                <div>{t.lineTotal}</div>
+                <div className="text-right">{t.price}</div>
+                <div className="text-center">{t.quantity}</div>
+                <div className="text-right">{t.lineTotal}</div>
                 <div></div>
               </div>
 
@@ -267,100 +267,155 @@ export default function CartPage() {
                   const overStock = qty > available;
                   const itemName = getItemName(item, lang);
 
+                  const toggleSelected = () => {
+                    const updatedCart = cart.map((x) => {
+                      if (isSameCartItem(x, item)) {
+                        return { ...x, selected: item.selected === false ? true : false };
+                      }
+                      return x;
+                    });
+                    updateCart(updatedCart);
+                  };
+
+                  const removeItem = () => {
+                    const nextCart = cart.filter((x) => !isSameCartItem(x, item));
+                    updateCart(nextCart);
+                    notify("error", lang === "en" ? "Removed product from cart." : "Đã xóa sản phẩm khỏi giỏ hàng.");
+                  };
+
+                  const badgeLine = (
+                    <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[11px] font-bold text-slate-500">
+                      <span>{t.authenticPack}</span>
+                      <span className="text-slate-300">•</span>
+                      <span className="inline-flex items-center gap-1 text-blue-700">
+                        <ShieldCheck size={12} /> {t.guaranteed}
+                      </span>
+                      <span className="text-slate-300">•</span>
+                      <span className={item.backendProductId ? "text-emerald-700" : "text-amber-700"}>
+                        {item.backendProductId ? (item.sku || item.backendProductId) : "Local"}
+                      </span>
+                      <span className="text-slate-300">•</span>
+                      <span className={available <= 0 ? "text-red-500" : ""}>
+                        {t.availablePrefix} {available} {t.availableSuffix}
+                      </span>
+                    </div>
+                  );
+
                   return (
                     <div
                       key={getCartIdentity(item)}
-                      className={`grid items-center gap-4 rounded-3xl bg-white p-5 shadow-sm md:grid-cols-[40px_1fr_130px_140px_150px_70px] ${overStock ? "ring-2 ring-red-200" : ""
-                        }`}
+                      className={`rounded-2xl bg-white shadow-sm ${overStock ? "ring-2 ring-red-200" : ""}`}
                     >
-                      <input
-                        type="checkbox"
-                        checked={item.selected !== false}
-                        onChange={() => {
-                          const updatedCart = cart.map((x) => {
-                            if (isSameCartItem(x, item)) {
-                              return { ...x, selected: item.selected === false ? true : false };
-                            }
-                            return x;
-                          });
-                          updateCart(updatedCart);
-                        }}
-                        className="h-5 w-5"
-                      />
-
-                      <div className="flex gap-4">
-                        <img
-                          src={item.image}
-                          alt={itemName}
-                          loading="lazy"
-                          className="h-24 w-24 rounded-2xl bg-slate-100 object-cover"
+                      {/* Desktop row */}
+                      <div className="hidden md:grid md:grid-cols-[40px_1fr_110px_130px_130px_56px] md:items-center md:gap-4 md:p-4">
+                        <input
+                          type="checkbox"
+                          checked={item.selected !== false}
+                          onChange={toggleSelected}
+                          className="h-5 w-5"
                         />
-                        <div>
-                          <h3 className="font-black text-slate-950">{itemName}</h3>
-                          <p className="mt-1 text-sm font-semibold text-slate-500">
-                            {t.authenticPack}
-                          </p>
 
-                          <div className="mt-3 inline-flex items-center gap-1 rounded-full bg-blue-50 px-3 py-1 text-xs font-black text-blue-700">
-                            <ShieldCheck size={13} /> {t.guaranteed}
+                        <div className="flex gap-4">
+                          <img
+                            src={item.image}
+                            alt={itemName}
+                            loading="lazy"
+                            className="h-20 w-20 shrink-0 rounded-2xl bg-slate-100 object-cover"
+                          />
+                          <div className="min-w-0">
+                            <h3 className="line-clamp-2 font-black text-slate-950">{itemName}</h3>
+                            <div className="mt-2">{badgeLine}</div>
+                            {overStock && (
+                              <div className="mt-1.5 text-xs font-black text-red-500">{t.overStock}</div>
+                            )}
                           </div>
+                        </div>
 
-                          <div className={`mt-2 inline-flex rounded-full px-3 py-1 text-[11px] font-black ${item.backendProductId
-                            ? "bg-emerald-50 text-emerald-700"
-                            : "bg-amber-50 text-amber-700"
-                            }`}>
-                            {item.backendProductId ? `DB Product • ${item.sku || item.backendProductId}` : "Local product"}
+                        <div className="text-right text-xs font-semibold text-slate-400">
+                          {money(item.price)}
+                        </div>
+
+                        <div className="mx-auto flex w-fit items-center rounded-xl border border-slate-200">
+                          <button
+                            onClick={() => decreaseQty(item)}
+                            className="rounded-l-xl p-2 hover:bg-slate-50"
+                          >
+                            <Minus size={14} />
+                          </button>
+                          <span className="w-9 border-x border-slate-200 text-center text-sm font-black">{qty}</span>
+                          <button
+                            onClick={() => increaseQty(item)}
+                            disabled={qty >= available}
+                            className={`rounded-r-xl p-2 ${qty >= available
+                              ? "cursor-not-allowed bg-slate-100 text-slate-300"
+                              : "hover:bg-slate-50"
+                              }`}
+                          >
+                            <Plus size={14} />
+                          </button>
+                        </div>
+
+                        <div className="text-right font-black text-red-500">{money(lineTotal)}</div>
+
+                        <button
+                          onClick={removeItem}
+                          className="mx-auto rounded-xl bg-red-50 p-2.5 text-red-500 hover:bg-red-100"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+
+                      {/* Mobile card */}
+                      <div className="p-3.5 md:hidden">
+                        <div className="flex gap-3">
+                          <input
+                            type="checkbox"
+                            checked={item.selected !== false}
+                            onChange={toggleSelected}
+                            className="mt-1 h-4 w-4 shrink-0"
+                          />
+                          <img
+                            src={item.image}
+                            alt={itemName}
+                            loading="lazy"
+                            className="h-16 w-16 shrink-0 rounded-xl bg-slate-100 object-cover"
+                          />
+                          <div className="min-w-0 flex-1">
+                            <h3 className="line-clamp-2 text-sm font-black text-slate-950">{itemName}</h3>
+                            <div className="mt-1">{badgeLine}</div>
                           </div>
+                          <button
+                            onClick={removeItem}
+                            className="h-fit shrink-0 rounded-lg bg-red-50 p-1.5 text-red-500"
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        </div>
 
-                          <div className={`mt-2 text-xs font-black ${available <= 0 ? "text-red-500" : "text-slate-500"}`}>
-                            {t.availablePrefix} {available} {t.availableSuffix}
+                        {overStock && (
+                          <div className="mt-1.5 pl-7 text-[11px] font-black text-red-500">{t.overStock}</div>
+                        )}
+
+                        <div className="mt-2.5 flex items-center justify-between pl-7">
+                          <div className="flex items-center rounded-lg border border-slate-200">
+                            <button onClick={() => decreaseQty(item)} className="rounded-l-lg p-1.5">
+                              <Minus size={13} />
+                            </button>
+                            <span className="w-7 border-x border-slate-200 text-center text-xs font-black">{qty}</span>
+                            <button
+                              onClick={() => increaseQty(item)}
+                              disabled={qty >= available}
+                              className={`rounded-r-lg p-1.5 ${qty >= available ? "cursor-not-allowed text-slate-300" : ""}`}
+                            >
+                              <Plus size={13} />
+                            </button>
                           </div>
-
-                          {overStock && (
-                            <div className="mt-1 text-xs font-black text-red-500">
-                              {t.overStock}
-                            </div>
-                          )}
+                          <div className="text-right">
+                            <div className="text-[10px] font-semibold text-slate-400">{money(item.price)}</div>
+                            <div className="text-sm font-black text-red-500">{money(lineTotal)}</div>
+                          </div>
                         </div>
                       </div>
-
-                      <div className="font-black text-red-500">{money(item.price)}</div>
-
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => decreaseQty(item)}
-                          className="rounded-xl border p-2 hover:bg-slate-50"
-                        >
-                          <Minus size={15} />
-                        </button>
-
-                        <span className="w-10 text-center font-black">{qty}</span>
-
-                        <button
-                          onClick={() => increaseQty(item)}
-                          disabled={qty >= available}
-                          className={`rounded-xl border p-2 ${qty >= available
-                            ? "cursor-not-allowed bg-slate-100 text-slate-300"
-                            : "hover:bg-slate-50"
-                            }`}
-                        >
-                          <Plus size={15} />
-                        </button>
-                      </div>
-
-                      <div className="font-black text-slate-950">{money(lineTotal)}</div>
-
-                      {/* 🟢 BỔ SUNG 2: Sửa nút xóa để kích hoạt Toast thành công */}
-                      <button
-                        onClick={() => {
-                          const nextCart = cart.filter((x) => !isSameCartItem(x, item));
-                          updateCart(nextCart);
-                          notify("error", lang === "en" ? "Removed product from cart." : "Đã xóa sản phẩm khỏi giỏ hàng.");
-                        }}
-                        className="rounded-xl bg-red-50 p-3 text-red-500 hover:bg-red-100"
-                      >
-                        <Trash2 size={18} />
-                      </button>
                     </div>
                   );
                 })
@@ -375,7 +430,7 @@ export default function CartPage() {
                 <p className="mt-1 text-xs font-semibold leading-5 text-blue-700/80">{t.trustDesc}</p>
               </div>
 
-              <div className="mt-5 rounded-2xl bg-blue-50 p-4">
+              <div className="mt-3 rounded-2xl bg-blue-50 p-3.5">
                 <div className="flex items-center gap-2 font-black text-blue-700">
                   <TicketPercent size={18} />
                   {t.voucher}
@@ -392,7 +447,7 @@ export default function CartPage() {
                     } catch { }
                   }}
                   placeholder="GUNDAM10 / FREESHIP / VIP50"
-                  className="mt-3 w-full rounded-2xl border border-blue-100 bg-white px-4 py-3 text-sm outline-none"
+                  className="mt-2.5 w-full rounded-2xl border border-blue-100 bg-white px-4 py-3 text-sm outline-none"
                 />
 
                 {voucherCode && (
@@ -402,8 +457,8 @@ export default function CartPage() {
                 )}
               </div>
 
-              <div className="mt-4 rounded-2xl bg-slate-50 p-4">
-                <div className="mb-3 flex items-center gap-2 font-black text-slate-800">
+              <div className="mt-3 rounded-2xl bg-slate-50 p-3.5">
+                <div className="mb-2.5 flex items-center gap-2 font-black text-slate-800">
                   <Truck size={18} />
                   {t.shipping}
                 </div>
@@ -430,7 +485,7 @@ export default function CartPage() {
                 </div>
               </div>
 
-              <div className="mt-5 space-y-3 text-sm">
+              <div className="mt-3 space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span>{t.selectedItems}</span>
                   <b>{selectedItems.length}</b>
@@ -456,7 +511,7 @@ export default function CartPage() {
                   <b>-{money(voucher.shippingDiscount)}</b>
                 </div>
 
-                <div className="flex justify-between border-t pt-4 text-xl font-black">
+                <div className="flex justify-between border-t pt-3 text-xl font-black">
                   <span>{t.total}</span>
                   <span className="text-red-500">{money(total)}</span>
                 </div>
@@ -464,7 +519,7 @@ export default function CartPage() {
 
               <button
                 onClick={goCheckout}
-                className="mt-6 w-full rounded-2xl bg-blue-700 py-4 font-black text-white shadow-lg hover:bg-blue-800"
+                className="mt-5 hidden w-full rounded-2xl bg-blue-700 py-4 font-black text-white shadow-lg hover:bg-blue-800 lg:block"
               >
                 {t.checkout} ({selectedItems.length})
               </button>
@@ -472,6 +527,24 @@ export default function CartPage() {
           </div>
         </div>
       </main>
+
+      {cart.length > 0 && (
+        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 px-4 py-3 shadow-[0_-6px_20px_rgba(15,23,42,0.08)] backdrop-blur lg:hidden">
+          <div className="mx-auto flex max-w-7xl items-center justify-between gap-3">
+            <div>
+              <div className="text-[11px] font-bold text-slate-500">{t.total}</div>
+              <div className="text-lg font-black text-red-500">{money(total)}</div>
+            </div>
+            <button
+              onClick={goCheckout}
+              className="rounded-xl bg-blue-700 px-6 py-3 text-sm font-black text-white shadow-lg hover:bg-blue-800"
+            >
+              {t.checkout} ({selectedItems.length})
+            </button>
+          </div>
+        </div>
+      )}
+
       <Toast show={toast.show} type={toast.type} message={toast.message} onClose={dismiss} />
     </PageShell>
   );
