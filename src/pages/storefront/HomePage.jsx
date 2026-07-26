@@ -986,7 +986,7 @@ export default function HomePage() {
     let alive = true;
 
     Promise.allSettled([
-      getStorefrontProductsForStorefront(),
+      getStorefrontProductsForStorefront({ page: 1, limit: 100 }),
       getStorefrontCategoryTreeFromApi(),
     ]).then(([productsResult, categoriesResult]) => {
       if (!alive) return;

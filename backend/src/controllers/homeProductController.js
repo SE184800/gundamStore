@@ -3,6 +3,7 @@ import { decorateProductWithCommercialPrice } from "../services/commercialPriceR
 import { rewriteMediaUrl, rewriteMediaUrlsInObject } from "../services/mediaStorageService.js";
 
 const HOME_PRODUCTS_LIMIT = 24;
+const HOME_PRODUCTS_MAX_LIMIT = 100;
 
 function normalizeProductKey(value = "") {
   return String(value || "")
@@ -140,6 +141,9 @@ function toLightweightHomeProduct(product = {}) {
 
 export async function listHomeProducts(req, res, next) {
   try {
+    const page = Math.max(1, Number.parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(HOME_PRODUCTS_MAX_LIMIT, Math.max(1, Number.parseInt(req.query.limit, 10) || HOME_PRODUCTS_LIMIT));
+
     const products = await prisma.product.findMany({
       where: {
         active: true,
@@ -205,14 +209,15 @@ export async function listHomeProducts(req, res, next) {
         },
       },
       orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
-      take: HOME_PRODUCTS_LIMIT,
+      skip: (page - 1) * limit,
+      take: limit,
     });
 
     const homeProducts = products
       .map(toLightweightHomeProduct)
       .filter((product) => product.sellable && Number(product.finalPrice || product.price || 0) > 0);
 
-    return res.json({ success: true, products: homeProducts, meta: { limit: HOME_PRODUCTS_LIMIT, count: homeProducts.length, lightweight: true } });
+    return res.json({ success: true, products: homeProducts, meta: { page, limit, count: homeProducts.length, lightweight: true } });
   } catch (err) {
     next(err);
   }

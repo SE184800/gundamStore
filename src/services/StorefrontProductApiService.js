@@ -287,8 +287,12 @@ export async function getStorefrontProductsPageFromApi({
   };
 }
 
-export async function getStorefrontHomeProductsFromApi() {
-  const data = await publicJsonRequest("/products/home");
+export async function getStorefrontHomeProductsFromApi({ page, limit } = {}) {
+  const params = new URLSearchParams();
+  if (page) params.set("page", String(page));
+  if (limit) params.set("limit", String(limit));
+  const query = params.toString();
+  const data = await publicJsonRequest(`/products/home${query ? `?${query}` : ""}`);
   const products = Array.isArray(data?.products) ? data.products : Array.isArray(data?.data) ? data.data : [];
   if (!data?.success || !Array.isArray(products)) throw new Error("Homepage product sync skipped.");
   return products;
@@ -315,8 +319,8 @@ export function dedupeStorefrontProducts(products = []) {
   });
 }
 
-export async function getStorefrontProductsForStorefront() {
-  const backendProducts = await getStorefrontHomeProductsFromApi();
+export async function getStorefrontProductsForStorefront(params = {}) {
+  const backendProducts = await getStorefrontHomeProductsFromApi(params);
   return dedupeStorefrontProducts(backendProducts.map(mapBackendProductToStorefront));
 }
 
