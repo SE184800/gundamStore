@@ -45,6 +45,7 @@ import {
   getStorefrontProductDetailForStorefront,
   getStorefrontProductsPageFromApi,
 } from "../../services/StorefrontProductApiService";
+import { getStorefrontActivePromotionsApi } from "../../services/StorefrontPromotionApiService";
 import {
   createStorefrontReviewApi,
   getStorefrontProductReviewsApi,
@@ -96,11 +97,6 @@ const copy = {
     eta: "Dự kiến về",
     preorderNote: "Đơn pre-order sẽ được ghi nhận cọc, shop nhắc thanh toán phần còn lại khi hàng về.",
     voucherTitle: "Ưu đãi cho sản phẩm này",
-    voucher1: "Giảm 50.000₫ cho đơn từ 1.000.000₫",
-    voucher2: "Freeship theo điều kiện khu vực",
-    voucher3: "Giảm 10% khi mua kèm phụ kiện builder",
-    collectVoucher: "Lưu voucher",
-    voucherSaved: "Đã lưu voucher",
     deliveryTitle: "Giao hàng",
     deliveryHint: "Phí và thời gian giao sẽ được tính chính xác theo địa chỉ của bạn ở bước thanh toán.",
     paymentTitle: "Thanh toán",
@@ -178,11 +174,6 @@ const copy = {
     eta: "ETA",
     preorderNote: "Pre-order deposit will be recorded. The shop will remind you to pay the remaining balance when the item arrives.",
     voucherTitle: "Product deals",
-    voucher1: "50,000₫ off orders from 1,000,000₫",
-    voucher2: "Conditional free shipping by area",
-    voucher3: "10% off builder accessories bundle",
-    collectVoucher: "Collect voucher",
-    voucherSaved: "Voucher saved",
     deliveryTitle: "Delivery",
     deliveryHint: "Shipping fee and delivery time will be calculated based on your address at checkout.",
     paymentTitle: "Payment",
@@ -690,7 +681,7 @@ function ProductInfo({ product, lang, actions, onPreorder }) {
         </div>
       )}
 
-      <MarketplaceExtras lang={lang} />
+      <MarketplaceExtras lang={lang} product={currentProduct} />
 
       <div className="mt-5">
         <div className="mb-2 text-xs font-black uppercase text-slate-500">{t.quantity}</div>
@@ -816,52 +807,47 @@ function ProductInfo({ product, lang, actions, onPreorder }) {
   );
 }
 
-function MarketplaceExtras({ lang }) {
+function MarketplaceExtras({ lang, product }) {
   const t = copy[lang];
-  const [savedVoucher, setSavedVoucher] = useState("");
+  const [promotions, setPromotions] = useState([]);
 
-  const vouchers = [
-    { label: t.voucher1, code: "VIP50" },
-    { label: t.voucher2, code: "FREESHIP" },
-    { label: t.voucher3, code: "GUNDAM10" },
-  ];
+  useEffect(() => {
+    let alive = true;
+    getStorefrontActivePromotionsApi()
+      .then((rows) => {
+        if (alive) setPromotions(Array.isArray(rows) ? rows : []);
+      })
+      .catch(() => {
+        if (alive) setPromotions([]);
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
 
-  function collectVoucher(code) {
-    try {
-      localStorage.setItem("gundam-saved-voucher", code);
-      setSavedVoucher(code);
-    } catch {
-      setSavedVoucher(code);
-    }
-  }
+  const productKey = String(product?.backendProductId || product?.productId || product?.id || "");
+  const applicablePromotions = promotions.filter((promo) =>
+    (promo.products || []).some(
+      (entry) => String(entry.product?.id || entry.productId || "") === productKey
+    )
+  );
 
   return (
     <div className="mt-5 grid gap-3">
-      <div className="rounded-3xl border border-amber-100 bg-amber-50 p-4">
-        <div className="mb-3 flex items-center gap-2 text-sm font-black text-amber-800">
-          <CreditCard size={18} />
-          {t.voucherTitle}
+      {applicablePromotions.length > 0 && (
+        <div className="rounded-3xl border border-amber-100 bg-amber-50 p-4">
+          <div className="mb-3 flex items-center gap-2 text-sm font-black text-amber-800">
+            <CreditCard size={18} />
+            {t.voucherTitle}
+          </div>
+
+          {applicablePromotions.map((promo) => (
+            <div key={promo.id} className="mb-2 rounded-2xl bg-white p-3 text-xs font-bold text-slate-700 shadow-sm">
+              {(lang === "en" ? promo.nameEn : promo.nameVi) || promo.nameVi || promo.nameEn}
+            </div>
+          ))}
         </div>
-
-        {savedVoucher && (
-          <div className="mb-3 rounded-2xl bg-emerald-50 p-3 text-xs font-black text-emerald-700">
-            {t.voucherSaved}: {savedVoucher}
-          </div>
-        )}
-
-        {vouchers.map((voucher) => (
-          <div key={voucher.code} className="mb-2 flex items-center justify-between gap-3 rounded-2xl bg-white p-3 text-xs font-bold text-slate-700 shadow-sm">
-            <span>{voucher.label}</span>
-            <button
-              type="button"
-              onClick={() => collectVoucher(voucher.code)}
-              className="shrink-0 rounded-xl bg-amber-500 px-3 py-1.5 text-[11px] font-black text-white hover:bg-amber-600"
-            >
-              {savedVoucher === voucher.code ? t.voucherSaved : t.collectVoucher}
-            </button>
-          </div>
-        ))}
-      </div>
+      )}
 
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">

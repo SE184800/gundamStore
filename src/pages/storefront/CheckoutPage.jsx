@@ -6,7 +6,6 @@ import {
   clearCheckoutDraft,
   clearCartItems,
 } from "../../services/CartService";
-import { applyVoucher } from "../../services/VoucherService";
 import { validateStorefrontVoucherApi } from "../../services/StorefrontVoucherApiService";
 import { createOrder } from "../../services/OrderService";
 import {
@@ -174,6 +173,7 @@ export default function CheckoutPage() {
 
     if (checkoutDraft?.voucherCode) {
       setVoucherInput(checkoutDraft.voucherCode);
+      applyBackendVoucher(checkoutDraft.voucherCode, checkoutDraft);
     }
 
     if (checkoutDraft?.shippingMethod) {
@@ -271,15 +271,13 @@ export default function CheckoutPage() {
       };
     }
 
-    const voucher = applyVoucher(draft.voucherCode || "", subtotal, shippingFee);
-
     return {
       subtotal,
       shippingFee,
-      discount: Number(voucher.discount) || 0,
-      shippingDiscount: Number(voucher.shippingDiscount) || 0,
-      total: Math.max(0, subtotal + shippingFee - (Number(voucher.discount) || 0) - (Number(voucher.shippingDiscount) || 0)),
-      voucherCode: voucher.valid ? draft.voucherCode : "",
+      discount: 0,
+      shippingDiscount: 0,
+      total: Math.max(0, subtotal + shippingFee),
+      voucherCode: "",
     };
   }, [draft, selectedShipping, appliedVoucher]);
 
@@ -301,8 +299,8 @@ export default function CheckoutPage() {
     );
   }
 
-  async function applyBackendVoucher() {
-    const code = String(voucherInput || "").trim().toUpperCase();
+  async function applyBackendVoucher(codeOverride, draftOverride) {
+    const code = String(codeOverride ?? voucherInput ?? "").trim().toUpperCase();
 
     if (!code) {
       setAppliedVoucher(null);
@@ -314,13 +312,14 @@ export default function CheckoutPage() {
     setVoucherMessage("");
 
     try {
-      const subtotal = Number(draft?.subtotal || 0);
+      const sourceDraft = draftOverride || draft;
+      const subtotal = Number(sourceDraft?.subtotal || 0);
       const shippingFee = Number(selectedShipping?.fee || 0);
       const result = await validateStorefrontVoucherApi({
         code,
         subtotal,
         shippingFee,
-        items: draft?.items || [],
+        items: sourceDraft?.items || [],
         customerPhone: customer.phone,
       });
 

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Minus, Plus, Trash2, TicketPercent, ShieldCheck, Truck } from "lucide-react";
 import { getCart, saveCart, saveCheckoutDraft } from "../../services/CartService";
-import { applyVoucher } from "../../services/VoucherService";
+import { validateStorefrontVoucherApi } from "../../services/StorefrontVoucherApiService";
 import { getStock } from "../../services/InventoryService";
 import PageShell from "../../components/common/PageShell";
 import ProductCard from "../../components/storefront/ProductCard";
@@ -89,6 +89,8 @@ export default function CartPage() {
   const [shippingMethod, setShippingMethod] = useState("FAST");
   const [shippingMethods, setShippingMethods] = useState(SHIPPING_METHODS);
   const [suggestedProducts, setSuggestedProducts] = useState([]);
+  const [appliedVoucher, setAppliedVoucher] = useState(null);
+  const [voucherChecking, setVoucherChecking] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -126,26 +128,60 @@ export default function CartPage() {
   const selectedShipping =
     shippingMethods.find((item) => item.value === shippingMethod) || shippingMethods[0];
   const baseShippingFee = selectedItems.length ? Number(selectedShipping.fee || 0) : 0;
-  const voucher = applyVoucher(voucherCode, subtotal, baseShippingFee);
+  const voucher = {
+    valid: Boolean(appliedVoucher?.valid),
+    discount: Number(appliedVoucher?.discount) || 0,
+    shippingDiscount: Number(appliedVoucher?.shippingDiscount) || 0,
+    message: appliedVoucher?.message || "",
+  };
 
   const total = Math.max(
     0,
     subtotal + baseShippingFee - voucher.discount - voucher.shippingDiscount
   );
 
-  // 🟢 BỔ SUNG 1: Tự động bắn Toast khi hệ thống kiểm tra xong mã Voucher
+  // Xác thực mã giảm giá qua backend thật (khớp dữ liệu admin tạo), có debounce khi gõ.
   useEffect(() => {
-    if (!voucherCode) return;
+    const code = voucherCode.trim().toUpperCase();
+
+    if (!code) {
+      setAppliedVoucher(null);
+      return undefined;
+    }
+
+    let alive = true;
+    setVoucherChecking(true);
 
     const delayDebounce = setTimeout(() => {
-      notify(
-        voucher.valid ? "success" : "error",
-        voucher.message || (voucher.valid ? "Áp dụng voucher thành công!" : "Mã giảm giá không hợp lệ.")
-      );
+      validateStorefrontVoucherApi({ code, subtotal, shippingFee: baseShippingFee })
+        .then((result) => {
+          if (!alive) return;
+          const message = result.message || "Áp dụng voucher thành công!";
+          setAppliedVoucher({
+            valid: true,
+            discount: Number(result.discount) || 0,
+            shippingDiscount: Number(result.shippingDiscount) || 0,
+            message,
+          });
+          notify("success", message);
+        })
+        .catch((error) => {
+          if (!alive) return;
+          const message = error?.message || "Mã giảm giá không hợp lệ.";
+          setAppliedVoucher({ valid: false, discount: 0, shippingDiscount: 0, message });
+          notify("error", message);
+        })
+        .finally(() => {
+          if (alive) setVoucherChecking(false);
+        });
     }, 800);
 
-    return () => clearTimeout(delayDebounce);
-  }, [voucher.valid, voucherCode]);
+    return () => {
+      alive = false;
+      clearTimeout(delayDebounce);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [voucherCode, subtotal, baseShippingFee]);
 
   function updateCart(next) {
     const fixed = saveCart(next);
@@ -504,11 +540,17 @@ export default function CartPage() {
                       else localStorage.removeItem("gundam-saved-voucher");
                     } catch { }
                   }}
-                  placeholder="GUNDAM10 / FREESHIP / VIP50"
+                  placeholder={lang === "en" ? "Enter voucher code" : "Nhập mã giảm giá"}
                   className="mt-2.5 w-full rounded-2xl border border-blue-100 bg-white px-4 py-3 text-sm outline-none"
                 />
 
-                {voucherCode && (
+                {voucherCode && voucherChecking && (
+                  <p className="mt-2 text-xs font-bold text-slate-400">
+                    {lang === "en" ? "Checking voucher..." : "Đang kiểm tra mã..."}
+                  </p>
+                )}
+
+                {voucherCode && !voucherChecking && voucher.message && (
                   <p className={`mt-2 text-xs font-bold ${voucher.valid ? "text-green-600" : "text-red-500"}`}>
                     {voucher.message}
                   </p>
