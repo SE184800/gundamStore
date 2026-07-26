@@ -33,13 +33,13 @@
     width: 8px !important;
   }
 
-  body:has(.home-mobile-product-grid) main.mx-auto.grid.max-w-\[1200px\] {
+  body:has(.home-mobile-product-grid) main.mx-auto.grid.max-w-\[1440px\] {
     padding-left: 8px !important;
     padding-right: 8px !important;
     gap: 10px !important;
   }
 
-  body:has(.home-mobile-product-grid) main.mx-auto.grid.max-w-\[1200px\] > div.space-y-4 {
+  body:has(.home-mobile-product-grid) main.mx-auto.grid.max-w-\[1440px\] > div.rounded-2xl.border.border-slate-200.bg-white.shadow-sm {
     gap: 12px !important;
   }
 

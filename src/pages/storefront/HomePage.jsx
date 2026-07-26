@@ -515,7 +515,7 @@ function TrustStrip({ lang }) {
   ];
 
   return (
-    <section className="mx-auto max-w-[1440px] px-4 py-2 sm:py-4">
+    <section className="mx-auto max-w-[1440px] px-4 py-2 sm:py-4 lg:px-8">
       <div className="mobile-hide-scrollbar flex gap-2 overflow-x-auto rounded-2xl border border-blue-100 bg-white p-2 shadow-sm sm:grid sm:grid-cols-2 sm:gap-0 sm:overflow-hidden sm:p-0 lg:grid-cols-4">
         {items.map(([Icon, title, desc], index) => (
           <div
@@ -727,7 +727,7 @@ function ProductSection({ section, products, lang, actions, badge, isFirst = fal
       </div>
 
       {sectionProducts.length ? (
-        <div className="home-mobile-product-grid grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="home-mobile-product-grid grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-3">
           {sectionProducts.map((product) => (
             <ProductCard key={product.id} product={product} lang={lang} actions={actions} />
           ))}
@@ -754,7 +754,7 @@ function ContentHighlights({ news = [], events = [], lang = "vi" }) {
   };
 
   return (
-    <section className="mx-auto mt-4 grid max-w-[1440px] gap-4 px-4 pb-6 lg:grid-cols-[1.4fr_0.6fr]">
+    <section className="mx-auto mt-4 grid max-w-[1440px] gap-4 px-4 pb-6 lg:px-8 lg:grid-cols-[1.4fr_0.6fr]">
       {news.length > 0 && (
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="mb-4 flex items-center justify-between gap-3">
@@ -1136,7 +1136,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        <main className="mx-auto grid max-w-[1440px] gap-4 px-4 pb-8 lg:grid-cols-[300px_1fr]">
+        <main className="mx-auto grid max-w-[1440px] px-4 pb-8 lg:px-8 lg:grid-cols-[300px_1fr]">
           <CategorySidebar categoryTree={categoryTree} lang={lang} />
 
           <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
