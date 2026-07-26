@@ -120,6 +120,11 @@ export default function AdminShipping() {
       await reload();
       notify("success", "Đã xóa phương thức vận chuyển.");
     } catch (error) {
+      if (error?.status === 409) {
+        const detail = error?.data?.message || error?.message || "Phương thức này đang được đơn hàng sử dụng.";
+        notify("error", `${detail} Vui lòng dùng nút "Tắt Active" (Edit → Active = off) thay vì xóa.`);
+        return;
+      }
       notify("error", error?.message || "Delete shipping method failed.");
     }
   }
