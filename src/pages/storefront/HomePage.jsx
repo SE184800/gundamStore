@@ -515,8 +515,8 @@ function TrustStrip({ lang }) {
   ];
 
   return (
-    <section className="mx-auto max-w-[1200px] px-4 py-2 sm:py-4">
-      <div className="mobile-hide-scrollbar flex gap-2 overflow-x-auto rounded-2xl border border-blue-100 bg-white p-2 shadow-sm sm:grid sm:grid-cols-2 sm:gap-0 sm:overflow-hidden sm:p-0 lg:grid-cols-3 xl:grid-cols-4">
+    <section className="mx-auto max-w-[1440px] px-4 py-2 sm:py-4">
+      <div className="mobile-hide-scrollbar flex gap-2 overflow-x-auto rounded-2xl border border-blue-100 bg-white p-2 shadow-sm sm:grid sm:grid-cols-2 sm:gap-0 sm:overflow-hidden sm:p-0 lg:grid-cols-4">
         {items.map(([Icon, title, desc], index) => (
           <div
             key={title}
@@ -709,13 +709,13 @@ function CategorySidebar({ categoryTree, lang }) {
   );
 }
 
-function ProductSection({ section, products, lang, actions, badge }) {
+function ProductSection({ section, products, lang, actions, badge, isFirst = false }) {
   const t = copy[lang];
   const sectionProducts = getSectionProducts(products, section);
   const title = text(section.title, lang, t.newArrivals);
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+    <section className={`p-4 ${isFirst ? "" : "border-t border-slate-100"}`}>
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <span className="rounded-lg border border-blue-100 bg-blue-50 px-2.5 py-1 text-[10px] font-black uppercase text-blue-700">{badge}</span>
@@ -754,7 +754,7 @@ function ContentHighlights({ news = [], events = [], lang = "vi" }) {
   };
 
   return (
-    <section className="mx-auto mt-4 grid max-w-[1200px] gap-4 px-4 pb-6 lg:grid-cols-[1.4fr_0.6fr]">
+    <section className="mx-auto mt-4 grid max-w-[1440px] gap-4 px-4 pb-6 lg:grid-cols-[1.4fr_0.6fr]">
       {news.length > 0 && (
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="mb-4 flex items-center justify-between gap-3">
@@ -1087,7 +1087,7 @@ export default function HomePage() {
         />
         <TrustStrip lang={lang} />
 
-        <section className="mx-auto max-w-[1200px] px-4 pb-3 lg:hidden">
+        <section className="mx-auto max-w-[1440px] px-4 pb-3 lg:hidden">
           <div className="mobile-hide-scrollbar flex gap-2 overflow-x-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
             <a
               href="/shop"
@@ -1136,10 +1136,10 @@ export default function HomePage() {
           </div>
         </section>
 
-        <main className="mx-auto grid max-w-[1200px] gap-4 px-4 pb-8 lg:grid-cols-[300px_1fr]">
+        <main className="mx-auto grid max-w-[1440px] gap-4 px-4 pb-8 lg:grid-cols-[300px_1fr]">
           <CategorySidebar categoryTree={categoryTree} lang={lang} />
 
-          <div className="space-y-4">
+          <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
             {sections.map((section, index) => (
               <ProductSection
                 key={section.id}
@@ -1147,6 +1147,7 @@ export default function HomePage() {
                 products={products}
                 lang={lang}
                 actions={actions}
+                isFirst={index === 0}
                 badge={{
                   new_arrivals: "NEW",
                   order_items: "ORDER",

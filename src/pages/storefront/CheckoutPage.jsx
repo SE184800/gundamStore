@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { MapPin, Truck, CreditCard, ShieldCheck, AlertCircle } from "lucide-react";
+import { MapPin, Truck, CreditCard, ShieldCheck, AlertCircle, Check } from "lucide-react";
 import {
   getCheckoutDraft,
   clearCheckoutDraft,
@@ -34,6 +34,9 @@ function getCopy(lang) {
   return {
     eyebrow: lang === "en" ? "Checkout" : "Thanh toán",
     title: lang === "en" ? "Checkout your order" : "Thanh toán đơn hàng",
+    stepCart: lang === "en" ? "Cart" : "Giỏ hàng",
+    stepCheckout: lang === "en" ? "Checkout" : "Thanh toán",
+    stepDone: lang === "en" ? "Done" : "Hoàn tất",
     noDraft: lang === "en" ? "No checkout data found" : "Không có dữ liệu checkout",
     backCart: lang === "en" ? "Back to cart" : "Quay lại giỏ hàng",
     addressTitle: lang === "en" ? "Shipping address" : "Địa chỉ nhận hàng",
@@ -168,6 +171,10 @@ export default function CheckoutPage() {
 
     const checkoutDraft = getCheckoutDraft();
     setDraft(checkoutDraft);
+
+    if (checkoutDraft?.voucherCode) {
+      setVoucherInput(checkoutDraft.voucherCode);
+    }
 
     if (checkoutDraft?.shippingMethod) {
       setCustomer((prev) => ({
@@ -435,9 +442,11 @@ export default function CheckoutPage() {
     }
   }
 
+  const steps = [t.stepCart, t.stepCheckout, t.stepDone];
+
   return (
     <PageShell>
-      <main className="min-h-screen bg-[#F5F7FB] px-4 py-6 md:px-6 md:py-8">
+      <main className="min-h-screen bg-[#F5F7FB] px-4 pb-28 pt-6 md:px-6 md:pt-8 lg:pb-8">
         <div className="mx-auto max-w-7xl">
           <p className="text-sm font-black uppercase tracking-[0.2em] text-blue-600">
             {t.eyebrow}
@@ -447,6 +456,35 @@ export default function CheckoutPage() {
           </h1>
           <p className="mt-2 text-sm font-semibold text-slate-500">{t.reviewHint}</p>
 
+          <div className="mt-5 flex items-center gap-2">
+            {steps.map((label, index) => {
+              const isDone = index === 0;
+              const isCurrent = index === 1;
+              return (
+                <div key={label} className="flex flex-1 items-center gap-2 last:flex-none">
+                  <div
+                    className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-black ${
+                      isDone
+                        ? "bg-emerald-500 text-white"
+                        : isCurrent
+                          ? "bg-blue-700 text-white"
+                          : "bg-slate-200 text-slate-500"
+                    }`}
+                  >
+                    {isDone ? <Check size={14} /> : index + 1}
+                  </div>
+                  <span
+                    className={`text-xs font-black uppercase tracking-wide ${
+                      isCurrent ? "text-blue-700" : isDone ? "text-emerald-600" : "text-slate-400"
+                    }`}
+                  >
+                    {label}
+                  </span>
+                  {index < steps.length - 1 && <div className="h-0.5 flex-1 rounded-full bg-slate-200" />}
+                </div>
+              );
+            })}
+          </div>
 
           {isPreorder && (
             <div className="mt-5 rounded-3xl border border-amber-100 bg-amber-50 p-5">
@@ -738,7 +776,7 @@ export default function CheckoutPage() {
               <button
                 onClick={submitOrder}
                 disabled={placingOrder}
-                className="mt-6 w-full rounded-2xl bg-blue-700 py-4 font-black text-white shadow-lg hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
+                className="mt-6 hidden w-full rounded-2xl bg-blue-700 py-4 font-black text-white shadow-lg hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60 lg:block"
               >
                 {placingOrder ? t.placing : t.placeOrder}
               </button>
@@ -753,6 +791,22 @@ export default function CheckoutPage() {
           </div>
         </div>
       </main>
+
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 px-4 py-3 shadow-[0_-6px_20px_rgba(15,23,42,0.08)] backdrop-blur lg:hidden">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3">
+          <div>
+            <div className="text-[11px] font-bold text-slate-500">{t.total}</div>
+            <div className="text-lg font-black text-red-500">{money(pricing.total)}</div>
+          </div>
+          <button
+            onClick={submitOrder}
+            disabled={placingOrder}
+            className="rounded-xl bg-blue-700 px-6 py-3 text-sm font-black text-white shadow-lg hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {placingOrder ? t.placing : t.placeOrder}
+          </button>
+        </div>
+      </div>
     </PageShell>
   );
 }

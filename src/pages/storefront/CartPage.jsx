@@ -5,6 +5,8 @@ import { getCart, saveCart, saveCheckoutDraft } from "../../services/CartService
 import { applyVoucher } from "../../services/VoucherService";
 import { getStock } from "../../services/InventoryService";
 import PageShell from "../../components/common/PageShell";
+import ProductCard from "../../components/storefront/ProductCard";
+import { getStorefrontProductsPageFromApi } from "../../services/StorefrontProductApiService";
 import { SHIPPING_METHODS, getLocalized } from "../../constants/orderConfig";
 import { getStorefrontShippingMethodsApi } from "../../services/ShippingApiService";
 import { useI18n } from "../../i18n";
@@ -77,15 +79,36 @@ export default function CartPage() {
   const { lang } = useI18n();
   const t = getCopy(lang);
   const [cart, setCart] = useState(() => getCart());
-  const [voucherCode, setVoucherCode] = useState("");
+  const [voucherCode, setVoucherCode] = useState(() => {
+    try {
+      return localStorage.getItem("gundam-saved-voucher") || "";
+    } catch {
+      return "";
+    }
+  });
   const [shippingMethod, setShippingMethod] = useState("FAST");
   const [shippingMethods, setShippingMethods] = useState(SHIPPING_METHODS);
+  const [suggestedProducts, setSuggestedProducts] = useState([]);
 
   useEffect(() => {
     let alive = true;
     getStorefrontShippingMethodsApi().then((methods) => {
       if (alive && Array.isArray(methods) && methods.length) setShippingMethods(methods);
     });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let alive = true;
+    getStorefrontProductsPageFromApi({ limit: 4, sort: "newest" })
+      .then(({ products: items }) => {
+        if (alive) setSuggestedProducts(items || []);
+      })
+      .catch(() => {
+        if (alive) setSuggestedProducts([]);
+      });
     return () => {
       alive = false;
     };
@@ -252,12 +275,42 @@ export default function CartPage() {
                 <div></div>
               </div>
 
+              {cart.length > 0 && (
+                <label className="flex items-center justify-between rounded-2xl bg-white px-4 py-3 shadow-sm md:hidden">
+                  <span className="flex items-center gap-2 text-sm font-black text-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={cart.every((item) => item.selected !== false)}
+                      onChange={toggleAll}
+                      className="h-5 w-5"
+                    />
+                    {lang === "en" ? "Select all" : "Chọn tất cả"}
+                  </span>
+                  <span className="text-xs font-bold text-slate-400">
+                    {selectedItems.length}/{cart.length}
+                  </span>
+                </label>
+              )}
+
               {cart.length === 0 ? (
-                <div className="rounded-3xl bg-white p-16 text-center shadow-sm">
+                <div className="rounded-3xl bg-white p-10 text-center shadow-sm md:p-16">
                   <div className="text-2xl font-black text-slate-800">{t.empty}</div>
                   <Link to="/shop" className="mt-5 inline-block rounded-2xl bg-blue-700 px-6 py-3 font-black text-white">
                     {t.shopNow}
                   </Link>
+
+                  {suggestedProducts.length > 0 && (
+                    <div className="mt-10 text-left">
+                      <div className="mb-4 text-center text-sm font-black uppercase tracking-wide text-slate-400">
+                        {lang === "en" ? "You might like" : "Có thể bạn thích"}
+                      </div>
+                      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                        {suggestedProducts.map((product) => (
+                          <ProductCard key={product.id} product={product} lang={lang} />
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : (
                 cart.map((item) => {
@@ -367,13 +420,15 @@ export default function CartPage() {
 
                       {/* Mobile card */}
                       <div className="p-3.5 md:hidden">
-                        <div className="flex gap-3">
-                          <input
-                            type="checkbox"
-                            checked={item.selected !== false}
-                            onChange={toggleSelected}
-                            className="mt-1 h-4 w-4 shrink-0"
-                          />
+                        <div className="flex items-start gap-2">
+                          <label className="-ml-2 flex h-11 w-8 shrink-0 items-start justify-center pt-1">
+                            <input
+                              type="checkbox"
+                              checked={item.selected !== false}
+                              onChange={toggleSelected}
+                              className="h-4 w-4"
+                            />
+                          </label>
                           <img
                             src={item.image}
                             alt={itemName}

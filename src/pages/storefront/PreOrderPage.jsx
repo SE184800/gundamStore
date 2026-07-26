@@ -226,7 +226,7 @@ export default function PreOrderPage() {
               {t.empty}
             </div>
           ) : (
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-3 xl:grid-cols-4">
               {displayRows.map((product) => {
                 const price = Number(product.price) || 0;
                 const deposit = calculatePreorderDeposit(price);
@@ -238,22 +238,26 @@ export default function PreOrderPage() {
                     key={product.id}
                     className="overflow-hidden rounded-4xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl"
                   >
-                    <div className="relative aspect-square bg-slate-100">
-                      <img
-                        src={getProductImage(product)}
-                        alt={name}
-                        loading="lazy"
-                        className="h-full w-full object-cover"
-                      />
-                      <div className="absolute left-3 top-3 rounded-full bg-amber-400 px-3 py-1 text-[11px] font-black text-slate-950">
-                        PRE-ORDER
+                    <a href={`/product/${product.slug || product.id}`} className="block">
+                      <div className="relative aspect-square bg-slate-100">
+                        <img
+                          src={getProductImage(product)}
+                          alt={name}
+                          loading="lazy"
+                          className="h-full w-full object-cover"
+                        />
+                        <div className="absolute left-3 top-3 rounded-full bg-amber-400 px-3 py-1 text-[11px] font-black text-slate-950">
+                          PRE-ORDER
+                        </div>
                       </div>
-                    </div>
+                    </a>
 
                     <div className="p-4">
-                      <h3 className="line-clamp-2 min-h-[44px] text-base font-black leading-snug text-slate-950">
-                        {name}
-                      </h3>
+                      <a href={`/product/${product.slug || product.id}`}>
+                        <h3 className="line-clamp-2 min-h-[44px] text-base font-black leading-snug text-slate-950 hover:text-blue-700">
+                          {name}
+                        </h3>
+                      </a>
                       <p className="mt-2 line-clamp-2 text-sm font-semibold leading-6 text-slate-500">
                         {short}
                       </p>

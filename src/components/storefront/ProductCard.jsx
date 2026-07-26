@@ -65,6 +65,11 @@ function ProductCard({ product, lang: langProp, actions, badge, onAddToCart }) {
   const oldPrice = commercialDiscount
     ? Number(product?.compareAtPrice || product?.oldPrice || product?.originalPrice || 0)
     : Number(product?.oldPrice || product?.originalPrice || 0);
+  const discountPercent =
+    oldPrice > 0 && price > 0 && oldPrice > price ? Math.round((1 - price / oldPrice) * 100) : 0;
+  const ratingValue = Number(product?.rating) || 0;
+  const hasRating = ratingValue > 0;
+  const soldCount = Number(product?.sold) || 0;
   const stock = Number(product?.stock ?? 0);
   const detailUrl = getProductUrl(product);
   const isPreorder = String(product?.status || "").toLowerCase().includes("pre");
@@ -233,7 +238,7 @@ function ProductCard({ product, lang: langProp, actions, badge, onAddToCart }) {
                 e.stopPropagation();
                 setQuickOpen(true);
               }}
-              className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white/80 text-slate-500 shadow-sm transition hover:scale-110 hover:border-blue-200 hover:bg-blue-700 hover:text-white"
+              className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white/80 text-slate-500 shadow-sm transition hover:scale-110 hover:border-blue-200 hover:bg-blue-700 hover:text-white"
               title={t("product.quickView")}
             >
               <Eye size={18} />
@@ -247,16 +252,32 @@ function ProductCard({ product, lang: langProp, actions, badge, onAddToCart }) {
             </span>
           </div>
 
-          <div className="mb-4 flex items-end justify-between">
+          <div className="mb-4 flex items-end justify-between gap-2">
             <div>
-              {oldPrice ? <div className="text-xs font-bold text-slate-400 line-through">{formatCurrency(oldPrice)}</div> : null}
+              {oldPrice ? (
+                <div className="flex items-center gap-1.5">
+                  <div className="text-xs font-bold text-slate-400 line-through">{formatCurrency(oldPrice)}</div>
+                  {discountPercent > 0 && (
+                    <span className="rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-black text-red-600">
+                      -{discountPercent}%
+                    </span>
+                  )}
+                </div>
+              ) : null}
               <div className="text-base font-black text-slate-950 sm:text-lg">{displayPrice}</div>
+              {soldCount > 0 && (
+                <div className="mt-0.5 text-[11px] font-semibold text-slate-400">
+                  {lang === "en" ? `${soldCount} sold` : `Đã bán ${soldCount}`}
+                </div>
+              )}
             </div>
 
-            <div className="flex items-center gap-1 rounded-full bg-amber-50 px-2 py-1 text-xs font-black text-amber-600">
-              <Star size={13} fill="currentColor" />
-              {product?.rating || "4.9"}
-            </div>
+            {hasRating && (
+              <div className="flex shrink-0 items-center gap-1 rounded-full bg-amber-50 px-2 py-1 text-xs font-black text-amber-600">
+                <Star size={13} fill="currentColor" />
+                {ratingValue.toFixed(1)}
+              </div>
+            )}
           </div>
 
           {wishlistMessage && (

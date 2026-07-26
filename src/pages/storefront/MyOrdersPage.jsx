@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { AlertCircle, Loader2, PackageSearch, Search, ShieldCheck } from "lucide-react";
+import { AlertCircle, Loader2, Package, PackageSearch, Search, ShieldCheck } from "lucide-react";
 import {
   ORDER_STATUS,
   ORDER_TYPE,
@@ -232,9 +232,18 @@ export default function MyOrdersPage() {
                         <div className="mt-4 grid gap-3 md:grid-cols-2">
                           {(order.items || []).slice(0, 2).map((item) => (
                             <div key={`${order.id}-${item.id}`} className="flex gap-3 rounded-2xl bg-slate-50 p-3">
-                              <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-white text-xs font-black text-slate-400">
-                                SP
-                              </div>
+                              {item.image ? (
+                                <img
+                                  src={item.image}
+                                  alt={item.name}
+                                  loading="lazy"
+                                  className="h-16 w-16 shrink-0 rounded-xl bg-white object-cover"
+                                />
+                              ) : (
+                                <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-white text-slate-300">
+                                  <Package size={20} />
+                                </div>
+                              )}
                               <div>
                                 <div className="line-clamp-1 text-sm font-black text-slate-900">{item.name}</div>
                                 <div className="mt-1 text-xs font-bold text-slate-500">x{item.quantity || 1}</div>
@@ -242,6 +251,14 @@ export default function MyOrdersPage() {
                             </div>
                           ))}
                         </div>
+
+                        {(order.items || []).length > 2 && (
+                          <div className="mt-2 text-xs font-bold text-slate-400">
+                            {lang === "en"
+                              ? `+${order.items.length - 2} more item(s)`
+                              : `+${order.items.length - 2} sản phẩm khác`}
+                          </div>
+                        )}
                       </div>
 
                       <div className="text-left lg:text-right">

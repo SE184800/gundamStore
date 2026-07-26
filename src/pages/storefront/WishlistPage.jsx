@@ -72,6 +72,7 @@ function getCopy(lang) {
     addToCart: lang === "en" ? "Add to cart" : "Thêm vào giỏ",
     viewDetail: lang === "en" ? "View detail" : "Xem chi tiết",
     remove: lang === "en" ? "Remove" : "Xóa khỏi yêu thích",
+    removeShort: lang === "en" ? "Remove" : "Xóa",
     clearAll: lang === "en" ? "Clear all" : "Xóa tất cả",
     logout: lang === "en" ? "Sign out" : "Đăng xuất",
     syncNoteTitle: lang === "en" ? "Wishlist sync" : "Đồng bộ yêu thích",
@@ -208,7 +209,7 @@ function ProductRow({ product, lang, t, removing, onRemove, onAddToCart }) {
   return (
     <article className="grid gap-4 border-b border-slate-100 py-5 last:border-b-0 md:grid-cols-[180px_1fr_210px] md:items-center">
       <Link to={`/product/${product.slug || product.id}`} className="overflow-hidden rounded-2xl bg-slate-100">
-        <img src={product.imageUrl} alt={name} loading="lazy" decoding="async" className="h-40 w-full object-cover md:h-28" />
+        <img src={product.imageUrl} alt={name} loading="lazy" decoding="async" className="h-28 w-full object-cover md:h-28" />
       </Link>
 
       <div>
@@ -266,26 +267,29 @@ function ProductRow({ product, lang, t, removing, onRemove, onAddToCart }) {
           {t.addToCart}
         </button>
 
-        <Link
-          to={`/product/${product.slug || product.id}`}
-          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 hover:border-blue-200 hover:text-blue-700"
-        >
-          <Eye size={17} />
-          {t.viewDetail}
-        </Link>
+        <div className="grid grid-cols-2 gap-2 md:grid-cols-1">
+          <Link
+            to={`/product/${product.slug || product.id}`}
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 text-sm font-black text-slate-700 hover:border-blue-200 hover:text-blue-700"
+          >
+            <Eye size={17} />
+            {t.viewDetail}
+          </Link>
 
-        <button
-          type="button"
-          onClick={onRemove}
-          disabled={removing}
-          className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border px-4 text-sm font-black ${removing
-            ? "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400"
-            : "border-red-100 bg-white text-red-600 hover:bg-red-50"
-            }`}
-        >
-          {removing ? <Loader2 size={17} className="animate-spin" /> : <Trash2 size={17} />}
-          {t.remove}
-        </button>
+          <button
+            type="button"
+            onClick={onRemove}
+            disabled={removing}
+            className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border px-3 text-sm font-black ${removing
+              ? "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400"
+              : "border-red-100 bg-white text-red-600 hover:bg-red-50"
+              }`}
+          >
+            {removing ? <Loader2 size={17} className="animate-spin" /> : <Trash2 size={17} />}
+            <span className="md:hidden">{t.removeShort}</span>
+            <span className="hidden md:inline">{t.remove}</span>
+          </button>
+        </div>
       </div>
     </article>
   );

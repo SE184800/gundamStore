@@ -355,6 +355,19 @@ function CategoryBottomSheet({ t, lang, tree, activeId, onSelect, onClose, allCo
   );
 }
 
+function ProductCardSkeleton() {
+  return (
+    <div className="animate-pulse overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+      <div className="aspect-square bg-slate-200" />
+      <div className="space-y-2 p-3 sm:p-4">
+        <div className="h-4 w-3/4 rounded bg-slate-200" />
+        <div className="h-4 w-1/2 rounded bg-slate-200" />
+        <div className="h-9 w-full rounded-2xl bg-slate-200" />
+      </div>
+    </div>
+  );
+}
+
 export default function ShopPage() {
   const { actions } = useCms();
   const [lang] = useLang();
@@ -620,7 +633,7 @@ export default function ShopPage() {
         </aside>
 
         <div className="space-y-4 sm:space-y-5">
-          <div className="sticky top-0 z-30 -mx-3 border-y border-slate-100 bg-white/95 px-3 py-3 shadow-sm backdrop-blur lg:static lg:mx-0 lg:rounded-3xl lg:border lg:border-slate-200 lg:bg-white lg:p-4">
+          <div className="-mx-3 border-y border-slate-100 bg-white/95 px-3 py-3 shadow-sm backdrop-blur lg:mx-0 lg:rounded-3xl lg:border lg:border-slate-200 lg:bg-white lg:p-4">
             <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
               <div className="flex min-w-0 flex-1 items-center rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
                 <Search size={18} className="text-blue-600" />
@@ -751,7 +764,13 @@ export default function ShopPage() {
             </nav>
           )}
 
-          {visibleProducts.length > 0 ? (
+          {productsLoading && visibleProducts.length === 0 ? (
+            <div className="shop-mobile-grid grid grid-cols-2 gap-3 sm:grid-cols-2 xl:grid-cols-3 sm:gap-4">
+              {Array.from({ length: pageSize }).map((_, index) => (
+                <ProductCardSkeleton key={index} />
+              ))}
+            </div>
+          ) : visibleProducts.length > 0 ? (
             <div
               id="shop-product-grid"
               className="shop-mobile-grid scroll-mt-28 grid grid-cols-2 gap-3 sm:grid-cols-2 xl:grid-cols-3 sm:gap-4"
@@ -760,7 +779,7 @@ export default function ShopPage() {
             </div>
           ) : (
             <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-10 text-center shadow-sm">
-              <div className="text-lg font-black text-slate-950">{productsLoading ? t.loading : t.noProducts}</div>
+              <div className="text-lg font-black text-slate-950">{t.noProducts}</div>
               <button onClick={resetFilters} className="mt-4 rounded-2xl bg-blue-700 px-5 py-3 text-sm font-black text-white shadow-lg shadow-blue-100 hover:bg-blue-800">{t.clear}</button>
             </div>
           )}

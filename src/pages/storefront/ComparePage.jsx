@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { GitCompareArrows, Search, Trash2, X } from "lucide-react";
+import { GitCompareArrows, Loader2, Search, Trash2, X } from "lucide-react";
 import PageShell from "../../components/common/PageShell";
 import { useLang } from "../../store/CmsStore";
 import { addCompare, clearCompare, getCompareIds, removeCompare } from "../../services/CompareService";
@@ -55,6 +55,7 @@ export default function ComparePage() {
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [version, setVersion] = useState(0);
   const [selectedProducts, setSelectedProducts] = useState([]);
+  const [loadingCompare, setLoadingCompare] = useState(() => getCompareIds().length > 0);
   const [searchResults, setSearchResults] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
 
@@ -66,8 +67,11 @@ export default function ComparePage() {
 
     if (!compareIds.length) {
       setSelectedProducts([]);
+      setLoadingCompare(false);
       return;
     }
+
+    setLoadingCompare(true);
 
     Promise.all(
       compareIds.map((id) => getStorefrontProductDetailForStorefront(id).catch(() => null))
@@ -78,6 +82,7 @@ export default function ComparePage() {
         .map((id) => found.find((product) => product.id === id))
         .filter(Boolean);
       setSelectedProducts(ordered);
+      setLoadingCompare(false);
     });
 
     return () => {
@@ -215,7 +220,11 @@ export default function ComparePage() {
           </div>
         </section>
 
-        {selectedProducts.length === 0 ? (
+        {loadingCompare ? (
+          <section className="mt-8 flex items-center justify-center rounded-3xl border border-slate-200 bg-white p-12 shadow-sm">
+            <Loader2 className="animate-spin text-cyan-600" size={36} />
+          </section>
+        ) : selectedProducts.length === 0 ? (
           <section className="mt-8 rounded-3xl border border-dashed border-slate-300 bg-white p-12 text-center">
             <GitCompareArrows className="mx-auto text-slate-300" size={44} />
             <div className="mt-4 text-lg font-black text-slate-500">{t.empty}</div>

@@ -101,11 +101,8 @@ const copy = {
     voucher3: "Giảm 10% khi mua kèm phụ kiện builder",
     collectVoucher: "Lưu voucher",
     voucherSaved: "Đã lưu voucher",
-    deliveryTitle: "Giao hàng dự kiến",
-    deliveryTo: "Giao đến",
-    deliveryLocation: "TP.HCM, Quận 1",
-    deliveryEta: "Nhận hàng dự kiến: 1-2 ngày",
-    deliveryFee: "Phí ship dự kiến: 25.000₫",
+    deliveryTitle: "Giao hàng",
+    deliveryHint: "Phí và thời gian giao sẽ được tính chính xác theo địa chỉ của bạn ở bước thanh toán.",
     paymentTitle: "Thanh toán",
     payment1: "COD khi nhận hàng",
     payment2: "Chuyển khoản ngân hàng",
@@ -186,11 +183,8 @@ const copy = {
     voucher3: "10% off builder accessories bundle",
     collectVoucher: "Collect voucher",
     voucherSaved: "Voucher saved",
-    deliveryTitle: "Estimated delivery",
-    deliveryTo: "Deliver to",
-    deliveryLocation: "District 1, Ho Chi Minh City",
-    deliveryEta: "Estimated arrival: 1-2 days",
-    deliveryFee: "Estimated shipping fee: 25,000₫",
+    deliveryTitle: "Delivery",
+    deliveryHint: "Shipping fee and delivery time will be calculated based on your address at checkout.",
     paymentTitle: "Payment",
     payment1: "Cash on delivery",
     payment2: "Bank transfer",
@@ -335,7 +329,7 @@ function mergeProductVariant(product = {}, variant = null) {
   };
 }
 
-function GundamVisual({ tone = "blue", imageUrl, large = false, priority = false, alt = "" }) {
+function GundamVisual({ tone = "blue", imageUrl, large = false, priority = false, alt = "", zoom = false }) {
   const toneMap = {
     blue: "from-blue-950 via-blue-600 to-sky-100",
     cyan: "from-cyan-900 via-cyan-500 to-blue-100",
@@ -348,8 +342,15 @@ function GundamVisual({ tone = "blue", imageUrl, large = false, priority = false
 
   if (imageUrl) {
     return (
-      <div className="relative h-full overflow-hidden rounded-2xl bg-slate-100">
-        <img src={imageUrl} alt={alt} className="h-full w-full object-cover" loading={priority ? "eager" : "lazy"} fetchPriority={priority ? "high" : undefined} decoding="async" />
+      <div className={`relative h-full overflow-hidden rounded-2xl bg-slate-100 ${zoom ? "group cursor-zoom-in" : ""}`}>
+        <img
+          src={imageUrl}
+          alt={alt}
+          className={`h-full w-full object-cover ${zoom ? "transition duration-500 group-hover:scale-125" : ""}`}
+          loading={priority ? "eager" : "lazy"}
+          fetchPriority={priority ? "high" : undefined}
+          decoding="async"
+        />
         <div className="absolute inset-0 bg-gradient-to-tr from-slate-950/20 via-transparent to-white/20" />
       </div>
     );
@@ -441,6 +442,10 @@ function ProductInfo({ product, lang, actions, onPreorder }) {
   const price = Number(currentProduct.finalPrice || currentProduct.effectivePrice || currentProduct.price || 0);
   const oldPrice = Number(currentProduct.compareAtPrice || currentProduct.oldPrice || 0);
   const save = oldPrice > price ? oldPrice - price : 0;
+  const ratingValue = Number(product.rating) || 0;
+  const hasRating = ratingValue > 0;
+  const preorderDeposit = preorder ? calculatePreorderDeposit(price) : null;
+  const preorderEtaText = product.preorder?.eta || product.eta || getPreorderEtaText(lang);
 
   function showCartError(result) {
     const available = Number(result?.available || 0);
@@ -644,11 +649,17 @@ function ProductInfo({ product, lang, actions, onPreorder }) {
       {/* VARIANT_SELECTOR_END */}
 
       <div className="mt-4 flex flex-wrap items-center gap-4 text-sm">
-        <div className="flex items-center gap-1 text-amber-400">
-          {Array.from({ length: 5 }).map((_, index) => <Star key={index} size={17} fill="currentColor" />)}
-        </div>
-        <span className="font-bold text-slate-600">{product.rating || "4.9"} / 5</span>
-        <span className="text-slate-300">|</span>
+        {hasRating && (
+          <>
+            <div className="flex items-center gap-1 text-amber-400">
+              {Array.from({ length: 5 }).map((_, index) => (
+                <Star key={index} size={17} fill={index < Math.round(ratingValue) ? "currentColor" : "none"} />
+              ))}
+            </div>
+            <span className="font-bold text-slate-600">{ratingValue.toFixed(1)} / 5</span>
+            <span className="text-slate-300">|</span>
+          </>
+        )}
         <span className="font-bold text-slate-600">{product.sold || 0} {t.sold}</span>
       </div>
 
@@ -664,8 +675,8 @@ function ProductInfo({ product, lang, actions, onPreorder }) {
         <div className="mt-5 rounded-3xl border border-violet-200 bg-violet-50 p-5">
           <div className="mb-3 flex items-center gap-2 text-sm font-black text-violet-800"><Clock size={18} /> {t.preorder}</div>
           <div className="grid gap-3 sm:grid-cols-3">
-            <div className="rounded-2xl bg-white p-3 shadow-sm"><div className="text-xs font-bold text-slate-500">{t.deposit}</div><div className="mt-1 font-black text-slate-950">{money(product.preorder?.deposit || product.deposit || 300000)}</div></div>
-            <div className="rounded-2xl bg-white p-3 shadow-sm"><div className="text-xs font-bold text-slate-500">{t.eta}</div><div className="mt-1 font-black text-slate-950">{product.preorder?.eta || product.eta || "TBD"}</div></div>
+            <div className="rounded-2xl bg-white p-3 shadow-sm"><div className="text-xs font-bold text-slate-500">{t.deposit}</div><div className="mt-1 font-black text-slate-950">{money(preorderDeposit?.depositAmount)}</div></div>
+            <div className="rounded-2xl bg-white p-3 shadow-sm"><div className="text-xs font-bold text-slate-500">{t.eta}</div><div className="mt-1 font-black text-slate-950">{preorderEtaText}</div></div>
             <div className="rounded-2xl bg-white p-3 shadow-sm"><div className="text-xs font-bold text-slate-500">Status</div><div className="mt-1 font-black text-violet-700">Open</div></div>
           </div>
           <p className="mt-3 text-xs leading-5 text-violet-800/80">{t.preorderNote}</p>
@@ -855,12 +866,7 @@ function MarketplaceExtras({ lang }) {
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="mb-3 flex items-center gap-2 text-sm font-black text-slate-950"><MapPin className="text-blue-600" size={18} />{t.deliveryTitle}</div>
-          <div className="text-xs font-bold text-slate-500">{t.deliveryTo}</div>
-          <div className="mt-1 text-sm font-black text-slate-950">{t.deliveryLocation}</div>
-          <div className="mt-3 space-y-1 text-xs font-semibold text-slate-600">
-            <div>{t.deliveryEta}</div>
-            <div>{t.deliveryFee}</div>
-          </div>
+          <p className="text-xs font-semibold leading-6 text-slate-500">{t.deliveryHint}</p>
         </div>
 
         <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -1029,6 +1035,10 @@ function Reviews({ product, reviews, lang, onSubmitted }) {
     }
   }
 
+  const avgRating = reviews.length
+    ? reviews.reduce((sum, review) => sum + Number(review.rating || 0), 0) / reviews.length
+    : Number(product.rating) || 0;
+
   return (
     <section className="mx-auto max-w-[1440px] px-4 py-4 lg:px-8">
       <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -1037,7 +1047,13 @@ function Reviews({ product, reviews, lang, onSubmitted }) {
             <h2 className="text-xl font-black text-slate-950">{t.customerReviewsTitle}</h2>
             <div className="mt-1 text-sm font-bold text-slate-500">{reviews.length} {t.reviews}</div>
           </div>
-          <div className="flex items-center gap-1 text-amber-400">{Array.from({ length: 5 }).map((_, index) => <Star key={index} size={18} fill="currentColor" />)}</div>
+          {avgRating > 0 && (
+            <div className="flex items-center gap-1 text-amber-400">
+              {Array.from({ length: 5 }).map((_, index) => (
+                <Star key={index} size={18} fill={index < Math.round(avgRating) ? "currentColor" : "none"} />
+              ))}
+            </div>
+          )}
         </div>
 
         {reviews.length ? (
@@ -1308,7 +1324,7 @@ export default function ProductDetailPage() {
             <div className="space-y-4">
               <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
                 <div className="h-[520px] overflow-hidden rounded-2xl">
-                  <GundamVisual imageUrl={gallery[activeImage]} tone={product.tone || "blue"} large priority alt={productName(product, lang)} />
+                  <GundamVisual imageUrl={gallery[activeImage]} tone={product.tone || "blue"} large priority zoom alt={productName(product, lang)} />
                 </div>
               </div>
               <div className="grid grid-cols-4 gap-3">

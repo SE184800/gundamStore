@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   AlertCircle,
   CheckCircle2,
   Clock,
   CreditCard,
+  Loader2,
   MapPin,
   MessageSquare,
   Package,
@@ -14,14 +15,7 @@ import {
   Undo2,
   XCircle,
 } from "lucide-react";
-import {
-  getOrderById,
-  cancelOrderDirectly,
-  requestCancelOrder,
-  requestReturnOrder,
-  requestPreorderBalancePayment,
-  ORDER_STATUS,
-} from "../../services/OrderService";
+import { ORDER_STATUS } from "../../services/OrderService";
 import {
   CANCEL_REASONS,
   RETURN_REASONS,
@@ -315,8 +309,6 @@ export default function OrderDetailPage() {
   const [backendLoading, setBackendLoading] = useState(true);
   const [backendError, setBackendError] = useState("");
 
-  const localOrder = useMemo(() => getOrderById(id), [id, refreshKey]);
-
   useEffect(() => {
     let alive = true;
 
@@ -345,14 +337,14 @@ export default function OrderDetailPage() {
   }, [id, refreshKey]);
 
   const order = backendOrder;
-  const isBackendOrder = true;
 
   if (backendLoading && !order) {
     return (
       <PageShell>
         <main className="min-h-screen bg-slate-50 p-10">
-          <div className="mx-auto max-w-3xl rounded-3xl bg-white p-10 text-center">
-            <h1 className="text-2xl font-black">Đang tải đơn hàng...</h1>
+          <div className="mx-auto flex max-w-3xl items-center justify-center gap-3 rounded-3xl bg-white p-10 text-center font-black text-slate-500">
+            <Loader2 className="animate-spin text-blue-600" />
+            {lang === "en" ? "Loading order..." : "Đang tải đơn hàng..."}
           </div>
         </main>
       </PageShell>
@@ -376,16 +368,12 @@ export default function OrderDetailPage() {
 
   const currentIndex = PUBLIC_STEPS.indexOf(order.status);
   const directCancel = canCustomerCancelDirect(order.status);
-  const cancelRequest = !isBackendOrder && canCustomerRequestCancel(order.status);
-  const returnRequest = isBackendOrder
-    ? canCustomerRequestReturn(order.status)
-    : canCustomerRequestReturn(order.status);
+  const cancelRequest = canCustomerRequestCancel(order.status);
+  const returnRequest = canCustomerRequestReturn(order.status);
+  // Backend chưa có field trạng thái cọc riêng (preorder.status/balanceStatus), nên dùng
+  // số tiền còn lại thật (remainingAmount) làm điều kiện thay vì 1 sub-status chưa tồn tại.
   const balanceRequestEligible =
-    !isBackendOrder &&
-    order.orderType === "preorder" &&
-    order.preorder?.status === PREORDER_STATUS.READY_FOR_BALANCE &&
-    order.preorder?.balanceStatus !== "Paid" &&
-    order.preorder?.balancePaymentRequest?.status !== "Pending";
+    order.orderType === "preorder" && Number(order.preorder?.remainingAmount) > 0;
 
   function buyAgain() {
     const cart = getCart();
@@ -408,13 +396,24 @@ export default function OrderDetailPage() {
     setModalType("cancelDirect");
   }
 
-  function handlePreorderBalancePayment() {
+  async function handlePreorderBalancePayment() {
     const note = window.prompt(t.balancePaymentNote);
 
     if (note === null) return;
 
     try {
-      requestPreorderBalancePayment(order.id, String(note || "").trim());
+      await createStorefrontComplaintApi({
+        orderId: order.backendOrderId || order.id,
+        orderNo: order.orderNo || order.orderCode || order.id,
+        customerName: order.customer?.name || "Customer",
+        customerPhone: order.customer?.phone || "",
+        customerEmail: order.customer?.email || "",
+        type: "COMPLAINT",
+        issue: lang === "en" ? "Pre-order remaining balance payment notice" : "Báo đã thanh toán phần còn lại (pre-order)",
+        description: String(note || "").trim(),
+        priority: "MEDIUM",
+      });
+
       notify("success", t.requestSent);
       setRefreshKey((value) => value + 1);
     } catch (error) {
@@ -425,46 +424,40 @@ export default function OrderDetailPage() {
   async function submitRequest(type, reason, note) {
     try {
       if (type === "cancelDirect") {
-        if (isBackendOrder) {
-          const updated = await cancelMyStorefrontOrderApi(order.id, { reason, note });
-          setBackendOrder(updated);
-          notify("success", t.cancelledSuccess);
-          setModalType(null);
-          setRefreshKey((value) => value + 1);
-          return;
-        }
-
-        cancelOrderDirectly(order.id, reason, note);
+        const updated = await cancelMyStorefrontOrderApi(order.id, { reason, note });
+        setBackendOrder(updated);
         notify("success", t.cancelledSuccess);
-        navigate("/orders");
+        setModalType(null);
+        setRefreshKey((value) => value + 1);
         return;
       }
 
       if (type === "cancel") {
-        requestCancelOrder(order.id, reason, note);
+        await createStorefrontComplaintApi({
+          orderId: order.backendOrderId || order.id,
+          orderNo: order.orderNo || order.orderCode || order.id,
+          customerName: order.customer?.name || "Customer",
+          customerPhone: order.customer?.phone || "",
+          customerEmail: order.customer?.email || "",
+          type: "COMPLAINT",
+          issue: `[${lang === "en" ? "Cancel request" : "Yêu cầu hủy đơn"}] ${reason}`,
+          description: note || reason,
+          priority: "MEDIUM",
+        });
       }
 
       if (type === "return") {
-        if (isBackendOrder) {
-          await createStorefrontComplaintApi({
-            orderId: order.backendOrderId || order.id,
-            orderNo: order.orderNo || order.orderCode || order.id,
-            customerName: order.customer?.name || "Customer",
-            customerPhone: order.customer?.phone || "",
-            customerEmail: order.customer?.email || "",
-            type: "RETURN",
-            issue: reason,
-            description: note || reason,
-            priority: "MEDIUM",
-          });
-
-          notify("success", t.requestSent);
-          setModalType(null);
-          setRefreshKey((value) => value + 1);
-          return;
-        }
-
-        requestReturnOrder(order.id, reason, note);
+        await createStorefrontComplaintApi({
+          orderId: order.backendOrderId || order.id,
+          orderNo: order.orderNo || order.orderCode || order.id,
+          customerName: order.customer?.name || "Customer",
+          customerPhone: order.customer?.phone || "",
+          customerEmail: order.customer?.email || "",
+          type: "RETURN",
+          issue: reason,
+          description: note || reason,
+          priority: "MEDIUM",
+        });
       }
 
       notify("success", t.requestSent);
@@ -496,13 +489,7 @@ export default function OrderDetailPage() {
                 </p>
 
                 <div className="mt-3">
-                  <span
-                    className={`rounded-full px-3 py-2 text-xs font-black ${
-                      isBackendOrder
-                        ? "bg-emerald-50 text-emerald-700"
-                        : "bg-amber-50 text-amber-700"
-                    }`}
-                  >
+                  <span className="rounded-full bg-emerald-50 px-3 py-2 text-xs font-black text-emerald-700">
                     {"Order recorded"}
                   </span>
                 </div>
@@ -565,12 +552,18 @@ export default function OrderDetailPage() {
                 <div className="mt-5 divide-y">
                   {(order.items || []).map((item) => (
                     <div key={item.id} className="flex gap-4 py-4">
-                      <img
-                        src={item.image}
-                        alt={item.name}
-                        loading="lazy"
-                        className="h-24 w-24 rounded-2xl bg-slate-100 object-cover"
-                      />
+                      {item.image ? (
+                        <img
+                          src={item.image}
+                          alt={item.name}
+                          loading="lazy"
+                          className="h-24 w-24 shrink-0 rounded-2xl bg-slate-100 object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-300">
+                          <Package size={28} />
+                        </div>
+                      )}
 
                       <div className="flex-1">
                         <div className="font-black text-slate-950">{item.name}</div>
