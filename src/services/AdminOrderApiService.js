@@ -74,7 +74,17 @@ export function mapBackendOrder(order = {}) {
   return {
     id: order.id,
     orderCode: order.orderNo || order.id,
-    orderType: ORDER_TYPE.NORMAL,
+    orderType: order.orderType === "preorder" ? ORDER_TYPE.PREORDER : ORDER_TYPE.NORMAL,
+    preorder:
+      order.orderType === "preorder"
+        ? {
+            eta: order.preorderEta || "",
+            depositRate: Number(order.preorderDepositRate) || 0,
+            fullAmount: Number(order.preorderFullAmount) || 0,
+            depositAmount: Number(order.preorderDepositAmount) || 0,
+            remainingAmount: Number(order.preorderRemainingAmount) || 0,
+          }
+        : null,
 
     createdAt: order.createdAt,
     updatedAt: order.updatedAt,
@@ -130,7 +140,6 @@ export function mapBackendOrder(order = {}) {
       },
     ],
 
-    preorder: null,
     cancelRequest: null,
     returnRequest: null,
     adminNote: order.note || "",

@@ -140,7 +140,17 @@ export function mapBackendOrderForStorefront(order = {}) {
     backendOrderId: order.id,
     orderCode: order.orderNo || order.orderCode || order.id,
     orderNo: order.orderNo || "",
-    orderType: ORDER_TYPE.NORMAL,
+    orderType: order.orderType === "preorder" ? ORDER_TYPE.PREORDER : ORDER_TYPE.NORMAL,
+    preorder:
+      order.orderType === "preorder"
+        ? {
+            eta: order.preorderEta || "",
+            depositRate: Number(order.preorderDepositRate) || 0,
+            fullAmount: Number(order.preorderFullAmount) || 0,
+            depositAmount: Number(order.preorderDepositAmount) || 0,
+            remainingAmount: Number(order.preorderRemainingAmount) || 0,
+          }
+        : null,
 
     createdAt: order.createdAt,
     updatedAt: order.updatedAt,
@@ -192,7 +202,6 @@ export function mapBackendOrderForStorefront(order = {}) {
 
     timeline: buildOrderTimeline(order, shipment),
 
-    preorder: order.preorder || null,
     cancelRequest: null,
     returnRequest: (order.complaintTickets || []).find((ticket) => ["RETURN", "REFUND"].includes(ticket.type)) || null,
     supportTickets: order.complaintTickets || [],
