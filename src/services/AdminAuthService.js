@@ -69,7 +69,7 @@ export function isJwtExpired(token = "") {
   return Number(payload.exp) <= now + EXPIRY_SKEW_SECONDS;
 }
 
-function hasAdminPermission(user = {}) {
+export function hasAdminPermission(user = {}) {
   const roleCode = String(user.role?.code || user.roleCode || user.role || "").toUpperCase();
   const permissions = user.permissions || user.role?.permissions || [];
 
@@ -81,7 +81,7 @@ function hasAdminPermission(user = {}) {
   );
 }
 
-function normalizeAdminUser(user = {}) {
+export function normalizeAdminUser(user = {}) {
   const roleCode =
     user.role?.code ||
     user.roleCode ||
@@ -101,7 +101,7 @@ function normalizeAdminUser(user = {}) {
   };
 }
 
-function safePublicAdminProfile(admin = {}) {
+export function safePublicAdminProfile(admin = {}) {
   return {
     id: admin.id,
     name: admin.name,

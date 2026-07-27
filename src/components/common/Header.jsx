@@ -337,7 +337,7 @@ export default function Header() {
                   <X size={18} />
                 </button>
               </div>
-              <div className="space-y-2.5 overflow-y-auto flex-1 pr-1">
+              <div className="space-y-2.5 overflow-y-auto flex-1 pr-1 pb-[calc(20px+env(safe-area-inset-bottom))]">
                 {navItems.map((item) => {
                   const Icon = item.icon;
                   return (

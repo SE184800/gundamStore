@@ -5,6 +5,7 @@ import Logo from "./common/Logo";
 import Toast from "../utils/Toast";
 import { useCms, useLang } from "../store/CmsStore";
 import { setStoredAdminToken } from "../services/ApiClient";
+import { hasAdminPermission, normalizeAdminUser, safePublicAdminProfile } from "../services/AdminAuthService";
 import AuthLayout from "./layout/AuthLayout";
 const copy = {
   vi: {
@@ -68,29 +69,25 @@ export default function Login() {
     triggerToast("info", t.submitting);
 
     const res = await actions.login({ email: username.trim(), password });
-    console.log("Cục RES khi login thành công:", res);
     if (res.success) {
       triggerToast("success", t.success);
-      const userRoleId = res.user?.roleId || res.user?.roleID || res.user?.role?.id;
-      console.log("roleID: ", userRoleId);
-      const ADMIN_ROLE_ID = "cmpjmrwgo00069tpliz4pjinx";
-      if (userRoleId === ADMIN_ROLE_ID) {
-        // 🟢 SỬA TẠI ĐÂY: Đồng bộ dữ liệu Admin theo cơ chế chuẩn hóa của AdminAuthService
-        // Ghi nhận đầy đủ chuỗi token và thông tin user gốc từ BE truyền sang
+      const admin = normalizeAdminUser(res.user || {});
+      const isAdmin = hasAdminPermission(admin);
+
+      if (isAdmin) {
         const now = new Date().toISOString();
+        const safeAdmin = safePublicAdminProfile(admin);
         setStoredAdminToken(res.token);
         localStorage.setItem("gundam-admin-auth", JSON.stringify({
-          token: res.token,
-          admin: res.user,
+          admin: safeAdmin,
           loggedInAt: now,
           lastActiveAt: now,
         }));
-
-        // 3. Ép ghi khay user độc lập
-        localStorage.setItem("gundam-admin-user", JSON.stringify(res.user));
+        localStorage.setItem("gundam-admin-user", JSON.stringify(safeAdmin));
       }
+
       setTimeout(() => {
-        if (userRoleId === ADMIN_ROLE_ID) {
+        if (isAdmin) {
           window.location.href = "/admin";
         } else {
           navigate("/");

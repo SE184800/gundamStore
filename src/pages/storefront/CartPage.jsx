@@ -59,6 +59,9 @@ function getItemName(item, lang) {
 }
 
 function getCartIdentity(item = {}) {
+  const variantKey = item.variantId || item.variantSku;
+  if (variantKey) return `variant:${variantKey}`;
+
   return (
     item.backendProductId ||
     item.productId ||
@@ -178,8 +181,7 @@ export default function CartPage() {
       alive = false;
       clearTimeout(delayDebounce);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [voucherCode, subtotal, baseShippingFee]);
+  }, [voucherCode, subtotal, baseShippingFee, lang]);
 
   function updateCart(next) {
     const fixed = saveCart(next);

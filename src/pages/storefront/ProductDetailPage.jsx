@@ -81,6 +81,7 @@ const copy = {
     favorite: "Yêu thích",
     saved: "Đã lưu",
     wishlistLogin: "Vui lòng đăng nhập để lưu yêu thích.",
+    cartLoginRequired: "Vui lòng đăng nhập để tiếp tục.",
     wishlistSaved: "Đã lưu vào yêu thích.",
     wishlistRemoved: "Đã xóa khỏi yêu thích.",
     wishlistError: "Không thể cập nhật yêu thích.",
@@ -158,6 +159,7 @@ const copy = {
     favorite: "Wishlist",
     saved: "Saved",
     wishlistLogin: "Please sign in to save wishlist.",
+    cartLoginRequired: "Please log in to continue.",
     wishlistSaved: "Saved to wishlist.",
     wishlistRemoved: "Removed from wishlist.",
     wishlistError: "Unable to update wishlist.",
@@ -479,6 +481,11 @@ function ProductInfo({ product, lang, actions, onPreorder, reviewCount = 0 }) {
   function handleAddToCart() {
     if (isOutOfStock) return;
 
+    if (!hasAccountToken()) {
+      notify("error", t.cartLoginRequired);
+      return;
+    }
+
     const validation = validateCartStock(currentProduct, qty);
     if (!validation.ok) {
       showCartError(validation);
@@ -492,6 +499,11 @@ function ProductInfo({ product, lang, actions, onPreorder, reviewCount = 0 }) {
 
   function handleBuyNow() {
     if (isOutOfStock) return;
+
+    if (!hasAccountToken()) {
+      notify("error", t.cartLoginRequired);
+      return;
+    }
 
     const result = saveBuyNowDraft(currentProduct, qty, { shippingMethod: "FAST" });
     if (!result.ok) {

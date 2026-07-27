@@ -7,7 +7,6 @@ import {
   clearCartItems,
 } from "../../services/CartService";
 import { validateStorefrontVoucherApi, translateVoucherMessage } from "../../services/StorefrontVoucherApiService";
-import { createOrder } from "../../services/OrderService";
 import {
   buildCreateOrderPayload,
   createStorefrontOrderApi,
@@ -233,6 +232,15 @@ export default function CheckoutPage() {
     shippingMethods.find((item) => item.value === customer.shippingMethod) || shippingMethods[0];
   const isPreorder = draft?.orderType === ORDER_TYPE.PREORDER;
 
+  // Re-validate the applied voucher whenever the shipping fee changes, since
+  // shippingDiscount is computed by the backend against a specific fee and
+  // goes stale if the customer switches shipping method after applying it.
+  useEffect(() => {
+    if (isPreorder || !appliedVoucher?.code) return;
+    applyBackendVoucher(appliedVoucher.code);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedShipping?.fee]);
+
   const pricing = useMemo(() => {
     if (!draft) {
       return {
@@ -360,23 +368,6 @@ export default function CheckoutPage() {
 
     setErrors(nextErrors);
     return nextErrors.length === 0;
-  }
-
-  function getReliableCheckoutAvailableStock(item = {}) {
-    const stock = getStock(item.backendProductId || item.productId || item.id);
-    const cachedStock = stock?.source && stock.source !== "missing"
-      ? Number(stock.available || 0)
-      : null;
-
-    const itemStock = Number(item.stock ?? item.availableStock ?? 0);
-
-    // Local inventory cache is not source of truth. If cache is missing and the
-    // cart item has no reliable stock snapshot, do not block checkout here.
-    // Backend create order will validate DB stock and return the real result.
-    if (cachedStock !== null) return cachedStock;
-    if (itemStock > 0) return itemStock;
-
-    return null;
   }
 
   function validateDraftStock() {

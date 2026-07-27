@@ -1,6 +1,6 @@
 import { authService } from "../services/AuthService";
 import { clearStoredAccountToken, setStoredAccountToken, clearStoredAdminSession } from "../services/ApiClient";
-import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { seedNews } from "../data/news";
 import { seedEvents } from "../data/events";
 import {
@@ -63,6 +63,17 @@ function stripMasterDataFromLocalState(parsed = {}) {
   return next;
 }
 
+function sanitizeUserForStorage(user) {
+  if (!user) return null;
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    roleCode: user.roleCode,
+  };
+}
+
 function safeRead() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -82,6 +93,11 @@ const CmsContext = createContext(null);
 
 export function CmsProvider({ children }) {
   const [state, setState] = useState(() => safeRead());
+  const stateRef = useRef(state);
+
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
 
   useEffect(() => {
     try {
@@ -92,7 +108,10 @@ export function CmsProvider({ children }) {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ ...state, user: sanitizeUserForStorage(state.user) })
+    );
   }, [state]);
 
   const actions = useMemo(() => ({
@@ -124,7 +143,6 @@ export function CmsProvider({ children }) {
         );
         return response
       } catch (customError) {
-        console.log("Lỗi đã qua xử lý của Interceptor:", customError);
         return customError;
       }
     },
@@ -140,10 +158,6 @@ export function CmsProvider({ children }) {
 
         return { success: false, message: res.message || "Tài khoản hoặc mật khẩu không đúng!" };
       } catch (error) {
-        console.error("❌ LỖI CMSTORE BẮT ĐƯỢC:", error);
-        if (error.response) {
-          console.log("Dữ liệu lỗi từ BE khạc ra:", error.response.data);
-        }
         return { success: false, message: error.message };
       }
     },
@@ -152,7 +166,6 @@ export function CmsProvider({ children }) {
         const res = await authService.forgotPassword(email);
         return res?.data || res;
       } catch (error) {
-        console.error("❌ LỖI FORGOT PASSWORD STORE:", error);
         return { success: false, message: error.message };
       }
     },
@@ -163,7 +176,6 @@ export function CmsProvider({ children }) {
         const res = await authService.resetPassword(...resetArgs);
         return res?.data || res;
       } catch (error) {
-        console.error("❌ LỖI CẬP NHẬT MẬT KHẨU STORE:", error);
         return { success: false, message: error.message };
       }
     },
@@ -180,18 +192,10 @@ export function CmsProvider({ children }) {
       clearStoredAccountToken();
       clearStoredAdminSession();
       localStorage.removeItem("gundam_token");
-      console.log("Bắt đầu xóa:");
       setState((prev) => ({ ...prev, user: null }));
-      console.log("Đang xóa");
-      authService.logout()
-        .then(() => {
-          console.log("Backend đã hủy session thành công");
-
-        })
-        .catch((error) => {
-          console.error("Backend hủy session thất bại nhưng Frontend đã sạch", error);
-        });
-      console.log("Xóa thành công");
+      authService.logout().catch(() => {
+        // frontend session is already cleared regardless of backend result
+      });
     },
     saveProduct(product) {
       setState((prev) => {
@@ -424,7 +428,7 @@ export function CmsProvider({ children }) {
       setTimeout(() => {
         actions.replyChat(
           chatId,
-          state.settings?.lang === "en"
+          stateRef.current.settings?.lang === "en"
             ? "Thank you. The shop has received your message. AI/customer support will assist you shortly."
             : "Cảm ơn bạn. Shop đã nhận tin nhắn, AI/CSKH sẽ hỗ trợ ngay nhé.",
           "ai"
@@ -466,7 +470,7 @@ export function CmsProvider({ children }) {
       }));
     },
     exportData() {
-      return JSON.stringify(state, null, 2);
+      return JSON.stringify(stateRef.current, null, 2);
     },
     importData(json) {
       const parsed = JSON.parse(json);
@@ -476,8 +480,11 @@ export function CmsProvider({ children }) {
       localStorage.removeItem(STORAGE_KEY);
       setState(initialState);
     },
+    // Every action here uses functional setState updates or stateRef, so the
+    // object identity is intentionally kept stable across state changes —
+    // this preserves React.memo on components that receive `actions` as a prop.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [state]);
+  }), []);
 
   const value = useMemo(() => ({ state, actions }), [state, actions]);
   return <CmsContext.Provider value={value}>{children}</CmsContext.Provider>;

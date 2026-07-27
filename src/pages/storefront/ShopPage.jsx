@@ -642,7 +642,7 @@ export default function ShopPage() {
                   <button
                     onClick={() => setQuery("")}
                     aria-label={lang === "en" ? "Clear search" : "Xóa tìm kiếm"}
-                    className="rounded-lg p-1 text-slate-400 hover:bg-white hover:text-slate-700"
+                    className="rounded-lg p-2 text-slate-400 hover:bg-white hover:text-slate-700"
                   >
                     <X size={16} />
                   </button>
@@ -718,7 +718,7 @@ export default function ShopPage() {
                 onClick={() => changePage(currentPage - 1)}
                 disabled={currentPage === 1}
                 aria-label={lang === "vi" ? "Trang trước" : "Previous page"}
-                className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-35"
+                className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-35"
               >
                 <ChevronLeft size={18} />
               </button>
@@ -733,7 +733,7 @@ export default function ShopPage() {
                       item === currentPage ? "page" : undefined
                     }
                     aria-label={`${lang === "vi" ? "Trang" : "Page"} ${item}`}
-                    className={`h-10 min-w-10 rounded-xl px-3 text-sm font-black ${
+                    className={`h-11 min-w-11 rounded-xl px-3 text-sm font-black ${
                       item === currentPage
                         ? "bg-blue-700 text-white shadow-lg shadow-blue-100"
                         : "border border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
@@ -757,7 +757,7 @@ export default function ShopPage() {
                 onClick={() => changePage(currentPage + 1)}
                 disabled={currentPage === totalPages}
                 aria-label={lang === "vi" ? "Trang sau" : "Next page"}
-                className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-35"
+                className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-35"
               >
                 <ChevronRight size={18} />
               </button>
@@ -798,7 +798,7 @@ export default function ShopPage() {
                 onClick={() => changePage(currentPage - 1)}
                 disabled={currentPage === 1}
                 aria-label={lang === "vi" ? "Trang trước" : "Previous page"}
-                className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-35"
+                className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-35"
               >
                 <ChevronLeft size={18} />
               </button>
@@ -812,7 +812,7 @@ export default function ShopPage() {
                     aria-current={
                       item === currentPage ? "page" : undefined
                     }
-                    className={`h-10 min-w-10 rounded-xl px-3 text-sm font-black ${
+                    className={`h-11 min-w-11 rounded-xl px-3 text-sm font-black ${
                       item === currentPage
                         ? "bg-blue-700 text-white shadow-lg shadow-blue-100"
                         : "border border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
@@ -836,7 +836,7 @@ export default function ShopPage() {
                 onClick={() => changePage(currentPage + 1)}
                 disabled={currentPage === totalPages}
                 aria-label={lang === "vi" ? "Trang sau" : "Next page"}
-                className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-35"
+                className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-35"
               >
                 <ChevronRight size={18} />
               </button>

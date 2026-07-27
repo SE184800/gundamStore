@@ -17,7 +17,7 @@ export default function Toast({ show, type, message }) {
   return (
     /* 📍 ĐỊNH VỊ CŨ: fixed top-28 right-5 (Góc trên bên phải như cũ của cậu) */
     <div
-      className={`fixed top-28 right-5 z-[9999] flex items-center gap-3 rounded-2xl px-5 py-4 text-sm font-black shadow-2xl transition-all duration-300 ${toastClass}`}
+      className={`fixed top-28 right-5 z-[1000000] flex items-center gap-3 rounded-2xl px-5 py-4 text-sm font-black shadow-2xl transition-all duration-300 ${toastClass}`}
     >
       {/* KHÔI PHỤC ICON TƯƠNG ỨNG CŨ */}
       {type === "success" && <CheckCircle2 size={19} />}
