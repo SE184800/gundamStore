@@ -627,7 +627,7 @@ export default function CartPage() {
       </main>
 
       {cart.length > 0 && (
-        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white px-4 py-3 shadow-[0_-6px_20px_rgba(15,23,42,0.08)] lg:hidden">
+        <div className="fixed inset-x-0 bottom-[calc(76px+env(safe-area-inset-bottom))] z-[100000] border-t border-slate-200 bg-white px-4 py-3 shadow-[0_-6px_20px_rgba(15,23,42,0.08)] lg:hidden">
           <div className="mx-auto flex max-w-7xl items-center justify-between gap-3">
             <div>
               <div className="text-[11px] font-bold text-slate-500">{t.total}</div>
