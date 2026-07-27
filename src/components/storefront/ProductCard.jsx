@@ -326,7 +326,7 @@ function ProductCard({ product, lang: langProp, actions, badge, onAddToCart }) {
       </article>
 
       {quickOpen && createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm" onClick={() => setQuickOpen(false)}>
+        <div className="fixed inset-0 z-[100000] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm" onClick={() => setQuickOpen(false)}>
           <div className="relative max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-4xl bg-white p-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <button
               type="button"

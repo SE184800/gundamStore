@@ -246,8 +246,8 @@ function RequestModal({ type, lang, onClose, onSubmit }) {
   }
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-slate-950/60 p-4 backdrop-blur-sm">
-      <div className="mx-auto mt-10 max-w-xl rounded-3xl bg-white p-6 shadow-2xl">
+    <div className="fixed inset-0 z-[100000] bg-slate-950/60 p-4 backdrop-blur-sm">
+      <div className="mx-auto mt-10 max-h-[85vh] max-w-xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl">
         <h3 className="text-xl font-black text-slate-950">
           {type === "return" ? t.requestReturn : t.requestCancel}
         </h3>

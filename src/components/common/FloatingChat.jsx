@@ -84,7 +84,7 @@ export default function FloatingChat() {
   };
 
   return (
-    <div ref={chatRef} className="fixed bottom-0 right-0 z-[9999]">
+    <div ref={chatRef} className="fixed bottom-0 right-0 z-[100000]">
       <Toast show={toast.show} type={toast.type} message={toast.message} onClose={dismiss} />
       <div className="hidden md:flex fixed bottom-5 right-5 flex-col items-end gap-2">
         {open && (

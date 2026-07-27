@@ -4,7 +4,7 @@ export default function TermsModal({ isOpen, onClose }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[100000] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
       {/* KHUNG MODAL CHÍNH */}
       <div className="relative flex h-full max-h-[560px] w-full max-w-[520px] flex-col rounded-5xl border border-slate-100 bg-white shadow-2xl animate-in fade-in zoom-in-95 duration-200">
 

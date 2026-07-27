@@ -294,7 +294,7 @@ function CategoryBottomSheet({ t, lang, tree, activeId, onSelect, onClose, allCo
   const root = rootId ? tree.find((node) => node.id === rootId) : null;
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-slate-950/60 backdrop-blur-sm lg:hidden">
+    <div className="fixed inset-0 z-[100000] bg-slate-950/60 backdrop-blur-sm lg:hidden">
       <div className="absolute inset-x-0 bottom-0 max-h-[86vh] overflow-hidden rounded-t-[2rem] bg-white shadow-2xl">
         <div className="sticky top-0 z-10 border-b border-slate-100 bg-white px-4 py-4">
           <div className="flex items-center justify-between gap-3">
@@ -311,7 +311,7 @@ function CategoryBottomSheet({ t, lang, tree, activeId, onSelect, onClose, allCo
           </div>
         </div>
 
-        <div className="max-h-[72vh] overflow-y-auto p-4">
+        <div className="max-h-[72vh] overflow-y-auto p-4 pb-[calc(20px+env(safe-area-inset-bottom))]">
           {!root ? (
             <CategoryTree
               t={t}
@@ -848,8 +848,8 @@ export default function ShopPage() {
       {mobileCategoryOpen && <CategoryBottomSheet t={t} lang={lang} tree={categoryTree} activeId={selectedCategoryId} onSelect={selectCategory} onClose={() => setMobileCategoryOpen(false)} allCount={catalogProductCount} />}
 
       {mobileFilterOpen && (
-        <div className="fixed inset-0 z-[9999] bg-slate-950/60 p-0 backdrop-blur-sm lg:hidden">
-          <div className="ml-auto h-full w-full max-w-md overflow-y-auto rounded-none bg-white p-5 shadow-2xl sm:rounded-l-3xl">
+        <div className="fixed inset-0 z-[100000] bg-slate-950/60 p-0 backdrop-blur-sm lg:hidden">
+          <div className="ml-auto h-full w-full max-w-md overflow-y-auto rounded-none bg-white p-5 pb-[calc(20px+env(safe-area-inset-bottom))] shadow-2xl sm:rounded-l-3xl">
             <div className="mb-4 flex items-center justify-between">
               <div className="text-lg font-black text-slate-950">{t.filters}</div>
               <button onClick={() => setMobileFilterOpen(false)} aria-label={lang === "en" ? "Close" : "Đóng"} className="rounded-xl bg-slate-100 p-2 text-slate-600"><X size={18} /></button>

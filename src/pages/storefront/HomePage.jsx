@@ -883,7 +883,7 @@ function LoyaltyBubble({ lang }) {
   if (!visible) return null;
 
   return (
-    <div className="fixed bottom-5 left-5 z-40 hidden sm:block">
+    <div className="fixed bottom-5 left-5 z-40 hidden md:block">
       <button className="group flex items-center gap-3 rounded-full border border-amber-200 bg-white px-4 py-3 text-left shadow-2xl shadow-amber-100 transition hover:-translate-y-0.5 hover:border-amber-300 hover:bg-amber-50">
         <span className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-lg shadow-amber-200">
           <Crown size={22} />
