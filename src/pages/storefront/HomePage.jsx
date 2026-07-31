@@ -16,12 +16,14 @@ import ProductCard from "../../components/storefront/ProductCard";
 import {
   getStorefrontCategoryTreeFromApi,
   getStorefrontProductsForStorefront,
+  getStorefrontProductsPageFromApi,
 } from "../../services/StorefrontProductApiService";
 import { getStorefrontHomeBannersFromApi } from "../../services/BannerApiService";
 import {
   getPublicEventsApi,
   getPublicNewsApi,
 } from "../../services/ContentApiService";
+import { getRecentlyViewed } from "../../services/RecentlyViewedService";
 
 const HOMEPAGE_HERO_MAX_BANNERS = 3;
 
@@ -61,6 +63,8 @@ const copy = {
     empty: "Chưa có sản phẩm phù hợp.",
     loyalty: "Khách hàng thân thiết",
     loyaltyDesc: "Tích điểm • Voucher • Hạng VIP",
+    viewedTitle: "Sản phẩm đã xem",
+    trendingTitle: "Sản phẩm thịnh hành",
   },
   en: {
     eyebrow: "BUILD YOUR LEGEND",
@@ -97,6 +101,8 @@ const copy = {
     empty: "No matching products.",
     loyalty: "Loyalty club",
     loyaltyDesc: "Points • Vouchers • VIP tiers",
+    viewedTitle: "Recently viewed",
+    trendingTitle: "Trending now",
   },
 };
 
@@ -747,6 +753,45 @@ function ProductSection({ section, products, lang, actions, badge, isFirst = fal
   );
 }
 
+function HomeProductCardSkeleton() {
+  return (
+    <div className="animate-pulse overflow-hidden rounded-3xl border border-slate-200 bg-white">
+      <div className="aspect-square bg-slate-100" />
+      <div className="space-y-2 p-3">
+        <div className="h-4 w-3/4 rounded bg-slate-100" />
+        <div className="h-4 w-1/2 rounded bg-slate-100" />
+        <div className="h-9 rounded-2xl bg-slate-100" />
+      </div>
+    </div>
+  );
+}
+
+function HomeRecommendationSection({ title, products, loading, lang, actions, viewAllHref, viewAllLabel }) {
+  if (!loading && (!products || products.length === 0)) return null;
+
+  return (
+    <section className="mx-auto mt-4 max-w-[1440px] px-4 lg:px-8">
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-xl font-black text-blue-700">{title}</h2>
+          {viewAllHref && (
+            <a href={viewAllHref} className="inline-flex items-center gap-1 text-xs font-black text-blue-700 hover:underline">
+              {viewAllLabel}<ArrowRight size={13} />
+            </a>
+          )}
+        </div>
+        <div className="home-mobile-product-grid grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5">
+          {loading
+            ? Array.from({ length: 5 }).map((_, index) => <HomeProductCardSkeleton key={index} />)
+            : products.map((product) => (
+                <ProductCard key={product.id} product={product} lang={lang} actions={actions} />
+              ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function ContentHighlights({ news = [], events = [], lang = "vi" }) {
   if (!news.length && !events.length) return null;
 
@@ -951,6 +996,9 @@ export default function HomePage() {
   const [bannerApiReady, setBannerApiReady] = useState(false);
   const [bannerApiError, setBannerApiError] = useState("");
   const [backendCategoryTree, setBackendCategoryTree] = useState([]);
+  const [recentlyViewed, setRecentlyViewed] = useState([]);
+  const [trending, setTrending] = useState([]);
+  const [trendingLoading, setTrendingLoading] = useState(true);
   const { state, actions } = useCms();
   const lang = state.settings?.lang || "vi";
   const sections = useMemo(() => mergeCmsSections(state.homeSections), [state.homeSections]);
@@ -1037,6 +1085,29 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
+    setRecentlyViewed(getRecentlyViewed({ limit: 10 }));
+  }, []);
+
+  useEffect(() => {
+    let alive = true;
+
+    getStorefrontProductsPageFromApi({ sort: "popular", limit: 10 })
+      .then(({ products: items }) => {
+        if (alive) setTrending(Array.isArray(items) ? items : []);
+      })
+      .catch(() => {
+        if (alive) setTrending([]);
+      })
+      .finally(() => {
+        if (alive) setTrendingLoading(false);
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  useEffect(() => {
     let alive = true;
 
     Promise.allSettled([
@@ -1095,6 +1166,22 @@ export default function HomePage() {
       },
     ];
   }, [backendCategoryTree, state.categories]);
+
+  const t = copy[lang];
+
+  const bestSellerIds = useMemo(() => {
+    const bestSellersSection = sections.find((section) => section.dataSource === "best_sellers");
+    if (!bestSellersSection) return new Set();
+    return new Set(getSectionProducts(products, bestSellersSection).map((product) => product.id));
+  }, [products, sections]);
+
+  const trendingProducts = useMemo(
+    () =>
+      trending.filter(
+        (product) => product?.active !== false && !bestSellerIds.has(product.id)
+      ),
+    [trending, bestSellerIds]
+  );
 
   return (
     <PageShell>
@@ -1180,6 +1267,24 @@ export default function HomePage() {
             ))}
           </div>
         </main>
+
+        <HomeRecommendationSection
+          title={t.viewedTitle}
+          products={recentlyViewed}
+          loading={false}
+          lang={lang}
+          actions={actions}
+        />
+
+        <HomeRecommendationSection
+          title={t.trendingTitle}
+          products={trendingProducts}
+          loading={trendingLoading}
+          lang={lang}
+          actions={actions}
+          viewAllHref="/shop?collection=best_sellers"
+          viewAllLabel={t.viewAll}
+        />
 
         <ContentHighlights
           news={homepageNews}
