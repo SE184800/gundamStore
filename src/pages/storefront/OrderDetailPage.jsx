@@ -483,7 +483,7 @@ export default function OrderDetailPage() {
                 <p className="text-sm font-black uppercase tracking-[0.2em] text-blue-600">
                   {t.orderTracking}
                 </p>
-                <h1 className="mt-2 text-3xl font-black text-slate-950">{order.id}</h1>
+                <h1 className="mt-2 text-3xl font-black text-slate-950">{order.orderCode || order.orderNo || order.id}</h1>
                 <p className="mt-2 text-sm font-semibold text-slate-500">
                   {t.createdAt}: {order.createdAt ? new Date(order.createdAt).toLocaleString("vi-VN") : "-"}
                 </p>

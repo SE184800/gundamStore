@@ -8,6 +8,7 @@ import {
 } from "../../services/StorefrontOrderLookupApiService";
 import PageShell from "../../components/common/PageShell";
 import { useLang } from "../../store/CmsStore";
+import { getOrderStatusLabel } from "../../constants/orderConfig";
 
 const money = (n) => (Number(n) || 0).toLocaleString("vi-VN") + "đ";
 
@@ -23,7 +24,6 @@ function getCopy(lang) {
     localOrder: lang === "en" ? "Order recorded" : "Đơn hàng đã ghi nhận",
     notFound: lang === "en" ? "Order not found" : "Không tìm thấy đơn",
     publicCode: lang === "en" ? "Public lookup code" : "Mã tra cứu đơn",
-    internalId: lang === "en" ? "Internal order ID" : "Mã đơn nội bộ",
     total: lang === "en" ? "Total payment" : "Tổng tiền",
     status: lang === "en" ? "Status" : "Trạng thái",
     lookupHint:
@@ -122,13 +122,6 @@ export default function OrderSuccessPage() {
                 <b className="break-all text-blue-600">{publicCode}</b>
               </div>
 
-              {order.id && order.id !== publicCode && (
-                <div className="mt-3 flex flex-col gap-1 sm:flex-row sm:justify-between">
-                  <span className="font-bold text-slate-500">{t.internalId}</span>
-                  <b className="break-all text-slate-700">{order.id}</b>
-                </div>
-              )}
-
               <div className="mt-3 flex flex-col gap-1 sm:flex-row sm:justify-between">
                 <span className="font-bold text-slate-500">{t.total}</span>
                 <b className="text-red-500">{money(order.total)}</b>
@@ -136,7 +129,7 @@ export default function OrderSuccessPage() {
 
               <div className="mt-3 flex flex-col gap-1 sm:flex-row sm:justify-between">
                 <span className="font-bold text-slate-500">{t.status}</span>
-                <b>{order.status}</b>
+                <b>{getOrderStatusLabel(order.status, lang)}</b>
               </div>
 
               <div className="mt-5 rounded-2xl border border-blue-100 bg-blue-50 p-4 text-sm font-bold leading-6 text-blue-700">

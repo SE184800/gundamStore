@@ -26,7 +26,7 @@ export const ORDER_STATUS_SEQUENCE = [
 export const ORDER_STATUS_OPTIONS = Object.values(ORDER_STATUS);
 
 export const ORDER_STATUS_LABELS = {
-  [ORDER_STATUS.PLACED]: { vi: "Chờ xác nhận", en: "Placed" },
+  [ORDER_STATUS.PLACED]: { vi: "Đã ghi nhận", en: "Placed" },
   [ORDER_STATUS.CONFIRMED]: { vi: "Đã xác nhận", en: "Confirmed" },
   [ORDER_STATUS.PACKING]: { vi: "Đang đóng gói", en: "Packing" },
   [ORDER_STATUS.SHIPPING]: { vi: "Đang giao", en: "Shipping" },
@@ -78,7 +78,7 @@ export const PAYMENT_METHODS = [
   { value: "COD", label: { vi: "COD - Thanh toán khi nhận hàng", en: "COD - Cash on delivery" } },
   { value: "BANK_TRANSFER", label: { vi: "Chuyển khoản ngân hàng", en: "Bank transfer" } },
   { value: "CARD", label: { vi: "Thẻ ngân hàng", en: "Bank card" } },
-  { value: "WALLET", label: { vi: "Ví điện tử", en: "E-wallet" } },
+  { value: "WALLET", label: { vi: "Ví điện tử/ cổng thanh toán (Đang cập nhật)", en: "E-wallet / payment gateway (Coming soon)" } },
 ];
 
 export const SHIPPING_METHODS = [

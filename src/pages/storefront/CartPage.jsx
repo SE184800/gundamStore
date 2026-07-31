@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Minus, Plus, Trash2, TicketPercent, ShieldCheck, Truck } from "lucide-react";
-import { getCart, saveCart, saveCheckoutDraft } from "../../services/CartService";
+import { getCart, isPreorderProduct, PREORDER_MAX_QTY, saveCart, saveCheckoutDraft } from "../../services/CartService";
 import { validateStorefrontVoucherApi, translateVoucherMessage } from "../../services/StorefrontVoucherApiService";
 import { getStock } from "../../services/InventoryService";
 import PageShell from "../../components/common/PageShell";
@@ -28,11 +28,13 @@ function getCopy(lang) {
     shopNow: lang === "en" ? "Shop now" : "Mua sắm ngay",
     authenticPack: lang === "en" ? "Authentic Bandai • Shock-proof packing" : "Chính hãng Bandai • Bọc chống sốc",
     guaranteed: lang === "en" ? "Guaranteed item" : "Hàng đảm bảo",
-    availablePrefix: lang === "en" ? "Available" : "Còn",
-    availableSuffix: lang === "en" ? "items" : "sản phẩm",
+    inStockLabel: lang === "en" ? "In stock" : "Còn hàng",
+    outOfStockLabel: lang === "en" ? "Out of stock" : "Hết hàng",
     overStock: lang === "en" ? "Quantity exceeds available stock" : "Số lượng vượt tồn kho",
-    stockAlert: lang === "en" ? "Only" : "Sản phẩm này chỉ còn",
-    stockAlertSuffix: lang === "en" ? "items in stock." : "sản phẩm trong kho.",
+    stockAlert:
+      lang === "en"
+        ? "You've reached the maximum quantity available for this product."
+        : "Bạn đã đạt số lượng tối đa có thể mua cho sản phẩm này.",
     selectAtLeastOne: lang === "en" ? "Please select at least 1 product to proceed." : "Vui lòng chọn ít nhất 1 sản phẩm để tiếp tục.",
     paymentSummary: lang === "en" ? "Payment summary" : "Tóm tắt thanh toán",
     voucher: lang === "en" ? "Voucher" : "Mã khuyến mãi",
@@ -44,11 +46,9 @@ function getCopy(lang) {
     shippingDiscount: lang === "en" ? "Shipping discount" : "Giảm phí ship",
     total: lang === "en" ? "Total payment" : "Tổng thanh toán",
     checkout: lang === "en" ? "Checkout" : "Mua hàng",
-    trustTitle: lang === "en" ? "Safe checkout" : "Thanh toán an toàn",
-    trustDesc:
-      lang === "en"
-        ? "Stock, voucher and shipping are rechecked before order placement."
-        : "Tồn kho, voucher và vận chuyển sẽ được kiểm tra lại trước khi đặt hàng.",
+    decrease: lang === "en" ? "Decrease quantity" : "Giảm số lượng",
+    increase: lang === "en" ? "Increase quantity" : "Tăng số lượng",
+    remove: lang === "en" ? "Remove item" : "Xóa sản phẩm",
   };
 }
 
@@ -191,13 +191,14 @@ export default function CartPage() {
   const availableMap = useMemo(() => {
     const map = new Map();
     cart.forEach((item) => {
-      const available =
+      const rawAvailable =
         Number(
           getStock(item.backendProductId || item.productId || item.id || item.slug || item.sku)
             .available
         ) ||
         Number(item.stock || 0) ||
         0;
+      const available = isPreorderProduct(item) ? Math.max(PREORDER_MAX_QTY, rawAvailable) : rawAvailable;
       map.set(getCartIdentity(item), available);
     });
     return map;
@@ -211,7 +212,7 @@ export default function CartPage() {
     const available = getAvailable(item);
 
     if ((item.quantity || 1) >= available) {
-      notify("warning", `${t.stockAlert} ${available} ${t.stockAlertSuffix}`);
+      notify("warning", t.stockAlert);
       return;
     }
 
@@ -247,10 +248,7 @@ export default function CartPage() {
     );
 
     if (invalidItem) {
-      notify(
-        "error",
-        `${getItemName(invalidItem, lang)}: ${t.stockAlert} ${getAvailable(invalidItem)} ${t.stockAlertSuffix}`
-      );
+      notify("error", `${getItemName(invalidItem, lang)}: ${t.overStock}`);
       return;
     }
 
@@ -387,8 +385,8 @@ export default function CartPage() {
                         {item.backendProductId ? (item.sku || item.backendProductId) : "Local"}
                       </span>
                       <span className="text-slate-300">•</span>
-                      <span className={available <= 0 ? "text-red-500" : ""}>
-                        {t.availablePrefix} {available} {t.availableSuffix}
+                      <span className={available <= 0 ? "text-red-500" : "text-emerald-700"}>
+                        {available <= 0 ? t.outOfStockLabel : t.inStockLabel}
                       </span>
                     </div>
                   );
@@ -430,6 +428,7 @@ export default function CartPage() {
                         <div className="mx-auto flex w-fit items-center rounded-xl border border-slate-200">
                           <button
                             onClick={() => decreaseQty(item)}
+                            aria-label={t.decrease}
                             className="rounded-l-xl p-2 hover:bg-slate-50"
                           >
                             <Minus size={14} />
@@ -438,6 +437,7 @@ export default function CartPage() {
                           <button
                             onClick={() => increaseQty(item)}
                             disabled={qty >= available}
+                            aria-label={t.increase}
                             className={`rounded-r-xl p-2 ${qty >= available
                               ? "cursor-not-allowed bg-slate-100 text-slate-300"
                               : "hover:bg-slate-50"
@@ -451,6 +451,7 @@ export default function CartPage() {
 
                         <button
                           onClick={removeItem}
+                          aria-label={t.remove}
                           className="mx-auto rounded-xl bg-red-50 p-2.5 text-red-500 hover:bg-red-100"
                         >
                           <Trash2 size={16} />
@@ -480,6 +481,7 @@ export default function CartPage() {
                           </div>
                           <button
                             onClick={removeItem}
+                            aria-label={t.remove}
                             className="h-fit shrink-0 rounded-lg bg-red-50 p-1.5 text-red-500"
                           >
                             <Trash2 size={15} />
@@ -492,13 +494,14 @@ export default function CartPage() {
 
                         <div className="mt-2.5 flex items-center justify-between pl-7">
                           <div className="flex items-center rounded-lg border border-slate-200">
-                            <button onClick={() => decreaseQty(item)} className="rounded-l-lg p-1.5">
+                            <button onClick={() => decreaseQty(item)} aria-label={t.decrease} className="rounded-l-lg p-1.5">
                               <Minus size={13} />
                             </button>
                             <span className="w-7 border-x border-slate-200 text-center text-xs font-black">{qty}</span>
                             <button
                               onClick={() => increaseQty(item)}
                               disabled={qty >= available}
+                              aria-label={t.increase}
                               className={`rounded-r-lg p-1.5 ${qty >= available ? "cursor-not-allowed text-slate-300" : ""}`}
                             >
                               <Plus size={13} />
@@ -518,11 +521,6 @@ export default function CartPage() {
 
             <aside className="h-fit rounded-3xl bg-white p-6 shadow-sm lg:sticky lg:top-24">
               <h2 className="text-xl font-black text-slate-950">{t.paymentSummary}</h2>
-
-              <div className="mt-4 rounded-2xl border border-blue-100 bg-blue-50 p-4">
-                <div className="text-sm font-black text-blue-800">{t.trustTitle}</div>
-                <p className="mt-1 text-xs font-semibold leading-5 text-blue-700/80">{t.trustDesc}</p>
-              </div>
 
               <div className="mt-3 rounded-2xl bg-blue-50 p-3.5">
                 <div className="flex items-center gap-2 font-black text-blue-700">

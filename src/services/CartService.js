@@ -46,6 +46,19 @@ function sameItem(a = {}, b = {}) {
   return aKeys.some((key) => bKeys.includes(key));
 }
 
+export const PREORDER_MAX_QTY = 99;
+
+export function isPreorderProduct(product = {}) {
+  const collections = Array.isArray(product.collections) ? product.collections : [];
+  return (
+    String(product.status || "").toLowerCase().includes("pre") ||
+    collections.some((collection) => {
+      const key = String(collection || "").toLowerCase();
+      return key.includes("preorder") || key.includes("pre_order") || key === "order_items";
+    })
+  );
+}
+
 function dedupeCart(cart = []) {
   return cart.reduce((acc, item) => {
     const index = acc.findIndex((row) => sameItem(row, item));
@@ -148,9 +161,13 @@ export function validateCartStock(product, quantity = 1, products = []) {
     ? Number(stock.available || 0)
     : null;
 
-  const available = item.variantId
-    ? Number(product?.stock || item.stock || 0)
-    : Number(stock?.available || product?.stock || 0);
+  const preorder = isPreorderProduct(product) || isPreorderProduct(item);
+
+  const available = preorder
+    ? Math.max(PREORDER_MAX_QTY, Number(product?.stock || item.stock || 0))
+    : item.variantId
+      ? Number(product?.stock || item.stock || 0)
+      : Number(stock?.available || product?.stock || 0);
 
   if (available <= 0) {
     return { ok: false, reason: "OUT_OF_STOCK", available, currentQty, requestQty, item };

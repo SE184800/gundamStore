@@ -5,13 +5,16 @@ import {
   ClipboardCheck,
   PackageCheck,
   ShieldCheck,
+  ShoppingCart,
   WalletCards,
   Zap,
 } from "lucide-react";
 import PageShell from "../../components/common/PageShell";
 import { useLang } from "../../store/CmsStore";
-import { saveCheckoutDraft } from "../../services/CartService";
+import { addProductToCart, forceCartBadgeSync, saveCheckoutDraft } from "../../services/CartService";
 import { getStorefrontProductsPageFromApi } from "../../services/StorefrontProductApiService";
+import useToast from "../../hooks/useToast";
+import Toast from "../../utils/Toast";
 import {
   ORDER_TYPE,
   PAYMENT_STATUS,
@@ -48,7 +51,10 @@ function getCopy(lang) {
     depositNow: lang === "en" ? "Deposit now" : "Cọc trước",
     remaining: lang === "en" ? "Remaining" : "Còn lại",
     etaLabel: lang === "en" ? "ETA" : "Dự kiến về hàng",
-    preorderNow: lang === "en" ? "Pre-order with deposit" : "Đặt cọc giữ slot",
+    preorderNow: lang === "en" ? "ORDER NOW" : "ĐẶT HÀNG NGAY",
+    addToCart: lang === "en" ? "Add to cart" : "Thêm vào giỏ",
+    addToCartSuccess: lang === "en" ? "Added to cart." : "Đã thêm sản phẩm vào giỏ hàng thành công!",
+    viewGuide: lang === "en" ? "VIEW PRE-ORDER GUIDE" : "XEM HƯỚNG DẪN PRE-ORDER",
     policyTitle: lang === "en" ? "Pre-order policy" : "Chính sách đặt trước",
     policy1:
       lang === "en"
@@ -68,7 +74,7 @@ function getCopy(lang) {
         ? "Contact the shop for HG/RG/MG/PG recommendations based on budget and ETA."
         : "Liên hệ shop để được tư vấn dòng HG/RG/MG/PG phù hợp ngân sách và lịch hàng.",
     chat: lang === "en" ? "Chat with shop" : "Chat với shop",
-    trust: lang === "en" ? "Deposit flow ready" : "Đã hỗ trợ luồng cọc",
+    trust: lang === "en" ? "Deposit process ready" : "Hỗ trợ quy trình đặt cọc",
     trustDesc:
       lang === "en"
         ? "Checkout will show deposit amount and remaining balance clearly."
@@ -100,6 +106,7 @@ export default function PreOrderPage() {
   const navigate = useNavigate();
   const [lang] = useLang();
   const t = getCopy(lang);
+  const { toast, notify, dismiss } = useToast(2500);
 
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -167,8 +174,27 @@ export default function PreOrderPage() {
     navigate("/checkout");
   }
 
+  function addToCart(product) {
+    const name = getProductName(product, lang);
+
+    addProductToCart({
+      ...product,
+      name,
+      image: getProductImage(product),
+      status: "preorder",
+    }, 1);
+
+    forceCartBadgeSync();
+    notify("success", t.addToCartSuccess);
+  }
+
+  function scrollToGuide() {
+    document.getElementById("preorder-guide")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   return (
     <PageShell>
+      <Toast show={toast.show} type={toast.type} message={toast.message} onClose={dismiss} />
       <main className="mx-auto max-w-[1440px] px-4 py-8 lg:px-8">
         <section className="relative overflow-hidden rounded-6xl bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 p-8 text-white shadow-[0_30px_120px_rgba(15,23,42,0.25)]">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_75%_35%,rgba(59,130,246,0.35),transparent_35%)]" />
@@ -183,6 +209,13 @@ export default function PreOrderPage() {
               <p className="mt-5 text-base font-semibold leading-8 text-white/75">
                 {t.desc}
               </p>
+              <button
+                type="button"
+                onClick={scrollToGuide}
+                className="mt-6 inline-flex items-center gap-2 rounded-2xl border border-white/30 bg-white/10 px-5 py-3 text-sm font-black uppercase tracking-wide text-white transition hover:bg-white/20"
+              >
+                {t.viewGuide}
+              </button>
             </div>
 
             <div className="rounded-4xl border border-white/10 bg-white/10 p-5 backdrop-blur">
@@ -197,7 +230,7 @@ export default function PreOrderPage() {
           </div>
         </section>
 
-        <section className="mt-8 grid gap-4 md:grid-cols-4">
+        <section id="preorder-guide" className="mt-8 scroll-mt-24 grid gap-4 md:grid-cols-4">
           <Step icon={ClipboardCheck} title={`1. ${t.choose}`} desc={t.chooseDesc} />
           <Step icon={WalletCards} title={`2. ${t.deposit}`} desc={t.depositDesc} />
           <Step icon={CalendarClock} title={`3. ${t.eta}`} desc={t.etaDesc} />
@@ -246,15 +279,15 @@ export default function PreOrderPage() {
                           loading="lazy"
                           className="h-full w-full object-cover"
                         />
-                        <div className="absolute left-3 top-3 rounded-full bg-amber-400 px-3 py-1 text-[11px] font-black text-slate-950">
-                          PRE-ORDER
-                        </div>
                       </div>
                     </a>
 
-                    <div className="p-4">
+                    <div className="p-4 text-left">
                       <a href={`/product/${product.slug || product.id}`}>
-                        <h3 className="line-clamp-2 min-h-[44px] text-base font-black leading-snug text-slate-950 hover:text-blue-700">
+                        <h3
+                          title={name}
+                          className="line-clamp-2 min-h-[44px] text-base font-black leading-snug text-slate-950 hover:text-blue-700"
+                        >
                           {name}
                         </h3>
                       </a>
@@ -281,14 +314,24 @@ export default function PreOrderPage() {
                         {t.etaLabel}: {product.eta || getPreorderEtaText(lang)}
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={() => startPreorder(product)}
-                        className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 py-3 text-sm font-black text-white shadow-lg shadow-blue-100 transition hover:bg-blue-700"
-                      >
-                        <Zap size={16} />
-                        {t.preorderNow}
-                      </button>
+                      <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                        <button
+                          type="button"
+                          onClick={() => startPreorder(product)}
+                          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 py-3 text-sm font-black text-white shadow-lg shadow-blue-100 transition hover:bg-blue-700"
+                        >
+                          <Zap size={16} />
+                          {t.preorderNow}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => addToCart(product)}
+                          className="flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700 shadow-sm transition hover:border-blue-200 hover:text-blue-700"
+                        >
+                          <ShoppingCart size={16} />
+                          {t.addToCart}
+                        </button>
+                      </div>
                     </div>
                   </article>
                 );

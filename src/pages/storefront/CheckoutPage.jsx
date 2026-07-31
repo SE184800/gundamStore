@@ -25,6 +25,7 @@ import {
 } from "../../constants/orderConfig";
 import { getStorefrontShippingMethodsApi } from "../../services/ShippingApiService";
 import { useLang } from "../../store/CmsStore";
+import { clearSavedCheckoutInfo, getSavedCheckoutInfo, saveCheckoutInfo } from "../../services/SavedCheckoutInfoService";
 
 const money = (n) => (Number(n) || 0).toLocaleString("vi-VN") + "đ";
 
@@ -44,6 +45,8 @@ function getCopy(lang) {
     name: lang === "en" ? "Recipient name" : "Họ tên người nhận",
     phone: lang === "en" ? "Phone number" : "Số điện thoại",
     province: lang === "en" ? "Province / City" : "Tỉnh / Thành phố",
+    district: lang === "en" ? "District" : "Quận / Huyện",
+    ward: lang === "en" ? "Ward" : "Phường / Xã",
     address: lang === "en" ? "Detailed address" : "Địa chỉ chi tiết",
     shippingTitle: lang === "en" ? "Shipping method" : "Phương thức vận chuyển",
     paymentTitle: lang === "en" ? "Payment method" : "Phương thức thanh toán",
@@ -86,6 +89,15 @@ function getCopy(lang) {
       lang === "en"
         ? "Shipping fee will be confirmed when the item arrives."
         : "Phí vận chuyển sẽ được xác nhận khi hàng về.",
+    saveInfoLabel:
+      lang === "en"
+        ? "Save shipping info for next purchase"
+        : "Lưu thông tin nhận hàng cho lần mua sau",
+    clearSavedInfo: lang === "en" ? "Clear saved info" : "Xóa thông tin đã lưu",
+    savedInfoLoaded:
+      lang === "en"
+        ? "Loaded your saved shipping info."
+        : "Đã điền thông tin nhận hàng đã lưu trước đó.",
   };
 }
 
@@ -131,15 +143,20 @@ export default function CheckoutPage() {
     phone: "",
     email: "",
     address: "",
+    ward: "",
+    district: "",
     province: "Hồ Chí Minh",
     note: "",
     paymentMethod: "COD",
     shippingMethod: "FAST",
   });
+  const [fieldErrors, setFieldErrors] = useState({});
 
   const [savedAddresses, setSavedAddresses] = useState([]);
   const [selectedAddressId, setSelectedAddressId] = useState("");
   const [shippingMethods, setShippingMethods] = useState(SHIPPING_METHODS);
+  const [saveInfoForNextTime, setSaveInfoForNextTime] = useState(false);
+  const [savedInfoNotice, setSavedInfoNotice] = useState("");
 
   useEffect(() => {
     let alive = true;
@@ -160,6 +177,8 @@ export default function CheckoutPage() {
       name: address.receiver || prev.name,
       phone: address.phone || prev.phone,
       address: address.address || prev.address,
+      ward: address.ward || prev.ward,
+      district: address.district || prev.district,
       province: address.city || prev.province || "Hồ Chí Minh",
     }));
   }
@@ -204,6 +223,8 @@ export default function CheckoutPage() {
               email: prev.email || account?.email || "",
               phone: prev.phone || defaultAddress.phone || profile.phone || "",
               address: prev.address || defaultAddress.address || profile.address || "",
+              ward: prev.ward || defaultAddress.ward || "",
+              district: prev.district || defaultAddress.district || "",
               province: prev.province || defaultAddress.city || profile.city || "Hồ Chí Minh",
             }));
             return;
@@ -221,11 +242,28 @@ export default function CheckoutPage() {
         .catch((error) => {
           console.warn("Checkout account prefill skipped", error);
         });
+    } else {
+      const savedInfo = getSavedCheckoutInfo();
+      if (savedInfo) {
+        setSaveInfoForNextTime(true);
+        setSavedInfoNotice(t.savedInfoLoaded);
+        setCustomer((prev) => ({
+          ...prev,
+          name: prev.name || savedInfo.name || "",
+          phone: prev.phone || savedInfo.phone || "",
+          email: prev.email || savedInfo.email || "",
+          address: prev.address || savedInfo.address || "",
+          ward: prev.ward || savedInfo.ward || "",
+          district: prev.district || savedInfo.district || "",
+          province: savedInfo.province || prev.province || "Hồ Chí Minh",
+        }));
+      }
     }
 
     return () => {
       alive = false;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const selectedShipping =
@@ -350,22 +388,34 @@ export default function CheckoutPage() {
 
   function validateCustomer() {
     const nextErrors = [];
+    const nextFieldErrors = {};
     const name = sanitizeText(customer.name, 80);
     const phone = normalizePhone(customer.phone);
     const address = sanitizeText(customer.address, 180);
     const note = sanitizeText(customer.note, 300);
 
-    if (!name) nextErrors.push(t.requiredName);
-    else if (name.length < 2) nextErrors.push(t.invalidName);
+    if (!name) {
+      nextFieldErrors.name = t.requiredName;
+    } else if (name.length < 2) {
+      nextFieldErrors.name = t.invalidName;
+    }
 
-    if (!phone) nextErrors.push(t.requiredPhone);
-    else if (!isValidVietnamPhone(phone)) nextErrors.push(t.invalidPhone);
+    if (!phone) {
+      nextFieldErrors.phone = t.requiredPhone;
+    } else if (!isValidVietnamPhone(phone)) {
+      nextFieldErrors.phone = t.invalidPhone;
+    }
 
-    if (!address) nextErrors.push(t.requiredAddress);
-    else if (address.length < 8) nextErrors.push(t.invalidAddress);
+    if (!address) {
+      nextFieldErrors.address = t.requiredAddress;
+    } else if (address.length < 8) {
+      nextFieldErrors.address = t.invalidAddress;
+    }
 
     if (note.length > 280) nextErrors.push(t.invalidNote);
 
+    nextErrors.push(...Object.values(nextFieldErrors));
+    setFieldErrors(nextFieldErrors);
     setErrors(nextErrors);
     return nextErrors.length === 0;
   }
@@ -390,11 +440,18 @@ export default function CheckoutPage() {
       phone: normalizePhone(customer.phone),
       email: sanitizeText(customer.email || "", 120),
       address: sanitizeText(customer.address, 180),
+      ward: sanitizeText(customer.ward || "", 80),
+      district: sanitizeText(customer.district || "", 80),
       province: sanitizeText(customer.province || "Hồ Chí Minh", 80),
       note: sanitizeText(customer.note, 280),
       paymentMethod: customer.paymentMethod,
       shippingMethod: customer.shippingMethod,
     };
+
+    if (!hasAccountToken()) {
+      if (saveInfoForNextTime) saveCheckoutInfo(cleanCustomer);
+      else clearSavedCheckoutInfo();
+    }
 
     try {
       const apiPayload = {
@@ -562,21 +619,33 @@ export default function CheckoutPage() {
                   </div>
                 )}
 
-                <div className="mt-5 grid gap-4 md:grid-cols-2">
-                  <input
-                    value={customer.name}
-                    onChange={(e) => setCustomer({ ...customer, name: e.target.value })}
-                    placeholder={t.name}
-                    className="rounded-2xl border px-4 py-3 outline-none focus:border-blue-500"
-                  />
+                {savedInfoNotice && (
+                  <div className="mt-4 rounded-2xl bg-emerald-50 px-4 py-2.5 text-xs font-black text-emerald-700">
+                    {savedInfoNotice}
+                  </div>
+                )}
 
-                  <input
-                    value={customer.phone}
-                    onChange={(e) => setCustomer({ ...customer, phone: e.target.value })}
-                    placeholder={t.phone}
-                    inputMode="tel"
-                    className="rounded-2xl border px-4 py-3 outline-none focus:border-blue-500"
-                  />
+                <div className="mt-5 grid gap-4 md:grid-cols-2">
+                  <label className="block">
+                    <input
+                      value={customer.name}
+                      onChange={(e) => setCustomer({ ...customer, name: e.target.value })}
+                      placeholder={t.name}
+                      className={`w-full rounded-2xl border px-4 py-3 outline-none focus:border-blue-500 ${fieldErrors.name ? "border-red-400" : ""}`}
+                    />
+                    {fieldErrors.name && <p className="mt-1.5 text-xs font-bold text-red-600">{fieldErrors.name}</p>}
+                  </label>
+
+                  <label className="block">
+                    <input
+                      value={customer.phone}
+                      onChange={(e) => setCustomer({ ...customer, phone: e.target.value })}
+                      placeholder={t.phone}
+                      inputMode="tel"
+                      className={`w-full rounded-2xl border px-4 py-3 outline-none focus:border-blue-500 ${fieldErrors.phone ? "border-red-400" : ""}`}
+                    />
+                    {fieldErrors.phone && <p className="mt-1.5 text-xs font-bold text-red-600">{fieldErrors.phone}</p>}
+                  </label>
 
                   <input
                     value={customer.email}
@@ -594,12 +663,57 @@ export default function CheckoutPage() {
                   />
 
                   <input
-                    value={customer.address}
-                    onChange={(e) => setCustomer({ ...customer, address: e.target.value })}
-                    placeholder={t.address}
+                    value={customer.district}
+                    onChange={(e) => setCustomer({ ...customer, district: e.target.value })}
+                    placeholder={t.district}
                     className="rounded-2xl border px-4 py-3 outline-none focus:border-blue-500"
                   />
+
+                  <input
+                    value={customer.ward}
+                    onChange={(e) => setCustomer({ ...customer, ward: e.target.value })}
+                    placeholder={t.ward}
+                    className="rounded-2xl border px-4 py-3 outline-none focus:border-blue-500"
+                  />
+
+                  <label className="block md:col-span-2">
+                    <input
+                      value={customer.address}
+                      onChange={(e) => setCustomer({ ...customer, address: e.target.value })}
+                      placeholder={t.address}
+                      className={`w-full rounded-2xl border px-4 py-3 outline-none focus:border-blue-500 ${fieldErrors.address ? "border-red-400" : ""}`}
+                    />
+                    {fieldErrors.address && <p className="mt-1.5 text-xs font-bold text-red-600">{fieldErrors.address}</p>}
+                  </label>
                 </div>
+
+                {!hasAccountToken() && (
+                  <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-slate-50 px-4 py-3">
+                    <label className="flex items-center gap-2 text-sm font-bold text-slate-700">
+                      <input
+                        type="checkbox"
+                        checked={saveInfoForNextTime}
+                        onChange={(e) => setSaveInfoForNextTime(e.target.checked)}
+                        className="h-4 w-4"
+                      />
+                      {t.saveInfoLabel}
+                    </label>
+
+                    {saveInfoForNextTime && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          clearSavedCheckoutInfo();
+                          setSaveInfoForNextTime(false);
+                          setSavedInfoNotice("");
+                        }}
+                        className="text-xs font-black text-slate-400 hover:text-red-500"
+                      >
+                        {t.clearSavedInfo}
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="rounded-3xl bg-white p-6 shadow-sm">

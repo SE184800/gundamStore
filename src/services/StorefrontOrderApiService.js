@@ -162,7 +162,7 @@ export function buildCreateOrderPayload({
     customerName: customer.name,
     customerPhone: customer.phone,
     customerEmail: customer.email || "",
-    customerAddress: [customer.address, customer.province].filter(Boolean).join(", "),
+    customerAddress: [customer.address, customer.ward, customer.district, customer.province].filter(Boolean).join(", "),
     shippingFee: Number(pricing.shippingFee) || 0,
     discount: Number(pricing.discount || 0) + Number(pricing.shippingDiscount || 0),
     paymentMethod: normalizePaymentMethod(customer.paymentMethod),

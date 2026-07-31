@@ -7,7 +7,6 @@ import { addProductToCart, forceCartBadgeSync, saveBuyNowDraft, validateCartStoc
 import { addMyWishlistItem, hasAccountToken } from "../../services/AccountApiService";
 import Toast from "../../utils/Toast";
 import useToast from "../../hooks/useToast";
-import { useCms } from "../../store/CmsStore";
 function getImage(product) {
   return (
     product?.cardUrl ||
@@ -46,7 +45,6 @@ function ProductCard({ product, lang: langProp, actions, badge, onAddToCart }) {
   const i18n = useI18n();
   const lang = langProp || i18n.lang;
   const t = i18n.t;
-  const { state, action } = useCms();
   const [quickOpen, setQuickOpen] = useState(false);
   const [qty, setQty] = useState(1);
   const [wishlistSaving, setWishlistSaving] = useState(false);
@@ -112,10 +110,6 @@ function ProductCard({ product, lang: langProp, actions, badge, onAddToCart }) {
       return false;
     }
 
-    if (!state?.user) {
-      notify("error", `Vui lòng đăng nhập để tiếp tục`);
-      return false;
-    }
     if (isOutOfStock) {
       notify("error", outOfStockLabel);
       return false;
@@ -144,10 +138,6 @@ function ProductCard({ product, lang: langProp, actions, badge, onAddToCart }) {
       return false;
     }
 
-    if (!state?.user) {
-      notify("error", `Vui lòng đăng nhập để tiếp tục`);
-      return false;
-    }
     if (isOutOfStock) {
       notify("error", outOfStockLabel);
       return;
@@ -216,6 +206,7 @@ function ProductCard({ product, lang: langProp, actions, badge, onAddToCart }) {
               onClick={addWishlist}
               disabled={wishlistSaving}
               title={wishlistSaved ? wishlistCopy.titleSaved : wishlistCopy.titleSave}
+              aria-label={wishlistSaved ? wishlistCopy.titleSaved : wishlistCopy.titleSave}
               className={`absolute right-3 top-3 z-10 flex h-10 w-10 items-center justify-center rounded-full border bg-white/95 shadow-lg transition hover:scale-110 ${wishlistSaved ? "border-red-100 text-red-600" : "border-white/70 text-slate-500 hover:border-red-100 hover:text-red-600"} ${wishlistSaving ? "cursor-not-allowed opacity-60" : ""}`}
             >
               <Heart size={18} fill={wishlistSaved ? "currentColor" : "none"} />
@@ -248,6 +239,7 @@ function ProductCard({ product, lang: langProp, actions, badge, onAddToCart }) {
               }}
               className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white/80 text-slate-500 shadow-sm transition hover:scale-110 hover:border-blue-200 hover:bg-blue-700 hover:text-white"
               title={t("product.quickView")}
+              aria-label={t("product.quickView")}
             >
               <Eye size={18} />
             </button>
@@ -256,7 +248,7 @@ function ProductCard({ product, lang: langProp, actions, badge, onAddToCart }) {
           <div className="mb-3 flex items-center justify-between text-sm">
             <span className="font-semibold text-slate-500">{product?.scale || "1/144"}</span>
             <span className="font-black text-blue-700">
-              {isOutOfStock ? outOfStockLabel : isPreorder ? t("product.preorder") : resolveText(product?.status || t("product.inStock"), lang)}
+              {isOutOfStock ? outOfStockLabel : isPreorder ? t("product.preorder") : t("product.inStock")}
             </span>
           </div>
 
@@ -349,9 +341,9 @@ function ProductCard({ product, lang: langProp, actions, badge, onAddToCart }) {
                   {oldPrice ? <div className="text-sm font-bold text-slate-400 line-through">{formatCurrency(oldPrice)}</div> : null}
                 </div>
                 <div className="mt-5 flex items-center gap-3">
-                  <button type="button" onClick={() => setQty((v) => Math.max(1, v - 1))} className="flex h-11 w-11 items-center justify-center rounded-full border border-slate-200"><Minus size={16} /></button>
+                  <button type="button" onClick={() => setQty((v) => Math.max(1, v - 1))} aria-label={lang === "en" ? "Decrease quantity" : "Giảm số lượng"} className="flex h-11 w-11 items-center justify-center rounded-full border border-slate-200"><Minus size={16} /></button>
                   <span className="min-w-[32px] text-center text-lg font-black">{qty}</span>
-                  <button type="button" onClick={() => setQty((v) => Math.min(maxQty, v + 1))} className="flex h-11 w-11 items-center justify-center rounded-full border border-slate-200"><Plus size={16} /></button>
+                  <button type="button" onClick={() => setQty((v) => Math.min(maxQty, v + 1))} aria-label={lang === "en" ? "Increase quantity" : "Tăng số lượng"} className="flex h-11 w-11 items-center justify-center rounded-full border border-slate-200"><Plus size={16} /></button>
                 </div>
                 <div className="mt-auto grid gap-3 pt-6 sm:grid-cols-2">
                   <button type="button" onClick={addCart} disabled={isOutOfStock} className={`rounded-2xl px-4 py-3 font-black text-white ${isOutOfStock ? "bg-slate-300" : "bg-blue-700 hover:bg-blue-800"}`}>{isOutOfStock ? outOfStockLabel : t("product.addToCart")}</button>

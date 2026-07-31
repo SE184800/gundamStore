@@ -30,9 +30,11 @@ import {
 import PageShell from "../../components/common/PageShell";
 import useToast from "../../hooks/useToast";
 import Toast from "../../utils/Toast";
+import ProductCard from "../../components/storefront/ProductCard";
 import { useCms } from "../../store/CmsStore";
 import { translateStaticText } from "../../i18n";
 import { addProductToCart, forceCartBadgeSync, saveBuyNowDraft, saveCheckoutDraft, validateCartStock } from "../../services/CartService";
+import { getRecentlyViewed, trackProductView } from "../../services/RecentlyViewedService";
 import {
   addMyWishlistItem,
   getMyWishlist,
@@ -77,7 +79,7 @@ const copy = {
     addToCart: "Thêm vào giỏ",
     soldOut: "Hết hàng",
     buyNow: "Đặt hàng ngay",
-    preorderNow: "Đặt trước ngay",
+    preorderNow: "ĐẶT HÀNG NGAY",
     favorite: "Yêu thích",
     saved: "Đã lưu",
     wishlistLogin: "Vui lòng đăng nhập để lưu yêu thích.",
@@ -133,6 +135,8 @@ const copy = {
     customerReviewsTitle: "Đánh giá khách hàng",
     noReviews: "Sản phẩm chưa có đánh giá được duyệt.",
     relatedTitle: "Sản phẩm liên quan",
+    viewedTitle: "Sản phẩm đã xem",
+    bestSellerTitle: "Sản phẩm bán chạy",
     viewAll: "Xem tất cả",
     notFound: "Không tìm thấy sản phẩm",
     backToShop: "Quay lại trang bán hàng",
@@ -211,6 +215,8 @@ const copy = {
     customerReviewsTitle: "Customer reviews",
     noReviews: "No approved reviews for this product yet.",
     relatedTitle: "Related products",
+    viewedTitle: "Recently viewed",
+    bestSellerTitle: "Best sellers",
     viewAll: "View all",
     notFound: "Product not found",
     backToShop: "Back to shop",
@@ -400,13 +406,16 @@ function GundamVisual({ tone = "blue", imageUrl, large = false, priority = false
   );
 }
 
-function QuantitySelector({ qty, setQty, maxQty = 99, disabled = false }) {
+function QuantitySelector({ qty, setQty, maxQty = 99, disabled = false, lang = "vi" }) {
+  const decreaseLabel = lang === "en" ? "Decrease quantity" : "Giảm số lượng";
+  const increaseLabel = lang === "en" ? "Increase quantity" : "Tăng số lượng";
   return (
     <div className={`inline-flex items-center overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm ${disabled ? "opacity-50" : ""}`}>
       <button
         type="button"
         disabled={disabled || qty <= 1}
         onClick={() => setQty(Math.max(1, qty - 1))}
+        aria-label={decreaseLabel}
         className="p-3 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
       >
         <Minus size={16} />
@@ -416,6 +425,7 @@ function QuantitySelector({ qty, setQty, maxQty = 99, disabled = false }) {
         type="button"
         disabled={disabled || qty >= maxQty}
         onClick={() => setQty((value) => Math.min(maxQty, value + 1))}
+        aria-label={increaseLabel}
         className="p-3 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
       >
         <Plus size={16} />
@@ -481,11 +491,6 @@ function ProductInfo({ product, lang, actions, onPreorder, reviewCount = 0 }) {
   function handleAddToCart() {
     if (isOutOfStock) return;
 
-    if (!hasAccountToken()) {
-      notify("error", t.cartLoginRequired);
-      return;
-    }
-
     const validation = validateCartStock(currentProduct, qty);
     if (!validation.ok) {
       showCartError(validation);
@@ -499,11 +504,6 @@ function ProductInfo({ product, lang, actions, onPreorder, reviewCount = 0 }) {
 
   function handleBuyNow() {
     if (isOutOfStock) return;
-
-    if (!hasAccountToken()) {
-      notify("error", t.cartLoginRequired);
-      return;
-    }
 
     const result = saveBuyNowDraft(currentProduct, qty, { shippingMethod: "FAST" });
     if (!result.ok) {
@@ -662,7 +662,7 @@ function ProductInfo({ product, lang, actions, onPreorder, reviewCount = 0 }) {
                     <div className="text-xs font-bold text-slate-500">{variant.sku}</div>
                     <div className="mt-1 text-xs font-black text-blue-700">{money(variant.price)}</div>
                     <div className={`mt-1 text-[11px] font-black ${Number(variant.stock || 0) > 0 ? "text-emerald-600" : "text-red-500"}`}>
-                      {Number(variant.stock || 0) > 0 ? `${t.stock}: ${variant.stock}` : t.outOfStock}
+                      {Number(variant.stock || 0) > 0 ? t.inStock : t.outOfStock}
                     </div>
                   </div>
                 </button>
@@ -717,7 +717,7 @@ function ProductInfo({ product, lang, actions, onPreorder, reviewCount = 0 }) {
           ? "border-slate-200 bg-slate-50 text-slate-600"
           : "border-emerald-100 bg-emerald-50 text-emerald-700"
           }`}>
-          <CheckCircle2 size={18} /> {isOutOfStock ? t.outOfStock : `${t.stock}: ${stock}`}
+          <CheckCircle2 size={18} /> {isOutOfStock ? t.outOfStock : t.inStock}
         </div>
       )}
 
@@ -725,17 +725,27 @@ function ProductInfo({ product, lang, actions, onPreorder, reviewCount = 0 }) {
 
       <div className="mt-5">
         <div className="mb-2 text-xs font-black uppercase text-slate-500">{t.quantity}</div>
-        <QuantitySelector qty={qty} setQty={setQty} maxQty={maxQty} disabled={isOutOfStock} />
+        <QuantitySelector qty={qty} setQty={setQty} maxQty={maxQty} disabled={isOutOfStock} lang={lang} />
       </div>
 
       <div className="mt-5 grid gap-3 sm:grid-cols-2">
         {preorder ? (
-          <button
-            onClick={() => onPreorder ? onPreorder(currentProduct, qty) : actions.addToCart(currentProduct.id, qty)}
-            className="rounded-2xl bg-violet-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-violet-200 hover:bg-violet-700 sm:col-span-2"
-          >
-            {t.preorderNow}
-          </button>
+          <>
+            <button
+              onClick={handleAddToCart}
+              className="rounded-2xl border border-violet-200 bg-white px-5 py-3 text-sm font-black text-violet-700 shadow-sm hover:bg-violet-50"
+            >
+              <ShoppingCart className="mr-2 inline" size={17} />
+              {t.addToCart}
+            </button>
+            <button
+              onClick={() => onPreorder ? onPreorder(currentProduct, qty) : actions.addToCart(currentProduct.id, qty)}
+              className="rounded-2xl bg-violet-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-violet-200 hover:bg-violet-700"
+            >
+              <Zap className="mr-2 inline" size={17} />
+              {t.preorderNow}
+            </button>
+          </>
         ) : (
           <>
             <button
@@ -960,7 +970,6 @@ function ProductAttributes({ product, lang }) {
     [t.brand, product.brand || "Bandai Spirits"],
     [t.grade, product.grade || "Gunpla"],
     [t.scale, product.scale || "1/144"],
-    [t.stock, product.stock ?? 0],
   ];
 
   return (
@@ -1131,16 +1140,40 @@ function Reviews({ product, reviews, lang, onSubmitted }) {
   );
 }
 
-function RelatedCard({ product, lang }) {
+function ProductCardSkeleton() {
   return (
-    <a href={`/product/${product.slug || product.id}`} className="block overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg hover:shadow-blue-100/60">
-      <div className="h-32"><GundamVisual imageUrl={product.imageUrl || product.images?.[0]} tone={product.tone || "blue"} /></div>
-      <div className="p-3">
-        <div className="mb-2 inline-block rounded-lg bg-blue-50 px-2 py-1 text-[10px] font-black text-blue-700">{product.grade || product.brand || "Gunpla"}</div>
-        <div className="line-clamp-2 min-h-9 text-sm font-black leading-5 text-slate-950">{productName(product, lang)}</div>
-        <div className="mt-2 font-black text-blue-700">{money(product.price)}</div>
+    <div className="animate-pulse overflow-hidden rounded-3xl border border-slate-200 bg-white">
+      <div className="aspect-square bg-slate-100" />
+      <div className="space-y-2 p-3">
+        <div className="h-4 w-3/4 rounded bg-slate-100" />
+        <div className="h-4 w-1/2 rounded bg-slate-100" />
+        <div className="h-9 rounded-2xl bg-slate-100" />
       </div>
-    </a>
+    </div>
+  );
+}
+
+function RecommendationSection({ title, products, loading, lang, viewAllHref, viewAllLabel }) {
+  if (!loading && (!products || products.length === 0)) return null;
+
+  return (
+    <section className="mx-auto max-w-[1440px] px-4 py-4 lg:px-8">
+      <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-xl font-black text-slate-950">{title}</h2>
+          {viewAllHref && (
+            <a href={viewAllHref} className="inline-flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-black text-blue-700 hover:bg-blue-50">
+              {viewAllLabel}<ArrowRight size={14} />
+            </a>
+          )}
+        </div>
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5">
+          {loading
+            ? Array.from({ length: 5 }).map((_, index) => <ProductCardSkeleton key={index} />)
+            : products.map((item) => <ProductCard key={item.id} product={item} lang={lang} />)}
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -1156,6 +1189,9 @@ export default function ProductDetailPage() {
   const [detailError, setDetailError] = useState("");
   const [relatedDbProducts, setRelatedDbProducts] = useState([]);
   const [activeImage, setActiveImage] = useState(0);
+  const [bestSellers, setBestSellers] = useState([]);
+  const [bestSellersLoading, setBestSellersLoading] = useState(true);
+  const [recentlyViewed, setRecentlyViewed] = useState([]);
 
   useEffect(() => {
     let alive = true;
@@ -1185,9 +1221,11 @@ export default function ProductDetailPage() {
   }, [slug, t.notFound]);
 
   const relatedCategoryId = product?.categoryId || product?.category?.id || "";
+  const [relatedLoading, setRelatedLoading] = useState(true);
 
   useEffect(() => {
     let alive = true;
+    setRelatedLoading(true);
 
     getStorefrontProductsPageFromApi({
       categoryIds: relatedCategoryId ? [relatedCategoryId] : [],
@@ -1198,6 +1236,9 @@ export default function ProductDetailPage() {
       })
       .catch(() => {
         if (alive) setRelatedDbProducts([]);
+      })
+      .finally(() => {
+        if (alive) setRelatedLoading(false);
       });
 
     return () => {
@@ -1295,9 +1336,40 @@ export default function ProductDetailPage() {
   useEffect(() => {
     if (product) {
       actions.track("product_view", { productId: product.id, page: `/product/${product.slug || product.id}` });
+      trackProductView(product);
+      setRecentlyViewed(getRecentlyViewed({ excludeId: product.id, limit: 10 }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product?.id]);
+
+  useEffect(() => {
+    let alive = true;
+    setBestSellersLoading(true);
+
+    getStorefrontProductsPageFromApi({ sort: "popular", limit: 10 })
+      .then(({ products: items }) => {
+        if (alive) setBestSellers(items || []);
+      })
+      .catch(() => {
+        if (alive) setBestSellers([]);
+      })
+      .finally(() => {
+        if (alive) setBestSellersLoading(false);
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const bestSellerProducts = useMemo(() => {
+    if (!product) return [];
+    const relatedIds = new Set(relatedProducts.map((item) => item.id));
+    return (bestSellers || [])
+      .filter((item) => item.id !== product.id && item.active !== false && !relatedIds.has(item.id))
+      .slice(0, 8);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bestSellers, product, relatedProducts]);
 
   if (detailLoading) {
     return (
@@ -1358,6 +1430,7 @@ export default function ProductDetailPage() {
                   <button
                     key={`${image || "visual"}-${index}`}
                     onClick={() => setActiveImage(index)}
+                    aria-label={`${lang === "en" ? "Image" : "Ảnh"} ${index + 1}`}
                     className={`h-28 overflow-hidden rounded-2xl border bg-white p-1 shadow-sm transition ${activeImage === index ? "border-blue-500 ring-4 ring-blue-100" : "border-slate-200 hover:border-blue-200"
                       }`}
                   >
@@ -1414,21 +1487,30 @@ export default function ProductDetailPage() {
           onSubmitted={() => getStorefrontProductReviewsApi(product.slug || product.id).then((rows) => setProductReviews(rows || [])).catch(() => { })}
         />
 
-        <section className="mx-auto max-w-[1440px] px-4 py-4 lg:px-8">
-          <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-xl font-black text-slate-950">{t.relatedTitle}</h2>
-              <a href="/shop" className="inline-flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-black text-blue-700 hover:bg-blue-50">
-                {t.viewAll}<ArrowRight size={14} />
-              </a>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {relatedProducts.map((item) => (
-                <RelatedCard key={item.id} product={item} lang={lang} />
-              ))}
-            </div>
-          </div>
-        </section>
+        <RecommendationSection
+          title={t.relatedTitle}
+          products={relatedProducts}
+          loading={relatedLoading}
+          lang={lang}
+          viewAllHref="/shop"
+          viewAllLabel={t.viewAll}
+        />
+
+        <RecommendationSection
+          title={t.viewedTitle}
+          products={recentlyViewed}
+          loading={false}
+          lang={lang}
+        />
+
+        <RecommendationSection
+          title={t.bestSellerTitle}
+          products={bestSellerProducts}
+          loading={bestSellersLoading}
+          lang={lang}
+          viewAllHref="/shop?collection=best_sellers"
+          viewAllLabel={t.viewAll}
+        />
       </main>
     </PageShell>
   );

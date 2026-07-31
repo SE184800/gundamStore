@@ -184,7 +184,7 @@ export default function OrderLookupPage() {
                   <div>
                     <div className="flex items-center gap-2 font-black text-blue-600">
                       <PackageSearch size={18} />
-                      {t.order}: {order.id}
+                      {t.order}: {order.orderCode || order.id}
                     </div>
 
                     <div className="mt-2 text-sm font-semibold text-slate-500">
