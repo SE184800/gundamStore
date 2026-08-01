@@ -137,6 +137,8 @@ const copy = {
     tabInfo: "Thông tin sản phẩm",
     tabDesc: "Mô tả sản phẩm",
     tabPolicy: "Chính sách & bảo hành",
+    showMore: "Xem thêm",
+    showLess: "Thu gọn",
     customerReviewsTitle: "Đánh giá khách hàng",
     noReviews: "Sản phẩm chưa có đánh giá được duyệt.",
     relatedTitle: "Sản phẩm liên quan",
@@ -219,6 +221,8 @@ const copy = {
     tabInfo: "Product information",
     tabDesc: "Description",
     tabPolicy: "Policies & warranty",
+    showMore: "Show more",
+    showLess: "Show less",
     customerReviewsTitle: "Customer reviews",
     noReviews: "No approved reviews for this product yet.",
     relatedTitle: "Related products",
@@ -966,7 +970,10 @@ function ProductDetailTabs({ product, lang }) {
     { key: "policy", label: t.tabPolicy },
   ];
   const [active, setActive] = useState("info");
+  const [descExpanded, setDescExpanded] = useState(false);
   const boxItems = product.boxItems || ["Runner nhựa đầy đủ", "Decal sheet", "Beam Rifle", "Shield", "Beam Saber", "Sách hướng dẫn"];
+  const descText = productLongDesc(product, lang, t.defaultDesc);
+  const descIsLong = descText.length > 420;
 
   return (
     <div className="rounded-3xl border border-slate-200 bg-white shadow-sm">
@@ -1008,9 +1015,21 @@ function ProductDetailTabs({ product, lang }) {
         )}
 
         {active === "desc" && (
-          <p className="text-sm leading-7 text-slate-600 whitespace-pre-line">
-            {productLongDesc(product, lang, t.defaultDesc)}
-          </p>
+          <div>
+            <p className={`text-sm leading-7 text-slate-600 whitespace-pre-line ${!descExpanded && descIsLong ? "line-clamp-6" : ""}`}>
+              {descText}
+            </p>
+            {descIsLong && (
+              <button
+                type="button"
+                onClick={() => setDescExpanded((value) => !value)}
+                className="mt-2 inline-flex items-center gap-1 text-xs font-black text-blue-700 hover:text-blue-800"
+              >
+                {descExpanded ? t.showLess : t.showMore}
+                <ChevronDown className={`transition-transform ${descExpanded ? "rotate-180" : ""}`} size={14} />
+              </button>
+            )}
+          </div>
         )}
 
         {active === "policy" && (
