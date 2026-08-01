@@ -111,7 +111,7 @@ export default function Footer() {
           {/* </div> */}
         </div>
 
-        <div className="mt-10 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-5 text-xs font-bold text-white/45">
+        <div className="mt-10 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-5 text-xs font-bold text-white/45 md:pr-24">
           <div>{t("footer.rights")}</div>
 
           <div className="flex gap-4">
