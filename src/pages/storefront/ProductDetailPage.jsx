@@ -604,18 +604,18 @@ function ProductInfo({ product, lang, actions, onPreorder, reviewCount = 0 }) {
   }
 
   return (
-    <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm lg:p-6">
+    <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm lg:p-5">
       <Toast show={toast.show} type={toast.type} message={toast.message} onClose={dismiss} />
-      <div className="flex flex-wrap gap-2">
-        <span className={`rounded-xl px-3 py-1 text-xs font-black text-white ${preorder ? "bg-violet-600" : isOutOfStock ? "bg-slate-500" : "bg-emerald-600"}`}>
+      <div className="flex flex-wrap gap-1.5">
+        <span className={`rounded-lg px-2.5 py-1 text-[11px] font-black text-white ${preorder ? "bg-violet-600" : isOutOfStock ? "bg-slate-500" : "bg-emerald-600"}`}>
           {preorder ? t.preorder : isOutOfStock ? t.outOfStock : t.inStock}
         </span>
-        <span className="rounded-xl border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-black text-blue-700">{t.authentic}</span>
-        {isSale(product) && <span className="rounded-xl bg-red-100 px-3 py-1 text-xs font-black text-red-700">SALE</span>}
+        <span className="rounded-lg border border-blue-100 bg-blue-50 px-2.5 py-1 text-[11px] font-black text-blue-700">{t.authentic}</span>
+        {isSale(product) && <span className="rounded-lg bg-red-100 px-2.5 py-1 text-[11px] font-black text-red-700">SALE</span>}
       </div>
 
-      <h1 className="mt-4 text-3xl font-black leading-tight text-slate-950 lg:text-4xl">{productName(product, lang)}</h1>
-      <p className="mt-3 text-sm leading-6 text-slate-600 whitespace-pre-line">
+      <h1 className="mt-3 text-xl font-black leading-tight text-slate-950 lg:text-2xl">{productName(product, lang)}</h1>
+      <p className="mt-2 line-clamp-2 text-xs leading-5 text-slate-600 whitespace-pre-line">
         {productShortDesc(product, lang, t.defaultDesc)}
       </p>
 
@@ -671,12 +671,12 @@ function ProductInfo({ product, lang, actions, onPreorder, reviewCount = 0 }) {
       )}
       {/* VARIANT_SELECTOR_END */}
 
-      <div className="mt-4 flex flex-wrap items-center gap-4 text-sm">
+      <div className="mt-3 flex flex-wrap items-center gap-3 text-xs">
         {hasRating && (
           <>
             <div className="flex items-center gap-1 text-amber-400">
               {Array.from({ length: 5 }).map((_, index) => (
-                <Star key={index} size={17} fill={index < Math.round(ratingValue) ? "currentColor" : "none"} />
+                <Star key={index} size={14} fill={index < Math.round(ratingValue) ? "currentColor" : "none"} />
               ))}
             </div>
             <span className="font-bold text-slate-600">{ratingValue.toFixed(1)} / 5</span>
@@ -686,55 +686,55 @@ function ProductInfo({ product, lang, actions, onPreorder, reviewCount = 0 }) {
         <span className="font-bold text-slate-600">{product.sold || 0} {t.sold}</span>
       </div>
 
-      <div className="mt-5 rounded-3xl border border-blue-100 bg-gradient-to-br from-blue-50 via-white to-cyan-50 p-5">
-        <div className="flex flex-wrap items-end gap-3">
-          <div className="text-3xl font-black text-blue-700">{money(price)}</div>
-          {oldPrice > price && <div className="pb-1 text-base font-bold text-slate-400 line-through">{money(oldPrice)}</div>}
-          {save > 0 && <div className="mb-1 rounded-full bg-red-100 px-3 py-1 text-xs font-black text-red-700">-{money(save)}</div>}
+      <div className="mt-3 rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50 via-white to-cyan-50 p-3">
+        <div className="flex flex-wrap items-end gap-2">
+          <div className="text-2xl font-black text-blue-700">{money(price)}</div>
+          {oldPrice > price && <div className="pb-0.5 text-sm font-bold text-slate-400 line-through">{money(oldPrice)}</div>}
+          {save > 0 && <div className="rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-black text-red-700">-{money(save)}</div>}
         </div>
       </div>
 
       {preorder ? (
-        <div className="mt-5 rounded-3xl border border-violet-200 bg-violet-50 p-5">
-          <div className="mb-3 flex items-center gap-2 text-sm font-black text-violet-800"><Clock size={18} /> {t.preorder}</div>
-          <div className="grid gap-3 sm:grid-cols-3">
-            <div className="rounded-2xl bg-white p-3 shadow-sm"><div className="text-xs font-bold text-slate-500">{t.deposit}</div><div className="mt-1 font-black text-slate-950">{money(preorderDeposit?.depositAmount)}</div></div>
-            <div className="rounded-2xl bg-white p-3 shadow-sm"><div className="text-xs font-bold text-slate-500">{t.eta}</div><div className="mt-1 font-black text-slate-950">{preorderEtaText}</div></div>
-            <div className="rounded-2xl bg-white p-3 shadow-sm"><div className="text-xs font-bold text-slate-500">Status</div><div className="mt-1 font-black text-violet-700">Open</div></div>
+        <div className="mt-3 rounded-2xl border border-violet-200 bg-violet-50 p-3">
+          <div className="mb-2 flex items-center gap-2 text-xs font-black text-violet-800"><Clock size={16} /> {t.preorder}</div>
+          <div className="grid gap-2 sm:grid-cols-3">
+            <div className="rounded-xl bg-white p-2.5 shadow-sm"><div className="text-[11px] font-bold text-slate-500">{t.deposit}</div><div className="mt-0.5 text-sm font-black text-slate-950">{money(preorderDeposit?.depositAmount)}</div></div>
+            <div className="rounded-xl bg-white p-2.5 shadow-sm"><div className="text-[11px] font-bold text-slate-500">{t.eta}</div><div className="mt-0.5 text-sm font-black text-slate-950">{preorderEtaText}</div></div>
+            <div className="rounded-xl bg-white p-2.5 shadow-sm"><div className="text-[11px] font-bold text-slate-500">Status</div><div className="mt-0.5 text-sm font-black text-violet-700">Open</div></div>
           </div>
-          <p className="mt-3 text-xs leading-5 text-violet-800/80">{t.preorderNote}</p>
+          <p className="mt-2 text-[11px] leading-5 text-violet-800/80">{t.preorderNote}</p>
         </div>
       ) : (
-        <div className={`mt-5 flex items-center gap-2 rounded-2xl border p-4 text-sm font-black ${isOutOfStock
+        <div className={`mt-3 flex items-center gap-2 rounded-xl border p-3 text-xs font-black ${isOutOfStock
           ? "border-slate-200 bg-slate-50 text-slate-600"
           : "border-emerald-100 bg-emerald-50 text-emerald-700"
           }`}>
-          <CheckCircle2 size={18} /> {isOutOfStock ? t.outOfStock : t.inStock}
+          <CheckCircle2 size={16} /> {isOutOfStock ? t.outOfStock : t.inStock}
         </div>
       )}
 
       <MarketplaceExtras lang={lang} product={currentProduct} />
 
-      <div className="mt-5">
-        <div className="mb-2 text-xs font-black uppercase text-slate-500">{t.quantity}</div>
+      <div className="mt-3">
+        <div className="mb-1.5 text-[11px] font-black uppercase text-slate-500">{t.quantity}</div>
         <QuantitySelector qty={qty} setQty={setQty} maxQty={maxQty} disabled={isOutOfStock} lang={lang} />
       </div>
 
-      <div className="mt-5 grid gap-3 sm:grid-cols-2">
+      <div className="mt-3 grid gap-2 sm:grid-cols-2">
         {preorder ? (
           <>
             <button
               onClick={handleAddToCart}
-              className="rounded-2xl border border-violet-200 bg-white px-5 py-3 text-sm font-black text-violet-700 shadow-sm hover:bg-violet-50"
+              className="rounded-xl border border-violet-200 bg-white px-4 py-2.5 text-sm font-black text-violet-700 shadow-sm hover:bg-violet-50"
             >
-              <ShoppingCart className="mr-2 inline" size={17} />
+              <ShoppingCart className="mr-2 inline" size={16} />
               {t.addToCart}
             </button>
             <button
               onClick={() => onPreorder ? onPreorder(currentProduct, qty) : actions.addToCart(currentProduct.id, qty)}
-              className="rounded-2xl bg-violet-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-violet-200 hover:bg-violet-700"
+              className="rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-black text-white shadow-lg shadow-violet-200 hover:bg-violet-700"
             >
-              <Zap className="mr-2 inline" size={17} />
+              <Zap className="mr-2 inline" size={16} />
               {t.preorderNow}
             </button>
           </>
@@ -743,46 +743,45 @@ function ProductInfo({ product, lang, actions, onPreorder, reviewCount = 0 }) {
             <button
               onClick={handleAddToCart}
               disabled={isOutOfStock}
-              className={`rounded-2xl px-5 py-3 text-sm font-black shadow-lg ${isOutOfStock
+              className={`rounded-xl px-4 py-2.5 text-sm font-black shadow-lg ${isOutOfStock
                 ? "cursor-not-allowed bg-slate-200 text-slate-500 shadow-none"
                 : "bg-blue-700 text-white shadow-blue-200 hover:bg-blue-800"
                 }`}
             >
-              <ShoppingCart className="mr-2 inline" size={17} />
+              <ShoppingCart className="mr-2 inline" size={16} />
               {isOutOfStock ? t.soldOut : t.addToCart}
             </button>
             <button
               onClick={handleBuyNow}
               disabled={isOutOfStock}
-              className={`rounded-2xl px-5 py-3 text-sm font-black shadow-lg ${isOutOfStock
+              className={`rounded-xl px-4 py-2.5 text-sm font-black shadow-lg ${isOutOfStock
                 ? "cursor-not-allowed bg-slate-200 text-slate-500 shadow-none"
                 : "bg-slate-950 text-white shadow-slate-200 hover:bg-slate-800"
                 }`}
             >
-              <Zap className="mr-2 inline" size={17} />
+              <Zap className="mr-2 inline" size={16} />
               {isOutOfStock ? t.soldOut : t.buyNow}
             </button>
           </>
         )}
       </div>
 
-
       {/* RestockAlertFormStart */}
       {(preorder || Number(currentProduct.stock || 0) <= 0 || String(currentProduct.status || "").toLowerCase().includes("coming")) && (
-        <form onSubmit={submitRestockAlert} className="mt-5 rounded-3xl border border-cyan-100 bg-cyan-50 p-5">
-          <div className="mb-3 flex items-center gap-2 text-sm font-black text-cyan-800">
-            <BellRing size={18} />
+        <form onSubmit={submitRestockAlert} className="mt-3 rounded-2xl border border-cyan-100 bg-cyan-50 p-3">
+          <div className="mb-2 flex items-center gap-2 text-xs font-black text-cyan-800">
+            <BellRing size={16} />
             {t.notifyTitle}
           </div>
 
           {alertMessage && (
-            <div className="mb-3 rounded-2xl bg-green-50 p-3 text-xs font-black text-green-700">
+            <div className="mb-2 rounded-xl bg-green-50 p-2.5 text-[11px] font-black text-green-700">
               {alertMessage}
             </div>
           )}
 
           {alertError && (
-            <div className="mb-3 rounded-2xl bg-red-50 p-3 text-xs font-black text-red-600">
+            <div className="mb-2 rounded-xl bg-red-50 p-2.5 text-[11px] font-black text-red-600">
               {alertError}
             </div>
           )}
@@ -792,56 +791,56 @@ function ProductInfo({ product, lang, actions, onPreorder, reviewCount = 0 }) {
               value={alertForm.name}
               onChange={(event) => patchAlert("name", event.target.value)}
               placeholder={t.notifyName}
-              className="rounded-2xl border border-cyan-100 bg-white px-4 py-3 text-sm font-bold outline-none"
+              className="rounded-xl border border-cyan-100 bg-white px-3 py-2.5 text-sm font-bold outline-none"
             />
             <input
               value={alertForm.phone}
               onChange={(event) => patchAlert("phone", event.target.value)}
               placeholder={t.notifyPhone}
               inputMode="tel"
-              className="rounded-2xl border border-cyan-100 bg-white px-4 py-3 text-sm font-bold outline-none"
+              className="rounded-xl border border-cyan-100 bg-white px-3 py-2.5 text-sm font-bold outline-none"
             />
             <input
               value={alertForm.note}
               onChange={(event) => patchAlert("note", event.target.value)}
               placeholder={t.notifyNote}
-              className="rounded-2xl border border-cyan-100 bg-white px-4 py-3 text-sm font-bold outline-none sm:col-span-2"
+              className="rounded-xl border border-cyan-100 bg-white px-3 py-2.5 text-sm font-bold outline-none sm:col-span-2"
             />
           </div>
 
-          <button type="submit" className="mt-3 rounded-2xl bg-cyan-700 px-5 py-3 text-sm font-black text-white">
+          <button type="submit" className="mt-2 rounded-xl bg-cyan-700 px-4 py-2.5 text-sm font-black text-white">
             {t.notifySubmit}
           </button>
         </form>
       )}
       {/* RestockAlertFormEnd */}
 
-      <div className="mt-4 grid grid-cols-2 gap-3">
+      <div className="mt-3 grid grid-cols-2 gap-2">
         <button
           onClick={handleWishlist}
           disabled={wishlistBusy}
-          className={`rounded-2xl border px-4 py-3 text-sm font-black shadow-sm disabled:cursor-not-allowed disabled:opacity-60 ${wishlistSaved
+          className={`rounded-xl border px-3 py-2.5 text-sm font-black shadow-sm disabled:cursor-not-allowed disabled:opacity-60 ${wishlistSaved
             ? "border-pink-200 bg-pink-50 text-pink-700"
             : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
             }`}
         >
-          <Heart className="mr-2 inline" size={16} fill={wishlistSaved ? "currentColor" : "none"} />
+          <Heart className="mr-2 inline" size={15} fill={wishlistSaved ? "currentColor" : "none"} />
           {wishlistSaved ? t.saved : t.favorite}
         </button>
 
         {wishlistMessage && (
-          <div className="rounded-2xl bg-blue-50 px-4 py-3 text-sm font-black text-blue-700 sm:col-span-2">
+          <div className="rounded-xl bg-blue-50 px-3 py-2.5 text-xs font-black text-blue-700 sm:col-span-2">
             {wishlistMessage}
           </div>
         )}
         <button
           onClick={handleCompare}
-          className={`rounded-2xl border px-4 py-3 text-sm font-black shadow-sm ${compareSaved
+          className={`rounded-xl border px-3 py-2.5 text-sm font-black shadow-sm ${compareSaved
             ? "border-cyan-200 bg-cyan-50 text-cyan-700"
             : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
             }`}
         >
-          <GitCompareArrows className="mr-2 inline" size={16} />
+          <GitCompareArrows className="mr-2 inline" size={15} />
           {compareSaved ? t.compared : t.compare}
         </button>
       </div>
@@ -875,36 +874,30 @@ function MarketplaceExtras({ lang, product }) {
   );
 
   return (
-    <div className="mt-5 grid gap-3">
+    <div className="mt-3 space-y-2">
       {applicablePromotions.length > 0 && (
-        <div className="rounded-3xl border border-amber-100 bg-amber-50 p-4">
-          <div className="mb-3 flex items-center gap-2 text-sm font-black text-amber-800">
-            <CreditCard size={18} />
+        <div className="rounded-2xl border border-amber-100 bg-amber-50 p-3">
+          <div className="mb-1.5 flex items-center gap-2 text-xs font-black text-amber-800">
+            <CreditCard size={15} />
             {t.voucherTitle}
           </div>
 
           {applicablePromotions.map((promo) => (
-            <div key={promo.id} className="mb-2 rounded-2xl bg-white p-3 text-xs font-bold text-slate-700 shadow-sm">
+            <div key={promo.id} className="mb-1 text-[11px] font-bold text-slate-700 last:mb-0">
               {(lang === "en" ? promo.nameEn : promo.nameVi) || promo.nameVi || promo.nameEn}
             </div>
           ))}
         </div>
       )}
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="mb-3 flex items-center gap-2 text-sm font-black text-slate-950"><MapPin className="text-blue-600" size={18} />{t.deliveryTitle}</div>
-          <p className="text-xs font-semibold leading-6 text-slate-500">{t.deliveryHint}</p>
+      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+        <div className="flex items-start gap-2 text-xs font-semibold text-slate-600">
+          <MapPin className="mt-0.5 shrink-0 text-blue-600" size={15} />
+          <span><span className="font-black text-slate-950">{t.deliveryTitle}: </span>{t.deliveryHint}</span>
         </div>
-
-        <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="mb-3 flex items-center gap-2 text-sm font-black text-slate-950"><Wallet className="text-blue-600" size={18} />{t.paymentTitle}</div>
-          {[t.payment1, t.payment2, t.payment3].map((item, index) => (
-            <div key={item} className="mb-2 flex items-center gap-2 text-xs font-semibold text-slate-600">
-              {index === 0 ? <Wallet size={15} className="text-emerald-600" /> : <CheckCircle2 size={15} className="text-blue-600" />}
-              {item}
-            </div>
-          ))}
+        <div className="mt-1.5 flex items-start gap-2 text-xs font-semibold text-slate-600">
+          <Wallet className="mt-0.5 shrink-0 text-blue-600" size={15} />
+          <span><span className="font-black text-slate-950">{t.paymentTitle}: </span>{[t.payment1, t.payment2, t.payment3].join(" · ")}</span>
         </div>
       </div>
     </div>
@@ -1089,6 +1082,7 @@ function Reviews({ product, reviews, lang, onSubmitted }) {
   });
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const [showForm, setShowForm] = useState(false);
 
   function patch(field, value) {
     setDraft((prev) => ({ ...prev, [field]: value }));
@@ -1136,38 +1130,47 @@ function Reviews({ product, reviews, lang, onSubmitted }) {
 
   return (
     <section className="mx-auto max-w-[1440px] px-4 py-4 lg:px-8">
-      <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-        <div className="mb-4 flex items-center justify-between">
+      <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="mb-3 flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-black text-slate-950">{t.customerReviewsTitle}</h2>
-            <div className="mt-1 text-sm font-bold text-slate-500">{reviews.length} {t.reviews}</div>
+            <h2 className="text-lg font-black text-slate-950">{t.customerReviewsTitle}</h2>
+            <div className="mt-0.5 text-xs font-bold text-slate-500">{reviews.length} {t.reviews}</div>
           </div>
-          {avgRating > 0 && (
-            <div className="flex items-center gap-1 text-amber-400">
-              {Array.from({ length: 5 }).map((_, index) => (
-                <Star key={index} size={18} fill={index < Math.round(avgRating) ? "currentColor" : "none"} />
-              ))}
-            </div>
-          )}
+          <div className="flex items-center gap-3">
+            {avgRating > 0 && (
+              <div className="flex items-center gap-1 text-amber-400">
+                {Array.from({ length: 5 }).map((_, index) => (
+                  <Star key={index} size={15} fill={index < Math.round(avgRating) ? "currentColor" : "none"} />
+                ))}
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={() => setShowForm((value) => !value)}
+              className="rounded-xl border border-blue-100 bg-blue-50 px-3 py-1.5 text-xs font-black text-blue-700 hover:bg-blue-100"
+            >
+              {lang === "vi" ? "Viết đánh giá" : "Write a review"}
+            </button>
+          </div>
         </div>
 
         {reviews.length ? (
-          <div className="grid gap-3 lg:grid-cols-3">
+          <div className="grid gap-2 lg:grid-cols-3">
             {reviews.slice(0, 6).map((review) => (
-              <div key={review.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                <div className="mb-2 flex gap-1 text-amber-400">
-                  {Array.from({ length: Number(review.rating || 5) }).map((_, index) => <Star key={index} size={14} fill="currentColor" />)}
+              <div key={review.id} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                <div className="mb-1.5 flex gap-1 text-amber-400">
+                  {Array.from({ length: Number(review.rating || 5) }).map((_, index) => <Star key={index} size={12} fill="currentColor" />)}
                 </div>
-                <div className="text-sm font-black text-slate-950">{review.customerName || review.customer || review.name || "Builder"}</div>
+                <div className="text-xs font-black text-slate-950">{review.customerName || review.customer || review.name || "Builder"}</div>
                 {review.verifiedPurchase && (
-                  <div className="mt-1 inline-flex rounded-full bg-blue-50 px-2 py-1 text-[11px] font-black text-blue-700">
+                  <div className="mt-1 inline-flex rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-black text-blue-700">
                     Verified purchase
                   </div>
                 )}
-                {review.title && <div className="mt-2 text-sm font-black text-slate-900">{review.title}</div>}
-                <p className="mt-2 text-sm leading-6 text-slate-600">{review.content || review.comment}</p>
+                {review.title && <div className="mt-1.5 text-xs font-black text-slate-900">{review.title}</div>}
+                <p className="mt-1 text-xs leading-5 text-slate-600">{review.content || review.comment}</p>
                 {review.adminReply && (
-                  <div className="mt-3 rounded-xl bg-white px-3 py-2 text-xs font-bold text-blue-700">
+                  <div className="mt-2 rounded-lg bg-white px-2.5 py-1.5 text-[11px] font-bold text-blue-700">
                     Shop reply: {review.adminReply}
                   </div>
                 )}
@@ -1175,26 +1178,28 @@ function Reviews({ product, reviews, lang, onSubmitted }) {
             ))}
           </div>
         ) : (
-          <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-sm font-bold text-slate-500">{t.noReviews}</div>
+          <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-5 text-center text-xs font-bold text-slate-500">{t.noReviews}</div>
         )}
 
-        <div className="mt-6 rounded-3xl border border-blue-100 bg-blue-50 p-4">
-          <div className="text-sm font-black text-blue-900">{lang === "vi" ? "Viết đánh giá" : "Write a review"}</div>
-          <div className="mt-4 grid gap-3 md:grid-cols-2">
-            <input value={draft.customerName} onChange={(e) => patch("customerName", e.target.value)} placeholder={lang === "vi" ? "Tên của bạn" : "Your name"} className="rounded-2xl border border-blue-100 px-4 py-3 text-sm font-bold outline-none" />
-            <input value={draft.customerEmail} onChange={(e) => patch("customerEmail", e.target.value)} placeholder="Email" className="rounded-2xl border border-blue-100 px-4 py-3 text-sm font-bold outline-none" />
-            <input value={draft.orderNo} onChange={(e) => patch("orderNo", e.target.value)} placeholder={lang === "vi" ? "Mã đơn hàng nếu có" : "Order no if any"} className="rounded-2xl border border-blue-100 px-4 py-3 text-sm font-bold outline-none" />
-            <select value={draft.rating} onChange={(e) => patch("rating", Number(e.target.value))} className="rounded-2xl border border-blue-100 px-4 py-3 text-sm font-bold outline-none">
-              {[5, 4, 3, 2, 1].map((rating) => <option key={rating} value={rating}>{rating} stars</option>)}
-            </select>
-            <input value={draft.title} onChange={(e) => patch("title", e.target.value)} placeholder={lang === "vi" ? "Tiêu đề" : "Title"} className="rounded-2xl border border-blue-100 px-4 py-3 text-sm font-bold outline-none md:col-span-2" />
-            <textarea value={draft.content} onChange={(e) => patch("content", e.target.value)} rows={4} placeholder={lang === "vi" ? "Nội dung đánh giá" : "Review content"} className="rounded-2xl border border-blue-100 px-4 py-3 text-sm font-bold outline-none md:col-span-2" />
+        {showForm && (
+          <div className="mt-4 rounded-2xl border border-blue-100 bg-blue-50 p-4">
+            <div className="text-sm font-black text-blue-900">{lang === "vi" ? "Viết đánh giá" : "Write a review"}</div>
+            <div className="mt-3 grid gap-2 md:grid-cols-2">
+              <input value={draft.customerName} onChange={(e) => patch("customerName", e.target.value)} placeholder={lang === "vi" ? "Tên của bạn" : "Your name"} className="rounded-xl border border-blue-100 px-3 py-2.5 text-sm font-bold outline-none" />
+              <input value={draft.customerEmail} onChange={(e) => patch("customerEmail", e.target.value)} placeholder="Email" className="rounded-xl border border-blue-100 px-3 py-2.5 text-sm font-bold outline-none" />
+              <input value={draft.orderNo} onChange={(e) => patch("orderNo", e.target.value)} placeholder={lang === "vi" ? "Mã đơn hàng nếu có" : "Order no if any"} className="rounded-xl border border-blue-100 px-3 py-2.5 text-sm font-bold outline-none" />
+              <select value={draft.rating} onChange={(e) => patch("rating", Number(e.target.value))} className="rounded-xl border border-blue-100 px-3 py-2.5 text-sm font-bold outline-none">
+                {[5, 4, 3, 2, 1].map((rating) => <option key={rating} value={rating}>{rating} stars</option>)}
+              </select>
+              <input value={draft.title} onChange={(e) => patch("title", e.target.value)} placeholder={lang === "vi" ? "Tiêu đề" : "Title"} className="rounded-xl border border-blue-100 px-3 py-2.5 text-sm font-bold outline-none md:col-span-2" />
+              <textarea value={draft.content} onChange={(e) => patch("content", e.target.value)} rows={3} placeholder={lang === "vi" ? "Nội dung đánh giá" : "Review content"} className="rounded-xl border border-blue-100 px-3 py-2.5 text-sm font-bold outline-none md:col-span-2" />
+            </div>
+            {message && <div className="mt-2 text-xs font-black text-blue-800">{message}</div>}
+            <button onClick={() => void submitReview()} disabled={busy} className="mt-3 rounded-xl bg-blue-700 px-4 py-2.5 text-xs font-black text-white disabled:opacity-50">
+              {busy ? "..." : lang === "vi" ? "Gửi đánh giá" : "Submit review"}
+            </button>
           </div>
-          {message && <div className="mt-3 text-xs font-black text-blue-800">{message}</div>}
-          <button onClick={() => void submitReview()} disabled={busy} className="mt-4 rounded-2xl bg-blue-700 px-5 py-3 text-xs font-black text-white disabled:opacity-50">
-            {busy ? "..." : lang === "vi" ? "Gửi đánh giá" : "Submit review"}
-          </button>
-        </div>
+        )}
       </div>
     </section>
   );
@@ -1454,19 +1459,19 @@ export default function ProductDetailPage() {
           </div>
 
           <div className="grid gap-5 lg:grid-cols-[1.02fr_0.98fr]">
-            <div className="space-y-4">
-              <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
-                <div className="h-[520px] overflow-hidden rounded-2xl">
+            <div className="space-y-3">
+              <div className="rounded-3xl border border-slate-200 bg-white p-3 shadow-sm">
+                <div className="h-[380px] overflow-hidden rounded-2xl sm:h-[420px]">
                   <GundamVisual imageUrl={gallery[activeImage]} tone={product.tone || "blue"} large priority zoom alt={productName(product, lang)} />
                 </div>
               </div>
-              <div className="grid grid-cols-4 gap-3">
+              <div className="grid grid-cols-4 gap-2">
                 {gallery.map((image, index) => (
                   <button
                     key={`${image || "visual"}-${index}`}
                     onClick={() => setActiveImage(index)}
                     aria-label={`${lang === "en" ? "Image" : "Ảnh"} ${index + 1}`}
-                    className={`h-28 overflow-hidden rounded-2xl border bg-white p-1 shadow-sm transition ${activeImage === index ? "border-blue-500 ring-4 ring-blue-100" : "border-slate-200 hover:border-blue-200"
+                    className={`h-16 overflow-hidden rounded-xl border bg-white p-1 shadow-sm transition sm:h-20 ${activeImage === index ? "border-blue-500 ring-4 ring-blue-100" : "border-slate-200 hover:border-blue-200"
                       }`}
                   >
                     <GundamVisual imageUrl={image} tone={product.tone || ["blue", "cyan", "slate", "red"][index] || "blue"} />
