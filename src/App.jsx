@@ -1,7 +1,7 @@
 import AutoTranslate from "./components/common/AutoTranslate.jsx";
 import { Gift, Home, Package, ShieldCheck, ShoppingBag } from "lucide-react";
 import SeoManager from "./components/common/SeoManager";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { Link, Navigate, Route, Routes, useLocation } from "react-router-dom";
 // 🛠️ GIỮ LẠI CÁC ĐƯỜNG IMPORT KHÔNG DÙNG LAZY
 import AddToCartBridge from "./components/cart/AddToCartBridge";
@@ -83,6 +83,16 @@ const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
 const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
 const AdminQaHelper = lazy(() => import("./pages/admin/AdminQaHelper"));
 const AdminCommunication = lazy(() => import("./pages/admin/AdminCommunication"));
+
+function ScrollToTop() {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+
+  return null;
+}
 
 function isGlobalMobileTabActive(pathname, item) {
   if (item.href === "/") return pathname === "/";
@@ -173,6 +183,7 @@ function RouteLoading() {
 export default function App() {
   return (
     <>
+      <ScrollToTop />
       <AutoTranslate />
       <SeoManager />
 
