@@ -5,6 +5,7 @@ import {
   BellRing,
   Box,
   CheckCircle2,
+  ChevronDown,
   ChevronRight,
   Clock,
   CreditCard,
@@ -23,6 +24,7 @@ import {
   ShoppingCart,
   Star,
   Store,
+  Tag,
   Truck,
   Wallet,
   Zap,
@@ -118,8 +120,7 @@ const copy = {
     shipping1: "Bọc chống sốc 3 lớp, ưu tiên giữ hộp đẹp cho collector.",
     shipping2: "Kiểm tra ngoại hộp trước khi đóng gói.",
     shipping3: "Hỗ trợ tra cứu đơn và tư vấn qua Zalo/Facebook.",
-    specsTitle: "Thông số kỹ thuật",
-    maker: "Hãng",
+    productInfoTitle: "Thông tin sản phẩm",
     material: "Chất liệu",
     difficulty: "Độ khó",
     boxTitle: "Đập hộp có gì?",
@@ -198,8 +199,7 @@ const copy = {
     shipping1: "Triple-layer shock protection, keeping boxes mint for collectors.",
     shipping2: "Outer box condition checked before packing.",
     shipping3: "Order tracking and support via Zalo/Facebook.",
-    specsTitle: "Technical specs",
-    maker: "Maker",
+    productInfoTitle: "Product information",
     material: "Material",
     difficulty: "Difficulty",
     boxTitle: "What’s in the box?",
@@ -931,74 +931,76 @@ function ShopInfoCard({ lang }) {
   );
 }
 
-function InfoCard({ title, items, icon: Icon }) {
-  return (
-    <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="mb-4 flex items-center gap-2 text-lg font-black text-slate-950">
-        {Icon && <Icon className="text-blue-600" size={20} />}
-        {title}
-      </div>
-      {items.map((item) => (
-        <div key={item} className="mb-3 flex gap-3 text-sm leading-6 text-slate-600">
-          <CheckCircle2 className="mt-0.5 shrink-0 text-emerald-600" size={18} />
-          {item}
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function ProductAttributes({ product, lang }) {
+function ProductInfoTable({ product, lang }) {
   const t = copy[lang];
 
-  const attributes = [
-    [t.sku, product.sku || product.id],
-    [t.brand, product.brand || "Bandai Spirits"],
-    [t.grade, product.grade || "Gunpla"],
-    [t.scale, product.scale || "1/144"],
-  ];
-
-  return (
-    <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-      <h2 className="mb-4 text-xl font-black text-slate-950">{lang === "vi" ? "Thông tin sản phẩm" : "Product information"}</h2>
-      <div className="grid gap-3 sm:grid-cols-2">
-        {attributes.map(([label, value]) => (
-          <div key={label} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-            <div className="text-xs font-black uppercase text-slate-500">{label}</div>
-            <div className="mt-1 font-black text-slate-950">{value}</div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function SpecsCard({ product, lang }) {
-  const t = copy[lang];
-
-  const specs = [
-    { label: t.scale, value: product.scale || "1/144", icon: Ruler },
+  const fields = [
+    { label: t.sku, value: product.sku || product.id, icon: Tag },
+    { label: t.brand, value: product.brand || "Bandai Spirits", icon: Factory },
     { label: t.grade, value: product.grade || "Gunpla", icon: Layers3 },
-    { label: t.maker, value: product.brand || "Bandai Japan", icon: Factory },
-    { label: t.difficulty, value: product.difficulty || "Intermediate", icon: Box },
+    { label: t.scale, value: product.scale || "1/144", icon: Ruler },
     { label: t.material, value: product.material || "PS / ABS", icon: ShieldCheck },
+    { label: t.difficulty, value: product.difficulty || "Intermediate", icon: Box },
   ];
 
   return (
     <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-      <h2 className="mb-4 text-xl font-black text-slate-950">{t.specsTitle}</h2>
+      <h2 className="mb-4 text-xl font-black text-slate-950">{t.productInfoTitle}</h2>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {specs.map((spec) => {
-          const Icon = spec.icon;
+        {fields.map((field) => {
+          const Icon = field.icon;
           return (
-            <div key={spec.label} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <Icon className="mb-3 text-blue-600" size={22} />
-              <div className="text-xs font-black uppercase text-slate-500">{spec.label}</div>
-              <div className="mt-1 font-black text-slate-950">{spec.value}</div>
+            <div key={field.label} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <Icon className="mb-2 text-blue-600" size={20} />
+              <div className="text-xs font-black uppercase text-slate-500">{field.label}</div>
+              <div className="mt-1 font-black text-slate-950">{field.value}</div>
             </div>
           );
         })}
       </div>
+    </div>
+  );
+}
+
+function PolicyAccordion({ sections }) {
+  const [openIndex, setOpenIndex] = useState(-1);
+
+  return (
+    <div className="divide-y divide-slate-100 rounded-3xl border border-slate-200 bg-white shadow-sm">
+      {sections.map((section, index) => {
+        const Icon = section.icon;
+        const isOpen = openIndex === index;
+
+        return (
+          <div key={section.title}>
+            <button
+              type="button"
+              onClick={() => setOpenIndex(isOpen ? -1 : index)}
+              aria-expanded={isOpen}
+              className="flex w-full items-center justify-between gap-3 p-5 text-left"
+            >
+              <span className="flex items-center gap-2 text-base font-black text-slate-950">
+                {Icon && <Icon className="text-blue-600" size={20} />}
+                {section.title}
+              </span>
+              <ChevronDown
+                className={`shrink-0 text-slate-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
+                size={18}
+              />
+            </button>
+            {isOpen && (
+              <div className="px-5 pb-5">
+                {section.items.map((item) => (
+                  <div key={item} className="mb-3 flex gap-3 text-sm leading-6 text-slate-600 last:mb-0">
+                    <CheckCircle2 className="mt-0.5 shrink-0 text-emerald-600" size={18} />
+                    {item}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -1407,19 +1409,15 @@ export default function ProductDetailPage() {
 
         <section className="mx-auto grid max-w-[1440px] gap-5 px-4 py-4 lg:grid-cols-[1fr_360px] lg:px-8">
           <div className="space-y-5">
-            <ProductAttributes product={product} lang={lang} />
-            <SpecsCard product={product} lang={lang} />
+            <ProductInfoTable product={product} lang={lang} />
 
             <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
               <h2 className="mb-4 text-xl font-black text-slate-950">{t.descTitle}</h2>
-              {/* Thêm class whitespace-pre-line vào đây */}
               <p className="text-sm leading-7 text-slate-600 whitespace-pre-line">
                 {productLongDesc(product, lang, t.defaultDesc)}
               </p>
-            </div>
 
-            <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-              <h2 className="mb-4 text-xl font-black text-slate-950">{t.boxTitle}</h2>
+              <h3 className="mb-3 mt-6 text-base font-black text-slate-950">{t.boxTitle}</h3>
               <div className="grid gap-3 sm:grid-cols-2">
                 {(product.boxItems || ["Runner nhựa đầy đủ", "Decal sheet", "Beam Rifle", "Shield", "Beam Saber", "Sách hướng dẫn"]).map((item) => {
                   const itemText = text(item, lang, "");
@@ -1435,9 +1433,13 @@ export default function ProductDetailPage() {
 
           <div className="space-y-5">
             <ShopInfoCard lang={lang} />
-            <InfoCard title={t.shippingTitle} icon={Truck} items={[t.shipping1, t.shipping2, t.shipping3]} />
-            <InfoCard title={t.policyTitle} icon={ShieldCheck} items={[t.policy1, t.policy2, t.policy3]} />
-            <InfoCard title={t.returnTitle} icon={RotateCcw} items={[t.return1, t.return2, t.return3]} />
+            <PolicyAccordion
+              sections={[
+                { title: t.shippingTitle, icon: Truck, items: [t.shipping1, t.shipping2, t.shipping3] },
+                { title: t.policyTitle, icon: ShieldCheck, items: [t.policy1, t.policy2, t.policy3] },
+                { title: t.returnTitle, icon: RotateCcw, items: [t.return1, t.return2, t.return3] },
+              ]}
+            />
           </div>
         </section>
 
