@@ -111,8 +111,9 @@ export default function AdminAuditLogs() {
         setEntity("ALL");
       }
     } catch (error) {
+      // Keep the last successfully loaded logs on screen instead of
+      // wiping them to zero on a transient refresh failure.
       setApiError(error?.message || "Cannot load audit logs.");
-      setData(null);
     } finally {
       setLoading(false);
     }

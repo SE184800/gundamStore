@@ -147,8 +147,9 @@ export default function AdminReports() {
       const result = await getAdminReportCenterApi(period);
       setData(result);
     } catch (error) {
+      // Keep the last successfully loaded report on screen instead of
+      // wiping it to zero on a transient refresh failure.
       setApiError(error?.message || "Cannot load reports.");
-      setData(null);
     } finally {
       setLoading(false);
     }
