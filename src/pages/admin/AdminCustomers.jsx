@@ -87,14 +87,18 @@ export default function AdminCustomers() {
   }, [type, segment]);
 
   const localSummary = useMemo(() => {
+    // Prefer counts derived from the customers we actually loaded over the
+    // backend's separate summary aggregate — that aggregate has been
+    // observed returning zeros even when the customer list itself loads
+    // correctly, which would otherwise silently override good numbers.
     return {
+      ...(summary || {}),
       total: customers.length,
       registered: customers.filter((item) => item.type === "REGISTERED").length,
       guest: customers.filter((item) => item.type === "GUEST").length,
       highValue: customers.filter((item) => item.segment === "High value" || item.tier === "VIP").length,
       atRisk: customers.filter((item) => item.segment === "At risk").length,
       totalSpent: customers.reduce((sum, item) => sum + Number(item.totalSpent || 0), 0),
-      ...(summary || {}),
     };
   }, [customers, summary]);
 
