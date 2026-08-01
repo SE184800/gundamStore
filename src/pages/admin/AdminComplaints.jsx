@@ -83,9 +83,9 @@ export default function AdminComplaints() {
       setTickets(data.tickets || []);
       setSummary(data.summary || {});
     } catch (error) {
+      // Keep the last loaded tickets/summary on screen instead of wiping
+      // them on a transient refresh failure.
       setApiError(error?.message || "Cannot load complaint tickets.");
-      setTickets([]);
-      setSummary({});
     } finally {
       setLoading(false);
     }

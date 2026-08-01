@@ -185,7 +185,8 @@ export default function AdminOrders() {
         return [];
       }
 
-      setOrders([]);
+      // Keep whatever orders are already on screen instead of wiping the
+      // list (and its summary counts) to empty on a transient failure.
       setApiError(
         error?.status
           ? `${error.status} - ${error?.message || t.backendError}`

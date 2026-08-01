@@ -1422,7 +1422,8 @@ export default function AdminProducts() {
         return [];
       }
 
-      setProducts([]);
+      // Keep whatever products are already on screen instead of wiping the
+      // list to empty on a transient refresh failure.
       setApiError(
         error?.status
           ? `${error.status} - ${error?.message || t.loadError}`

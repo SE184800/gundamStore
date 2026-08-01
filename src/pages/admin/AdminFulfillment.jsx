@@ -152,10 +152,9 @@ export default function AdminFulfillment() {
         setSelectedOrder(refreshed || null);
       }
     } catch (error) {
+      // Keep the last loaded fulfillment queue on screen instead of wiping
+      // it on a transient refresh failure.
       setApiError(error?.message || "Cannot load fulfillment center.");
-      setOrders([]);
-      setPickList([]);
-      setSummary({});
     } finally {
       setLoading(false);
     }
