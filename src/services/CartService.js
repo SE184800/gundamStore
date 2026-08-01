@@ -26,7 +26,8 @@ function identity(item = {}) {
   const variantKey = item.variantId || item.variantSku;
 
   if (variantKey) {
-    return [`variant:${variantKey}`];
+    const productKey = item.backendProductId || item.productId || item.id || item.slug || item.sku || "";
+    return [`variant:${productKey}:${variantKey}`];
   }
 
   return [
@@ -224,16 +225,11 @@ export function getCartCount(products = []) {
   return totalQty(getCart(products));
 }
 
-export function clearCartItems(itemIds = []) {
+export function clearCartItems(items = []) {
   const cart = getCart();
+  const targets = Array.isArray(items) ? items : [];
   return saveCart(
-    cart.filter(
-      (item) =>
-        !itemIds.includes(item.id) &&
-        !itemIds.includes(item.productId) &&
-        !itemIds.includes(item.backendProductId) &&
-        !itemIds.includes(item.variantId)
-    )
+    cart.filter((row) => !targets.some((target) => sameItem(row, target)))
   );
 }
 

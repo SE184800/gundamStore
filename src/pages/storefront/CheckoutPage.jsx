@@ -514,7 +514,7 @@ export default function CheckoutPage() {
       const mappedOrder = mapBackendOrderForStorefront(apiOrder);
 
       saveOrderSuccessSnapshot(mappedOrder, cleanCustomer);
-      clearCartItems(draft.items.map((item) => item.id));
+      clearCartItems(draft.items);
       clearCheckoutDraft();
 
       navigate(`/order-success/${mappedOrder.orderCode}`);
