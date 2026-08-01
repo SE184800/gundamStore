@@ -112,8 +112,10 @@ export default function AdminDashboard() {
       const result = await getAdminDashboardKpisApi();
       setData(result);
     } catch (error) {
+      // Keep the last successfully loaded numbers on screen instead of
+      // wiping them to zero — a transient refresh failure (e.g. backend
+      // cold start) shouldn't make a healthy store look dead.
       setApiError(error?.message || "Cannot load dashboard.");
-      setData(null);
     } finally {
       setLoading(false);
     }
@@ -126,6 +128,10 @@ export default function AdminDashboard() {
   const kpis = data?.kpis || {};
   const charts = data?.charts || {};
   const queues = data?.actionQueues || {};
+  // Distinguish "never loaded yet" from "confirmed zero" so a failed first
+  // load reads as unknown ("—") instead of a misleadingly empty store.
+  const noDataYet = !data;
+  const stat = (formatted) => (noDataYet ? "—" : formatted);
 
   const maxOrderStatus = useMemo(() => {
     return Math.max(...Object.values(charts.orderStatusSummary || {}).map(Number), 1);
@@ -159,14 +165,14 @@ export default function AdminDashboard() {
       )}
 
       <section className="mb-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <StatCard icon={WalletCards} label="Revenue today" value={formatCurrency(kpis.revenueToday || 0)} hint="Valid non-cancelled orders" tone="emerald" />
-        <StatCard icon={BarChart3} label="Revenue 30 days" value={formatCurrency(kpis.revenue30 || 0)} hint={`AOV ${formatCurrency(kpis.avgOrderValue30 || 0)}`} tone="blue" />
-        <StatCard icon={ShoppingCart} label="Orders today" value={kpis.ordersToday || 0} hint={`${kpis.orders30 || 0} orders in 30 days`} tone="violet" />
-        <StatCard icon={Users} label="Customers" value={kpis.customers || 0} hint="Registered accounts" tone="slate" />
-        <StatCard icon={Boxes} label="Active products" value={kpis.activeProducts || 0} hint={`${kpis.productIssues || 0} product data issue(s)`} tone={kpis.productIssues ? "amber" : "emerald"} />
-        <StatCard icon={PackageSearch} label="Low stock" value={kpis.lowStockProducts || 0} hint="Stock <= 5" tone={kpis.lowStockProducts ? "amber" : "emerald"} />
-        <StatCard icon={Truck} label="Need tracking" value={kpis.fulfillmentNeedsTracking || 0} hint="Shipping orders missing tracking" tone={kpis.fulfillmentNeedsTracking ? "red" : "emerald"} />
-        <StatCard icon={Ticket} label="Open complaints" value={kpis.openComplaints || 0} hint={`${kpis.pendingReviews || 0} pending review(s)`} tone={kpis.openComplaints ? "red" : "emerald"} />
+        <StatCard icon={WalletCards} label="Revenue today" value={stat(formatCurrency(kpis.revenueToday || 0))} hint="Valid non-cancelled orders" tone="emerald" />
+        <StatCard icon={BarChart3} label="Revenue 30 days" value={stat(formatCurrency(kpis.revenue30 || 0))} hint={`AOV ${formatCurrency(kpis.avgOrderValue30 || 0)}`} tone="blue" />
+        <StatCard icon={ShoppingCart} label="Orders today" value={stat(kpis.ordersToday || 0)} hint={`${kpis.orders30 || 0} orders in 30 days`} tone="violet" />
+        <StatCard icon={Users} label="Customers" value={stat(kpis.customers || 0)} hint="Registered accounts" tone="slate" />
+        <StatCard icon={Boxes} label="Active products" value={stat(kpis.activeProducts || 0)} hint={`${kpis.productIssues || 0} product data issue(s)`} tone={kpis.productIssues ? "amber" : "emerald"} />
+        <StatCard icon={PackageSearch} label="Low stock" value={stat(kpis.lowStockProducts || 0)} hint="Stock <= 5" tone={kpis.lowStockProducts ? "amber" : "emerald"} />
+        <StatCard icon={Truck} label="Need tracking" value={stat(kpis.fulfillmentNeedsTracking || 0)} hint="Shipping orders missing tracking" tone={kpis.fulfillmentNeedsTracking ? "red" : "emerald"} />
+        <StatCard icon={Ticket} label="Open complaints" value={stat(kpis.openComplaints || 0)} hint={`${kpis.pendingReviews || 0} pending review(s)`} tone={kpis.openComplaints ? "red" : "emerald"} />
       </section>
 
       <section className="grid gap-4 xl:grid-cols-[1.4fr_1fr]">
