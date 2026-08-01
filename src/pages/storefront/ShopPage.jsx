@@ -5,8 +5,10 @@ import ProductCard from "../../components/storefront/ProductCard";
 import { useCms, useLang } from "../../store/CmsStore";
 import {
   getStorefrontCategoryTreeFromApi,
+  getStorefrontFullCatalogFromApi,
   getStorefrontProductsPageFromApi,
 } from "../../services/StorefrontProductApiService";
+import { getProductAvailability, getProductPreorderInfo } from "../../utils/productAvailability";
 
 const text = {
   vi: {
@@ -38,6 +40,12 @@ const text = {
     apply: "Áp dụng",
     perPage: "Hiển thị",
     productsPerPage: "sản phẩm / trang",
+    brand: "Hãng",
+    grade: "Grade",
+    scale: "Tỉ lệ",
+    priceRange: "Khoảng giá",
+    priceFrom: "Từ",
+    priceTo: "Đến",
   },
   en: {
     home: "Home",
@@ -68,6 +76,12 @@ const text = {
     apply: "Apply",
     perPage: "Show",
     productsPerPage: "products / page",
+    brand: "Brand",
+    grade: "Grade",
+    scale: "Scale",
+    priceRange: "Price range",
+    priceFrom: "From",
+    priceTo: "To",
   },
 };
 
@@ -169,6 +183,31 @@ function findNodeByUrlKey(tree = [], rawKey = "") {
   }
 
   return null;
+}
+
+function matchesStockFilter(product, stockValue) {
+  if (!stockValue || stockValue === "all") return true;
+
+  const availability = getProductAvailability(product);
+  const preorderInfo = getProductPreorderInfo(product);
+
+  if (stockValue === "inStock") return availability.canAddToCart && !preorderInfo.canOrder;
+  if (stockValue === "preorder") return preorderInfo.canOrder;
+  if (stockValue === "outOfStock") return !availability.inStock;
+  if (stockValue === "sale") {
+    const price = Number(product?.finalPrice || product?.price || 0);
+    const oldPrice = Number(product?.compareAtPrice || product?.oldPrice || 0);
+    return Boolean(product?.activePromotion) || Number(product?.discountAmount || 0) > 0 || (price > 0 && oldPrice > price);
+  }
+  return true;
+}
+
+function sortProducts(list, sort) {
+  const sorted = [...list];
+  if (sort === "priceLow") return sorted.sort((a, b) => Number(a.priceMin || a.price || 0) - Number(b.priceMin || b.price || 0));
+  if (sort === "priceHigh") return sorted.sort((a, b) => Number(b.priceMin || b.price || 0) - Number(a.priceMin || a.price || 0));
+  if (sort === "newest") return sorted.sort((a, b) => new Date(b.backendRaw?.createdAt || 0) - new Date(a.backendRaw?.createdAt || 0));
+  return sorted.sort((a, b) => Number(b.sold || 0) - Number(a.sold || 0));
 }
 
 function CategoryTree({ t, lang, tree, activeId, onSelect, search, setSearch, allCount }) {
@@ -355,6 +394,61 @@ function CategoryBottomSheet({ t, lang, tree, activeId, onSelect, onClose, allCo
   );
 }
 
+function FacetFilters({ t, brand, setBrand, brandOptions, grade, setGrade, gradeOptions, scale, setScale, scaleOptions, priceMin, setPriceMin, priceMax, setPriceMax }) {
+  return (
+    <div className="space-y-4">
+      <div>
+        <div className="mb-1.5 text-xs font-black uppercase tracking-wide text-slate-500">{t.brand}</div>
+        <select value={brand} onChange={(event) => setBrand(event.target.value)} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold outline-none">
+          <option value="">{t.all}</option>
+          {brandOptions.map((value) => <option key={value} value={value}>{value}</option>)}
+        </select>
+      </div>
+
+      <div>
+        <div className="mb-1.5 text-xs font-black uppercase tracking-wide text-slate-500">{t.grade}</div>
+        <select value={grade} onChange={(event) => setGrade(event.target.value)} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold outline-none">
+          <option value="">{t.all}</option>
+          {gradeOptions.map((value) => <option key={value} value={value}>{value}</option>)}
+        </select>
+      </div>
+
+      <div>
+        <div className="mb-1.5 text-xs font-black uppercase tracking-wide text-slate-500">{t.scale}</div>
+        <select value={scale} onChange={(event) => setScale(event.target.value)} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold outline-none">
+          <option value="">{t.all}</option>
+          {scaleOptions.map((value) => <option key={value} value={value}>{value}</option>)}
+        </select>
+      </div>
+
+      <div>
+        <div className="mb-1.5 text-xs font-black uppercase tracking-wide text-slate-500">{t.priceRange}</div>
+        <div className="flex items-center gap-2">
+          <input
+            type="number"
+            min="0"
+            inputMode="numeric"
+            value={priceMin}
+            onChange={(event) => setPriceMin(event.target.value)}
+            placeholder={t.priceFrom}
+            className="w-full min-w-0 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold outline-none"
+          />
+          <span className="shrink-0 text-slate-400">–</span>
+          <input
+            type="number"
+            min="0"
+            inputMode="numeric"
+            value={priceMax}
+            onChange={(event) => setPriceMax(event.target.value)}
+            placeholder={t.priceTo}
+            className="w-full min-w-0 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold outline-none"
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ProductCardSkeleton() {
   return (
     <div className="animate-pulse overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
@@ -377,6 +471,11 @@ export default function ShopPage() {
   const [stock, setStock] = useState("all");
   const [selectedCategoryId, setSelectedCategoryId] = useState("all");
   const [sort, setSort] = useState("popular");
+  const [brand, setBrand] = useState("");
+  const [grade, setGrade] = useState("");
+  const [scale, setScale] = useState("");
+  const [priceMin, setPriceMin] = useState("");
+  const [priceMax, setPriceMax] = useState("");
   const [requestedCategoryKey] = useState(() => {
     try {
       return (
@@ -419,6 +518,8 @@ export default function ShopPage() {
   const [productsLoading, setProductsLoading] = useState(true);
   const [catalogError, setCatalogError] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState(query);
+  const [fullCatalog, setFullCatalog] = useState([]);
+  const [fullCatalogLoading, setFullCatalogLoading] = useState(true);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -446,12 +547,41 @@ export default function ShopPage() {
     return () => { alive = false; };
   }, []);
 
+  // Brand/Grade/Scale/Price-range have no server-side filter support (live API
+  // ignores those params), so we page through the whole catalog once and filter
+  // client-side. Fetched eagerly so the filter option lists are populated
+  // immediately, not only after a facet is first touched.
+  useEffect(() => {
+    let alive = true;
+    getStorefrontFullCatalogFromApi()
+      .then((allProducts) => {
+        if (!alive) return;
+        setFullCatalog(allProducts);
+      })
+      .catch(() => {
+        if (!alive) return;
+        setFullCatalog([]);
+      })
+      .finally(() => {
+        if (alive) setFullCatalogLoading(false);
+      });
+    return () => { alive = false; };
+  }, []);
+
   const categoryTree = useMemo(() => categoryTreeFromApi.map((node) => normalizeTreeNode(node, lang)), [categoryTreeFromApi, lang]);
   useEffect(() => {
     if (!requestedCategoryKey || !categoryTree.length) return;
 
     if (requestedCategoryKey === "all") {
       setSelectedCategoryId("all");
+      return;
+    }
+
+    // "other-kits" is a virtual key from the Header's "Model kit khác" link — it
+    // has no single tree node (it's every group except Gunpla-Gundam and Tools),
+    // so it's handled separately in categoryIdsParam below instead of via findNodeByUrlKey.
+    if (requestedCategoryKey === "other-kits") {
+      setSelectedCategoryId("other-kits");
       return;
     }
 
@@ -471,17 +601,68 @@ export default function ShopPage() {
     [categoryTree]
   );
 
+  // Everything outside the two named groups the Header links to directly
+  // (Bandai-Gundam and Tools/Accessories) — backs the "Model kit khác" nav item.
+  const otherKitsCategoryIds = useMemo(() => {
+    const namedGroupIds = new Set(["catgrp-gunpla-gundam", "catgrp-tools-paint-accessories"]);
+    return categoryTree
+      .filter((node) => !namedGroupIds.has(String(node.id)))
+      .flatMap((node) => node.categoryIds || []);
+  }, [categoryTree]);
+
   const categoryIdsParam = useMemo(() => {
     if (selectedCategoryId === "all") return [];
+    if (selectedCategoryId === "other-kits") return otherKitsCategoryIds;
     return selectedNode?.categoryIds?.length ? selectedNode.categoryIds : [selectedCategoryId];
-  }, [selectedCategoryId, selectedNode]);
+  }, [selectedCategoryId, selectedNode, otherKitsCategoryIds]);
   const categoryIdsKey = categoryIdsParam.join(",");
+
+  const brandOptions = useMemo(
+    () => Array.from(new Set(fullCatalog.map((p) => p.brand).filter(Boolean))).sort(),
+    [fullCatalog]
+  );
+  const gradeOptions = useMemo(
+    () => Array.from(new Set(fullCatalog.map((p) => p.grade).filter(Boolean))).sort(),
+    [fullCatalog]
+  );
+  const scaleOptions = useMemo(
+    () => Array.from(new Set(fullCatalog.map((p) => p.scale).filter(Boolean))).sort(),
+    [fullCatalog]
+  );
+
+  const facetsActive = Boolean(brand || grade || scale || priceMin || priceMax);
+  const categoryIdSet = useMemo(() => new Set(categoryIdsParam.map(String)), [categoryIdsParam]);
+
+  const facetFilteredProducts = useMemo(() => {
+    if (!facetsActive) return null;
+
+    const q = normalize(debouncedQuery);
+    const min = priceMin ? Number(priceMin) : null;
+    const max = priceMax ? Number(priceMax) : null;
+
+    const filtered = fullCatalog.filter((product) => {
+      if (categoryIdSet.size && !categoryIdSet.has(String(product.categoryId))) return false;
+      if (!matchesStockFilter(product, stock)) return false;
+      if (brand && product.brand !== brand) return false;
+      if (grade && product.grade !== grade) return false;
+      if (scale && product.scale !== scale) return false;
+      const price = Number(product.priceMin || product.price || 0);
+      if (min !== null && price < min) return false;
+      if (max !== null && price > max) return false;
+      if (q && !normalize(getName(product, lang)).includes(q)) return false;
+      return true;
+    });
+
+    return sortProducts(filtered, sort);
+  }, [facetsActive, fullCatalog, categoryIdSet, stock, brand, grade, scale, priceMin, priceMax, debouncedQuery, lang, sort]);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [debouncedQuery, categoryIdsKey, stock, sort]);
+  }, [debouncedQuery, categoryIdsKey, stock, sort, brand, grade, scale, priceMin, priceMax]);
 
   useEffect(() => {
+    if (facetsActive) return undefined;
+
     let alive = true;
     setProductsLoading(true);
     getStorefrontProductsPageFromApi({
@@ -510,17 +691,26 @@ export default function ShopPage() {
     return () => { alive = false; };
     // categoryIdsKey mirrors categoryIdsParam contents; categoryIdsParam itself is intentionally omitted to avoid refetching on array identity changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPage, pageSize, debouncedQuery, categoryIdsKey, stock, sort]);
+  }, [facetsActive, currentPage, pageSize, debouncedQuery, categoryIdsKey, stock, sort]);
 
-  const totalPages = Math.max(1, Number(productMeta.totalPages) || 1);
-  const totalResultCount = Number(productMeta.total) || 0;
+  // When brand/grade/scale/price facets are active, pagination/total come from
+  // the client-filtered full catalog instead of the server-paginated response.
+  const totalPages = facetsActive
+    ? Math.max(1, Math.ceil((facetFilteredProducts?.length || 0) / pageSize))
+    : Math.max(1, Number(productMeta.totalPages) || 1);
+  const totalResultCount = facetsActive
+    ? facetFilteredProducts?.length || 0
+    : Number(productMeta.total) || 0;
 
   const paginationItems = useMemo(
     () => buildPaginationItems(currentPage, totalPages),
     [currentPage, totalPages]
   );
 
-  const visibleProducts = products;
+  const visibleProducts = facetsActive
+    ? (facetFilteredProducts || []).slice((currentPage - 1) * pageSize, currentPage * pageSize)
+    : products;
+  const isProductsLoading = facetsActive ? fullCatalogLoading : productsLoading;
 
   useEffect(() => {
     if (currentPage > totalPages) {
@@ -579,6 +769,11 @@ export default function ShopPage() {
     setQuery("");
     setStock("all");
     setSelectedCategoryId("all");
+    setBrand("");
+    setGrade("");
+    setScale("");
+    setPriceMin("");
+    setPriceMax("");
   }
 
   function selectCategory(id) {
@@ -629,6 +824,26 @@ export default function ShopPage() {
               <button onClick={resetFilters} className="rounded-xl bg-slate-50 px-3 py-1.5 text-[11px] font-black text-slate-500 hover:bg-slate-100">{t.clear}</button>
             </div>
             <CategoryTree t={t} lang={lang} tree={categoryTree} activeId={selectedCategoryId} onSelect={selectCategory} search={categorySearch} setSearch={setCategorySearch} allCount={catalogProductCount} />
+
+            <div className="mt-5 border-t border-slate-100 pt-4">
+              <div className="mb-3 flex items-center gap-2 text-sm font-black text-slate-950"><Filter size={16} className="text-blue-600" />{t.filters}</div>
+              <FacetFilters
+                t={t}
+                brand={brand}
+                setBrand={setBrand}
+                brandOptions={brandOptions}
+                grade={grade}
+                setGrade={setGrade}
+                gradeOptions={gradeOptions}
+                scale={scale}
+                setScale={setScale}
+                scaleOptions={scaleOptions}
+                priceMin={priceMin}
+                setPriceMin={setPriceMin}
+                priceMax={priceMax}
+                setPriceMax={setPriceMax}
+              />
+            </div>
           </div>
         </aside>
 
@@ -670,7 +885,7 @@ export default function ShopPage() {
             </div>
 
             <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs font-bold text-slate-500">
-              <span>{productsLoading ? t.loading : `${totalResultCount} ${t.result}`}</span>
+              <span>{isProductsLoading ? t.loading : `${totalResultCount} ${t.result}`}</span>
 
               <label className="ml-auto flex min-h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3">
                 <span className="font-black text-slate-500">
@@ -693,7 +908,7 @@ export default function ShopPage() {
                 </span>
               </label>
 
-              {(selectedCategoryId !== "all" || stock !== "all" || query) && (
+              {(selectedCategoryId !== "all" || stock !== "all" || query || facetsActive) && (
                 <button
                   onClick={resetFilters}
                   className="font-black text-blue-600"
@@ -764,7 +979,7 @@ export default function ShopPage() {
             </nav>
           )}
 
-          {productsLoading && visibleProducts.length === 0 ? (
+          {isProductsLoading && visibleProducts.length === 0 ? (
             <div className="shop-mobile-grid grid grid-cols-2 gap-3 sm:grid-cols-2 xl:grid-cols-3 sm:gap-4">
               {Array.from({ length: pageSize }).map((_, index) => (
                 <ProductCardSkeleton key={index} />
@@ -861,6 +1076,26 @@ export default function ShopPage() {
                 </button>
               ))}
             </div>
+
+            <div className="mt-5 border-t border-slate-100 pt-4">
+              <FacetFilters
+                t={t}
+                brand={brand}
+                setBrand={setBrand}
+                brandOptions={brandOptions}
+                grade={grade}
+                setGrade={setGrade}
+                gradeOptions={gradeOptions}
+                scale={scale}
+                setScale={setScale}
+                scaleOptions={scaleOptions}
+                priceMin={priceMin}
+                setPriceMin={setPriceMin}
+                priceMax={priceMax}
+                setPriceMax={setPriceMax}
+              />
+            </div>
+
             <button onClick={() => setMobileFilterOpen(false)} className="mt-4 w-full rounded-2xl bg-blue-700 px-5 py-3 text-sm font-black text-white">{t.apply}</button>
           </div>
         </div>

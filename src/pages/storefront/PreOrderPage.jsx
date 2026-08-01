@@ -21,6 +21,9 @@ function getCopy(lang) {
         : "Giữ slot sản phẩm sắp về với quy trình cọc minh bạch, ETA rõ ràng và thanh toán phần còn lại khi hàng về.",
     choose: lang === "en" ? "Choose item" : "Chọn mẫu",
     chooseDesc: lang === "en" ? "Select an open pre-order product." : "Chọn sản phẩm đang mở pre-order.",
+    // TODO(product): pre-order payment policy (deposit vs. full payment) is not
+    // finalized yet — keep this step's wording generic ("deposit" as a concept,
+    // no rate or amount) until Product confirms the official policy.
     deposit: lang === "en" ? "Pay deposit" : "Đặt cọc",
     depositDesc: lang === "en" ? "Reserve your slot with deposit." : "Xác nhận giữ slot với mức cọc.",
     eta: lang === "en" ? "Track ETA" : "Theo dõi ETA",
@@ -167,6 +170,13 @@ export default function PreOrderPage() {
 
         <section className="mt-8 grid gap-5 lg:grid-cols-2">
           <div className="rounded-5xl border border-slate-200 bg-white p-6 shadow-sm">
+            {/*
+              TODO(product): Pre-order payment policy (deposit percentage vs.
+              full payment) has not been confirmed at the Product level yet.
+              Keep policy1/2/3 above deliberately neutral — no hardcoded
+              deposit rate or specific amount — until an official policy is
+              set, then update this copy accordingly.
+            */}
             <h3 className="text-2xl font-black text-slate-950">{t.policyTitle}</h3>
             <div className="mt-4 space-y-3 text-sm font-semibold leading-7 text-slate-600">
               <p>• {t.policy1}</p>

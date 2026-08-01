@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useState } from "react";
 import Header from "./Header";
+import InfoBar from "./InfoBar";
 import Footer from "./Footer";
 import { translateDomTree, useI18n } from "../../i18n";
 import { useCms } from "../../store/CmsStore";
@@ -95,6 +96,7 @@ export default function PageShell({ children, withFooter = true }) {
         />
       </div>
 
+      <InfoBar />
       <Header user={state?.user} lang={lang} />
       <main className="relative z-10">{children}</main>
       {withFooter && <Footer />}

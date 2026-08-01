@@ -1,17 +1,20 @@
 import {
-  CalendarDays,
+  Boxes,
   ChevronDown,
   Globe,
   Gift,
   Home,
+  Layers,
   Menu,
   Newspaper,
   Package,
-  Phone,
+  Puzzle,
   Search,
   ShieldCheck,
   ShoppingBag,
+  Sparkles,
   User,
+  Wrench,
   X,
   Heart,
   LogOut,
@@ -47,64 +50,61 @@ export default function Header() {
   const isAdminUser = ["admin", "owner", "staff"].includes(String(state.user?.role || "").toLowerCase());
   const navItems = [
     {
-      label: t("common.home"),
-      href: "/",
-      icon: Home,
-    },
-    {
-      label: t("common.products"),
+      label: t("header.allProducts"),
       href: "/shop",
       icon: Package,
-      children: [
-        { label: t("header.allProducts"), href: "/shop", desc: t("header.allProductsDesc") },
-        { label: t("header.grades"), href: "/shop", desc: t("header.gradesDesc"), badge: "HOT" },
-        { label: t("header.tools"), href: "/shop?category=tools", desc: t("header.toolsDesc") },
-        { label: t("header.newProducts"), href: "/shop?group=new", desc: t("header.newProductsDesc"), badge: "NEW" },
-      ],
+    },
+    {
+      label: t("header.newProducts"),
+      href: "/shop?group=new",
+      icon: Sparkles,
     },
     {
       label: t("common.orders"),
       href: "/pre-order",
       icon: ShoppingBag,
-      children: [
-        { label: t("header.preorder"), href: "/pre-order", desc: t("header.preorderDesc"), badge: "HOT" },
-        { label: t("header.orderItems"), href: "/pre-order", desc: t("header.orderItemsDesc") },
-        { label: t("header.arrivalCalendar"), href: "/news", desc: t("header.arrivalCalendarDesc") },
-        { label: t("header.preorderPolicy"), href: "/pre-order", desc: t("header.preorderPolicyDesc") },
-      ],
+    },
+    {
+      label: t("header.bandaiGundam"),
+      href: "/shop?category=catgrp-gunpla-gundam",
+      icon: Boxes,
+    },
+    {
+      label: t("header.grades"),
+      href: "/shop?category=catgrp-gunpla-gundam",
+      icon: Layers,
+    },
+    {
+      label: t("header.otherKits"),
+      href: "/shop?category=other-kits",
+      icon: Puzzle,
+    },
+    {
+      label: t("header.toolsAccessories"),
+      href: "/shop?category=catgrp-tools-paint-accessories",
+      icon: Wrench,
     },
     {
       label: t("common.deals"),
       href: "/promotions",
       icon: Gift,
-      children: [
-        { label: t("header.promotions"), href: "/promotions", desc: t("header.promotionsDesc") },
-        { label: t("header.flashSale"), href: "/promotions#flash-sale", desc: t("header.flashSaleDesc"), badge: "SALE" },
-        { label: t("header.voucher"), href: "/promotions", desc: t("header.voucherDesc") },
-        { label: t("header.combo"), href: "/promotions", desc: t("header.comboDesc") },
-      ],
     },
     {
-      label: t("common.community"),
+      label: t("header.orderLookup"),
+      href: "/order-lookup",
+      icon: ShieldCheck,
+    },
+    {
+      label: t("header.newsGuides"),
       href: "/news",
       icon: Newspaper,
+      secondary: true,
       children: [
         { label: t("header.news"), href: "/news", desc: t("header.newsDesc") },
-        { label: t("header.events"), href: "/news/events", desc: t("header.eventsDesc"), badge: "NEW" },
+        { label: t("header.events"), href: "/news/events", desc: t("header.eventsDesc") },
         { label: t("header.contest"), href: "/news/events", desc: t("header.contestDesc") },
         { label: t("header.buildGuide"), href: "/build-guide", desc: t("header.buildGuideDesc") },
         { label: t("header.livestream"), href: "/news/events", desc: t("header.livestreamDesc") },
-      ],
-    },
-    {
-      label: t("common.support"),
-      href: "/order-lookup",
-      icon: ShieldCheck,
-      children: [
-        { label: t("header.orderLookup"), href: "/order-lookup", desc: t("header.orderLookupDesc") },
-        { label: t("common.contact"), href: "/contact", desc: t("header.contactDesc") },
-        { label: t("common.faq"), href: "/faq", desc: t("header.faqDesc") },
-        { label: t("header.returnPolicy"), href: "/return-policy", desc: t("header.returnPolicyDesc") },
       ],
     },
     ...(isAdminUser
@@ -291,19 +291,28 @@ export default function Header() {
 
         {/* CẤU TRÚC NAV MENU NGANG CHO PC */}
         <nav className="border-t border-slate-100 bg-gradient-to-r from-slate-50 via-white to-slate-50">
-          <div className="mx-auto hidden max-w-[1440px] items-center gap-2 px-4 py-2 lg:flex lg:px-8">
+          <div className="mobile-hide-scrollbar mx-auto hidden max-w-[1440px] items-center gap-1.5 overflow-x-auto px-4 py-2 lg:flex lg:px-8 xl:gap-2">
             {navItems.map((item) => {
               const Icon = item.icon;
               const active = isActive(location.pathname, item) || item.children?.some((child) => isActive(location.pathname, child));
               return (
-                <div key={item.label} className="group relative">
-                  <a href={item.href} className={`flex items-center gap-2 whitespace-nowrap rounded-2xl px-4 py-2.5 text-sm font-black transition ${active ? "bg-blue-700 text-white shadow-lg shadow-blue-100" : "text-slate-700 hover:bg-blue-700 hover:text-white hover:shadow-lg hover:shadow-blue-100"}`}>
-                    <Icon size={17} className={active ? "text-white" : "text-blue-600 group-hover:text-white"} />
+                <div key={item.label} className={`group relative shrink-0 ${item.secondary ? "ml-1 border-l border-slate-200 pl-2" : ""}`}>
+                  <a
+                    href={item.href}
+                    className={`flex items-center gap-1.5 whitespace-nowrap rounded-2xl px-3 py-2.5 text-sm transition xl:px-4 ${
+                      active
+                        ? "bg-blue-700 font-black text-white shadow-lg shadow-blue-100"
+                        : item.secondary
+                          ? "font-bold text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+                          : "font-black text-slate-700 hover:bg-blue-700 hover:text-white hover:shadow-lg hover:shadow-blue-100"
+                    }`}
+                  >
+                    <Icon size={16} className={active ? "text-white" : item.secondary ? "text-slate-400" : "text-blue-600 group-hover:text-white"} />
                     {item.label}
                     {item.children && <ChevronDown size={15} />}
                   </a>
                   {item.children && (
-                    <div className="invisible absolute left-0 top-full z-50 mt-3 w-[360px] translate-y-2 rounded-4xl border border-slate-200 bg-white p-3 opacity-0 shadow-[0_30px_90px_rgba(15,23,42,0.16)] transition-all duration-200 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100">
+                    <div className="invisible absolute right-0 top-full z-50 mt-3 w-[360px] translate-y-2 rounded-4xl border border-slate-200 bg-white p-3 opacity-0 shadow-[0_30px_90px_rgba(15,23,42,0.16)] transition-all duration-200 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100">
                       <div className="mb-2 rounded-2xl bg-gradient-to-br from-blue-50 to-slate-50 p-4">
                         <div className="text-xs font-black uppercase tracking-[0.2em] text-blue-700">{item.label}</div>
                         <div className="mt-1 text-sm font-semibold text-slate-500">{t("common.quickSelect")}</div>
@@ -341,9 +350,9 @@ export default function Header() {
                 {navItems.map((item) => {
                   const Icon = item.icon;
                   return (
-                    <div key={item.label} className="rounded-2xl border border-slate-100 bg-slate-50/50 p-3">
-                      <a href={item.href} onClick={() => setMobileOpen(false)} className="flex items-center gap-2.5 text-sm font-black text-slate-900">
-                        <Icon size={16} className="text-blue-600" />
+                    <div key={item.label} className={`rounded-2xl border border-slate-100 p-3 ${item.secondary ? "bg-white" : "bg-slate-50/50"}`}>
+                      <a href={item.href} onClick={() => setMobileOpen(false)} className={`flex items-center gap-2.5 text-sm ${item.secondary ? "font-bold text-slate-500" : "font-black text-slate-900"}`}>
+                        <Icon size={16} className={item.secondary ? "text-slate-400" : "text-blue-600"} />
                         <span>{item.label}</span>
                       </a>
                       {item.children && (

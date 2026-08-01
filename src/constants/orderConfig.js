@@ -223,6 +223,10 @@ export function canCustomerRequestReturn(status) {
 }
 
 
+// TODO(product): deposit rate is provisional/unconfirmed pending official
+// pre-order payment policy — see PreOrderPage.jsx policy section. Update here
+// once Product confirms the real rate (or whether pre-orders take a deposit
+// at all vs. full payment).
 export const PREORDER_DEPOSIT_RATE = 0.3;
 
 export function calculatePreorderDeposit(price = 0, rate = PREORDER_DEPOSIT_RATE) {

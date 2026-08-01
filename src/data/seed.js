@@ -273,7 +273,11 @@ export const seedHomeSections = [
     title: { vi: "Hàng mới về", en: "New arrivals" },
     dataSource: "new_arrivals",
     enabled: true,
-    sort: 3,
+    // Matched by dataSource against HomePage.jsx's defaultSections (see
+    // mergeCmsSections) — kept in sync with the brief's mandated homepage
+    // order (new arrivals -> pre-order -> best sellers -> tools) so this
+    // legacy builder seed doesn't silently override it on a fresh install.
+    sort: 1,
     layout: { rows: 2, columns: 4, compact: true }
   },
   {
@@ -291,7 +295,8 @@ export const seedHomeSections = [
     title: { vi: "Hàng bán chạy", en: "Best sellers" },
     dataSource: "best_sellers",
     enabled: true,
-    sort: 5,
+    // See section-new comment above — kept in sync with defaultSections order.
+    sort: 3,
     layout: { rows: 2, columns: 4, compact: true }
   },
   {

@@ -1,29 +1,26 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
   ArrowRight,
-  ChevronRight,
-  Crown,
-  Gift,
+  Boxes,
+  Layers,
   Package,
+  Puzzle,
+  Search,
   ShieldCheck,
   Truck,
+  Wrench,
 } from "lucide-react";
 import PageShell from "../../components/common/PageShell";
 import { useCms } from "../../store/CmsStore";
 import { translateStaticText } from "../../i18n";
 import { getSafeHref } from "../../utils/urlSafety";
 import ProductCard from "../../components/storefront/ProductCard";
-import {
-  getStorefrontCategoryTreeFromApi,
-  getStorefrontProductsForStorefront,
-  getStorefrontProductsPageFromApi,
-} from "../../services/StorefrontProductApiService";
+import { getStorefrontProductsForStorefront } from "../../services/StorefrontProductApiService";
 import { getStorefrontHomeBannersFromApi } from "../../services/BannerApiService";
 import {
   getPublicEventsApi,
   getPublicNewsApi,
 } from "../../services/ContentApiService";
-import { getRecentlyViewed } from "../../services/RecentlyViewedService";
 
 const HOMEPAGE_HERO_MAX_BANNERS = 3;
 
@@ -43,8 +40,13 @@ const copy = {
     sealedDesc: "Đóng gói kỹ càng, bảo vệ tuyệt đối",
     authentic: "MINH BẠCH HÀNG",
     authenticDesc: "Cam kết hàng chính hãng, ghi rõ nguồn",
-    gift: "QUÀ BUILDER",
-    giftDesc: "Tích điểm & nhận quà riêng cho thành viên",
+    orderLookupSupport: "HỖ TRỢ TRA CỨU",
+    orderLookupSupportDesc: "Tra cứu trạng thái đơn hàng mọi lúc",
+    featuredCategories: "Danh mục nổi bật",
+    bandaiGundam: "Bandai-Gundam",
+    gradesLineup: "HG-RG-MG-PG",
+    otherKits: "Model kit khác",
+    toolsAccessories: "Dụng cụ & phụ kiện",
     category: "DANH MỤC",
     all: "Tất cả",
     viewAll: "Xem tất cả",
@@ -81,8 +83,13 @@ const copy = {
     sealedDesc: "Careful packing and box protection",
     authentic: "CLEAR SOURCE",
     authenticDesc: "Authentic products with transparent info",
-    gift: "BUILDER PERKS",
-    giftDesc: "Points • Vouchers • VIP tiers",
+    orderLookupSupport: "ORDER LOOKUP",
+    orderLookupSupportDesc: "Check your order status anytime",
+    featuredCategories: "Featured categories",
+    bandaiGundam: "Bandai-Gundam",
+    gradesLineup: "HG-RG-MG-PG",
+    otherKits: "Other model kits",
+    toolsAccessories: "Tools & accessories",
     category: "CATEGORY",
     all: "All",
     viewAll: "View all",
@@ -106,46 +113,12 @@ const copy = {
   },
 };
 
-const fallbackCategories = [
-  { id: "all", name: { vi: "Tất cả", en: "All" } },
-  { id: "mg", name: { vi: "MG (Master Grade)", en: "MG (Master Grade)" } },
-  { id: "pg", name: { vi: "PG (Perfect Grade)", en: "PG (Perfect Grade)" } },
-  { id: "rg", name: { vi: "RG (Real Grade)", en: "RG (Real Grade)" } },
-  { id: "hg", name: { vi: "HG (High Grade)", en: "HG (High Grade)" } },
-  { id: "sd-bb", name: { vi: "SD / BB", en: "SD / BB" } },
-  { id: "figure", name: { vi: "Figure-rise Standard", en: "Figure-rise Standard" } },
-  { id: "kotobukiya", name: { vi: "Kotobukiya", en: "Kotobukiya" } },
-  { id: "tools", name: { vi: "Phụ kiện & Tools", en: "Accessories & Tools" } },
-  { id: "paint", name: { vi: "Sơn & Hóa chất", en: "Paint & Chemicals" } },
-  { id: "book", name: { vi: "Sách & Artbook", en: "Books & Artbooks" } },
-];
-
 const defaultSections = [
   { id: "new-arrivals", sort: 1, dataSource: "new_arrivals", title: { vi: "Hàng mới về", en: "New arrivals" } },
   { id: "order-items", sort: 2, dataSource: "order_items", title: { vi: "Hàng order", en: "Order items" } },
   { id: "best-sellers", sort: 3, dataSource: "best_sellers", title: { vi: "Hàng bán chạy", en: "Best sellers" } },
-  { id: "sales", sort: 4, dataSource: "sale_products", title: { vi: "Hàng Sales", en: "Sales" } },
+  { id: "tools-accessories", sort: 4, dataSource: "tools_accessories", title: { vi: "Dụng cụ & phụ kiện", en: "Tools & accessories" } },
 ];
-
-function isPreorderCategoryNode(node = {}) {
-  const label = [node?.name?.vi, node?.name?.en, node?.slug, node?.code, node?.id]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase()
-    .replace(/[^a-z0-9]/g, "");
-  return label.includes("preorder") || label.includes("orderitems");
-}
-
-function excludePreorderCategories(tree = []) {
-  return (tree || [])
-    .filter((node) => !isPreorderCategoryNode(node))
-    .map((node) => ({
-      ...node,
-      children: Array.isArray(node.children)
-        ? excludePreorderCategories(node.children)
-        : node.children,
-    }));
-}
 
 function text(value, lang, fallback = "") {
   if (!value) return translateStaticText(fallback, lang);
@@ -192,7 +165,17 @@ function getSectionProducts(products, section) {
     section.dataSource || section.id || ""
   );
 
-  // PostgreSQL ProductGroup là nguồn duy nhất cho các block homepage.
+  // Tools & accessories has no ProductGroup collection of its own yet — the
+  // real category tree already has a dedicated group for it
+  // (catgrp-tools-paint-accessories / category code ACCESSORY_TOOL), so match
+  // against that instead of inventing a new backend collection.
+  if (source === "tools_accessories") {
+    return products
+      .filter((product) => product?.category?.code === "ACCESSORY_TOOL")
+      .slice(0, Number(section.limit || 8));
+  }
+
+  // PostgreSQL ProductGroup là nguồn duy nhất cho các block homepage khác.
   // Không dùng mapping CMS/localStorage cũ.
   return products
     .filter((product) => productMatchesSource(product, source))
@@ -273,28 +256,6 @@ function getHeroBanners(banners = [], settings = {}) {
     .slice(0, maxBanners);
 }
 
-function NoBannerConfigured({ lang }) {
-  return (
-    <section className="mx-auto max-w-[1440px] px-4 pt-4 lg:px-8">
-      <div className="flex min-h-[280px] items-center justify-center rounded-4xl border border-dashed border-slate-300 bg-white text-center shadow-sm">
-        <div className="px-6">
-          <div className="text-sm font-black uppercase tracking-[0.24em] text-slate-400">
-            {lang === "en" ? "Homepage Banner" : "Banner trang chủ"}
-          </div>
-          <h1 className="mt-3 text-2xl font-black text-slate-800">
-            {lang === "en" ? "No banner configured" : "Chưa cấu hình banner"}
-          </h1>
-          <p className="mt-2 text-sm font-semibold text-slate-500">
-            {lang === "en"
-              ? "Please create and publish a Live banner in Admin CMS."
-              : "Vui lòng tạo banner trong Admin CMS và chuyển trạng thái Live để hiển thị."}
-          </p>
-        </div>
-      </div>
-    </section>
-  );
-}
-
 function BannerMedia({ banner, lang, className = "", imageClassName = "", priority = false }) {
   const videoUrl = getBannerVideoUrl(banner);
   const baseImage = getBannerBaseImage(banner);
@@ -371,8 +332,11 @@ function Hero({ banners, lang, actions, heroSettings }) {
 
   const safeBanners = getHeroBanners(banners, settings);
 
+  // No dev-facing "please configure a banner" message shown to shoppers when
+  // none is Live in Admin CMS — the section is simply hidden so products
+  // appear sooner in the first viewport instead.
   if (!safeBanners.length) {
-    return <NoBannerConfigured lang={lang} />;
+    return null;
   }
 
   if (settings.layout === "v3") {
@@ -534,10 +498,10 @@ function HeroV2Classic({ banners, lang, actions, settings }) {
 function TrustStrip({ lang }) {
   const t = copy[lang];
   const items = [
-    [Truck, t.fastShip, t.fastShipDesc],
-    [Package, t.sealed, t.sealedDesc],
     [ShieldCheck, t.authentic, t.authenticDesc],
-    [Gift, t.gift, t.giftDesc],
+    [Package, t.sealed, t.sealedDesc],
+    [Search, t.orderLookupSupport, t.orderLookupSupportDesc],
+    [Truck, t.fastShip, t.fastShipDesc],
   ];
 
   return (
@@ -568,170 +532,36 @@ function TrustStrip({ lang }) {
   );
 }
 
-function CategorySidebar({ categoryTree, lang }) {
-  const roots = (categoryTree || []).filter(
-    (category) => category?.active !== false
-  );
-  const [expandedRootId, setExpandedRootId] = useState("");
-
-  const getCategoryHref = (category) => {
-    const rawKey =
-      category.id === "all"
-        ? ""
-        : category.id ||
-          category.backendCategoryId ||
-          category.slug ||
-          category.code ||
-          "";
-
-    const fallback = rawKey
-      ? `/shop?category=${encodeURIComponent(rawKey)}`
-      : "/shop";
-
-    return getSafeHref(category.ctaUrl || fallback, fallback);
-  };
+// Same 4 targets as the Header's Bandai-Gundam/HG-RG-MG-PG/Model kit khác/
+// Dụng cụ & phụ kiện nav links (Header.jsx) — kept in sync deliberately so the
+// homepage quick-access tiles and the main nav always point at the same place.
+function FeaturedCategories({ lang }) {
+  const t = copy[lang];
+  const tiles = [
+    { icon: Boxes, label: t.bandaiGundam, href: "/shop?category=catgrp-gunpla-gundam" },
+    { icon: Layers, label: t.gradesLineup, href: "/shop?category=catgrp-gunpla-gundam" },
+    { icon: Puzzle, label: t.otherKits, href: "/shop?category=other-kits" },
+    { icon: Wrench, label: t.toolsAccessories, href: "/shop?category=catgrp-tools-paint-accessories" },
+  ];
 
   return (
-    <aside className="hidden self-start rounded-2xl border border-slate-200 bg-white p-4 shadow-sm lg:block">
-      <div className="mb-3 flex items-end justify-between gap-3">
-        <div>
-          <div className="text-[10px] font-black uppercase tracking-[0.18em] text-blue-700">
-            Category
-          </div>
-
-          <h3 className="mt-0.5 text-lg font-black text-slate-950">
-            {lang === "vi" ? "Dòng sản phẩm" : "Product lines"}
-          </h3>
-        </div>
-
-        <a
-          href="/shop"
-          className="shrink-0 text-[11px] font-black text-blue-700 hover:underline"
-        >
-          {lang === "vi" ? "Xem tất cả" : "View all"}
-        </a>
+    <section className="mx-auto max-w-[1440px] px-4 pb-3 pt-1 lg:px-8">
+      <h2 className="mb-3 text-xs font-black uppercase tracking-[0.18em] text-blue-700">{t.featuredCategories}</h2>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {tiles.map(({ icon: Icon, label, href }) => (
+          <a
+            key={label}
+            href={href}
+            className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-blue-200 hover:bg-blue-50"
+          >
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
+              <Icon size={20} />
+            </span>
+            <span className="min-w-0 truncate text-sm font-black text-slate-900">{label}</span>
+          </a>
+        ))}
       </div>
-
-      <div className="divide-y divide-slate-100 border-y border-slate-100">
-        {roots.map((root) => {
-          const children = (root.children || []).filter(
-            (child) => child?.active !== false
-          );
-
-          const hasChildren = children.length > 0;
-          const expanded =
-            hasChildren && expandedRootId === root.id;
-
-          const rootName = text(
-            root.name,
-            lang,
-            root.label || root.code || "Category"
-          );
-
-          const rootCount = Number(
-            root.productCount ||
-              root.count ||
-              children.reduce(
-                (sum, child) =>
-                  sum +
-                  Number(
-                    child.productCount ||
-                      child.count ||
-                      0
-                  ),
-                0
-              )
-          );
-
-          return (
-            <section key={root.id || root.code || rootName}>
-              <div
-                className={`grid grid-cols-[minmax(0,1fr)_44px] transition ${
-                  expanded
-                    ? "bg-blue-50/70"
-                    : "bg-white hover:bg-slate-50"
-                }`}
-              >
-                <a
-                  href={getCategoryHref(root)}
-                  className={`flex min-w-0 items-center justify-between gap-2 px-2 py-3 text-sm font-black ${
-                    hasChildren ? "" : "col-span-2"
-                  }`}
-                >
-                  <span className="min-w-0 line-clamp-2 text-slate-900">
-                    {rootName}
-                  </span>
-
-                  <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-500">
-                    {rootCount}
-                  </span>
-                </a>
-
-                {hasChildren && (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setExpandedRootId((current) =>
-                        current === root.id ? "" : root.id
-                      )
-                    }
-                    aria-expanded={expanded}
-                    className="flex w-11 items-center justify-center border-l border-slate-100 text-slate-400 transition hover:bg-blue-50 hover:text-blue-700"
-                  >
-                    <ChevronRight
-                      size={17}
-                      className={`transition-transform duration-200 ${
-                        expanded ? "rotate-90" : ""
-                      }`}
-                    />
-                  </button>
-                )}
-              </div>
-
-              {expanded && (
-                <div className="border-t border-slate-100 bg-slate-50/70 px-2 py-1">
-                  {children.map((child) => {
-                    const childName = text(
-                      child.name,
-                      lang,
-                      child.label ||
-                        child.code ||
-                        "Category"
-                    );
-
-                    const childCount = Number(
-                      child.productCount ||
-                        child.count ||
-                        0
-                    );
-
-                    return (
-                      <a
-                        key={
-                          child.id ||
-                          child.code ||
-                          childName
-                        }
-                        href={getCategoryHref(child)}
-                        className="group flex w-full items-center justify-between gap-3 border-b border-slate-100 px-2 py-2.5 text-xs font-bold text-slate-700 last:border-b-0 hover:bg-white hover:text-blue-700"
-                      >
-                        <span className="min-w-0 line-clamp-2">
-                          {childName}
-                        </span>
-
-                        <span className="shrink-0 text-[10px] font-black text-slate-400 group-hover:text-blue-600">
-                          {childCount}
-                        </span>
-                      </a>
-                    );
-                  })}
-                </div>
-              )}
-            </section>
-          );
-        })}
-      </div>
-    </aside>
+    </section>
   );
 }
 
@@ -769,45 +599,6 @@ function ProductSection({ section, products, lang, actions, badge, isFirst = fal
       ) : (
         <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-sm font-bold text-slate-500">{t.empty}</div>
       )}
-    </section>
-  );
-}
-
-function HomeProductCardSkeleton() {
-  return (
-    <div className="animate-pulse overflow-hidden rounded-3xl border border-slate-200 bg-white">
-      <div className="aspect-square bg-slate-100" />
-      <div className="space-y-2 p-3">
-        <div className="h-4 w-3/4 rounded bg-slate-100" />
-        <div className="h-4 w-1/2 rounded bg-slate-100" />
-        <div className="h-9 rounded-2xl bg-slate-100" />
-      </div>
-    </div>
-  );
-}
-
-function HomeRecommendationSection({ title, products, loading, lang, actions, viewAllHref, viewAllLabel }) {
-  if (!loading && (!products || products.length === 0)) return null;
-
-  return (
-    <section className="mx-auto mt-4 max-w-[1440px] px-4 lg:px-8">
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-xl font-black text-blue-700">{title}</h2>
-          {viewAllHref && (
-            <a href={viewAllHref} className="inline-flex items-center gap-1 text-xs font-black text-blue-700 hover:underline">
-              {viewAllLabel}<ArrowRight size={13} />
-            </a>
-          )}
-        </div>
-        <div className="home-mobile-product-grid grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5">
-          {loading
-            ? Array.from({ length: 5 }).map((_, index) => <HomeProductCardSkeleton key={index} />)
-            : products.map((product) => (
-                <ProductCard key={product.id} product={product} lang={lang} actions={actions} />
-              ))}
-        </div>
-      </div>
     </section>
   );
 }
@@ -931,81 +722,6 @@ function ContentHighlights({ news = [], events = [], lang = "vi" }) {
   );
 }
 
-function LoyaltyBubble({ lang }) {
-  const t = copy[lang];
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    function handleScroll() {
-      setVisible(window.scrollY > 600);
-    }
-
-    handleScroll();
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  if (!visible) return null;
-
-  return (
-    <div className="fixed bottom-5 left-5 z-40 hidden md:block">
-      <button className="group flex items-center gap-3 rounded-full border border-amber-200 bg-white px-4 py-3 text-left shadow-2xl shadow-amber-100 transition hover:-translate-y-0.5 hover:border-amber-300 hover:bg-amber-50">
-        <span className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-lg shadow-amber-200">
-          <Crown size={22} />
-        </span>
-        <span className="hidden lg:block">
-          <span className="block text-sm font-black text-slate-950">{t.loyalty}</span>
-          <span className="block text-xs font-bold text-amber-700">{t.loyaltyDesc}</span>
-        </span>
-      </button>
-    </div>
-  );
-}
-
-function deriveCategoriesFromProducts(products = []) {
-  const map = new Map();
-
-  for (const product of products || []) {
-    const category = product.category || {};
-    const id = product.categoryId || category.id || category.slug || category.code;
-    if (!id || map.has(id)) continue;
-
-    map.set(id, {
-      id,
-      backendCategoryId: category.id || id,
-      code: category.code || id,
-      slug: category.slug || id,
-      name: {
-        vi: category.nameVi || category.name?.vi || category.name || category.code || "Danh mục",
-        en: category.nameEn || category.name?.en || category.nameVi || category.name || category.code || "Category",
-      },
-      label: category.nameVi || category.nameEn || category.code || id,
-      active: category.active !== false,
-      sortOrder: Number(category.sortOrder || 0),
-      sort: Number(category.sortOrder || 0),
-      source: "backend-derived",
-    });
-  }
-
-  return Array.from(map.values())
-    .filter((item) => item.active !== false)
-    .sort((a, b) => Number(a.sortOrder || 0) - Number(b.sortOrder || 0) || String(a.label || "").localeCompare(String(b.label || "")));
-}
-
-
-function mergeCategoryLists(apiCategories = [], derivedCategories = []) {
-  const map = new Map();
-
-  for (const category of [...apiCategories, ...derivedCategories]) {
-    const key = String(category.id || category.backendCategoryId || category.slug || category.code || "").trim();
-    if (!key || map.has(key)) continue;
-    map.set(key, category);
-  }
-
-  return Array.from(map.values())
-    .filter((item) => item.active !== false)
-    .sort((a, b) => Number(a.sortOrder || a.sort || 0) - Number(b.sortOrder || b.sort || 0) || String(a.label || "").localeCompare(String(b.label || "")));
-}
 
 export default function HomePage() {
   const [backendProducts, setBackendProducts] = useState([]);
@@ -1015,10 +731,6 @@ export default function HomePage() {
   const [dbHeroSettings, setDbHeroSettings] = useState(null);
   const [bannerApiReady, setBannerApiReady] = useState(false);
   const [bannerApiError, setBannerApiError] = useState("");
-  const [backendCategoryTree, setBackendCategoryTree] = useState([]);
-  const [recentlyViewed, setRecentlyViewed] = useState([]);
-  const [trending, setTrending] = useState([]);
-  const [trendingLoading, setTrendingLoading] = useState(true);
   const { state, actions } = useCms();
   const lang = state.settings?.lang || "vi";
   const sections = useMemo(() => mergeCmsSections(state.homeSections), [state.homeSections]);
@@ -1053,73 +765,14 @@ export default function HomePage() {
   useEffect(() => {
     let alive = true;
 
-    Promise.allSettled([
-      getStorefrontProductsForStorefront(),
-      getStorefrontCategoryTreeFromApi(),
-    ]).then(([productsResult, categoriesResult]) => {
-      if (!alive) return;
-
-      const loadedProducts =
-        productsResult.status === "fulfilled" &&
-        Array.isArray(productsResult.value)
-          ? productsResult.value
-          : [];
-
-      const treeFromApi =
-        categoriesResult.status === "fulfilled" &&
-        Array.isArray(categoriesResult.value?.tree)
-          ? categoriesResult.value.tree.filter(
-              (root) => root?.active !== false
-            )
-          : [];
-
-      const derivedCategories = treeFromApi.length
-        ? []
-        : deriveCategoriesFromProducts(loadedProducts);
-
-      const derivedTree = derivedCategories.length
-        ? [
-            {
-              id: "catalog",
-              name: {
-                vi: "Danh mục sản phẩm",
-                en: "Product categories",
-              },
-              ctaUrl: "/shop",
-              active: true,
-              productCount: loadedProducts.length,
-              children: derivedCategories,
-            },
-          ]
-        : [];
-
-      setBackendProducts(loadedProducts);
-      setBackendCategoryTree(
-        treeFromApi.length ? treeFromApi : derivedTree
-      );
-    });
-
-    return () => {
-      alive = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    setRecentlyViewed(getRecentlyViewed({ limit: 10 }));
-  }, []);
-
-  useEffect(() => {
-    let alive = true;
-
-    getStorefrontProductsPageFromApi({ sort: "popular", limit: 10 })
-      .then(({ products: items }) => {
-        if (alive) setTrending(Array.isArray(items) ? items : []);
+    getStorefrontProductsForStorefront()
+      .then((loadedProducts) => {
+        if (!alive) return;
+        setBackendProducts(Array.isArray(loadedProducts) ? loadedProducts : []);
       })
       .catch(() => {
-        if (alive) setTrending([]);
-      })
-      .finally(() => {
-        if (alive) setTrendingLoading(false);
+        if (!alive) return;
+        setBackendProducts([]);
       });
 
     return () => {
@@ -1158,51 +811,6 @@ export default function HomePage() {
     actions.track("page_view", { page: "/" });
   }, [actions]);
 
-  const categoryTree = useMemo(() => {
-    if (backendCategoryTree.length) return excludePreorderCategories(backendCategoryTree);
-
-    const fallbackChildren = excludePreorderCategories(
-      (state.categories?.length ? state.categories : fallbackCategories).filter(
-        (category) =>
-          category?.active !== false && category?.id !== "all"
-      )
-    );
-
-    return [
-      {
-        id: "catalog",
-        name: {
-          vi: "Danh mục sản phẩm",
-          en: "Product categories",
-        },
-        ctaUrl: "/shop",
-        active: true,
-        productCount: fallbackChildren.reduce(
-          (sum, child) =>
-            sum + Number(child.productCount || child.count || 0),
-          0
-        ),
-        children: fallbackChildren,
-      },
-    ];
-  }, [backendCategoryTree, state.categories]);
-
-  const t = copy[lang];
-
-  const bestSellerIds = useMemo(() => {
-    const bestSellersSection = sections.find((section) => section.dataSource === "best_sellers");
-    if (!bestSellersSection) return new Set();
-    return new Set(getSectionProducts(products, bestSellersSection).map((product) => product.id));
-  }, [products, sections]);
-
-  const trendingProducts = useMemo(
-    () =>
-      trending.filter(
-        (product) => product?.active !== false && !bestSellerIds.has(product.id)
-      ),
-    [trending, bestSellerIds]
-  );
-
   return (
     <PageShell>
       <div className="relative">
@@ -1214,60 +822,10 @@ export default function HomePage() {
           loading={!bannerApiReady}
           error={bannerApiError}
         />
-        <TrustStrip lang={lang} />
 
-        <section className="mx-auto max-w-[1440px] px-4 pb-3 lg:hidden">
-          <div className="mobile-hide-scrollbar flex gap-2 overflow-x-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
-            <a
-              href="/shop"
-              className="shrink-0 rounded-full bg-blue-700 px-4 py-2.5 text-xs font-black text-white"
-            >
-              {lang === "vi" ? "Tất cả sản phẩm" : "All products"}
-            </a>
+        <FeaturedCategories lang={lang} />
 
-            {categoryTree.slice(0, 4).map((root) => {
-              const rootName = text(
-                root.name,
-                lang,
-                root.label || root.code || "Category"
-              );
-
-              const rawKey =
-                root.id ||
-                root.backendCategoryId ||
-                root.slug ||
-                root.code ||
-                "";
-
-              const href = getSafeHref(
-                root.ctaUrl ||
-                  `/shop?category=${encodeURIComponent(rawKey)}`,
-                "/shop"
-              );
-
-              return (
-                <a
-                  key={root.id || root.code || rootName}
-                  href={href}
-                  className="max-w-[180px] shrink-0 truncate rounded-full border border-blue-100 bg-blue-50 px-4 py-2.5 text-xs font-black text-blue-700"
-                >
-                  {rootName}
-                </a>
-              );
-            })}
-
-            <a
-              href="/shop"
-              className="shrink-0 rounded-full border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs font-black text-slate-700"
-            >
-              {lang === "vi" ? "Xem danh mục →" : "View categories →"}
-            </a>
-          </div>
-        </section>
-
-        <main className="mx-auto grid max-w-[1440px] px-4 pb-8 lg:px-8 lg:grid-cols-[300px_1fr]">
-          <CategorySidebar categoryTree={categoryTree} lang={lang} />
-
+        <main className="mx-auto max-w-[1440px] px-4 pb-8 lg:px-8">
           <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
             {sections.map((section, index) => (
               <ProductSection
@@ -1281,38 +839,20 @@ export default function HomePage() {
                   new_arrivals: "NEW",
                   order_items: "ORDER",
                   best_sellers: "HOT",
-                  sale_products: "SALE",
+                  tools_accessories: "TOOLS",
                 }[section.dataSource] || "NEW"}
               />
             ))}
           </div>
         </main>
 
-        <HomeRecommendationSection
-          title={t.viewedTitle}
-          products={recentlyViewed}
-          loading={false}
-          lang={lang}
-          actions={actions}
-        />
-
-        <HomeRecommendationSection
-          title={t.trendingTitle}
-          products={trendingProducts}
-          loading={trendingLoading}
-          lang={lang}
-          actions={actions}
-          viewAllHref="/shop?collection=best_sellers"
-          viewAllLabel={t.viewAll}
-        />
+        <TrustStrip lang={lang} />
 
         <ContentHighlights
           news={homepageNews}
           events={homepageEvents}
           lang={lang}
         />
-
-        <LoyaltyBubble lang={lang} />
       </div>
     </PageShell>
   );

@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from "react";
-import { createPortal } from "react-dom";
-import { Eye, Heart, Minus, Plus, ShoppingCart, Star, X, Zap } from "lucide-react";
+import React, { useState } from "react";
+import { Heart, ShoppingCart, Star, Zap } from "lucide-react";
 import { formatCurrency } from "../../utils/format";
 import { resolveText, useI18n } from "../../i18n";
-import { addProductToCart, forceCartBadgeSync, saveBuyNowDraft, validateCartStock } from "../../services/CartService";
+import { addProductToCart, forceCartBadgeSync, validateCartStock } from "../../services/CartService";
 import { addMyWishlistItem, hasAccountToken } from "../../services/AccountApiService";
 import Toast from "../../utils/Toast";
 import useToast from "../../hooks/useToast";
@@ -38,16 +37,13 @@ function ProductCard({ product, lang: langProp, actions, badge, onAddToCart }) {
   const i18n = useI18n();
   const lang = langProp || i18n.lang;
   const t = i18n.t;
-  const [quickOpen, setQuickOpen] = useState(false);
-  const [qty, setQty] = useState(1);
+  const qty = 1;
   const [wishlistSaving, setWishlistSaving] = useState(false);
   const [wishlistSaved, setWishlistSaved] = useState(false);
   const [wishlistMessage, setWishlistMessage] = useState("");
   const { toast: toastConfig, notify, dismiss } = useToast(2500);
 
   const name = resolveText(product?.name, lang, t("product.defaultName"));
-  const short = resolveText(product?.short, lang, t("product.defaultShort"));
-  const desc = resolveText(product?.description, lang, short);
   const image = getImage(product);
   const price = Number(product?.finalPrice || product?.effectivePrice || product?.price || 0);
   const hasVariants =
@@ -69,11 +65,9 @@ function ProductCard({ product, lang: langProp, actions, badge, onAddToCart }) {
   const ratingValue = Number(product?.rating) || 0;
   const hasRating = ratingValue > 0;
   const soldCount = Number(product?.sold) || 0;
-  const stock = Number(product?.stock ?? 0);
   const detailUrl = getProductUrl(product);
   const isPreorder = getProductPreorderInfo(product).canOrder;
   const isOutOfStock = !getProductAvailability(product).canAddToCart;
-  const maxQty = isPreorder ? 99 : Math.max(1, stock);
   const outOfStockLabel = lang === "en" ? "Out of stock" : "Hết hàng";
 
   const wishlistCopy = {
@@ -121,36 +115,6 @@ function ProductCard({ product, lang: langProp, actions, badge, onAddToCart }) {
     return true;
   }
 
-  function buyNow(e) {
-    e?.preventDefault?.();
-    e?.stopPropagation?.();
-
-    if (hasVariants) {
-      window.location.href = detailUrl;
-      return false;
-    }
-
-    if (isOutOfStock) {
-      notify("error", outOfStockLabel);
-      return;
-    }
-
-    if (isPreorder) {
-      window.location.href = detailUrl;
-      return;
-    }
-
-    const result = saveBuyNowDraft(product, qty, { shippingMethod: "FAST" });
-    if (!result.ok) {
-      showCartError(result);
-      return;
-    }
-
-    forceCartBadgeSync();
-    actions?.track?.("buy_now", { productId: product?.id, qty });
-    window.location.href = "/checkout";
-  }
-
   async function addWishlist(e) {
     e?.preventDefault?.();
     e?.stopPropagation?.();
@@ -177,7 +141,7 @@ function ProductCard({ product, lang: langProp, actions, badge, onAddToCart }) {
 
   return (
     <>
-      <article className="product-card-mobile group flex h-full flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:border-blue-200 hover:shadow-xl sm:rounded-3xl">
+      <article className="product-card-mobile group flex h-full flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition hover:border-blue-200 sm:rounded-3xl">
         <a href={detailUrl} className="block">
           <div className="relative aspect-square overflow-hidden bg-slate-100">
             {badge && (
@@ -199,7 +163,7 @@ function ProductCard({ product, lang: langProp, actions, badge, onAddToCart }) {
               disabled={wishlistSaving}
               title={wishlistSaved ? wishlistCopy.titleSaved : wishlistCopy.titleSave}
               aria-label={wishlistSaved ? wishlistCopy.titleSaved : wishlistCopy.titleSave}
-              className={`absolute right-3 top-3 z-10 flex h-10 w-10 items-center justify-center rounded-full border bg-white/95 shadow-lg transition hover:scale-110 ${wishlistSaved ? "border-red-100 text-red-600" : "border-white/70 text-slate-500 hover:border-red-100 hover:text-red-600"} ${wishlistSaving ? "cursor-not-allowed opacity-60" : ""}`}
+              className={`absolute right-3 top-3 z-10 flex h-10 w-10 items-center justify-center rounded-full border bg-white/95 shadow-lg transition ${wishlistSaved ? "border-red-100 text-red-600" : "border-white/70 text-slate-500 hover:border-red-100 hover:text-red-600"} ${wishlistSaving ? "cursor-not-allowed opacity-60" : ""}`}
             >
               <Heart size={18} fill={wishlistSaved ? "currentColor" : "none"} />
             </button>
@@ -207,7 +171,7 @@ function ProductCard({ product, lang: langProp, actions, badge, onAddToCart }) {
             <img
               src={image}
               alt={name}
-              className="h-full w-full object-cover transition duration-500 group-hover:scale-110"
+              className="h-full w-full object-contain"
               loading="lazy"
               decoding="async"
             />
@@ -215,8 +179,8 @@ function ProductCard({ product, lang: langProp, actions, badge, onAddToCart }) {
         </a>
 
         <div className="flex flex-1 flex-col p-3 sm:p-4">
-          <div className="mb-2 flex items-start justify-between gap-2">
-            <a href={detailUrl} className="block flex-1 text-left">
+          <div className="mb-2">
+            <a href={detailUrl} className="block text-left">
               <h3
                 title={name}
                 className="line-clamp-2 min-h-[40px] text-left text-sm font-black leading-snug text-slate-950 transition hover:text-blue-700 sm:min-h-[44px] sm:text-base sm:line-clamp-3"
@@ -224,20 +188,6 @@ function ProductCard({ product, lang: langProp, actions, badge, onAddToCart }) {
                 {name}
               </h3>
             </a>
-
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                setQuickOpen(true);
-              }}
-              className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white/80 text-slate-500 shadow-sm transition hover:scale-110 hover:border-blue-200 hover:bg-blue-700 hover:text-white"
-              title={t("product.quickView")}
-              aria-label={t("product.quickView")}
-            >
-              <Eye size={18} />
-            </button>
           </div>
 
           <div className="mb-3 flex items-center justify-between text-sm">
@@ -314,44 +264,6 @@ function ProductCard({ product, lang: langProp, actions, badge, onAddToCart }) {
         </div>
       </article>
 
-      {quickOpen && createPortal(
-        <div className="fixed inset-0 z-[100000] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm" onClick={() => setQuickOpen(false)}>
-          <div className="relative max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-4xl bg-white p-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <button
-              type="button"
-              onClick={() => setQuickOpen(false)}
-              aria-label={lang === "en" ? "Close" : "Đóng"}
-              className="absolute right-4 top-4 z-10 rounded-full bg-slate-100 p-2 text-slate-600 hover:bg-slate-200"
-            >
-              <X size={18} />
-            </button>
-            <div className="grid gap-5 md:grid-cols-[1fr_1fr]">
-              <div className="overflow-hidden rounded-3xl bg-slate-100">
-                <img src={product?.detailUrl || image} alt={name} className="h-full max-h-[520px] w-full object-cover" loading="lazy" decoding="async" />
-              </div>
-              <div className="flex flex-col p-2 md:p-4">
-                <div className="text-xs font-black uppercase tracking-[0.2em] text-blue-700">Quick view</div>
-                <h2 className="mt-2 text-2xl font-black text-slate-950">{name}</h2>
-                <p className="mt-3 text-sm font-semibold leading-6 text-slate-500">{desc}</p>
-                <div className="mt-4 flex items-end gap-3">
-                  <div className="text-3xl font-black text-blue-700">{displayPrice}</div>
-                  {oldPrice ? <div className="text-sm font-bold text-slate-400 line-through">{formatCurrency(oldPrice)}</div> : null}
-                </div>
-                <div className="mt-5 flex items-center gap-3">
-                  <button type="button" onClick={() => setQty((v) => Math.max(1, v - 1))} aria-label={lang === "en" ? "Decrease quantity" : "Giảm số lượng"} className="flex h-11 w-11 items-center justify-center rounded-full border border-slate-200"><Minus size={16} /></button>
-                  <span className="min-w-[32px] text-center text-lg font-black">{qty}</span>
-                  <button type="button" onClick={() => setQty((v) => Math.min(maxQty, v + 1))} aria-label={lang === "en" ? "Increase quantity" : "Tăng số lượng"} className="flex h-11 w-11 items-center justify-center rounded-full border border-slate-200"><Plus size={16} /></button>
-                </div>
-                <div className="mt-auto grid gap-3 pt-6 sm:grid-cols-2">
-                  <button type="button" onClick={addCart} disabled={isOutOfStock} className={`rounded-2xl px-4 py-3 font-black text-white ${isOutOfStock ? "bg-slate-300" : "bg-blue-700 hover:bg-blue-800"}`}>{isOutOfStock ? outOfStockLabel : t("product.addToCart")}</button>
-                  <button type="button" onClick={buyNow} disabled={isOutOfStock} className={`rounded-2xl px-4 py-3 font-black text-white ${isOutOfStock ? "bg-slate-300" : "bg-slate-950 hover:bg-slate-800"}`}>{t("product.orderNow")}</button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
       <Toast show={toastConfig.show} type={toastConfig.type} message={toastConfig.message} onClose={dismiss} />
     </>
   );

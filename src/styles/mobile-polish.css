@@ -491,20 +491,6 @@ body {
     transform-origin: bottom right;
   }
 
-  /* Quick view smaller */
-  .mobile-quickview-panel {
-    max-height: 88vh !important;
-    border-radius: 20px 20px 0 0 !important;
-  }
-
-  .mobile-quickview-panel h2 {
-    font-size: 19px !important;
-    line-height: 24px !important;
-  }
-
-  .mobile-quickview-panel .p-5 {
-    padding: 14px !important;
-  }
 }
 
 @media (max-width: 390px) {

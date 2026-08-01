@@ -288,6 +288,31 @@ export async function getStorefrontProductsPageFromApi({
   };
 }
 
+// The live API has no brand/grade/scale/price-range query filters (confirmed by
+// probing production — total count never changes when those params are sent).
+// Shop's brand/grade/scale/price filters page through the whole catalog once
+// (backend caps limit at 48/request) and filter client-side instead.
+export async function getStorefrontFullCatalogFromApi() {
+  const limit = 48;
+  let page = 1;
+  let all = [];
+
+  while (true) {
+    const params = new URLSearchParams({ page: String(page), limit: String(limit), sort: "popular" });
+    const data = await publicJsonRequest(`/products?${params.toString()}`);
+    const products = Array.isArray(data?.products) ? data.products : [];
+    if (!data?.success) throw new Error("Storefront catalog sync skipped.");
+
+    all = all.concat(products.map(mapBackendProductToStorefront));
+
+    const hasNextPage = Boolean(data.meta?.hasNextPage) && products.length > 0;
+    if (!hasNextPage) break;
+    page += 1;
+  }
+
+  return dedupeStorefrontProducts(all);
+}
+
 export async function getStorefrontHomeProductsFromApi({ page, limit } = {}) {
   const params = new URLSearchParams();
   if (page) params.set("page", String(page));
