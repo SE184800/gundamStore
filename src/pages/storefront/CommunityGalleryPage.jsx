@@ -91,7 +91,7 @@ export default function CommunityGalleryPage() {
 
   return (
     <PageShell>
-      <main className="mx-auto max-w-[1440px] px-4 py-8 lg:px-8">
+      <main className="mx-auto max-w-[1440px] px-4 py-8 lg:px-8 lg:pr-28">
         <section className="relative overflow-hidden rounded-6xl bg-slate-950 p-8 text-white shadow-xl">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_30%,rgba(168,85,247,0.35),transparent_35%)]" />
           <div className="relative z-10 max-w-4xl">

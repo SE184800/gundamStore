@@ -136,7 +136,7 @@ export default function EventDetailPage() {
 
   return (
     <PageShell>
-      <main className="mx-auto max-w-[1200px] px-4 py-8 lg:px-8">
+      <main className="mx-auto max-w-[1200px] px-4 py-8 lg:px-8 lg:pr-28">
         <section className="overflow-hidden rounded-6xl bg-slate-950 p-8 text-white shadow-xl">
           <div className="inline-flex rounded-full bg-blue-700 px-4 py-2 text-xs font-black uppercase tracking-[0.25em]">
             {label(event, lang)}
