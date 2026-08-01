@@ -188,7 +188,9 @@ export async function createStorefrontOrderApi(payload) {
   });
 
   if (!data?.success || !data.order) {
-    throw new Error("Backend did not return created order.");
+    const error = new Error(data?.message || "Backend did not return created order.");
+    error.data = data;
+    throw error;
   }
 
   return data.order;
