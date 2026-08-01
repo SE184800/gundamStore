@@ -88,7 +88,7 @@ export default function FloatingChat() {
       <Toast show={toast.show} type={toast.type} message={toast.message} onClose={dismiss} />
       <div className="hidden md:flex fixed bottom-8 right-4 flex-col items-end gap-2.5">
         {open && (
-          <div className="absolute bottom-[190px] right-0 w-[320px] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl animate-in fade-in slide-in-from-bottom-5 duration-200">
+          <div className="absolute bottom-[190px] right-0 w-[320px] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg animate-in fade-in slide-in-from-bottom-5 duration-200">
             <div className="bg-blue-700 px-4 pt-3 pb-2 text-white">
               <div className="flex items-center justify-between mb-2">
                 <div>
@@ -131,7 +131,7 @@ export default function FloatingChat() {
           </div>
         )}
 
-        <button onClick={() => setOpen(!open)} className="group flex items-center rounded-full bg-blue-600 p-1.5 text-white opacity-95 shadow-xl transition-all duration-300 hover:rounded-2xl hover:opacity-100 hover:shadow-2xl">
+        <button onClick={() => setOpen(!open)} className="group flex items-center rounded-full bg-blue-600 p-1.5 text-white opacity-95 shadow-md transition-all duration-300 hover:rounded-2xl hover:opacity-100 hover:shadow-lg">
           <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20"><MessageCircle size={19} /></span>
           <span className="grid max-w-0 overflow-hidden text-left transition-all duration-300 group-hover:ml-3 group-hover:max-w-[210px]">
             <span className="whitespace-nowrap text-sm font-black">{t("chat.btnMain") || "Hỗ trợ trực tuyến"}</span>
@@ -139,12 +139,12 @@ export default function FloatingChat() {
           </span>
         </button>
 
-        <a href={ZALO_URL || "#"} onClick={(e) => handleNavigation(e, ZALO_URL, "https://zalo.me/")} target="_blank" rel="noreferrer" className="group flex items-center rounded-full bg-cyan-600 p-1.5 text-white opacity-55 shadow-xl transition-all duration-300 hover:rounded-2xl hover:opacity-100 hover:shadow-2xl">
+        <a href={ZALO_URL || "#"} onClick={(e) => handleNavigation(e, ZALO_URL, "https://zalo.me/")} target="_blank" rel="noreferrer" className="group flex items-center rounded-full bg-cyan-600 p-1.5 text-white opacity-55 shadow-md transition-all duration-300 hover:rounded-2xl hover:opacity-100 hover:shadow-lg">
           <span className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-white"><ChatLogoImage src={ZALO_LOGO} alt="Zalo" className="h-full w-full object-cover" /></span>
           <span className="grid max-w-0 overflow-hidden text-left transition-all duration-300 group-hover:ml-3 group-hover:max-w-[210px]"><span className="whitespace-nowrap text-sm font-black">Zalo</span></span>
         </a>
 
-        <a href={FACEBOOK_URL || "#"} onClick={(e) => handleNavigation(e, FACEBOOK_URL, "https://www.facebook.com/")} target="_blank" rel="noreferrer" className="group flex items-center rounded-full bg-indigo-600 p-1.5 text-white opacity-55 shadow-xl transition-all duration-300 hover:rounded-2xl hover:opacity-100 hover:shadow-2xl">
+        <a href={FACEBOOK_URL || "#"} onClick={(e) => handleNavigation(e, FACEBOOK_URL, "https://www.facebook.com/")} target="_blank" rel="noreferrer" className="group flex items-center rounded-full bg-indigo-600 p-1.5 text-white opacity-55 shadow-md transition-all duration-300 hover:rounded-2xl hover:opacity-100 hover:shadow-lg">
           <span className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-white p-1"><ChatLogoImage src={MESSENGER_LOGO} alt="Messenger" className="h-full w-full object-contain" /></span>
           <span className="grid max-w-0 overflow-hidden text-left transition-all duration-300 group-hover:ml-3 group-hover:max-w-[210px]"><span className="whitespace-nowrap text-sm font-black">Facebook</span></span>
         </a>
@@ -155,7 +155,7 @@ export default function FloatingChat() {
           <div className="flex flex-col items-end gap-3 animate-in fade-in slide-in-from-bottom-5 duration-250">
             <button
               onClick={() => { setOpen(!open); setMobileMenuOpen(false); }}
-              className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-600 text-white shadow-xl border border-blue-500 transition active:scale-95"
+              className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-600 text-white shadow-md border border-blue-500 transition active:scale-95"
             >
               <Bot size={20} />
             </button>
@@ -165,7 +165,7 @@ export default function FloatingChat() {
               onClick={(e) => { handleNavigation(e, ZALO_URL, "https://zalo.me/"); setMobileMenuOpen(false); }}
               target="_blank"
               rel="noreferrer"
-              className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-white shadow-xl border border-slate-100 transition active:scale-95"
+              className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-white shadow-md border border-slate-100 transition active:scale-95"
             >
               <ChatLogoImage src={ZALO_LOGO} alt="Zalo" className="h-full w-full object-cover" />
             </a>
@@ -175,7 +175,7 @@ export default function FloatingChat() {
               onClick={(e) => { handleNavigation(e, FACEBOOK_URL, "https://www.facebook.com/"); setMobileMenuOpen(false); }}
               target="_blank"
               rel="noreferrer"
-              className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-white shadow-xl border border-slate-100 p-1 transition active:scale-95"
+              className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-white shadow-md border border-slate-100 p-1 transition active:scale-95"
             >
               <ChatLogoImage src={MESSENGER_LOGO} alt="Messenger" className="h-full w-full object-contain" />
             </a>
@@ -185,13 +185,13 @@ export default function FloatingChat() {
         <button
           type="button"
           onClick={() => { setMobileMenuOpen(!mobileMenuOpen); if (open) setOpen(false); }}
-          className={`flex h-14 w-14 items-center justify-center rounded-full text-white shadow-2xl transition-all duration-300 active:scale-95 ${mobileMenuOpen ? "bg-slate-950 rotate-90" : "bg-blue-600"}`}
+          className={`flex h-14 w-14 items-center justify-center rounded-full text-white shadow-lg transition-all duration-300 active:scale-95 ${mobileMenuOpen ? "bg-slate-950 rotate-90" : "bg-blue-600"}`}
         >
           {mobileMenuOpen ? <X size={24} /> : <MessageCircle size={24} />}
         </button>
 
         {open && (
-          <div className="absolute bottom-20 right-0 w-[calc(100vw-32px)] max-w-[320px] overflow-hidden rounded-[2rem] border border-slate-100 bg-white shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-200">
+          <div className="absolute bottom-20 right-0 w-[calc(100vw-32px)] max-w-[320px] overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-lg animate-in fade-in slide-in-from-bottom-4 duration-200">
             <div className="bg-blue-700 px-4 pt-4 pb-2 text-white">
               <div className="flex items-center justify-between mb-2">
                 <div>

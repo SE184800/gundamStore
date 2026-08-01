@@ -281,7 +281,7 @@ export default function CartPage() {
         <div className="mx-auto max-w-7xl">
           <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
-              <p className="text-sm font-black uppercase tracking-[0.2em] text-blue-600">
+              <p className="text-sm font-black tracking-wide text-blue-600">
                 {t.eyebrow}
               </p>
               <h1 className="mt-2 text-3xl font-black text-slate-950 md:text-4xl">
@@ -296,7 +296,7 @@ export default function CartPage() {
 
           <div className="grid gap-6 lg:grid-cols-[1fr_390px]">
             <section className="space-y-4">
-              <div className="hidden rounded-2xl bg-white px-5 py-3 text-xs font-black uppercase tracking-wide text-slate-400 shadow-sm md:grid md:grid-cols-[40px_1fr_110px_130px_130px_56px]">
+              <div className="hidden rounded-xl bg-white px-5 py-3 text-xs font-black tracking-wide text-slate-400 shadow-sm md:grid md:grid-cols-[40px_1fr_110px_130px_130px_56px]">
                 <div>
                   <input
                     type="checkbox"
@@ -330,15 +330,15 @@ export default function CartPage() {
               )}
 
               {cart.length === 0 ? (
-                <div className="rounded-3xl bg-white p-10 text-center shadow-sm md:p-16">
+                <div className="rounded-xl bg-white p-10 text-center shadow-sm md:p-16">
                   <div className="text-2xl font-black text-slate-800">{t.empty}</div>
-                  <Link to="/shop" className="mt-5 inline-block rounded-2xl bg-blue-700 px-6 py-3 font-black text-white">
+                  <Link to="/shop" className="mt-5 inline-block rounded-xl bg-blue-700 px-6 py-3 font-black text-white">
                     {t.shopNow}
                   </Link>
 
                   {suggestedProducts.length > 0 && (
                     <div className="mt-10 text-left">
-                      <div className="mb-4 text-center text-sm font-black uppercase tracking-wide text-slate-400">
+                      <div className="mb-4 text-center text-sm font-black tracking-wide text-slate-400">
                         {lang === "en" ? "You might like" : "Có thể bạn thích"}
                       </div>
                       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -519,7 +519,7 @@ export default function CartPage() {
               )}
             </section>
 
-            <aside className="h-fit rounded-3xl bg-white p-6 shadow-sm lg:sticky lg:top-24">
+            <aside className="h-fit rounded-xl border border-slate-200 bg-white p-6 shadow-sm lg:sticky lg:top-24">
               <h2 className="text-xl font-black text-slate-950">{t.paymentSummary}</h2>
 
               <div className="mt-3 rounded-2xl bg-blue-50 p-3.5">
@@ -627,7 +627,7 @@ export default function CartPage() {
       </main>
 
       {cart.length > 0 && (
-        <div className="fixed inset-x-0 bottom-[calc(76px+env(safe-area-inset-bottom))] z-[100000] border-t border-slate-200 bg-white px-4 py-3 shadow-[0_-6px_20px_rgba(15,23,42,0.08)] lg:hidden">
+        <div className="fixed inset-x-0 bottom-[calc(76px+env(safe-area-inset-bottom))] z-[100000] border-t border-slate-200 bg-white px-4 py-3 shadow-sm lg:hidden">
           <div className="mx-auto flex max-w-7xl items-center justify-between gap-3">
             <div>
               <div className="text-[11px] font-bold text-slate-500">{t.total}</div>

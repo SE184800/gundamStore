@@ -185,8 +185,8 @@ function Select({ label, value, onChange, children }) {
 function AccountSidebar({ profile, wishlistCount, onLogout, menuItems, t }) {
   return (
     <aside className="space-y-4">
-      <section className="rounded-4xl border border-slate-200 bg-white p-5 text-center shadow-sm">
-        <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-blue-700 text-2xl font-black text-white shadow-lg shadow-blue-100">
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 text-center shadow-sm">
+        <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-blue-700 text-2xl font-black text-white shadow-lg">
           {String(profile?.name || "US").slice(0, 2).toUpperCase()}
         </div>
 
@@ -211,7 +211,7 @@ function AccountSidebar({ profile, wishlistCount, onLogout, menuItems, t }) {
         </div>
       </section>
 
-      <nav className="rounded-4xl border border-slate-200 bg-white p-2 shadow-sm">
+      <nav className="rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
         {menuItems.map((item) => {
           const Icon = item.icon;
 
@@ -332,7 +332,7 @@ export default function AccountProfilePage() {
 
   return (
     <PageShell>
-      <main className="min-h-screen bg-gradient-to-b from-white via-blue-50/40 to-slate-100">
+      <main className="min-h-screen bg-white">
         <div className="mx-auto max-w-[1440px] px-4 py-8 lg:px-8">
           <div className="text-sm font-bold text-slate-500">
             <Link to="/" className="hover:text-blue-700">
@@ -352,7 +352,7 @@ export default function AccountProfilePage() {
           </div>
 
           {loading ? (
-            <div className="mt-8 flex min-h-[320px] items-center justify-center rounded-4xl bg-white shadow-sm">
+            <div className="mt-8 flex min-h-[320px] items-center justify-center rounded-2xl bg-white shadow-sm">
               <Loader2 className="animate-spin text-blue-700" size={36} />
             </div>
           ) : (
@@ -365,7 +365,7 @@ export default function AccountProfilePage() {
                 t={t}
               />
 
-              <section className="rounded-4xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
+              <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
                 <div className="flex items-center gap-3 border-b border-slate-100 pb-5">
                   <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-50 text-blue-700">
                     <User size={20} />
@@ -443,17 +443,17 @@ export default function AccountProfilePage() {
 
                 <div className="mt-6 grid gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-4 text-sm font-bold text-slate-600 md:grid-cols-3">
                   <div>
-                    <div className="text-xs uppercase tracking-[0.18em] text-slate-400">{t.orders}</div>
+                    <div className="text-xs tracking-wide text-slate-400">{t.orders}</div>
                     <div className="mt-1 text-2xl font-black text-slate-950">{orders.length || 0}</div>
                   </div>
 
                   <div>
-                    <div className="text-xs uppercase tracking-[0.18em] text-slate-400">{t.wishlist}</div>
+                    <div className="text-xs tracking-wide text-slate-400">{t.wishlist}</div>
                     <div className="mt-1 text-2xl font-black text-blue-700">{wishlistCount}</div>
                   </div>
 
                   <div>
-                    <div className="text-xs uppercase tracking-[0.18em] text-slate-400">{t.status}</div>
+                    <div className="text-xs tracking-wide text-slate-400">{t.status}</div>
                     <div className="mt-1 text-base font-black text-emerald-700">
                       {hasToken ? t.signedIn : t.signedOut}
                     </div>

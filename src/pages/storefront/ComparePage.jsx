@@ -161,10 +161,10 @@ export default function ComparePage() {
   return (
     <PageShell>
       <main className="mx-auto max-w-[1440px] px-4 py-8 lg:px-8">
-        <section className="relative overflow-hidden rounded-6xl bg-slate-950 p-8 text-white shadow-xl">
+        <section className="relative overflow-hidden rounded-2xl bg-slate-950 p-8 text-white shadow-lg">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_30%,rgba(14,165,233,0.35),transparent_35%)]" />
           <div className="relative z-10">
-            <div className="inline-flex items-center gap-2 rounded-full bg-cyan-600 px-4 py-2 text-xs font-black uppercase tracking-[0.25em]">
+            <div className="inline-flex items-center gap-2 rounded-full bg-cyan-600 px-4 py-2 text-xs font-black tracking-wide">
               <GitCompareArrows size={15} />
               Compare
             </div>
@@ -173,7 +173,7 @@ export default function ComparePage() {
           </div>
         </section>
 
-        <section className="mt-6 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+        <section className="mt-6 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="flex flex-col gap-3 md:flex-row md:items-center">
             <div className="relative flex flex-1 items-center rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
               <Search size={18} className="text-cyan-600" />
@@ -190,13 +190,13 @@ export default function ComparePage() {
               )}
 
               {searchLoading && (
-                <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-30 overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 text-center text-xs font-bold text-slate-500 shadow-xl">
+                <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-30 overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 text-center text-xs font-bold text-slate-500 shadow-lg">
                   {t.searching}
                 </div>
               )}
 
               {!searchLoading && searchResults.length > 0 && (
-                <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-30 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
+                <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-30 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg">
                   {searchResults.map((product) => (
                     <button
                       key={product.id}
@@ -224,11 +224,11 @@ export default function ComparePage() {
         </section>
 
         {loadingCompare ? (
-          <section className="mt-8 flex items-center justify-center rounded-3xl border border-slate-200 bg-white p-12 shadow-sm">
+          <section className="mt-8 flex items-center justify-center rounded-xl border border-slate-200 bg-white p-12 shadow-sm">
             <Loader2 className="animate-spin text-cyan-600" size={36} />
           </section>
         ) : selectedProducts.length === 0 ? (
-          <section className="mt-8 rounded-3xl border border-dashed border-slate-300 bg-white p-12 text-center">
+          <section className="mt-8 rounded-xl border border-dashed border-slate-300 bg-white p-12 text-center">
             <GitCompareArrows className="mx-auto text-slate-300" size={44} />
             <div className="mt-4 text-lg font-black text-slate-500">{t.empty}</div>
             <a href="/shop" className="mt-5 inline-block rounded-2xl bg-blue-700 px-5 py-3 text-sm font-black text-white">
@@ -236,7 +236,7 @@ export default function ComparePage() {
             </a>
           </section>
         ) : (
-          <section className="mt-8 overflow-x-auto rounded-3xl border border-slate-200 bg-white shadow-sm">
+          <section className="mt-8 overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
             <table className="w-full min-w-[860px] text-sm">
               <thead>
                 <tr className="border-b bg-slate-50">

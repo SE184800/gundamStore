@@ -267,7 +267,7 @@ export default function AddressBookSection() {
   }
 
   return (
-    <section id="address" className="mt-8 rounded-4xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
+    <section id="address" className="mt-8 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
       <div className="flex items-center gap-3 border-b border-slate-100 pb-5">
         <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-50 text-blue-700">
           <MapPin size={20} />

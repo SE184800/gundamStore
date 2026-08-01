@@ -151,7 +151,7 @@ export default function EventsPage() {
     return (
       <PageShell>
         <main className="mx-auto max-w-[1440px] px-4 py-16 text-center lg:px-8">
-          <div className="rounded-3xl border border-slate-200 bg-white p-8 font-bold text-slate-500">
+          <div className="rounded-xl border border-slate-200 bg-white p-8 font-bold text-slate-500">
             {loading ? "Đang tải sự kiện..." : "Chưa có sự kiện được công bố."}
           </div>
         </main>
@@ -162,11 +162,11 @@ export default function EventsPage() {
   return (
     <PageShell>
       <main className="mx-auto max-w-[1440px] px-4 py-8 lg:px-8">
-        <section className="relative overflow-hidden rounded-6xl bg-slate-950 p-8 text-white shadow-[0_30px_120px_rgba(15,23,42,0.25)]">
+        <section className="relative overflow-hidden rounded-2xl bg-slate-950 p-8 text-white shadow-[0_30px_120px_rgba(15,23,42,0.25)]">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_75%_30%,rgba(37,99,235,0.38),transparent_34%),radial-gradient(circle_at_20%_75%,rgba(168,85,247,0.32),transparent_30%)]" />
           <div className="relative z-10 grid gap-8 lg:grid-cols-[1fr_360px]">
             <div>
-              <div className="inline-flex rounded-full bg-blue-700 px-4 py-2 text-xs font-black uppercase tracking-[0.25em]">
+              <div className="inline-flex rounded-full bg-blue-700 px-4 py-2 text-xs font-black tracking-wide">
                 Events Calendar
               </div>
               <h1 className="mt-5 text-5xl font-black leading-[0.95] md:text-7xl">
@@ -177,8 +177,8 @@ export default function EventsPage() {
               </p>
             </div>
 
-            <div className="rounded-4xl border border-white/10 bg-white/10 p-5 backdrop-blur">
-              <div className="text-xs font-black uppercase tracking-widest text-blue-200">Selected Event</div>
+            <div className="rounded-2xl border border-white/10 bg-white/10 p-5 backdrop-blur">
+              <div className="text-xs font-black tracking-wide text-blue-200">Selected Event</div>
               <div className="mt-3 text-2xl font-black">{selected.title}</div>
               <div className="mt-4 grid grid-cols-2 gap-3">
                 <MiniStat label="Starts in" value={`${daysUntil(selected.date)} ngày`} />
@@ -189,16 +189,16 @@ export default function EventsPage() {
         </section>
 
         <section className="mt-6 grid gap-6 xl:grid-cols-[1fr_420px]">
-          <section className="overflow-hidden rounded-5xl border border-slate-200 bg-white p-5 shadow-sm">
+          <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <div className="mb-5">
-              <div className="text-xs font-black uppercase tracking-[0.22em] text-blue-700">OpenStreetMap</div>
+              <div className="text-xs font-black tracking-wide text-blue-700">OpenStreetMap</div>
               <h2 className="mt-1 text-3xl font-black text-slate-950">Bản đồ sự kiện thật</h2>
               <p className="mt-2 text-sm font-semibold text-slate-500">
                 Click marker để xem nhanh, chọn sự kiện để xem chi tiết bên phải.
               </p>
             </div>
 
-            <div className="h-[500px] overflow-hidden rounded-4xl border border-slate-200">
+            <div className="h-[500px] overflow-hidden rounded-2xl border border-slate-200">
               <MapContainer center={[15, 105]} zoom={3} scrollWheelZoom={false} className="h-full w-full">
                 <TileLayer
                   attribution='&copy; OpenStreetMap contributors'
@@ -227,8 +227,8 @@ export default function EventsPage() {
             </div>
           </section>
 
-          <aside className="rounded-5xl border border-slate-200 bg-white p-5 shadow-sm">
-            <span className={`rounded-full border px-3 py-1 text-xs font-black uppercase ${toneClass(selected)}`}>
+          <aside className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <span className={`rounded-full border px-3 py-1 text-xs font-black ${toneClass(selected)}`}>
               {label(selected)}
             </span>
             <h2 className="mt-4 text-3xl font-black text-slate-950">{selected.title}</h2>
@@ -254,7 +254,7 @@ export default function EventsPage() {
             )}
 
             <div className="mt-5 rounded-2xl bg-slate-50 p-4">
-              <div className="text-xs font-black uppercase tracking-widest text-slate-400">Agenda</div>
+              <div className="text-xs font-black tracking-wide text-slate-400">Agenda</div>
               <div className="mt-3 space-y-2">
                 {selected.agenda.map((item) => (
                   <div key={item} className="rounded-xl bg-white px-3 py-2 text-sm font-bold text-slate-700 shadow-sm">
@@ -267,7 +267,7 @@ export default function EventsPage() {
             <div className="mt-5 flex flex-wrap gap-3">
               <a
                 href={`/news/events/${selected.id}`}
-                className="rounded-2xl bg-blue-700 px-5 py-3 text-sm font-black text-white shadow-lg shadow-blue-100"
+                className="rounded-2xl bg-blue-700 px-5 py-3 text-sm font-black text-white shadow-lg"
               >
                 Xem chi tiết
               </a>
@@ -284,11 +284,11 @@ export default function EventsPage() {
           </aside>
         </section>
 
-        <section className="mt-8 rounded-5xl border border-slate-200 bg-white p-5 shadow-sm">
+        <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="mb-5 flex items-center justify-between gap-3">
             <button onClick={() => changeMonth(-1)} className="rounded-full border border-slate-200 px-4 py-3 text-sm font-black hover:bg-slate-50">‹ Tháng trước</button>
             <div className="text-center">
-              <div className="text-xs font-black uppercase tracking-[0.22em] text-blue-700">
+              <div className="text-xs font-black tracking-wide text-blue-700">
                 {month.toLocaleString("vi-VN", { month: "long", year: "numeric" })}
               </div>
               <h2 className="mt-1 text-3xl font-black text-slate-950">Calendar Board</h2>
@@ -321,10 +321,10 @@ export default function EventsPage() {
           </div>
         </section>
 
-        <section className="mt-8 rounded-5xl border border-slate-200 bg-white p-5 shadow-sm">
+        <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="mb-5 flex items-center justify-between">
             <div>
-              <div className="text-xs font-black uppercase tracking-[0.22em] text-blue-700">Monthly Events</div>
+              <div className="text-xs font-black tracking-wide text-blue-700">Monthly Events</div>
               <h2 className="mt-1 text-3xl font-black text-slate-950">Sự kiện trong tháng</h2>
             </div>
             <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-black text-blue-700">{visibleEvents.length} sự kiện</span>
@@ -336,9 +336,9 @@ export default function EventsPage() {
                 <button
                   key={event.id}
                   onClick={() => setSelected(event)}
-                  className="group rounded-4xl border border-slate-200 bg-slate-50 p-5 text-left transition hover:-translate-y-1 hover:border-blue-300 hover:bg-white hover:shadow-xl"
+                  className="group rounded-2xl border border-slate-200 bg-slate-50 p-5 text-left transition hover:-translate-y-1 hover:border-blue-300 hover:bg-white hover:shadow-lg"
                 >
-                  <span className={`rounded-full border px-3 py-1 text-xs font-black uppercase ${toneClass(event)}`}>
+                  <span className={`rounded-full border px-3 py-1 text-xs font-black ${toneClass(event)}`}>
                     {label(event)}
                   </span>
                   <h3 className="mt-4 text-xl font-black text-slate-950 group-hover:text-blue-700">{event.title}</h3>
@@ -349,7 +349,7 @@ export default function EventsPage() {
               ))}
             </div>
           ) : (
-            <div className="rounded-3xl bg-slate-50 p-8 text-center">
+            <div className="rounded-xl bg-slate-50 p-8 text-center">
               <div className="text-lg font-black text-slate-950">Chưa có sự kiện trong tháng này</div>
               <div className="mt-2 text-sm font-semibold text-slate-500">Hãy chuyển tháng khác hoặc theo dõi cập nhật mới.</div>
             </div>
@@ -363,7 +363,7 @@ export default function EventsPage() {
 function MiniStat({ label, value }) {
   return (
     <div className="rounded-2xl bg-white/10 p-4">
-      <div className="text-xs font-black uppercase text-white/50">{label}</div>
+      <div className="text-xs font-black text-white/50">{label}</div>
       <div className="mt-1 text-2xl font-black">{value}</div>
     </div>
   );
@@ -372,7 +372,7 @@ function MiniStat({ label, value }) {
 function Info({ icon: Icon, label, value }) {
   return (
     <div className="rounded-2xl bg-slate-50 p-4">
-      <div className="flex items-center gap-2 text-xs font-black uppercase text-slate-400">
+      <div className="flex items-center gap-2 text-xs font-black text-slate-400">
         <Icon size={15} />
         {label}
       </div>

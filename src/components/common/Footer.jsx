@@ -63,7 +63,7 @@ export default function Footer() {
           <div className="grid gap-6 sm:grid-cols-3">
             {groups.map((group) => (
               <div key={group.title}>
-                <h3 className="text-sm font-black uppercase tracking-[0.2em] text-blue-300">
+                <h3 className="text-sm font-black tracking-wide text-blue-300">
                   {group.title}
                 </h3>
 
@@ -82,7 +82,7 @@ export default function Footer() {
             ))}
           </div>
 
-          {/* <div className="rounded-4xl border border-white/10 bg-white/5 p-5">
+          {/* <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
             <h3 className="text-xl font-black">{t("footer.newsletterTitle")}</h3>
             <p className="mt-2 text-sm font-semibold leading-6 text-white/60">
               {t("footer.newsletterDesc")}
@@ -119,7 +119,7 @@ export default function Footer() {
 
         {hasBusinessInfo && (
           <div className="mt-10 border-t border-white/10 pt-6 text-xs font-semibold leading-6 text-white/50">
-            <div className="font-black uppercase tracking-[0.15em] text-white/70">
+            <div className="font-black tracking-wide text-white/70">
               {lang === "en" ? "Business registration" : `Hộ kinh doanh ${state?.settings?.shopName || ""}`.trim()}
             </div>
             <div className="mt-2 grid gap-x-8 gap-y-1 sm:grid-cols-2">

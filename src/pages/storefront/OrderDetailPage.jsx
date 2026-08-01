@@ -158,7 +158,7 @@ function PreorderProgressTracker({ order, lang }) {
   const currentIndex = Math.max(0, steps.findIndex((step) => step.key === current));
 
   return (
-    <div className="mt-6 rounded-3xl border border-violet-100 bg-white p-6 shadow-sm">
+    <div className="mt-6 rounded-xl border border-violet-100 bg-white p-6 shadow-sm">
       <div className="flex flex-col justify-between gap-3 md:flex-row md:items-start">
         <div>
           <h2 className="text-xl font-black text-slate-950">
@@ -184,7 +184,7 @@ function PreorderProgressTracker({ order, lang }) {
               key={step.key}
               className={`rounded-2xl p-4 text-center text-xs font-black ${
                 active
-                  ? "bg-violet-600 text-white shadow-lg shadow-violet-100"
+                  ? "bg-violet-600 text-white shadow-lg"
                   : "bg-slate-100 text-slate-400"
               }`}
             >
@@ -199,7 +199,7 @@ function PreorderProgressTracker({ order, lang }) {
 
       <div className="mt-5 grid gap-3 md:grid-cols-3">
         <div className="rounded-2xl bg-amber-50 p-4">
-          <div className="text-xs font-black uppercase text-amber-700">
+          <div className="text-xs font-black text-amber-700">
             {lang === "en" ? "Deposit" : "Tiền cọc"}
           </div>
           <div className="mt-1 text-xl font-black text-red-600">
@@ -208,7 +208,7 @@ function PreorderProgressTracker({ order, lang }) {
         </div>
 
         <div className="rounded-2xl bg-slate-50 p-4">
-          <div className="text-xs font-black uppercase text-slate-500">
+          <div className="text-xs font-black text-slate-500">
             {lang === "en" ? "Remaining" : "Còn lại"}
           </div>
           <div className="mt-1 text-xl font-black text-slate-950">
@@ -217,7 +217,7 @@ function PreorderProgressTracker({ order, lang }) {
         </div>
 
         <div className="rounded-2xl bg-blue-50 p-4">
-          <div className="text-xs font-black uppercase text-blue-700">
+          <div className="text-xs font-black text-blue-700">
             {lang === "en" ? "Balance request" : "Yêu cầu thanh toán còn lại"}
           </div>
           <div className="mt-1 text-sm font-black text-blue-800">
@@ -248,7 +248,7 @@ function RequestModal({ type, lang, onClose, onSubmit }) {
 
   return (
     <div className="fixed inset-0 z-[100000] bg-slate-950/60 p-4 backdrop-blur-sm">
-      <div className="mx-auto mt-10 max-h-[85vh] max-w-xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl">
+      <div className="mx-auto mt-10 max-h-[85vh] max-w-xl overflow-y-auto rounded-xl bg-white p-6 shadow-lg">
         <h3 className="text-xl font-black text-slate-950">
           {type === "return" ? t.requestReturn : t.requestCancel}
         </h3>
@@ -343,7 +343,7 @@ export default function OrderDetailPage() {
     return (
       <PageShell>
         <main className="min-h-screen bg-slate-50 p-10">
-          <div className="mx-auto flex max-w-3xl items-center justify-center gap-3 rounded-3xl bg-white p-10 text-center font-black text-slate-500">
+          <div className="mx-auto flex max-w-3xl items-center justify-center gap-3 rounded-xl bg-white p-10 text-center font-black text-slate-500">
             <Loader2 className="animate-spin text-blue-600" />
             {lang === "en" ? "Loading order..." : "Đang tải đơn hàng..."}
           </div>
@@ -356,7 +356,7 @@ export default function OrderDetailPage() {
     return (
       <PageShell>
         <main className="min-h-screen bg-slate-50 p-10">
-          <div className="mx-auto max-w-3xl rounded-3xl bg-white p-10 text-center">
+          <div className="mx-auto max-w-3xl rounded-xl bg-white p-10 text-center">
             <h1 className="text-2xl font-black">{t.notFound}</h1>
             <Link to="/order-lookup" className="mt-5 inline-block rounded-2xl bg-blue-700 px-6 py-3 font-black text-white">
               {t.back}
@@ -478,10 +478,10 @@ export default function OrderDetailPage() {
             ← {t.back}
           </Link>
 
-          <div className="mt-5 rounded-3xl bg-white p-6 shadow-sm">
+          <div className="mt-5 rounded-xl bg-white p-6 shadow-sm">
             <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
               <div>
-                <p className="text-sm font-black uppercase tracking-[0.2em] text-blue-600">
+                <p className="text-sm font-black tracking-wide text-blue-600">
                   {t.orderTracking}
                 </p>
                 <h1 className="mt-2 text-3xl font-black text-slate-950">{order.orderCode || order.orderNo}</h1>
@@ -526,7 +526,7 @@ export default function OrderDetailPage() {
           <PreorderProgressTracker order={order} lang={lang} />
 
           {(order.cancelRequest?.status === "Pending" || order.returnRequest?.status === "Pending" || order.preorder?.balancePaymentRequest?.status === "Pending") && (
-            <div className="mt-6 rounded-3xl border border-amber-100 bg-amber-50 p-5 text-amber-800">
+            <div className="mt-6 rounded-xl border border-amber-100 bg-amber-50 p-5 text-amber-800">
               <div className="flex gap-3">
                 <Clock className="mt-0.5" size={22} />
                 <div>
@@ -545,7 +545,7 @@ export default function OrderDetailPage() {
 
           <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_390px]">
             <section className="space-y-6">
-              <div className="rounded-3xl bg-white p-6 shadow-sm">
+              <div className="rounded-xl bg-white p-6 shadow-sm">
                 <h2 className="flex items-center gap-2 text-xl font-black">
                   <Package size={22} /> {t.products}
                 </h2>
@@ -580,7 +580,7 @@ export default function OrderDetailPage() {
                 </div>
               </div>
 
-              <div className="rounded-3xl bg-white p-6 shadow-sm">
+              <div className="rounded-xl bg-white p-6 shadow-sm">
                 <h2 className="text-xl font-black">{t.timeline}</h2>
 
                 <div className="mt-5 space-y-3">
@@ -598,7 +598,7 @@ export default function OrderDetailPage() {
             </section>
 
             <aside className="space-y-6">
-              <div className="rounded-3xl bg-white p-6 shadow-sm">
+              <div className="rounded-xl bg-white p-6 shadow-sm">
                 <h2 className="flex items-center gap-2 text-xl font-black">
                   <MapPin size={22} /> {t.delivery}
                 </h2>
@@ -624,7 +624,7 @@ export default function OrderDetailPage() {
 
 
               {order.orderType === "preorder" && order.preorder && (
-                <div className="rounded-3xl border border-amber-100 bg-amber-50 p-6 shadow-sm">
+                <div className="rounded-xl border border-amber-100 bg-amber-50 p-6 shadow-sm">
                   <h2 className="text-xl font-black text-amber-900">
                     {lang === "en" ? "Pre-order deposit" : "Thông tin đặt cọc"}
                   </h2>
@@ -654,7 +654,7 @@ export default function OrderDetailPage() {
                 </div>
               )}
 
-              <div className="rounded-3xl bg-white p-6 shadow-sm">
+              <div className="rounded-xl bg-white p-6 shadow-sm">
                 <h2 className="text-xl font-black">{t.payment}</h2>
 
                 <div className="mt-4 space-y-3 text-sm">
@@ -673,7 +673,7 @@ export default function OrderDetailPage() {
               </div>
 
               {(order.supportTickets || []).length > 0 && (
-                <div className="rounded-3xl bg-white p-6 shadow-sm">
+                <div className="rounded-xl bg-white p-6 shadow-sm">
                   <h2 className="flex items-center gap-2 text-xl font-black">
                     <MessageSquare size={20} /> {lang === "en" ? "Support tickets" : "Yêu cầu hỗ trợ"}
                   </h2>
@@ -697,7 +697,7 @@ export default function OrderDetailPage() {
                 </div>
               )}
 
-              <div className="rounded-3xl bg-white p-6 shadow-sm">
+              <div className="rounded-xl bg-white p-6 shadow-sm">
                 <button
                   onClick={buyAgain}
                   className="w-full rounded-2xl bg-blue-700 py-4 font-black text-white"

@@ -346,7 +346,7 @@ export default function CheckoutPage() {
     return (
       <PageShell>
         <main className="min-h-screen bg-slate-50 p-10">
-          <div className="mx-auto max-w-3xl rounded-3xl bg-white p-10 text-center">
+          <div className="mx-auto max-w-3xl rounded-xl bg-white p-10 text-center">
             <h1 className="text-2xl font-black">{t.noDraft}</h1>
             <button
               onClick={() => navigate("/cart")}
@@ -559,7 +559,7 @@ export default function CheckoutPage() {
     <PageShell>
       <main className="min-h-screen bg-[#F5F7FB] px-4 pb-28 pt-6 md:px-6 md:pt-8 lg:pb-8 lg:pr-28">
         <div className="mx-auto max-w-7xl">
-          <p className="text-sm font-black uppercase tracking-[0.2em] text-blue-600">
+          <p className="text-sm font-black tracking-wide text-blue-600">
             {t.eyebrow}
           </p>
           <h1 className="mt-2 text-3xl font-black text-slate-950 md:text-4xl">
@@ -585,7 +585,7 @@ export default function CheckoutPage() {
                     {isDone ? <Check size={14} /> : index + 1}
                   </div>
                   <span
-                    className={`text-xs font-black uppercase tracking-wide ${
+                    className={`text-xs font-black tracking-wide ${
                       isCurrent ? "text-blue-700" : isDone ? "text-emerald-600" : "text-slate-400"
                     }`}
                   >
@@ -598,8 +598,8 @@ export default function CheckoutPage() {
           </div>
 
           {isPreorder && (
-            <div className="mt-5 rounded-3xl border border-amber-100 bg-amber-50 p-5">
-              <div className="text-sm font-black uppercase tracking-[0.2em] text-amber-700">
+            <div className="mt-5 rounded-xl border border-amber-100 bg-amber-50 p-5">
+              <div className="text-sm font-black tracking-wide text-amber-700">
                 {t.preorderDeposit}
               </div>
               <div className="mt-2 grid gap-3 text-sm font-semibold text-amber-900 md:grid-cols-3">
@@ -623,7 +623,7 @@ export default function CheckoutPage() {
           )}
 
           {errors.length > 0 && (
-            <div className="mt-5 rounded-3xl border border-red-100 bg-red-50 p-4 text-red-700">
+            <div className="mt-5 rounded-xl border border-red-100 bg-red-50 p-4 text-red-700">
               <div className="flex items-center gap-2 font-black">
                 <AlertCircle size={18} />
                 {t.validationTitle}
@@ -637,14 +637,14 @@ export default function CheckoutPage() {
           )}
 
           {apiNotice && (
-            <div className="mt-5 rounded-3xl border border-amber-100 bg-amber-50 p-4 text-sm font-black text-amber-700">
+            <div className="mt-5 rounded-xl border border-amber-100 bg-amber-50 p-4 text-sm font-black text-amber-700">
               {apiNotice}
             </div>
           )}
 
           <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_430px]">
             <section className="space-y-6">
-              <div className="rounded-3xl bg-white p-6 shadow-sm">
+              <div className="rounded-xl bg-white p-6 shadow-sm">
                 <h2 className="flex items-center gap-2 text-xl font-black">
                   <MapPin size={22} /> {t.addressTitle}
                 </h2>
@@ -785,7 +785,7 @@ export default function CheckoutPage() {
                 )}
               </div>
 
-              <div className="rounded-3xl bg-white p-6 shadow-sm">
+              <div className="rounded-xl bg-white p-6 shadow-sm">
                 <h2 className="flex items-center gap-2 text-xl font-black">
                   <Truck size={22} /> {t.shippingTitle}
                 </h2>
@@ -814,7 +814,7 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
-              <div className="rounded-3xl bg-white p-6 shadow-sm">
+              <div className="rounded-xl bg-white p-6 shadow-sm">
                 <h2 className="flex items-center gap-2 text-xl font-black">
                   <CreditCard size={22} /> {t.paymentTitle}
                 </h2>
@@ -850,7 +850,7 @@ export default function CheckoutPage() {
               </div>
             </section>
 
-            <aside className="h-fit rounded-3xl bg-white p-6 shadow-sm lg:sticky lg:top-24">
+            <aside className="h-fit rounded-xl bg-white p-6 shadow-sm lg:sticky lg:top-24">
               <h2 className="text-xl font-black">{t.summary}</h2>
 
               <div className="mt-5 max-h-80 space-y-4 overflow-y-auto pr-2">

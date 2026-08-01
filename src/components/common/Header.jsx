@@ -163,7 +163,7 @@ export default function Header() {
               {state.user ? (
                 <a
                   href="/profile"
-                  className="flex h-11 items-center justify-center gap-1.5 rounded-2xl border border-blue-100 bg-blue-50/60 px-2.5 text-blue-700 shadow-sm transition active:scale-95"
+                  className="flex h-11 items-center justify-center gap-1.5 rounded-xl border border-blue-100 bg-blue-50/60 px-2.5 text-blue-700 shadow-sm transition active:scale-95"
                 >
                   <div className="flex h-6 w-6 items-center justify-center rounded-xl bg-blue-600 text-white">
                     <User size={13} />
@@ -182,7 +182,7 @@ export default function Header() {
               <button
                 type="button"
                 onClick={() => setMobileOpen(true)}
-                className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm text-slate-950 transition active:scale-95"
+                className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm text-slate-950 transition active:scale-95"
                 aria-label="Open menu"
               >
                 <Menu size={20} />
@@ -193,7 +193,7 @@ export default function Header() {
           {/* THANH SEARCH BAR (BẢN PC) */}
           <form
             onSubmit={submitHeaderSearch}
-            className="mx-auto hidden w-full max-w-[620px] items-center rounded-2xl border border-slate-200 bg-white px-3 py-2 shadow-sm transition focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-100 md:flex"
+            className="mx-auto hidden w-full max-w-[620px] items-center rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm transition focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-100 md:flex"
           >
             <Search size={21} className="text-blue-600" />
             <input
@@ -207,11 +207,11 @@ export default function Header() {
 
           {/* CỤM ĐIỀU HƯỚNG TÀI KHOẢN BẢN PC */}
           <div className="ml-auto hidden items-center gap-1.5 md:flex">
-            <div className="group relative flex h-11 items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3.5 text-sm font-semibold text-slate-700 shadow-sm transition-all hover:bg-slate-100 hover:border-slate-300 cursor-pointer">
+            <div className="group relative flex h-11 items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3.5 text-sm font-semibold text-slate-700 shadow-sm transition-all hover:bg-slate-100 hover:border-slate-300 cursor-pointer">
               <Globe size={16} className="text-slate-500" />
               <ChevronDown size={14} className="text-slate-400 transition-transform duration-300 group-hover:rotate-180" />
               <div className="absolute right-0 top-full z-50 pt-2 hidden w-32 group-hover:block">
-                <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-1.5 shadow-xl animate-in fade-in slide-in-from-top-1 duration-200">
+                <div className="overflow-hidden rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg animate-in fade-in slide-in-from-top-1 duration-200">
                   <button
                     type="button"
                     onClick={() => setLang("vi")}
@@ -237,7 +237,7 @@ export default function Header() {
                 <button
                   type="button"
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
-                  className="flex items-center gap-2 rounded-2xl border border-blue-100 bg-blue-50/60 px-3.5 py-2 text-sm font-black text-blue-700 shadow-sm hover:bg-blue-50 transition active:scale-[0.98]"
+                  className="flex items-center gap-2 rounded-xl border border-blue-100 bg-blue-50/60 px-3.5 py-2 text-sm font-black text-blue-700 shadow-sm hover:bg-blue-50 transition active:scale-[0.98]"
                 >
                   <div className="flex h-6 w-6 items-center justify-center rounded-xl bg-blue-600 text-white shadow-sm">
                     <User size={14} />
@@ -246,7 +246,7 @@ export default function Header() {
                   <ChevronDown size={14} className={`text-blue-500 transition-transform duration-300 ${userMenuOpen ? "rotate-180" : ""}`} />
                 </button>
                 {userMenuOpen && (
-                  <div className="absolute right-0 top-full z-50 mt-2 w-52 rounded-2xl border border-slate-100 bg-white p-1.5 shadow-[0_20px_50px_rgba(15,23,42,0.12)] animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="absolute right-0 top-full z-50 mt-2 w-52 rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg animate-in fade-in slide-in-from-top-2 duration-200">
                     <Link to="/profile" onClick={() => setUserMenuOpen(false)} className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-xs font-bold text-slate-700 transition hover:bg-slate-50 hover:text-blue-600">
                       <Settings size={15} className="text-slate-400 group-hover:text-blue-600" />
                       {t("header.userProfile")}
@@ -265,8 +265,8 @@ export default function Header() {
               </div>
             ) : (
               <div className="flex items-center gap-2" key={lang}>
-                <a href="/login" className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-black text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">{t("header.signIn")}</a>
-                <a href="/register" className="rounded-2xl bg-blue-700 px-4 py-2.5 text-xs font-black text-white shadow-md shadow-blue-100 transition hover:bg-blue-800">{t("header.signUp")}</a>
+                <a href="/login" className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-black text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">{t("header.signIn")}</a>
+                <a href="/register" className="rounded-xl bg-blue-700 px-4 py-2.5 text-xs font-black text-white transition hover:bg-blue-800">{t("header.signUp")}</a>
               </div>
             )}
           </div>
@@ -275,7 +275,7 @@ export default function Header() {
           <div className="w-full mt-1 pb-1 md:hidden">
             <form
               onSubmit={submitHeaderSearch}
-              className="flex w-full items-center rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5 shadow-inner"
+              className="flex w-full items-center rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 shadow-inner"
             >
               <Search size={18} className="text-blue-600" />
               <input
@@ -290,7 +290,7 @@ export default function Header() {
         </div>
 
         {/* CẤU TRÚC NAV MENU NGANG CHO PC */}
-        <nav className="border-t border-slate-100 bg-gradient-to-r from-slate-50 via-white to-slate-50">
+        <nav className="border-t border-slate-100 bg-white">
           <div className="mobile-hide-scrollbar mx-auto hidden max-w-[1440px] items-center gap-1.5 overflow-x-auto px-4 py-2 lg:flex lg:px-8 xl:gap-2">
             {navItems.map((item) => {
               const Icon = item.icon;
@@ -299,12 +299,12 @@ export default function Header() {
                 <div key={item.label} className={`group relative shrink-0 ${item.secondary ? "ml-1 border-l border-slate-200 pl-2" : ""}`}>
                   <a
                     href={item.href}
-                    className={`flex items-center gap-1.5 whitespace-nowrap rounded-2xl px-3 py-2.5 text-sm transition xl:px-4 ${
+                    className={`flex items-center gap-1.5 whitespace-nowrap rounded-xl px-3 py-2.5 text-sm transition xl:px-4 ${
                       active
-                        ? "bg-blue-700 font-black text-white shadow-lg shadow-blue-100"
+                        ? "bg-blue-700 font-black text-white"
                         : item.secondary
                           ? "font-bold text-slate-500 hover:bg-slate-100 hover:text-slate-900"
-                          : "font-black text-slate-700 hover:bg-blue-700 hover:text-white hover:shadow-lg hover:shadow-blue-100"
+                          : "font-black text-slate-700 hover:bg-blue-700 hover:text-white"
                     }`}
                   >
                     <Icon size={16} className={active ? "text-white" : item.secondary ? "text-slate-400" : "text-blue-600 group-hover:text-white"} />
@@ -312,14 +312,14 @@ export default function Header() {
                     {item.children && <ChevronDown size={15} />}
                   </a>
                   {item.children && (
-                    <div className="invisible absolute right-0 top-full z-50 mt-3 w-[360px] translate-y-2 rounded-4xl border border-slate-200 bg-white p-3 opacity-0 shadow-[0_30px_90px_rgba(15,23,42,0.16)] transition-all duration-200 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100">
-                      <div className="mb-2 rounded-2xl bg-gradient-to-br from-blue-50 to-slate-50 p-4">
-                        <div className="text-xs font-black uppercase tracking-[0.2em] text-blue-700">{item.label}</div>
+                    <div className="invisible absolute right-0 top-full z-50 mt-3 w-[360px] translate-y-2 rounded-xl border border-slate-200 bg-white p-3 opacity-0 shadow-lg transition-all duration-200 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100">
+                      <div className="mb-2 rounded-lg bg-blue-50 p-4">
+                        <div className="text-xs font-black tracking-[0.1em] text-blue-700">{item.label}</div>
                         <div className="mt-1 text-sm font-semibold text-slate-500">{t("common.quickSelect")}</div>
                       </div>
                       <div className="space-y-1">
                         {item.children.map((child) => (
-                          <a key={child.label} href={child.href} className="group/item flex items-start justify-between gap-3 rounded-2xl px-4 py-3 transition hover:bg-blue-50">
+                          <a key={child.label} href={child.href} className="group/item flex items-start justify-between gap-3 rounded-lg px-4 py-3 transition hover:bg-blue-50">
                             <div>
                               <div className="text-sm font-black text-slate-900 group-hover/item:text-blue-700">{child.label}</div>
                               <div className="mt-1 text-xs font-semibold leading-5 text-slate-500">{child.desc}</div>
@@ -339,10 +339,10 @@ export default function Header() {
         {/* KHỐI PORTAL MENU MOBILE (Đã tích hợp dọn dẹp) */}
         {mobileOpen && createPortal(
           <div className="fixed inset-0 z-[999999] bg-slate-950/60 backdrop-blur-sm lg:hidden">
-            <div className="ml-auto h-full w-[86%] max-w-[420px] overflow-y-auto bg-white p-5 shadow-2xl flex flex-col">
+            <div className="ml-auto h-full w-[86%] max-w-[420px] overflow-y-auto bg-white p-5 shadow-lg flex flex-col">
               <div className="mb-5 flex items-center justify-between border-b border-slate-100 pb-4">
                 <Logo className="h-9 w-auto object-contain" />
-                <button type="button" onClick={() => setMobileOpen(false)} className="rounded-2xl border border-slate-200 p-2.5 text-slate-500">
+                <button type="button" onClick={() => setMobileOpen(false)} className="rounded-xl border border-slate-200 p-2.5 text-slate-500">
                   <X size={18} />
                 </button>
               </div>
@@ -350,7 +350,7 @@ export default function Header() {
                 {navItems.map((item) => {
                   const Icon = item.icon;
                   return (
-                    <div key={item.label} className={`rounded-2xl border border-slate-100 p-3 ${item.secondary ? "bg-white" : "bg-slate-50/50"}`}>
+                    <div key={item.label} className={`rounded-xl border border-slate-100 p-3 ${item.secondary ? "bg-white" : "bg-slate-50/50"}`}>
                       <a href={item.href} onClick={() => setMobileOpen(false)} className={`flex items-center gap-2.5 text-sm ${item.secondary ? "font-bold text-slate-500" : "font-black text-slate-900"}`}>
                         <Icon size={16} className={item.secondary ? "text-slate-400" : "text-blue-600"} />
                         <span>{item.label}</span>

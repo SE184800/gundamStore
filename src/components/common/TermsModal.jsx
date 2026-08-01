@@ -6,7 +6,7 @@ export default function TermsModal({ isOpen, onClose }) {
   return (
     <div className="fixed inset-0 z-[100000] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
       {/* KHUNG MODAL CHÍNH */}
-      <div className="relative flex h-full max-h-[560px] w-full max-w-[520px] flex-col rounded-5xl border border-slate-100 bg-white shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+      <div className="relative flex h-full max-h-[560px] w-full max-w-[520px] flex-col rounded-2xl border border-slate-100 bg-white shadow-lg animate-in fade-in zoom-in-95 duration-200">
 
         {/* HEADER MODAL */}
         <div className="flex items-center justify-between border-b border-slate-100 px-6 py-5">

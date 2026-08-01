@@ -26,31 +26,31 @@ const HOMEPAGE_HERO_MAX_BANNERS = 3;
 
 const copy = {
   vi: {
-    eyebrow: "BUILD YOUR LEGEND",
-    heroTitle: "GUNDAM / GUNPLA",
-    heroSub: "CHÍNH HÃNG — CHO BUILDER ĐÍCH THỰC",
+    eyebrow: "Build your legend",
+    heroTitle: "Gundam / Gunpla",
+    heroSub: "Chính hãng — cho builder đích thực",
     chip1: "100% Chính hãng",
     chip2: "Đa dạng mẫu mã",
     chip3: "Giá tốt mỗi ngày",
-    buyNow: "MUA NGAY",
-    collection: "XEM BỘ SƯU TẬP",
-    fastShip: "GIAO NHANH",
+    buyNow: "Mua ngay",
+    collection: "Xem bộ sưu tập",
+    fastShip: "Giao nhanh",
     // Neutral wording — the previous "Ship hỏa tốc 2H tại HCM" claim wasn't
     // backed by any real capability/config in this codebase; don't restore
     // a specific speed/coverage claim without confirming it's still true.
     fastShipDesc: "Giao hàng toàn quốc",
-    sealed: "HỘP NGUYÊN VẸN",
+    sealed: "Hộp nguyên vẹn",
     sealedDesc: "Đóng gói kỹ càng, bảo vệ tuyệt đối",
-    authentic: "MINH BẠCH HÀNG",
+    authentic: "Minh bạch hàng",
     authenticDesc: "Cam kết hàng chính hãng, ghi rõ nguồn",
-    orderLookupSupport: "HỖ TRỢ TRA CỨU",
+    orderLookupSupport: "Hỗ trợ tra cứu",
     orderLookupSupportDesc: "Tra cứu trạng thái đơn hàng mọi lúc",
     featuredCategories: "Danh mục nổi bật",
     bandaiGundam: "Bandai-Gundam",
     gradesLineup: "HG-RG-MG-PG",
     otherKits: "Model kit khác",
     toolsAccessories: "Dụng cụ & phụ kiện",
-    category: "DANH MỤC",
+    category: "Danh mục",
     all: "Tất cả",
     viewAll: "Xem tất cả",
     newArrivals: "Hàng mới về",
@@ -72,28 +72,28 @@ const copy = {
     trendingTitle: "Sản phẩm thịnh hành",
   },
   en: {
-    eyebrow: "BUILD YOUR LEGEND",
-    heroTitle: "GUNDAM / GUNPLA",
-    heroSub: "AUTHENTIC KITS — FOR TRUE BUILDERS",
+    eyebrow: "Build your legend",
+    heroTitle: "Gundam / Gunpla",
+    heroSub: "Authentic kits — for true builders",
     chip1: "100% Authentic",
     chip2: "Wide selection",
     chip3: "Best daily deals",
-    buyNow: "BUY NOW",
-    collection: "VIEW COLLECTION",
-    fastShip: "FAST SHIPPING",
+    buyNow: "Buy now",
+    collection: "View collection",
+    fastShip: "Fast shipping",
     fastShipDesc: "Nationwide delivery",
-    sealed: "MINT BOX CARE",
+    sealed: "Mint box care",
     sealedDesc: "Careful packing and box protection",
-    authentic: "CLEAR SOURCE",
+    authentic: "Clear source",
     authenticDesc: "Authentic products with transparent info",
-    orderLookupSupport: "ORDER LOOKUP",
+    orderLookupSupport: "Order lookup",
     orderLookupSupportDesc: "Check your order status anytime",
     featuredCategories: "Featured categories",
     bandaiGundam: "Bandai-Gundam",
     gradesLineup: "HG-RG-MG-PG",
     otherKits: "Other model kits",
     toolsAccessories: "Tools & accessories",
-    category: "CATEGORY",
+    category: "Category",
     all: "All",
     viewAll: "View all",
     newArrivals: "New arrivals",
@@ -383,7 +383,7 @@ function HeroV3Bento({ banners, lang, actions, settings }) {
           lang={lang}
           actions={actions}
           priority
-          className="h-[320px] rounded-3xl border border-slate-200 shadow-[0_24px_80px_rgba(15,23,42,0.12)] sm:h-[420px] sm:rounded-5xl"
+          className="h-[320px] rounded-2xl border border-slate-200 shadow-sm sm:h-[420px]"
           mediaClassName="transition duration-700 hover:scale-[1.01]"
         />
 
@@ -395,7 +395,7 @@ function HeroV3Bento({ banners, lang, actions, settings }) {
                 banner={banner}
                 lang={lang}
                 actions={actions}
-                className="h-[203px] rounded-4xl border border-slate-200 shadow-lg"
+                className="h-[203px] rounded-2xl border border-slate-200 shadow-sm"
                 mediaClassName="transition duration-500 hover:scale-[1.02]"
               />
             ))}
@@ -467,7 +467,7 @@ function HeroV2Classic({ banners, lang, actions, settings }) {
   return (
     <section className="image-first-hero mx-auto max-w-[1440px] px-4 pt-4 lg:px-8">
       <div
-        className="mobile-no-overflow relative overflow-hidden rounded-3xl border border-blue-100 bg-white shadow-[0_20px_70px_rgba(37,99,235,0.12)] sm:rounded-6xl sm:shadow-[0_30px_110px_rgba(37,99,235,0.16)]"
+        className="mobile-no-overflow relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
         onMouseEnter={() => setPaused(true)}
         onMouseLeave={() => setPaused(false)}
       >
@@ -481,7 +481,7 @@ function HeroV2Classic({ banners, lang, actions, settings }) {
         />
 
         {safeBanners.length > 1 && (
-          <div className="absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2 rounded-full border border-white/70 bg-white/80 px-4 py-2 shadow-xl backdrop-blur">
+          <div className="absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2 rounded-full border border-white/70 bg-white/80 px-4 py-2 shadow-sm backdrop-blur">
             {safeBanners.map((item, index) => (
               <button
                 key={item.id || index}
@@ -520,7 +520,7 @@ function TrustStrip({ lang }) {
             </div>
 
             <div className="min-w-0">
-              <div className="truncate text-[11px] font-black uppercase tracking-wide text-blue-900 sm:text-xs">
+              <div className="truncate text-[11px] font-black tracking-wide text-blue-900 sm:text-xs">
                 {title}
               </div>
 
@@ -549,7 +549,7 @@ function FeaturedCategories({ lang }) {
 
   return (
     <section className="mx-auto max-w-[1440px] px-4 pb-3 pt-1 lg:px-8">
-      <h2 className="mb-3 text-xs font-black uppercase tracking-[0.18em] text-blue-700">{t.featuredCategories}</h2>
+      <h2 className="mb-3 text-sm font-black tracking-wide text-blue-700">{t.featuredCategories}</h2>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {tiles.map(({ icon: Icon, label, href }) => (
           <a
@@ -577,7 +577,7 @@ function ProductSection({ section, products, lang, actions, badge, isFirst = fal
     <section className={`p-4 ${isFirst ? "" : "border-t border-slate-100"}`}>
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <span className="rounded-lg border border-blue-100 bg-blue-50 px-2.5 py-1 text-[10px] font-black uppercase text-blue-700">{badge}</span>
+          <span className="rounded-lg border border-blue-100 bg-blue-50 px-2.5 py-1 text-[10px] font-black text-blue-700">{badge}</span>
           <h2 className="text-xl font-black text-blue-700">{title}</h2>
         </div>
         <a href={`/shop?collection=${encodeURIComponent(section.dataSource || section.id || "")}`} className="inline-flex items-center gap-1 text-xs font-black text-blue-700 hover:underline">
@@ -626,7 +626,7 @@ function ContentHighlights({ news = [], events = [], lang = "vi" }) {
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="mb-4 flex items-center justify-between gap-3">
             <div>
-              <div className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600">
+              <div className="text-[10px] font-black tracking-wide text-blue-600">
                 {lang === "en" ? "Latest updates" : "Cập nhật mới"}
               </div>
               <h2 className="mt-1 text-xl font-black text-slate-950">
@@ -662,7 +662,7 @@ function ContentHighlights({ news = [], events = [], lang = "vi" }) {
                 )}
 
                 <div className="p-3">
-                  <div className="text-[10px] font-black uppercase text-blue-600">
+                  <div className="text-[10px] font-black text-blue-600">
                     {article.tag || (lang === "en" ? "News" : "Tin tức")}
                   </div>
                   <h3 className="mt-1 line-clamp-2 text-sm font-black leading-5 text-slate-900">
@@ -682,7 +682,7 @@ function ContentHighlights({ news = [], events = [], lang = "vi" }) {
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="mb-4 flex items-center justify-between gap-3">
             <div>
-              <div className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600">
+              <div className="text-[10px] font-black tracking-wide text-blue-600">
                 {lang === "en" ? "Upcoming" : "Sắp diễn ra"}
               </div>
               <h2 className="mt-1 text-xl font-black text-slate-950">
@@ -706,7 +706,7 @@ function ContentHighlights({ news = [], events = [], lang = "vi" }) {
                 href={`/news/events/${event.id}`}
                 className="block rounded-2xl border border-slate-100 bg-slate-50 p-3 transition hover:border-blue-200 hover:bg-blue-50"
               >
-                <div className="text-[10px] font-black uppercase text-blue-600">
+                <div className="text-[10px] font-black text-blue-600">
                   {formatDate(event.date)}
                   {event.time ? ` · ${event.time}` : ""}
                 </div>
@@ -839,11 +839,11 @@ export default function HomePage() {
                 actions={actions}
                 isFirst={index === 0}
                 badge={{
-                  new_arrivals: "NEW",
-                  order_items: "ORDER",
-                  best_sellers: "HOT",
-                  tools_accessories: "TOOLS",
-                }[section.dataSource] || "NEW"}
+                  new_arrivals: "New",
+                  order_items: "Order",
+                  best_sellers: "Hot",
+                  tools_accessories: "Tools",
+                }[section.dataSource] || "New"}
               />
             ))}
           </div>

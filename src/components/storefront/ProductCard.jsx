@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Heart, ShoppingCart, Star, Zap } from "lucide-react";
+import { Heart, ShoppingCart, Star } from "lucide-react";
 import { formatCurrency } from "../../utils/format";
 import { resolveText, useI18n } from "../../i18n";
 import { addProductToCart, forceCartBadgeSync, validateCartStock } from "../../services/CartService";
@@ -141,7 +141,7 @@ function ProductCard({ product, lang: langProp, actions, badge, onAddToCart }) {
 
   return (
     <>
-      <article className="product-card-mobile group flex h-full flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition hover:border-blue-200 sm:rounded-3xl">
+      <article className="product-card-mobile group flex h-full flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition hover:border-blue-200">
         <a href={detailUrl} className="block">
           <div className="relative aspect-square overflow-hidden bg-slate-100">
             {badge && (
@@ -163,7 +163,7 @@ function ProductCard({ product, lang: langProp, actions, badge, onAddToCart }) {
               disabled={wishlistSaving}
               title={wishlistSaved ? wishlistCopy.titleSaved : wishlistCopy.titleSave}
               aria-label={wishlistSaved ? wishlistCopy.titleSaved : wishlistCopy.titleSave}
-              className={`absolute right-3 top-3 z-10 flex h-10 w-10 items-center justify-center rounded-full border bg-white/95 shadow-lg transition ${wishlistSaved ? "border-red-100 text-red-600" : "border-white/70 text-slate-500 hover:border-red-100 hover:text-red-600"} ${wishlistSaving ? "cursor-not-allowed opacity-60" : ""}`}
+              className={`absolute right-3 top-3 z-10 flex h-10 w-10 items-center justify-center rounded-full border bg-white/95 shadow-sm transition ${wishlistSaved ? "border-red-100 text-red-600" : "border-white/70 text-slate-500 hover:border-red-100 hover:text-red-600"} ${wishlistSaving ? "cursor-not-allowed opacity-60" : ""}`}
             >
               <Heart size={18} fill={wishlistSaved ? "currentColor" : "none"} />
             </button>
@@ -227,7 +227,7 @@ function ProductCard({ product, lang: langProp, actions, badge, onAddToCart }) {
 
           <div className="mt-auto">
           {wishlistMessage && (
-            <div data-wishlist-card-message="true" className={`mb-3 rounded-2xl px-3 py-2 text-xs font-black ${wishlistSaved ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>
+            <div data-wishlist-card-message="true" className={`mb-3 rounded-lg px-3 py-2 text-xs font-black ${wishlistSaved ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>
               {wishlistMessage}
             </div>
           )}
@@ -240,9 +240,8 @@ function ProductCard({ product, lang: langProp, actions, badge, onAddToCart }) {
                 e.stopPropagation();
                 window.location.href = detailUrl;
               }}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-900 px-3 py-3 text-sm font-black text-white shadow-lg shadow-blue-200 transition hover:scale-[1.01] hover:bg-blue-950"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-900 px-3 py-3 text-sm font-black text-white transition hover:bg-blue-950"
             >
-              <Zap size={17} />
               {t("product.preorderNow")}
             </button>
           ) : (
@@ -250,7 +249,7 @@ function ProductCard({ product, lang: langProp, actions, badge, onAddToCart }) {
               type="button"
               onClick={addCart}
               disabled={isOutOfStock}
-              className={`flex w-full items-center justify-center gap-2 rounded-2xl px-3 py-3 text-sm font-black text-white shadow-lg transition hover:scale-[1.01] ${isOutOfStock ? "cursor-not-allowed bg-slate-300 shadow-none" : "bg-blue-700 shadow-blue-100 hover:bg-blue-800"}`}
+              className={`flex w-full items-center justify-center gap-2 rounded-xl px-3 py-3 text-sm font-black text-white transition ${isOutOfStock ? "cursor-not-allowed bg-slate-300" : "bg-blue-700 hover:bg-blue-800"}`}
             >
               <ShoppingCart size={17} />
               {isOutOfStock

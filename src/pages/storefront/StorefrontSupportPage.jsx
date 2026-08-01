@@ -133,7 +133,7 @@ export default function StorefrontSupportPage({ defaultType = "COMPLAINT" }) {
 
       <main className="min-h-screen bg-[#F5F7FB] px-4 py-8 md:px-6 lg:pr-28">
         <div className="mx-auto max-w-7xl">
-          <p className="text-sm font-black uppercase tracking-[0.2em] text-blue-600">
+          <p className="text-sm font-black tracking-wide text-blue-600">
             Customer care
           </p>
           <h1 className="mt-2 text-4xl font-black text-slate-950">{t.title}</h1>
@@ -142,10 +142,10 @@ export default function StorefrontSupportPage({ defaultType = "COMPLAINT" }) {
           </p>
 
           <section className="mt-8 grid gap-6 lg:grid-cols-[1fr_390px]">
-            <form onSubmit={submit} className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
+            <form onSubmit={submit} className="rounded-xl border border-slate-100 bg-white p-6 shadow-sm">
               <div className="grid gap-4 md:grid-cols-2">
                 <label className="grid gap-2">
-                  <span className="text-xs font-black uppercase text-slate-400">{t.orderNo}</span>
+                  <span className="text-xs font-black text-slate-400">{t.orderNo}</span>
                   <input
                     value={draft.orderNo}
                     onChange={(event) => patch("orderNo", event.target.value)}
@@ -155,7 +155,7 @@ export default function StorefrontSupportPage({ defaultType = "COMPLAINT" }) {
                 </label>
 
                 <label className="grid gap-2">
-                  <span className="text-xs font-black uppercase text-slate-400">{t.type}</span>
+                  <span className="text-xs font-black text-slate-400">{t.type}</span>
                   <select
                     value={draft.type}
                     onChange={(event) => patch("type", event.target.value)}
@@ -170,7 +170,7 @@ export default function StorefrontSupportPage({ defaultType = "COMPLAINT" }) {
                 </label>
 
                 <label className="grid gap-2">
-                  <span className="text-xs font-black uppercase text-slate-400">{t.name}</span>
+                  <span className="text-xs font-black text-slate-400">{t.name}</span>
                   <input
                     value={draft.customerName}
                     onChange={(event) => patch("customerName", event.target.value)}
@@ -179,7 +179,7 @@ export default function StorefrontSupportPage({ defaultType = "COMPLAINT" }) {
                 </label>
 
                 <label className="grid gap-2">
-                  <span className="text-xs font-black uppercase text-slate-400">{t.phone}</span>
+                  <span className="text-xs font-black text-slate-400">{t.phone}</span>
                   <input
                     value={draft.customerPhone}
                     onChange={(event) => patch("customerPhone", event.target.value)}
@@ -188,7 +188,7 @@ export default function StorefrontSupportPage({ defaultType = "COMPLAINT" }) {
                 </label>
 
                 <label className="grid gap-2 md:col-span-2">
-                  <span className="text-xs font-black uppercase text-slate-400">{t.email}</span>
+                  <span className="text-xs font-black text-slate-400">{t.email}</span>
                   <input
                     type="email"
                     value={draft.customerEmail}
@@ -198,7 +198,7 @@ export default function StorefrontSupportPage({ defaultType = "COMPLAINT" }) {
                 </label>
 
                 <label className="grid gap-2 md:col-span-2">
-                  <span className="text-xs font-black uppercase text-slate-400">{t.issue}</span>
+                  <span className="text-xs font-black text-slate-400">{t.issue}</span>
                   <input
                     value={draft.issue}
                     onChange={(event) => patch("issue", event.target.value)}
@@ -208,7 +208,7 @@ export default function StorefrontSupportPage({ defaultType = "COMPLAINT" }) {
                 </label>
 
                 <label className="grid gap-2 md:col-span-2">
-                  <span className="text-xs font-black uppercase text-slate-400">{t.description}</span>
+                  <span className="text-xs font-black text-slate-400">{t.description}</span>
                   <textarea
                     rows={6}
                     value={draft.description}
@@ -252,7 +252,7 @@ export default function StorefrontSupportPage({ defaultType = "COMPLAINT" }) {
             </form>
 
             <aside className="space-y-4">
-              <div className="rounded-3xl border border-blue-100 bg-blue-50 p-5 text-blue-900">
+              <div className="rounded-xl border border-blue-100 bg-blue-50 p-5 text-blue-900">
                 <Headphones size={28} />
                 <h2 className="mt-3 text-xl font-black">
                   {lang === "en" ? "How support works" : "Quy trình hỗ trợ"}
@@ -264,7 +264,7 @@ export default function StorefrontSupportPage({ defaultType = "COMPLAINT" }) {
                 </div>
               </div>
 
-              <div className="rounded-3xl bg-white p-5 shadow-sm">
+              <div className="rounded-xl bg-white p-5 shadow-sm">
                 <Link to="/orders" className="block rounded-2xl bg-slate-900 px-4 py-3 text-center text-sm font-black text-white">
                   {t.backOrders}
                 </Link>

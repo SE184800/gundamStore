@@ -22,13 +22,13 @@ export default function PolicyPage({ pageKey = "faq" }) {
             {lang === "en" ? "Back to home" : "Về trang chủ"}
           </Link>
 
-          <section className="mt-6 rounded-3xl bg-white p-8 shadow-sm">
+          <section className="mt-6 rounded-xl bg-white p-8 shadow-sm">
             <div className="flex items-start gap-4">
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-700">
                 <FileText size={28} />
               </div>
               <div>
-                <p className="text-sm font-black uppercase tracking-[0.2em] text-blue-600">
+                <p className="text-sm font-black tracking-wide text-blue-600">
                   Trust center
                 </p>
                 <h1 className="mt-2 text-4xl font-black text-slate-950">{title}</h1>
@@ -41,7 +41,7 @@ export default function PolicyPage({ pageKey = "faq" }) {
 
           <section className="mt-6 space-y-4">
             {(page.sections || []).map((section) => (
-              <article key={section.titleVi || section.titleEn} className="rounded-3xl bg-white p-6 shadow-sm">
+              <article key={section.titleVi || section.titleEn} className="rounded-xl bg-white p-6 shadow-sm">
                 <h2 className="text-2xl font-black text-slate-950">
                   {lang === "en" ? section.titleEn : section.titleVi}
                 </h2>
@@ -58,7 +58,7 @@ export default function PolicyPage({ pageKey = "faq" }) {
             ))}
           </section>
 
-          <section className="mt-6 rounded-3xl border border-blue-100 bg-blue-50 p-6">
+          <section className="mt-6 rounded-xl border border-blue-100 bg-blue-50 p-6">
             <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
               <div>
                 <h2 className="flex items-center gap-2 text-xl font-black text-blue-950">

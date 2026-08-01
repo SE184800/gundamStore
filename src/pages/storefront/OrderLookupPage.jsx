@@ -118,7 +118,7 @@ export default function OrderLookupPage() {
     <PageShell>
       <main className="min-h-screen bg-[#F5F7FB] px-4 py-8 md:px-6 md:py-10">
         <div className="mx-auto max-w-5xl">
-          <p className="text-sm font-black uppercase tracking-[0.2em] text-blue-600">
+          <p className="text-sm font-black tracking-wide text-blue-600">
             {t.eyebrow}
           </p>
 
@@ -130,7 +130,7 @@ export default function OrderLookupPage() {
             {t.desc}
           </p>
 
-          <div className="mt-6 rounded-3xl border border-blue-100 bg-blue-50 p-4">
+          <div className="mt-6 rounded-xl border border-blue-100 bg-blue-50 p-4">
             <div className="flex items-start gap-3">
               <LockKeyhole className="mt-0.5 text-blue-700" size={22} />
               <div>
@@ -140,7 +140,7 @@ export default function OrderLookupPage() {
             </div>
           </div>
 
-          <div className="mt-8 rounded-3xl bg-white p-5 shadow-sm md:p-6">
+          <div className="mt-8 rounded-xl bg-white p-5 shadow-sm md:p-6">
             <div className="grid gap-4 md:grid-cols-3">
               <label className="block">
                 <span className="text-sm font-black text-slate-700">{t.orderCode}</span>
@@ -200,7 +200,7 @@ export default function OrderLookupPage() {
 
           <div className="mt-6">
             {order && (
-              <div className="rounded-3xl bg-white p-5 shadow-sm">
+              <div className="rounded-xl bg-white p-5 shadow-sm">
                 <div className="flex flex-col justify-between gap-5 md:flex-row md:items-center">
                   <div>
                     <div className="flex items-center gap-2 font-black text-blue-600">
@@ -269,7 +269,7 @@ export default function OrderLookupPage() {
             )}
 
             {searched && !order && !error && (
-              <div className="rounded-3xl bg-white p-10 text-center font-bold text-slate-400">
+              <div className="rounded-xl bg-white p-10 text-center font-bold text-slate-400">
                 {t.notFound}
               </div>
             )}

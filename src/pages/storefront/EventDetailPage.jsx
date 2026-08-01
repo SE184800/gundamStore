@@ -126,7 +126,7 @@ export default function EventDetailPage() {
     return (
       <PageShell>
         <main className="mx-auto max-w-[1200px] px-4 py-16 text-center">
-          <div className="rounded-3xl border border-slate-200 bg-white p-8 font-bold text-slate-500">
+          <div className="rounded-xl border border-slate-200 bg-white p-8 font-bold text-slate-500">
             {loading ? "Đang tải sự kiện..." : "Không tìm thấy sự kiện."}
           </div>
         </main>
@@ -137,8 +137,8 @@ export default function EventDetailPage() {
   return (
     <PageShell>
       <main className="mx-auto max-w-[1200px] px-4 py-8 lg:px-8 lg:pr-28">
-        <section className="overflow-hidden rounded-6xl bg-slate-950 p-8 text-white shadow-xl">
-          <div className="inline-flex rounded-full bg-blue-700 px-4 py-2 text-xs font-black uppercase tracking-[0.25em]">
+        <section className="overflow-hidden rounded-2xl bg-slate-950 p-8 text-white shadow-lg">
+          <div className="inline-flex rounded-full bg-blue-700 px-4 py-2 text-xs font-black tracking-wide">
             {label(event, lang)}
           </div>
 
@@ -159,7 +159,7 @@ export default function EventDetailPage() {
 
         <section className="mt-8 grid gap-6 lg:grid-cols-[1fr_420px]">
           <div className="space-y-6">
-            <div className="rounded-5xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
               <h2 className="text-2xl font-black text-slate-950">{t.agenda}</h2>
 
               <div className="mt-5 space-y-3">
@@ -186,7 +186,7 @@ export default function EventDetailPage() {
               )}
             </div>
 
-            <form onSubmit={submitRegistration} className="rounded-5xl border border-blue-100 bg-blue-50 p-6 shadow-sm">
+            <form onSubmit={submitRegistration} className="rounded-2xl border border-blue-100 bg-blue-50 p-6 shadow-sm">
               <h2 className="flex items-center gap-2 text-2xl font-black text-slate-950">
                 <UserPlus size={24} className="text-blue-700" />
                 {t.register}
@@ -236,14 +236,14 @@ export default function EventDetailPage() {
 
               <button
                 type="submit"
-                className="mt-5 rounded-2xl bg-blue-700 px-5 py-4 text-sm font-black text-white shadow-lg shadow-blue-100"
+                className="mt-5 rounded-2xl bg-blue-700 px-5 py-4 text-sm font-black text-white shadow-lg"
               >
                 {t.submit}
               </button>
             </form>
           </div>
 
-          <aside className="h-fit rounded-5xl border border-slate-200 bg-white p-6 shadow-sm lg:sticky lg:top-24">
+          <aside className="h-fit rounded-2xl border border-slate-200 bg-white p-6 shadow-sm lg:sticky lg:top-24">
             <h2 className="text-2xl font-black text-slate-950">{t.eventInfo}</h2>
 
             <div className="mt-5 space-y-3">
@@ -275,7 +275,7 @@ export default function EventDetailPage() {
 function MiniStat({ label, value }) {
   return (
     <div className="rounded-2xl bg-white/10 p-4">
-      <div className="text-xs font-black uppercase tracking-widest text-white/50">{label}</div>
+      <div className="text-xs font-black tracking-wide text-white/50">{label}</div>
       <div className="mt-1 text-2xl font-black text-white">{value}</div>
     </div>
   );
@@ -284,7 +284,7 @@ function MiniStat({ label, value }) {
 function Info({ icon: Icon, label, value }) {
   return (
     <div className="rounded-2xl bg-slate-50 p-4">
-      <div className="flex items-center gap-2 text-xs font-black uppercase text-slate-400">
+      <div className="flex items-center gap-2 text-xs font-black text-slate-400">
         <Icon size={15} />
         {label}
       </div>

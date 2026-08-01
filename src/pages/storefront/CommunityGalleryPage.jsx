@@ -92,10 +92,10 @@ export default function CommunityGalleryPage() {
   return (
     <PageShell>
       <main className="mx-auto max-w-[1440px] px-4 py-8 lg:px-8 lg:pr-28">
-        <section className="relative overflow-hidden rounded-6xl bg-slate-950 p-8 text-white shadow-xl">
+        <section className="relative overflow-hidden rounded-2xl bg-slate-950 p-8 text-white shadow-lg">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_30%,rgba(168,85,247,0.35),transparent_35%)]" />
           <div className="relative z-10 max-w-4xl">
-            <div className="inline-flex items-center gap-2 rounded-full bg-violet-600 px-4 py-2 text-xs font-black uppercase tracking-[0.25em]">
+            <div className="inline-flex items-center gap-2 rounded-full bg-violet-600 px-4 py-2 text-xs font-black tracking-wide">
               <Camera size={15} />
               Community
             </div>
@@ -106,7 +106,7 @@ export default function CommunityGalleryPage() {
 
         <section className="mt-8 grid gap-6 lg:grid-cols-[1fr_420px]">
           <div>
-            <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
               <div className="flex items-center rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
                 <Search size={18} className="text-violet-600" />
                 <input
@@ -121,13 +121,13 @@ export default function CommunityGalleryPage() {
             <h2 className="mt-8 text-3xl font-black text-slate-950">{t.approved}</h2>
 
             {filtered.length === 0 ? (
-              <div className="mt-5 rounded-3xl border border-dashed border-slate-300 bg-white p-10 text-center font-black text-slate-400">
+              <div className="mt-5 rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center font-black text-slate-400">
                 {t.noBuilds}
               </div>
             ) : (
               <div className="mt-5 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
                 {filtered.map((item) => (
-                  <article key={item.id} className="overflow-hidden rounded-4xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl">
+                  <article key={item.id} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
                     <div className="relative h-72 bg-slate-100">
                       <img src={item.imageUrl} alt={item.title} loading="lazy" className="h-full w-full object-cover" />
                       <div className="absolute left-3 top-3 rounded-full bg-white/95 px-3 py-1 text-xs font-black text-violet-700">
@@ -135,7 +135,7 @@ export default function CommunityGalleryPage() {
                       </div>
                     </div>
                     <div className="p-5">
-                      <div className="flex items-center gap-2 text-xs font-black uppercase text-violet-700">
+                      <div className="flex items-center gap-2 text-xs font-black text-violet-700">
                         <Sparkles size={14} />
                         {item.builderName}
                       </div>
@@ -149,7 +149,7 @@ export default function CommunityGalleryPage() {
             )}
           </div>
 
-          <aside className="h-fit rounded-5xl border border-violet-100 bg-violet-50 p-6 shadow-sm lg:sticky lg:top-24">
+          <aside className="h-fit rounded-2xl border border-violet-100 bg-violet-50 p-6 shadow-sm lg:sticky lg:top-24">
             <h2 className="text-2xl font-black text-slate-950">{t.submitTitle}</h2>
 
             {message && (
@@ -182,7 +182,7 @@ export default function CommunityGalleryPage() {
 
               <textarea value={form.caption} onChange={(e) => patch("caption", e.target.value)} placeholder={t.caption} rows={4} className="w-full rounded-2xl border border-violet-100 bg-white px-4 py-3 text-sm font-bold outline-none" />
 
-              <button type="submit" className="w-full rounded-2xl bg-violet-700 px-5 py-4 text-sm font-black text-white shadow-lg shadow-violet-100">
+              <button type="submit" className="w-full rounded-2xl bg-violet-700 px-5 py-4 text-sm font-black text-white shadow-lg">
                 <Send size={17} className="mr-1 inline" />
                 {t.submit}
               </button>

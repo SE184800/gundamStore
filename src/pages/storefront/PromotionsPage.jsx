@@ -69,11 +69,11 @@ export default function PromotionsPage() {
   return (
     <PageShell>
       <main className="mx-auto max-w-[1440px] px-4 py-8 lg:px-8">
-        <section className="relative overflow-hidden rounded-6xl bg-slate-950 p-8 text-white shadow-[0_30px_120px_rgba(15,23,42,0.25)]">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_75%_35%,rgba(239,68,68,0.35),transparent_36%),radial-gradient(circle_at_25%_70%,rgba(37,99,235,0.3),transparent_34%)]" />
+        <section className="relative overflow-hidden rounded-2xl bg-slate-950 p-8 text-white shadow-lg">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_25%_70%,rgba(37,99,235,0.25),transparent_34%)]" />
           <div className="relative z-10 grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
             <div>
-              <div className="inline-flex rounded-full bg-red-600 px-4 py-2 text-xs font-black uppercase tracking-[0.25em]">
+              <div className="inline-flex rounded-full bg-blue-700 px-4 py-2 text-xs font-black tracking-wide">
                 {t.badge}
               </div>
               <h1 className="mt-5 max-w-3xl text-5xl font-black leading-[0.95] md:text-7xl">
@@ -102,15 +102,15 @@ export default function PromotionsPage() {
         </section>
 
         <section className="mt-8 grid gap-5 lg:grid-cols-3">
-          <CampaignCard href="/flash-sale" label="FLASH SALE" title="Giảm đến 20%" desc="Áp dụng cho mẫu hot và phụ kiện builder." cta="Săn ngay" className="from-red-600 to-orange-500" />
-          <CampaignCard href="/restock" label="RESTOCK" title="Hàng vừa về lại" desc="Các mẫu từng hết hàng nay đã có lại." cta="Xem restock" className="from-blue-700 to-cyan-500" />
-          <CampaignCard href="/limited" label="LIMITED" title="Limited / P-Bandai" desc="Phiên bản khó săn cho collector." cta="Xem limited" className="from-violet-900 to-fuchsia-600" />
+          <CampaignCard href="/flash-sale" label="Flash Sale" title="Giảm đến 20%" desc="Áp dụng cho mẫu hot và phụ kiện builder." cta="Săn ngay" className="from-blue-900 to-blue-700" />
+          <CampaignCard href="/restock" label="Restock" title="Hàng vừa về lại" desc="Các mẫu từng hết hàng nay đã có lại." cta="Xem restock" className="from-blue-800 to-cyan-600" />
+          <CampaignCard href="/limited" label="Limited" title="Limited / P-Bandai" desc="Phiên bản khó săn cho collector." cta="Xem limited" className="from-slate-900 to-blue-800" />
         </section>
 
-        <section id="flash-sale" className="mt-8 rounded-5xl border border-slate-200 bg-white p-5 shadow-sm">
+        <section id="flash-sale" className="mt-8 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
             <div>
-              <div className="inline-flex rounded-full bg-red-50 px-3 py-1 text-xs font-black uppercase text-red-600">
+              <div className="inline-flex rounded-full bg-red-50 px-3 py-1 text-xs font-black text-red-600">
                 {t.hotDeals}
               </div>
               <h2 className="mt-2 text-3xl font-black text-slate-950">{t.flashSale}</h2>
@@ -151,7 +151,7 @@ function PromoMiniCard({ href, icon: Icon, title, desc, tone }) {
   }[tone];
 
   return (
-    <a href={href} className="rounded-4xl border border-white/10 bg-white/10 p-5 backdrop-blur transition hover:-translate-y-1 hover:bg-white/15">
+    <a href={href} className="rounded-2xl border border-white/10 bg-white/10 p-5 backdrop-blur transition hover:-translate-y-1 hover:bg-white/15">
       <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${toneClass}`}>
         <Icon size={22} />
       </div>
@@ -163,8 +163,8 @@ function PromoMiniCard({ href, icon: Icon, title, desc, tone }) {
 
 function CampaignCard({ href, label, title, desc, cta, className }) {
   return (
-    <a href={href} className={`block overflow-hidden rounded-5xl bg-gradient-to-br ${className} p-6 text-white shadow-xl transition hover:-translate-y-1`}>
-      <div className="w-fit rounded-full bg-white/20 px-3 py-1 text-xs font-black uppercase">{label}</div>
+    <a href={href} className={`block overflow-hidden rounded-2xl bg-gradient-to-br ${className} p-6 text-white shadow-md transition hover:-translate-y-1`}>
+      <div className="w-fit rounded-full bg-white/20 px-3 py-1 text-xs font-black">{label}</div>
       <h3 className="mt-5 text-3xl font-black">{title}</h3>
       <p className="mt-3 text-sm font-semibold leading-7 text-white/80">{desc}</p>
       <div className="mt-6 w-fit rounded-2xl bg-white px-5 py-3 text-sm font-black text-slate-950">

@@ -3,29 +3,24 @@ import { useNavigate } from "react-router-dom";
 import {
   ArrowRight,
   BellRing,
-  Box,
   CheckCircle2,
   ChevronDown,
   ChevronRight,
   Clock,
   CreditCard,
-  Factory,
   FileText,
   GitCompareArrows,
   Heart,
-  Layers3,
   MapPin,
   Minus,
   PackageCheck,
   Plus,
   RotateCcw,
-  Ruler,
   Share2,
   ShieldCheck,
   ShoppingCart,
   Star,
   Store,
-  Tag,
   Truck,
   Wallet,
   Zap,
@@ -349,14 +344,18 @@ function GundamVisual({ tone = "blue", imageUrl, large = false, priority = false
     setLoaded(false);
   }, [imageUrl]);
 
+  // All tone variants stay within the blue/slate brand family — this
+  // placeholder illustration used to cycle through vivid red/gold/violet
+  // fills, which reads as an accent color used as a large background
+  // (against the "professional shop" direction: accents stay small).
   const toneMap = {
-    blue: "from-blue-950 via-blue-600 to-sky-100",
-    cyan: "from-cyan-900 via-cyan-500 to-blue-100",
-    sky: "from-sky-900 via-sky-500 to-blue-100",
-    red: "from-red-950 via-red-500 to-orange-100",
-    gold: "from-amber-800 via-yellow-400 to-slate-50",
-    slate: "from-slate-950 via-slate-500 to-slate-100",
-    violet: "from-violet-950 via-violet-500 to-fuchsia-100",
+    blue: "from-blue-800 via-blue-400 to-blue-50",
+    cyan: "from-cyan-700 via-cyan-400 to-blue-50",
+    sky: "from-sky-700 via-sky-400 to-blue-50",
+    red: "from-blue-800 via-blue-400 to-blue-50",
+    gold: "from-slate-700 via-slate-400 to-slate-50",
+    slate: "from-slate-800 via-slate-400 to-slate-100",
+    violet: "from-blue-800 via-blue-400 to-blue-50",
   };
 
   if (imageUrl) {
@@ -387,13 +386,11 @@ function GundamVisual({ tone = "blue", imageUrl, large = false, priority = false
           backgroundSize: large ? "26px 26px" : "18px 18px",
         }}
       />
-      <div className="absolute -right-8 -top-10 h-44 w-44 rounded-full bg-white/35 blur-3xl" />
-      <div className="absolute bottom-6 left-10 right-10 h-10 rounded-full bg-black/20 blur-xl" />
-      <div className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rotate-[-8deg] rounded-[2rem] bg-white/90 shadow-2xl ${large ? "h-72 w-48" : "h-24 w-16"}`}>
-        <div className={`absolute left-1/2 -translate-x-1/2 rounded-2xl bg-red-500 ${large ? "top-8 h-16 w-16" : "top-3 h-8 w-8"}`} />
+      <div className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rotate-[-8deg] rounded-xl bg-white/90 shadow-md ${large ? "h-72 w-48" : "h-24 w-16"}`}>
+        <div className={`absolute left-1/2 -translate-x-1/2 rounded-xl bg-blue-700 ${large ? "top-8 h-16 w-16" : "top-3 h-8 w-8"}`} />
         <div className={`absolute rounded-full bg-slate-900 ${large ? "bottom-8 left-7 h-24 w-7" : "bottom-3 left-2 h-10 w-3"}`} />
         <div className={`absolute rounded-full bg-slate-900 ${large ? "bottom-8 right-7 h-24 w-7" : "bottom-3 right-2 h-10 w-3"}`} />
-        <div className={`absolute -rotate-45 rounded-full bg-yellow-300 ${large ? "-left-24 top-28 h-7 w-40" : "-left-7 top-10 h-3 w-14"}`} />
+        <div className={`absolute -rotate-45 rounded-full bg-blue-300 ${large ? "-left-24 top-28 h-7 w-40" : "-left-7 top-10 h-3 w-14"}`} />
         <div className={`absolute rotate-45 rounded-full bg-cyan-300 ${large ? "-right-24 top-28 h-7 w-40" : "-right-7 top-10 h-3 w-14"}`} />
       </div>
     </div>
@@ -605,14 +602,14 @@ function ProductInfo({ product, lang, actions, onPreorder, reviewCount = 0 }) {
   }
 
   return (
-    <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm lg:p-5">
+    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm lg:p-5">
       <Toast show={toast.show} type={toast.type} message={toast.message} onClose={dismiss} />
       <div className="flex flex-wrap gap-1.5">
         <span className={`rounded-lg px-2.5 py-1 text-[11px] font-black text-white ${preorder ? "bg-blue-900" : isOutOfStock ? "bg-slate-500" : "bg-emerald-600"}`}>
           {preorder ? t.preorder : isOutOfStock ? t.outOfStock : t.inStock}
         </span>
         <span className="rounded-lg border border-blue-100 bg-blue-50 px-2.5 py-1 text-[11px] font-black text-blue-700">{t.authentic}</span>
-        {isSale(product) && <span className="rounded-lg bg-red-100 px-2.5 py-1 text-[11px] font-black text-red-700">SALE</span>}
+        {isSale(product) && <span className="rounded-lg bg-red-100 px-2.5 py-1 text-[11px] font-black text-red-700">Sale</span>}
       </div>
 
       <h1 className="mt-3 text-xl font-black leading-tight text-slate-950 lg:text-2xl">{productName(product, lang)}</h1>
@@ -622,7 +619,7 @@ function ProductInfo({ product, lang, actions, onPreorder, reviewCount = 0 }) {
 
       {/* VARIANT_SELECTOR_START */}
       {variants.length > 0 && (
-        <section className="mt-5 rounded-3xl border border-blue-100 bg-blue-50 p-4">
+        <section className="mt-5 rounded-xl border border-blue-100 bg-blue-50 p-4">
           <div className="mb-3 text-sm font-black text-blue-900">
             {lang === "vi" ? "Phân loại hàng" : "Variants"}
           </div>
@@ -687,7 +684,7 @@ function ProductInfo({ product, lang, actions, onPreorder, reviewCount = 0 }) {
         <span className="font-bold text-slate-600">{product.sold || 0} {t.sold}</span>
       </div>
 
-      <div className="mt-3 rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50 via-white to-cyan-50 p-3">
+      <div className="mt-3 rounded-2xl border border-blue-100 bg-blue-50 p-3">
         <div className="flex flex-wrap items-end gap-2">
           <div className="text-2xl font-black text-blue-700">{money(price)}</div>
           {oldPrice > price && <div className="pb-0.5 text-sm font-bold text-slate-400 line-through">{money(oldPrice)}</div>}
@@ -717,7 +714,7 @@ function ProductInfo({ product, lang, actions, onPreorder, reviewCount = 0 }) {
       <MarketplaceExtras lang={lang} product={currentProduct} />
 
       <div className="mt-3">
-        <div className="mb-1.5 text-[11px] font-black uppercase text-slate-500">{t.quantity}</div>
+        <div className="mb-1.5 text-[11px] font-black text-slate-500">{t.quantity}</div>
         <QuantitySelector qty={qty} setQty={setQty} maxQty={maxQty} disabled={isOutOfStock} lang={lang} />
       </div>
 
@@ -733,7 +730,7 @@ function ProductInfo({ product, lang, actions, onPreorder, reviewCount = 0 }) {
             </button>
             <button
               onClick={() => onPreorder ? onPreorder(currentProduct, qty) : actions.addToCart(currentProduct.id, qty)}
-              className="rounded-xl bg-blue-900 px-4 py-2.5 text-sm font-black text-white shadow-lg shadow-blue-200 hover:bg-blue-950"
+              className="rounded-xl bg-blue-900 px-4 py-2.5 text-sm font-black text-white shadow-lg hover:bg-blue-950"
             >
               <Zap className="mr-2 inline" size={16} />
               {t.preorderNow}
@@ -910,11 +907,11 @@ function ShopInfoCard({ lang }) {
   const t = copy[lang];
 
   return (
-    <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
       <div className="mb-4 flex items-center gap-3">
-        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-700 to-cyan-500 text-white shadow-lg shadow-blue-100"><Store size={26} /></div>
+        <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-blue-700 text-white"><Store size={26} /></div>
         <div>
-          <div className="text-xs font-black uppercase text-slate-500">{t.shopTitle}</div>
+          <div className="text-xs font-black text-slate-500">{t.shopTitle}</div>
           <div className="text-lg font-black text-slate-950">{t.shopName}</div>
         </div>
       </div>
@@ -923,7 +920,7 @@ function ShopInfoCard({ lang }) {
           behind them. Add them back once a real shop-rating/product-count
           source is wired up. */}
       <div className="grid grid-cols-2 gap-3">
-        <button className="rounded-2xl bg-blue-700 px-4 py-3 text-sm font-black text-white shadow-lg shadow-blue-100 hover:bg-blue-800">{t.chatShop}</button>
+        <button className="rounded-2xl bg-blue-700 px-4 py-3 text-sm font-black text-white shadow-lg hover:bg-blue-800">{t.chatShop}</button>
         <a href="/shop" className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-center text-sm font-black text-slate-700 shadow-sm hover:bg-slate-50">{t.viewShop}</a>
       </div>
     </div>
@@ -949,17 +946,17 @@ function getMergedSpecs(product = {}, t) {
   ]);
 
   const fields = [
-    { label: t.sku, value: product.sku || product.id, icon: Tag },
-    { label: t.brand, value: findSpec(["maker", "brand", "thương hiệu"])?.value || product.brand || "Bandai Spirits", icon: Factory },
-    { label: t.grade, value: findSpec(["grade"])?.value || product.grade || "Gunpla", icon: Layers3 },
-    { label: t.scale, value: findSpec(["scale", "tỷ lệ"])?.value || product.scale || "1/144", icon: Ruler },
-    { label: t.material, value: findSpec(["material", "chất liệu"])?.value || product.material || "PS / ABS", icon: ShieldCheck },
-    { label: t.difficulty, value: findSpec(["difficulty", "độ khó"])?.value || product.difficulty || "Intermediate", icon: Box },
+    { label: t.sku, value: product.sku || product.id },
+    { label: t.brand, value: findSpec(["maker", "brand", "thương hiệu"])?.value || product.brand || "Bandai Spirits" },
+    { label: t.grade, value: findSpec(["grade"])?.value || product.grade || "Gunpla" },
+    { label: t.scale, value: findSpec(["scale", "tỷ lệ"])?.value || product.scale || "1/144" },
+    { label: t.material, value: findSpec(["material", "chất liệu"])?.value || product.material || "PS / ABS" },
+    { label: t.difficulty, value: findSpec(["difficulty", "độ khó"])?.value || product.difficulty || "Intermediate" },
   ];
 
   const extraSpecs = specs
     .filter((spec) => spec?.value && !canonicalLabels.has(String(spec?.label || "").trim().toLowerCase()))
-    .map((spec) => ({ label: spec.label, value: spec.value, icon: Ruler }));
+    .map((spec) => ({ label: spec.label, value: spec.value }));
 
   return [...fields, ...extraSpecs];
 }
@@ -970,16 +967,12 @@ function ProductInfoFields({ product, lang }) {
 
   return (
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-      {fields.map((field) => {
-        const Icon = field.icon;
-        return (
-          <div key={field.label} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-            <Icon className="mb-2 text-blue-600" size={20} />
-            <div className="text-xs font-black uppercase text-slate-500">{field.label}</div>
-            <div className="mt-1 font-black text-slate-950">{field.value}</div>
-          </div>
-        );
-      })}
+      {fields.map((field) => (
+        <div key={field.label} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+          <div className="text-xs font-black text-slate-500">{field.label}</div>
+          <div className="mt-1 font-black text-slate-950">{field.value}</div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -988,11 +981,11 @@ function ProductInfoFields({ product, lang }) {
 // product page (specs, description, shipping, policy, returns, reviews,
 // related products) so the page opens short and the shopper picks what to
 // read instead of scrolling past everything at once.
-function CollapsibleSection({ title, icon: Icon, defaultOpen = false, badge, children }) {
+function CollapsibleSection({ title, defaultOpen = false, badge, children }) {
   const [open, setOpen] = useState(defaultOpen);
 
   return (
-    <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
@@ -1000,7 +993,6 @@ function CollapsibleSection({ title, icon: Icon, defaultOpen = false, badge, chi
         className="flex w-full items-center justify-between gap-3 p-5 text-left"
       >
         <span className="flex items-center gap-2 text-base font-black text-slate-950">
-          {Icon && <Icon className="text-blue-600" size={20} />}
           {title}
           {badge}
         </span>
@@ -1017,7 +1009,7 @@ function CollapsibleSection({ title, icon: Icon, defaultOpen = false, badge, chi
 function PolicyList({ items }) {
   return items.map((item) => (
     <div key={item} className="mb-3 flex gap-3 text-sm leading-6 text-slate-600 last:mb-0">
-      <CheckCircle2 className="mt-0.5 shrink-0 text-emerald-600" size={18} />
+      <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-slate-300" />
       {item}
     </div>
   ));
@@ -1032,11 +1024,11 @@ function ProductDetailSections({ product, lang }) {
 
   return (
     <div className="space-y-3">
-      <CollapsibleSection title={t.productInfoTitle} icon={Layers3}>
+      <CollapsibleSection title={t.productInfoTitle}>
         <ProductInfoFields product={product} lang={lang} />
       </CollapsibleSection>
 
-      <CollapsibleSection title={t.descTitle} icon={FileText}>
+      <CollapsibleSection title={t.descTitle}>
         <p className={`text-sm leading-7 text-slate-600 whitespace-pre-line ${!descExpanded && descIsLong ? "line-clamp-6" : ""}`}>
           {descText}
         </p>
@@ -1056,23 +1048,23 @@ function ProductDetailSections({ product, lang }) {
           {boxItems.map((item) => {
             const itemText = text(item, lang, "");
             return (
-              <div key={itemText} className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3 text-sm font-bold text-slate-700">
-                <CheckCircle2 className="text-emerald-600" size={18} />{itemText}
+              <div key={itemText} className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm font-bold text-slate-700">
+                {itemText}
               </div>
             );
           })}
         </div>
       </CollapsibleSection>
 
-      <CollapsibleSection title={t.shippingTitle} icon={Truck}>
+      <CollapsibleSection title={t.shippingTitle}>
         <PolicyList items={[t.shipping1, t.shipping2, t.shipping3]} />
       </CollapsibleSection>
 
-      <CollapsibleSection title={t.policyTitle} icon={ShieldCheck}>
+      <CollapsibleSection title={t.policyTitle}>
         <PolicyList items={[t.policy1, t.policy2, t.policy3]} />
       </CollapsibleSection>
 
-      <CollapsibleSection title={t.returnTitle} icon={RotateCcw}>
+      <CollapsibleSection title={t.returnTitle}>
         <PolicyList items={[t.return1, t.return2, t.return3]} />
       </CollapsibleSection>
     </div>
@@ -1140,7 +1132,7 @@ function Reviews({ product, reviews, lang, onSubmitted }) {
 
   return (
     <section className="mx-auto max-w-[1440px] px-4 py-4 lg:px-8">
-      <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
         <button
           type="button"
           onClick={() => setOpen((value) => !value)}
@@ -1231,7 +1223,7 @@ function Reviews({ product, reviews, lang, onSubmitted }) {
 
 function ProductCardSkeleton() {
   return (
-    <div className="animate-pulse overflow-hidden rounded-3xl border border-slate-200 bg-white">
+    <div className="animate-pulse overflow-hidden rounded-xl border border-slate-200 bg-white">
       <div className="aspect-square bg-slate-100" />
       <div className="space-y-2 p-3">
         <div className="h-4 w-3/4 rounded bg-slate-100" />
@@ -1257,7 +1249,7 @@ function RecommendationSection({ title, products, loading, lang, viewAllHref, vi
   if (collapsible) {
     return (
       <section className="mx-auto max-w-[1440px] px-4 py-4 lg:px-8">
-        <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
           <button
             type="button"
             onClick={() => setOpen((value) => !value)}
@@ -1289,7 +1281,7 @@ function RecommendationSection({ title, products, loading, lang, viewAllHref, vi
 
   return (
     <section className="mx-auto max-w-[1440px] px-4 py-4 lg:px-8">
-      <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-xl font-black text-slate-950">{title}</h2>
           {viewAllHref && (
@@ -1477,7 +1469,7 @@ export default function ProductDetailPage() {
     return (
       <PageShell>
         <section className="mx-auto max-w-[960px] px-4 py-16 text-center">
-          <div className="rounded-3xl border border-slate-200 bg-white p-10 text-sm font-black text-slate-500 shadow-sm">
+          <div className="rounded-xl border border-slate-200 bg-white p-10 text-sm font-black text-slate-500 shadow-sm">
             Loading product...
           </div>
         </section>
@@ -1489,7 +1481,7 @@ export default function ProductDetailPage() {
     return (
       <PageShell>
         <section className="mx-auto max-w-[960px] px-4 py-16 text-center">
-          <div className="rounded-3xl border border-slate-200 bg-white p-10 shadow-sm">
+          <div className="rounded-xl border border-slate-200 bg-white p-10 shadow-sm">
             <h1 className="text-3xl font-black text-slate-950">{t.notFound}</h1>
             <a href="/shop" className="mt-5 inline-flex rounded-2xl bg-blue-700 px-5 py-3 text-sm font-black text-white">{t.backToShop}</a>
           </div>
@@ -1502,19 +1494,7 @@ export default function ProductDetailPage() {
 
   return (
     <PageShell>
-      <main className="relative">
-        <div className="pointer-events-none fixed inset-0 -z-10">
-          <div className="absolute inset-0 bg-gradient-to-b from-white via-[#f7fbff] to-[#eef5fc]" />
-          <div
-            className="absolute inset-0 opacity-80"
-            style={{
-              backgroundImage:
-                "linear-gradient(rgba(37,99,235,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(37,99,235,0.035) 1px, transparent 1px)",
-              backgroundSize: "42px 42px",
-            }}
-          />
-        </div>
-
+      <main>
         <section className="mx-auto max-w-[1440px] px-4 py-5 lg:px-8">
           <div className="mb-4 flex flex-wrap items-center gap-2 text-sm font-bold text-slate-500">
             <span>{t.home}</span><ChevronRight size={16} /><span>{t.shop}</span><ChevronRight size={16} /><span className="text-slate-950">{productName(product, lang)}</span>
@@ -1522,7 +1502,7 @@ export default function ProductDetailPage() {
 
           <div className="grid gap-5 lg:grid-cols-[1.02fr_0.98fr]">
             <div className="space-y-3">
-              <div className="rounded-3xl border border-slate-200 bg-white p-3 shadow-sm">
+              <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
                 <div className="h-[380px] overflow-hidden rounded-2xl sm:h-[420px]">
                   <GundamVisual imageUrl={gallery[activeImage]} tone={product.tone || "blue"} large priority zoom alt={productName(product, lang)} />
                 </div>

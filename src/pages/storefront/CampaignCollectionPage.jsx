@@ -22,7 +22,7 @@ const campaignConfig = {
       en: "Limited-time deals for Gunpla kits, builder tools and accessories.",
     },
     cta: { vi: "Săn deal ngay", en: "Shop deals" },
-    tone: "from-red-700 via-orange-500 to-amber-300",
+    tone: "from-blue-900 via-blue-700 to-blue-500",
     icon: Flame,
     badge: "SALE",
     filter: (product) => {
@@ -41,7 +41,7 @@ const campaignConfig = {
       en: "Track popular kits that are back in stock before they sell out again.",
     },
     cta: { vi: "Xem hàng restock", en: "View restock" },
-    tone: "from-blue-800 via-cyan-500 to-sky-200",
+    tone: "from-blue-900 via-cyan-700 to-blue-600",
     icon: PackageCheck,
     badge: "RESTOCK",
     filter: (product) => Number(product.stock || 0) > 0,
@@ -54,7 +54,7 @@ const campaignConfig = {
       en: "Limited, P-Bandai, Gundam Base, special coating and collector-focused kits.",
     },
     cta: { vi: "Xem hàng limited", en: "View limited" },
-    tone: "from-violet-950 via-fuchsia-600 to-amber-300",
+    tone: "from-slate-900 via-blue-800 to-slate-700",
     icon: ShieldCheck,
     badge: "LIMITED",
     filter: (product) => {
@@ -80,7 +80,7 @@ const campaignConfig = {
       en: "Upcoming arrivals, soon-to-open pre-orders and ETA tracking for collectors.",
     },
     cta: { vi: "Theo dõi hàng sắp về", en: "Track upcoming kits" },
-    tone: "from-slate-950 via-blue-700 to-cyan-300",
+    tone: "from-slate-950 via-blue-800 to-blue-600",
     icon: CalendarClock,
     badge: "COMING SOON",
     filter: (product) => (product.collections || []).includes("order_items"),
@@ -100,7 +100,7 @@ function productName(product, lang) {
 function CampaignMiniStat({ label, value }) {
   return (
     <div className="rounded-2xl bg-white/10 p-4 backdrop-blur">
-      <div className="text-xs font-black uppercase tracking-widest text-white/55">{label}</div>
+      <div className="text-xs font-black tracking-wide text-white/55">{label}</div>
       <div className="mt-1 text-2xl font-black text-white">{value}</div>
     </div>
   );
@@ -143,11 +143,11 @@ export default function CampaignCollectionPage({ type = "flash-sale" }) {
   return (
     <PageShell>
       <main className="mx-auto max-w-[1440px] px-4 py-8 lg:px-8">
-        <section className={`relative overflow-hidden rounded-6xl bg-gradient-to-br ${config.tone} p-8 text-white shadow-[0_30px_120px_rgba(15,23,42,0.25)]`}>
+        <section className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${config.tone} p-8 text-white shadow-lg`}>
           <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,.12)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.12)_1px,transparent_1px)] bg-[size:36px_36px] opacity-30" />
           <div className="relative z-10 grid gap-8 lg:grid-cols-[1fr_360px] lg:items-end">
             <div className="max-w-4xl">
-              <div className="inline-flex items-center gap-2 rounded-full bg-white/20 px-4 py-2 text-xs font-black uppercase tracking-[0.25em] backdrop-blur">
+              <div className="inline-flex items-center gap-2 rounded-full bg-white/20 px-4 py-2 text-xs font-black tracking-wide backdrop-blur">
                 <Icon size={15} />
                 {getText(config.eyebrow, lang)}
               </div>
@@ -176,24 +176,24 @@ export default function CampaignCollectionPage({ type = "flash-sale" }) {
         </section>
 
         <section className="mt-8 grid gap-4 md:grid-cols-4">
-          <a href="/flash-sale" className="rounded-3xl border border-red-100 bg-red-50 p-5 font-black text-red-700 hover:bg-red-100">
+          <a href="/flash-sale" className="rounded-xl border border-red-100 bg-red-50 p-5 font-black text-red-700 hover:bg-red-100">
             <Flame className="mb-3" /> Flash Sale
           </a>
-          <a href="/restock" className="rounded-3xl border border-blue-100 bg-blue-50 p-5 font-black text-blue-700 hover:bg-blue-100">
+          <a href="/restock" className="rounded-xl border border-blue-100 bg-blue-50 p-5 font-black text-blue-700 hover:bg-blue-100">
             <PackageCheck className="mb-3" /> Restock
           </a>
-          <a href="/limited" className="rounded-3xl border border-violet-100 bg-violet-50 p-5 font-black text-violet-700 hover:bg-violet-100">
+          <a href="/limited" className="rounded-xl border border-violet-100 bg-violet-50 p-5 font-black text-violet-700 hover:bg-violet-100">
             <ShieldCheck className="mb-3" /> Limited
           </a>
-          <a href="/coming-soon" className="rounded-3xl border border-slate-200 bg-slate-50 p-5 font-black text-slate-700 hover:bg-slate-100">
+          <a href="/coming-soon" className="rounded-xl border border-slate-200 bg-slate-50 p-5 font-black text-slate-700 hover:bg-slate-100">
             <BellRing className="mb-3" /> Coming Soon
           </a>
         </section>
 
-        <section id="campaign-products" className="mt-8 rounded-5xl border border-slate-200 bg-white p-5 shadow-sm">
+        <section id="campaign-products" className="mt-8 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
             <div>
-              <div className="inline-flex rounded-full bg-blue-50 px-3 py-1 text-xs font-black uppercase text-blue-700">
+              <div className="inline-flex rounded-full bg-blue-50 px-3 py-1 text-xs font-black text-blue-700">
                 {config.badge}
               </div>
               <h2 className="mt-2 text-3xl font-black text-slate-950">
@@ -232,10 +232,10 @@ export default function CampaignCollectionPage({ type = "flash-sale" }) {
           )}
         </section>
 
-        <section className="mt-8 rounded-5xl border border-blue-100 bg-blue-50 p-6">
+        <section className="mt-8 rounded-2xl border border-blue-100 bg-blue-50 p-6">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
-              <div className="text-xs font-black uppercase tracking-[0.22em] text-blue-700">
+              <div className="text-xs font-black tracking-wide text-blue-700">
                 {lang === "en" ? "Collector tip" : "Gợi ý cho collector"}
               </div>
               <h2 className="mt-1 text-2xl font-black text-slate-950">

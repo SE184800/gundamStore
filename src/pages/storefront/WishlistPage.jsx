@@ -142,7 +142,7 @@ function AccountSidebar({ user, wishlistCount, onLogout, t }) {
 
   return (
     <aside className="space-y-4">
-      <section className="rounded-4xl border border-slate-200 bg-white p-5 shadow-sm">
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <h2 className="text-lg font-black text-slate-950">{t.accountTitle}</h2>
 
         <div className="mt-5 flex items-center gap-3">
@@ -192,7 +192,7 @@ function AccountSidebar({ user, wishlistCount, onLogout, t }) {
         </div>
       </section>
 
-      <section className="rounded-4xl border border-blue-100 bg-blue-50 p-5 shadow-sm">
+      <section className="rounded-2xl border border-blue-100 bg-blue-50 p-5 shadow-sm">
         <div className="font-black text-slate-950">{t.syncNoteTitle}</div>
         <p className="mt-2 text-sm font-semibold leading-6 text-slate-500">
           {t.syncNote}
@@ -416,10 +416,10 @@ export default function WishlistPage() {
 
   return (
     <PageShell>
-      <main className="min-h-screen bg-gradient-to-b from-white via-blue-50/40 to-slate-100">
+      <main className="min-h-screen bg-white">
         <div className="mx-auto max-w-[1440px] px-4 py-8 lg:px-8">
           {!hasToken ? (
-            <section className="mx-auto max-w-xl rounded-4xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+            <section className="mx-auto max-w-xl rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
               <Heart className="mx-auto text-blue-700" size={42} />
               <h1 className="mt-4 text-2xl font-black text-slate-950">{t.loginTitle}</h1>
               <p className="mt-2 text-sm font-semibold leading-6 text-slate-500">{t.loginDesc}</p>
@@ -434,7 +434,7 @@ export default function WishlistPage() {
             <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
               <AccountSidebar user={account} wishlistCount={wishlistItems.length} onLogout={logout} t={t} />
 
-              <section className="rounded-4xl border border-slate-200 bg-white p-5 shadow-sm">
+              <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                 <div className="flex flex-col gap-4 border-b border-slate-100 pb-5 md:flex-row md:items-center md:justify-between">
                   <div>
                     <h1 className="text-2xl font-black text-slate-950">{t.title}</h1>

@@ -132,7 +132,7 @@ export default function MyOrdersPage() {
     <PageShell>
       <main className="min-h-screen bg-[#F5F7FB] px-4 py-8 md:px-6">
         <div className="mx-auto max-w-7xl">
-          <p className="text-sm font-black uppercase tracking-[0.2em] text-blue-600">
+          <p className="text-sm font-black tracking-wide text-blue-600">
             {t.eyebrow}
           </p>
 
@@ -144,7 +144,7 @@ export default function MyOrdersPage() {
             {t.desc}
           </p>
 
-          <div className="mt-6 rounded-3xl bg-white p-4 shadow-sm">
+          <div className="mt-6 rounded-xl bg-white p-4 shadow-sm">
             <div className="flex flex-wrap gap-2">
               {tabs.map((item) => (
                 <button
@@ -172,12 +172,12 @@ export default function MyOrdersPage() {
           </div>
 
           {loading ? (
-            <div className="mt-8 flex min-h-[260px] items-center justify-center rounded-3xl bg-white p-10 font-black text-slate-500">
+            <div className="mt-8 flex min-h-[260px] items-center justify-center rounded-xl bg-white p-10 font-black text-slate-500">
               <Loader2 className="mr-3 animate-spin text-blue-600" />
               {t.loading}
             </div>
           ) : error ? (
-            <div className="mt-8 rounded-3xl bg-white p-10 text-center">
+            <div className="mt-8 rounded-xl bg-white p-10 text-center">
               <AlertCircle className="mx-auto text-amber-500" size={42} />
               <div className="mt-4 font-black text-slate-700">{error}</div>
               <Link
@@ -190,12 +190,12 @@ export default function MyOrdersPage() {
           ) : (
             <div className="mt-8 space-y-4">
               {filtered.length === 0 ? (
-                <div className="rounded-3xl bg-white p-10 text-center font-bold text-slate-500">
+                <div className="rounded-xl bg-white p-10 text-center font-bold text-slate-500">
                   {t.empty}
                 </div>
               ) : (
                 filtered.map((order) => (
-                  <div key={order.id} className="rounded-3xl bg-white p-5 shadow-sm">
+                  <div key={order.id} className="rounded-xl bg-white p-5 shadow-sm">
                     <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-start">
                       <div className="flex-1">
                         <div className="flex flex-wrap items-center gap-2">

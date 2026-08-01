@@ -50,10 +50,10 @@ function getCopy(lang) {
 
 function StatCard({ icon: Icon, label, value, hint }) {
   return (
-    <div className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm">
+    <div className="rounded-xl border border-slate-100 bg-white p-5 shadow-sm">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="text-xs font-black uppercase tracking-wide text-slate-400">{label}</p>
+          <p className="text-xs font-black tracking-wide text-slate-400">{label}</p>
           <p className="mt-2 text-2xl font-black text-slate-950">{value}</p>
           {hint && <p className="mt-1 text-xs font-bold text-slate-500">{hint}</p>}
         </div>
@@ -116,17 +116,17 @@ export default function AccountDashboardPage() {
     <PageShell>
       <main className="min-h-screen bg-[#F5F7FB] px-4 py-8 md:px-6">
         <div className="mx-auto max-w-7xl">
-          <p className="text-sm font-black uppercase tracking-[0.2em] text-blue-600">{t.eyebrow}</p>
+          <p className="text-sm font-black tracking-wide text-blue-600">{t.eyebrow}</p>
           <h1 className="mt-2 text-4xl font-black text-slate-950">{t.title}</h1>
           <p className="mt-3 max-w-2xl text-sm font-semibold leading-7 text-slate-500">{t.desc}</p>
 
           {loading ? (
-            <div className="mt-8 flex min-h-[260px] items-center justify-center rounded-3xl bg-white p-10 font-black text-slate-500">
+            <div className="mt-8 flex min-h-[260px] items-center justify-center rounded-xl bg-white p-10 font-black text-slate-500">
               <Loader2 className="mr-3 animate-spin text-blue-600" />
               {t.loading}
             </div>
           ) : error ? (
-            <div className="mt-8 rounded-3xl bg-white p-10 text-center">
+            <div className="mt-8 rounded-xl bg-white p-10 text-center">
               <AlertCircle className="mx-auto text-amber-500" size={42} />
               <div className="mt-4 font-black text-slate-700">{error}</div>
               <Link to="/login" className="mt-5 inline-flex rounded-2xl bg-blue-700 px-5 py-3 text-sm font-black text-white">
@@ -137,7 +137,7 @@ export default function AccountDashboardPage() {
             <>
               <section className="mt-8 grid gap-4 lg:grid-cols-[330px_1fr]">
                 <aside className="space-y-4">
-                  <div className="rounded-3xl border border-slate-100 bg-white p-5 text-center shadow-sm">
+                  <div className="rounded-xl border border-slate-100 bg-white p-5 text-center shadow-sm">
                     <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-blue-700 text-2xl font-black text-white">
                       {(account.name || "US").slice(0, 2).toUpperCase()}
                     </div>
@@ -155,7 +155,7 @@ export default function AccountDashboardPage() {
                     </div>
                   </div>
 
-                  <div className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm">
+                  <div className="rounded-xl border border-slate-100 bg-white p-5 shadow-sm">
                     <h3 className="flex items-center gap-2 text-lg font-black text-slate-950">
                       <MapPin size={19} /> {t.defaultAddress}
                     </h3>
@@ -180,7 +180,7 @@ export default function AccountDashboardPage() {
                   </div>
 
                   <div className="grid gap-4 xl:grid-cols-2">
-                    <section className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm">
+                    <section className="rounded-xl border border-slate-100 bg-white p-5 shadow-sm">
                       <div className="mb-4 flex items-center justify-between">
                         <h2 className="text-lg font-black text-slate-950">{t.recentOrders}</h2>
                         <Link to="/orders" className="text-sm font-black text-blue-700">{t.viewOrders}</Link>
@@ -211,7 +211,7 @@ export default function AccountDashboardPage() {
                       </div>
                     </section>
 
-                    <section className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm">
+                    <section className="rounded-xl border border-slate-100 bg-white p-5 shadow-sm">
                       <h2 className="text-lg font-black text-slate-950">{t.supportTickets}</h2>
                       <div className="mt-4 space-y-3">
                         {(dashboard.supportTickets || []).slice(0, 5).map((ticket) => (
@@ -234,7 +234,7 @@ export default function AccountDashboardPage() {
                     </section>
                   </div>
 
-                  <section className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm">
+                  <section className="rounded-xl border border-slate-100 bg-white p-5 shadow-sm">
                     <h2 className="flex items-center gap-2 text-lg font-black text-slate-950">
                       <Heart size={18} className="text-red-500" />
                       {t.wishlist}
@@ -259,7 +259,7 @@ export default function AccountDashboardPage() {
                 </section>
               </section>
 
-              <div className="mt-4 rounded-3xl bg-blue-50 p-4 text-sm font-bold text-blue-800">
+              <div className="mt-4 rounded-xl bg-blue-50 p-4 text-sm font-bold text-blue-800">
                 <ShieldCheck size={16} className="mr-1 inline" />
                 Account data is loaded from backend account APIs.
               </div>

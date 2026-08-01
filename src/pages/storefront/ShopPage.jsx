@@ -334,7 +334,7 @@ function CategoryBottomSheet({ t, lang, tree, activeId, onSelect, onClose, allCo
 
   return (
     <div className="fixed inset-0 z-[100000] bg-slate-950/60 backdrop-blur-sm lg:hidden">
-      <div className="absolute inset-x-0 bottom-0 max-h-[86vh] overflow-hidden rounded-t-[2rem] bg-white shadow-2xl">
+      <div className="absolute inset-x-0 bottom-0 max-h-[86vh] overflow-hidden rounded-t-2xl bg-white shadow-lg">
         <div className="sticky top-0 z-10 border-b border-slate-100 bg-white px-4 py-4">
           <div className="flex items-center justify-between gap-3">
             <button
@@ -398,7 +398,7 @@ function FacetFilters({ t, brand, setBrand, brandOptions, grade, setGrade, grade
   return (
     <div className="space-y-4">
       <div>
-        <div className="mb-1.5 text-xs font-black uppercase tracking-wide text-slate-500">{t.brand}</div>
+        <div className="mb-1.5 text-xs font-black tracking-wide text-slate-500">{t.brand}</div>
         <select value={brand} onChange={(event) => setBrand(event.target.value)} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold outline-none">
           <option value="">{t.all}</option>
           {brandOptions.map((value) => <option key={value} value={value}>{value}</option>)}
@@ -406,7 +406,7 @@ function FacetFilters({ t, brand, setBrand, brandOptions, grade, setGrade, grade
       </div>
 
       <div>
-        <div className="mb-1.5 text-xs font-black uppercase tracking-wide text-slate-500">{t.grade}</div>
+        <div className="mb-1.5 text-xs font-black tracking-wide text-slate-500">{t.grade}</div>
         <select value={grade} onChange={(event) => setGrade(event.target.value)} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold outline-none">
           <option value="">{t.all}</option>
           {gradeOptions.map((value) => <option key={value} value={value}>{value}</option>)}
@@ -414,7 +414,7 @@ function FacetFilters({ t, brand, setBrand, brandOptions, grade, setGrade, grade
       </div>
 
       <div>
-        <div className="mb-1.5 text-xs font-black uppercase tracking-wide text-slate-500">{t.scale}</div>
+        <div className="mb-1.5 text-xs font-black tracking-wide text-slate-500">{t.scale}</div>
         <select value={scale} onChange={(event) => setScale(event.target.value)} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold outline-none">
           <option value="">{t.all}</option>
           {scaleOptions.map((value) => <option key={value} value={value}>{value}</option>)}
@@ -422,7 +422,7 @@ function FacetFilters({ t, brand, setBrand, brandOptions, grade, setGrade, grade
       </div>
 
       <div>
-        <div className="mb-1.5 text-xs font-black uppercase tracking-wide text-slate-500">{t.priceRange}</div>
+        <div className="mb-1.5 text-xs font-black tracking-wide text-slate-500">{t.priceRange}</div>
         <div className="flex items-center gap-2">
           <input
             type="number"
@@ -451,7 +451,7 @@ function FacetFilters({ t, brand, setBrand, brandOptions, grade, setGrade, grade
 
 function ProductCardSkeleton() {
   return (
-    <div className="animate-pulse overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+    <div className="animate-pulse overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
       <div className="aspect-square bg-slate-200" />
       <div className="space-y-2 p-3 sm:p-4">
         <div className="h-4 w-3/4 rounded bg-slate-200" />
@@ -797,17 +797,14 @@ export default function ShopPage() {
           <span>{t.home}</span><ChevronRight size={15} /><span className="text-slate-950">{t.shopPage}</span>
         </div>
 
-        <div className="relative overflow-hidden rounded-3xl border border-blue-100 bg-white p-4 shadow-xl shadow-blue-100/60 sm:rounded-[2rem] sm:p-6 lg:p-8">
-          <div className="absolute inset-0 bg-gradient-to-br from-white via-blue-50 to-cyan-50" />
-          <div className="relative">
-            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-blue-100 bg-white px-3 py-1 text-xs font-black text-blue-700"><Sparkles size={14} />{t.shopPage}</div>
-            <h1 className="text-2xl font-black text-slate-950 sm:text-3xl lg:text-5xl">{t.title}</h1>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600 sm:mt-3 sm:leading-7">{t.subtitle}</p>
-          </div>
+        <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6 lg:p-8">
+          <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-blue-100 bg-white px-3 py-1 text-xs font-black text-blue-700"><Sparkles size={14} />{t.shopPage}</div>
+          <h1 className="text-2xl font-black text-slate-950 sm:text-3xl lg:text-5xl">{t.title}</h1>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600 sm:mt-3 sm:leading-7">{t.subtitle}</p>
         </div>
 
-        <div className="mt-4 rounded-3xl border border-slate-200 bg-white p-3 shadow-sm sm:rounded-3xl sm:p-4">
-          <div className="mb-3 flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-slate-500"><Filter size={15} className="text-blue-600" />{t.quickForYou}</div>
+        <div className="mt-4 rounded-xl border border-slate-200 bg-white p-3 shadow-sm sm:p-4">
+          <div className="mb-3 flex items-center gap-2 text-xs font-black tracking-wide text-slate-500"><Filter size={15} className="text-blue-600" />{t.quickForYou}</div>
           <div className="mobile-hide-scrollbar flex gap-2 overflow-x-auto pb-1">
             {quickChips.map((chip) => (
               <button key={chip.key} onClick={() => setStock(chip.value)} className={`shrink-0 rounded-full border px-4 py-2 text-xs font-black ${stock === chip.value ? "border-blue-700 bg-blue-700 text-white" : "border-blue-100 bg-blue-50 text-blue-700 hover:bg-blue-600 hover:text-white"}`}>{chip.label}</button>
@@ -818,7 +815,7 @@ export default function ShopPage() {
 
       <section className="mx-auto grid max-w-[1440px] gap-5 px-3 py-4 sm:px-4 lg:grid-cols-[320px_1fr] lg:px-8">
         <aside className="hidden lg:block">
-          <div className="sticky top-24 rounded-4xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="sticky top-24 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
             <div className="mb-4 flex items-center justify-between gap-3">
               <div className="flex items-center gap-2 text-sm font-black text-slate-950"><SlidersHorizontal size={17} className="text-blue-600" />{t.categoryMenu}</div>
               <button onClick={resetFilters} className="rounded-xl bg-slate-50 px-3 py-1.5 text-[11px] font-black text-slate-500 hover:bg-slate-100">{t.clear}</button>
@@ -848,7 +845,7 @@ export default function ShopPage() {
         </aside>
 
         <div className="space-y-4 sm:space-y-5">
-          <div className="-mx-3 border-y border-slate-100 bg-white/95 px-3 py-3 shadow-sm backdrop-blur lg:mx-0 lg:rounded-3xl lg:border lg:border-slate-200 lg:bg-white lg:p-4">
+          <div className="-mx-3 border-y border-slate-100 bg-white/95 px-3 py-3 shadow-sm backdrop-blur lg:mx-0 lg:rounded-xl lg:border lg:border-slate-200 lg:bg-white lg:p-4">
             <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
               <div className="flex min-w-0 flex-1 items-center rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
                 <Search size={18} className="text-blue-600" />
@@ -926,7 +923,7 @@ export default function ShopPage() {
                   ? "Phân trang sản phẩm phía trên"
                   : "Top product pagination"
               }
-              className="flex flex-wrap items-center justify-center gap-2 rounded-3xl border border-slate-200 bg-white p-3 shadow-sm"
+              className="flex flex-wrap items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white p-3 shadow-sm"
             >
               <button
                 type="button"
@@ -950,7 +947,7 @@ export default function ShopPage() {
                     aria-label={`${lang === "vi" ? "Trang" : "Page"} ${item}`}
                     className={`h-11 min-w-11 rounded-xl px-3 text-sm font-black ${
                       item === currentPage
-                        ? "bg-blue-700 text-white shadow-lg shadow-blue-100"
+                        ? "bg-blue-700 text-white shadow-lg"
                         : "border border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
                     }`}
                   >
@@ -993,9 +990,9 @@ export default function ShopPage() {
               {visibleProducts.map((product) => <ProductCard key={product.id} product={product} lang={lang} actions={actions} />)}
             </div>
           ) : (
-            <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-10 text-center shadow-sm">
+            <div className="rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center shadow-sm">
               <div className="text-lg font-black text-slate-950">{t.noProducts}</div>
-              <button onClick={resetFilters} className="mt-4 rounded-2xl bg-blue-700 px-5 py-3 text-sm font-black text-white shadow-lg shadow-blue-100 hover:bg-blue-800">{t.clear}</button>
+              <button onClick={resetFilters} className="mt-4 rounded-2xl bg-blue-700 px-5 py-3 text-sm font-black text-white shadow-lg hover:bg-blue-800">{t.clear}</button>
             </div>
           )}
 
@@ -1006,7 +1003,7 @@ export default function ShopPage() {
                   ? "Phân trang sản phẩm"
                   : "Product pagination"
               }
-              className="flex flex-wrap items-center justify-center gap-2 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm"
+              className="flex flex-wrap items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
             >
               <button
                 type="button"
@@ -1029,7 +1026,7 @@ export default function ShopPage() {
                     }
                     className={`h-11 min-w-11 rounded-xl px-3 text-sm font-black ${
                       item === currentPage
-                        ? "bg-blue-700 text-white shadow-lg shadow-blue-100"
+                        ? "bg-blue-700 text-white shadow-lg"
                         : "border border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
                     }`}
                   >
@@ -1064,7 +1061,7 @@ export default function ShopPage() {
 
       {mobileFilterOpen && (
         <div className="fixed inset-0 z-[100000] bg-slate-950/60 p-0 backdrop-blur-sm lg:hidden">
-          <div className="ml-auto h-full w-full max-w-md overflow-y-auto rounded-none bg-white p-5 pb-[calc(20px+env(safe-area-inset-bottom))] shadow-2xl sm:rounded-l-3xl">
+          <div className="ml-auto h-full w-full max-w-md overflow-y-auto rounded-none bg-white p-5 pb-[calc(20px+env(safe-area-inset-bottom))] shadow-lg sm:rounded-l-2xl">
             <div className="mb-4 flex items-center justify-between">
               <div className="text-lg font-black text-slate-950">{t.filters}</div>
               <button onClick={() => setMobileFilterOpen(false)} aria-label={lang === "en" ? "Close" : "Đóng"} className="rounded-xl bg-slate-100 p-2 text-slate-600"><X size={18} /></button>
