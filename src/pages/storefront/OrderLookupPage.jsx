@@ -18,26 +18,29 @@ function getCopy(lang) {
     title: lang === "en" ? "Check your order status" : "Tra cứu trạng thái đơn hàng",
     desc:
       lang === "en"
-        ? "Enter your order code and phone number to securely view your order."
-        : "Nhập mã đơn và số điện thoại để kiểm tra đơn hàng an toàn hơn.",
+        ? "Enter your order code and either your phone number or email to securely view your order."
+        : "Nhập mã đơn cùng số điện thoại hoặc email để kiểm tra đơn hàng an toàn hơn.",
     orderCode: lang === "en" ? "Order code" : "Mã đơn hàng",
     orderCodePlaceholder: lang === "en" ? "Example: ORD-... or GS-..." : "Ví dụ: ORD-... hoặc GS-...",
     phone: lang === "en" ? "Phone number" : "Số điện thoại",
     phonePlaceholder: lang === "en" ? "Example: 090..." : "Ví dụ: 090...",
+    email: lang === "en" ? "Email" : "Email",
+    emailPlaceholder: lang === "en" ? "Example: name@email.com" : "Ví dụ: ten@email.com",
+    verifyHint: lang === "en" ? "Enter at least one" : "Nhập ít nhất một trong hai",
     lookup: lang === "en" ? "Lookup order" : "Tra cứu đơn",
     notFound:
       lang === "en"
-        ? "No matching order found. Please check both order code and phone number."
-        : "Không tìm thấy đơn phù hợp. Vui lòng kiểm tra đúng mã đơn và số điện thoại.",
+        ? "No matching order found. Please check your order code and verification info."
+        : "Không tìm thấy đơn phù hợp. Vui lòng kiểm tra đúng mã đơn và thông tin xác minh.",
     needBoth:
       lang === "en"
-        ? "Please enter both order code and phone number."
-        : "Vui lòng nhập cả mã đơn và số điện thoại.",
+        ? "Please enter the order code and either your phone number or email."
+        : "Vui lòng nhập mã đơn và số điện thoại hoặc email.",
     privacyTitle: lang === "en" ? "Privacy protected" : "Bảo vệ thông tin đơn hàng",
     privacyDesc:
       lang === "en"
-        ? "For safety, order lookup requires both order code and phone number."
-        : "Để an toàn, hệ thống yêu cầu cả mã đơn và số điện thoại khi tra cứu.",
+        ? "For safety, order lookup requires the order code and either your phone number or email."
+        : "Để an toàn, hệ thống yêu cầu mã đơn và số điện thoại hoặc email khi tra cứu.",
     order: lang === "en" ? "Order" : "Đơn hàng",
     customer: lang === "en" ? "Customer" : "Khách hàng",
     phoneMasked: lang === "en" ? "Phone" : "SĐT",
@@ -57,6 +60,7 @@ export default function OrderLookupPage() {
 
   const [orderCode, setOrderCode] = useState("");
   const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
   const [searched, setSearched] = useState(false);
   const [error, setError] = useState("");
   const [order, setOrder] = useState(null);
@@ -67,20 +71,23 @@ export default function OrderLookupPage() {
     const params = new URLSearchParams(window.location.search);
     const code = params.get("code") || "";
     const phoneParam = params.get("phone") || "";
+    const emailParam = params.get("email") || "";
 
     if (code) setOrderCode(code);
     if (phoneParam) setPhone(phoneParam);
+    if (emailParam) setEmail(emailParam);
   }, []);
 
   async function lookupOrder() {
     const code = orderCode.trim();
     const inputPhone = phone.trim();
+    const inputEmail = email.trim();
 
     setSearched(true);
     setError("");
     setOrder(null);
 
-    if (!code || !inputPhone) {
+    if (!code || (!inputPhone && !inputEmail)) {
       setError(t.needBoth);
       return;
     }
@@ -89,6 +96,7 @@ export default function OrderLookupPage() {
       setLoading(true);
       const result = await lookupPublicOrderFromApi(code, {
         phone: inputPhone,
+        email: inputEmail,
       });
 
       setOrder(result);
@@ -133,7 +141,7 @@ export default function OrderLookupPage() {
           </div>
 
           <div className="mt-8 rounded-3xl bg-white p-5 shadow-sm md:p-6">
-            <div className="grid gap-4 md:grid-cols-[1fr_1fr_auto] md:items-end">
+            <div className="grid gap-4 md:grid-cols-3">
               <label className="block">
                 <span className="text-sm font-black text-slate-700">{t.orderCode}</span>
                 <input
@@ -155,20 +163,33 @@ export default function OrderLookupPage() {
                 />
               </label>
 
-              <button
-                type="button"
-                disabled={loading}
-                onClick={lookupOrder}
-                className={`rounded-2xl px-6 py-3 font-black text-white shadow-lg ${
-                  loading
-                    ? "cursor-not-allowed bg-slate-400"
-                    : "bg-blue-700 hover:bg-blue-800"
-                }`}
-              >
-                <Search size={18} className="mr-2 inline" />
-                {loading ? (lang === "en" ? "Checking..." : "Đang tra cứu...") : t.lookup}
-              </button>
+              <label className="block">
+                <span className="text-sm font-black text-slate-700">
+                  {t.email} <span className="font-semibold text-slate-400">({t.verifyHint})</span>
+                </span>
+                <input
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder={t.emailPlaceholder}
+                  inputMode="email"
+                  className="mt-2 w-full rounded-2xl border px-4 py-3 text-sm outline-none focus:border-blue-500"
+                />
+              </label>
             </div>
+
+            <button
+              type="button"
+              disabled={loading || !orderCode.trim() || (!phone.trim() && !email.trim())}
+              onClick={lookupOrder}
+              className={`mt-4 w-full rounded-2xl px-6 py-3 font-black text-white shadow-lg md:w-auto ${
+                loading || !orderCode.trim() || (!phone.trim() && !email.trim())
+                  ? "cursor-not-allowed bg-slate-400"
+                  : "bg-blue-700 hover:bg-blue-800"
+              }`}
+            >
+              <Search size={18} className="mr-2 inline" />
+              {loading ? (lang === "en" ? "Checking..." : "Đang tra cứu...") : t.lookup}
+            </button>
 
             {error && (
               <div className="mt-5 rounded-2xl bg-red-50 p-4 text-sm font-black text-red-600">
@@ -184,7 +205,7 @@ export default function OrderLookupPage() {
                   <div>
                     <div className="flex items-center gap-2 font-black text-blue-600">
                       <PackageSearch size={18} />
-                      {t.order}: {order.orderCode || order.id}
+                      {t.order}: {order.orderCode}
                     </div>
 
                     <div className="mt-2 text-sm font-semibold text-slate-500">
@@ -227,7 +248,7 @@ export default function OrderLookupPage() {
                         <b>{t.address}:</b> {order.customer?.address || "-"}
                       </div>
                       <div>
-                        <b>{t.order}:</b> {order.orderCode || order.id}
+                        <b>{t.order}:</b> {order.orderCode}
                       </div>
                     </div>
 

@@ -127,6 +127,26 @@ const defaultSections = [
   { id: "sales", sort: 4, dataSource: "sale_products", title: { vi: "Hàng Sales", en: "Sales" } },
 ];
 
+function isPreorderCategoryNode(node = {}) {
+  const label = [node?.name?.vi, node?.name?.en, node?.slug, node?.code, node?.id]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+  return label.includes("preorder") || label.includes("orderitems");
+}
+
+function excludePreorderCategories(tree = []) {
+  return (tree || [])
+    .filter((node) => !isPreorderCategoryNode(node))
+    .map((node) => ({
+      ...node,
+      children: Array.isArray(node.children)
+        ? excludePreorderCategories(node.children)
+        : node.children,
+    }));
+}
+
 function text(value, lang, fallback = "") {
   if (!value) return translateStaticText(fallback, lang);
   if (typeof value === "string") return translateStaticText(value, lang);
@@ -1139,13 +1159,13 @@ export default function HomePage() {
   }, [actions]);
 
   const categoryTree = useMemo(() => {
-    if (backendCategoryTree.length) return backendCategoryTree;
+    if (backendCategoryTree.length) return excludePreorderCategories(backendCategoryTree);
 
-    const fallbackChildren = (
-      state.categories?.length ? state.categories : fallbackCategories
-    ).filter(
-      (category) =>
-        category?.active !== false && category?.id !== "all"
+    const fallbackChildren = excludePreorderCategories(
+      (state.categories?.length ? state.categories : fallbackCategories).filter(
+        (category) =>
+          category?.active !== false && category?.id !== "all"
+      )
     );
 
     return [

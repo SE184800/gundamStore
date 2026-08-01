@@ -114,8 +114,8 @@ function pageCopy(pathname, lang) {
     return {
       title: vi ? "Pre-order Gundam / Gunpla | Gundam Store VN" : "Gundam / Gunpla Pre-order | Gundam Store VN",
       description: vi
-        ? "Đặt cọc giữ slot Gunpla pre-order, theo dõi ETA và thanh toán phần còn lại khi hàng về."
-        : "Reserve Gunpla pre-order slots, track ETA and pay the remaining balance when items arrive.",
+        ? "Đặt hàng Gunpla pre-order, theo dõi ETA và thanh toán khi hàng về."
+        : "Order Gunpla pre-orders, track ETA and pay when items arrive.",
     };
   }
 

@@ -34,7 +34,7 @@ import ProductCard from "../../components/storefront/ProductCard";
 import { useCms } from "../../store/CmsStore";
 import { translateStaticText } from "../../i18n";
 import { addProductToCart, forceCartBadgeSync, saveBuyNowDraft, saveCheckoutDraft, validateCartStock } from "../../services/CartService";
-import { getRecentlyViewed, trackProductView } from "../../services/RecentlyViewedService";
+import { trackProductView } from "../../services/RecentlyViewedService";
 import {
   addMyWishlistItem,
   getMyWishlist,
@@ -42,10 +42,11 @@ import {
   removeMyWishlistItem,
 } from "../../services/AccountApiService";
 import { isCompareSaved, toggleCompare } from "../../services/CompareService";
+import { getProductAvailability, getProductPreorderInfo } from "../../utils/productAvailability";
 import { registerRestockAlert } from "../../services/RestockAlertService";
 import {
   getStorefrontProductDetailForStorefront,
-  getStorefrontProductsPageFromApi,
+  getStorefrontProductRecommendationsApi,
 } from "../../services/StorefrontProductApiService";
 import { getStorefrontActivePromotionsApi } from "../../services/StorefrontPromotionApiService";
 import {
@@ -105,7 +106,7 @@ const copy = {
     paymentTitle: "Thanh toán",
     payment1: "COD khi nhận hàng",
     payment2: "Chuyển khoản ngân hàng",
-    payment3: "Ví điện tử / cổng thanh toán sau này",
+    payment3: "Ví điện tử/ cổng thanh toán (Đang cập nhật)",
     shopTitle: "Thông tin shop",
     shopName: "Gundam Store VN",
     shopRating: "5.0 đánh giá",
@@ -135,7 +136,7 @@ const copy = {
     customerReviewsTitle: "Đánh giá khách hàng",
     noReviews: "Sản phẩm chưa có đánh giá được duyệt.",
     relatedTitle: "Sản phẩm liên quan",
-    viewedTitle: "Sản phẩm đã xem",
+    viewedTitle: "Sản phẩm được xem nhiều",
     bestSellerTitle: "Sản phẩm bán chạy",
     viewAll: "Xem tất cả",
     notFound: "Không tìm thấy sản phẩm",
@@ -185,7 +186,7 @@ const copy = {
     paymentTitle: "Payment",
     payment1: "Cash on delivery",
     payment2: "Bank transfer",
-    payment3: "E-wallet / payment gateway later",
+    payment3: "E-wallet/ payment gateway (Coming soon)",
     shopTitle: "Shop information",
     shopName: "Gundam Store VN",
     shopRating: "5.0 rating",
@@ -215,7 +216,7 @@ const copy = {
     customerReviewsTitle: "Customer reviews",
     noReviews: "No approved reviews for this product yet.",
     relatedTitle: "Related products",
-    viewedTitle: "Recently viewed",
+    viewedTitle: "Most viewed",
     bestSellerTitle: "Best sellers",
     viewAll: "View all",
     notFound: "Product not found",
@@ -272,22 +273,8 @@ function productDesc(product, lang, fallback) {
   return productLongDesc(product, lang, fallback);
 }
 
-function hasPreorderTag(product = {}) {
-  const collections = Array.isArray(product.collections) ? product.collections : [];
-  return collections.some((collection) => {
-    const key = String(collection || "").toLowerCase();
-    return key.includes("preorder") || key.includes("pre_order") || key === "order_items";
-  });
-}
-
 function isPreorder(product) {
-  const status = String(product.status || "").toLowerCase();
-  return Boolean(
-    product.preorder?.enabled ||
-    status.includes("pre") ||
-    status.includes("order") ||
-    hasPreorderTag(product)
-  );
+  return getProductPreorderInfo(product).canOrder;
 }
 
 function isSale(product) {
@@ -468,7 +455,7 @@ function ProductInfo({ product, lang, actions, onPreorder, reviewCount = 0 }) {
   const currentProduct = selectedVariant ? mergeProductVariant(product, selectedVariant) : product;
   const preorder = isPreorder(currentProduct);
   const stock = Number(currentProduct.stock || 0);
-  const isOutOfStock = !preorder && stock <= 0;
+  const isOutOfStock = !getProductAvailability(currentProduct).canAddToCart;
   const maxQty = preorder ? 99 : Math.max(1, stock);
   const price = Number(currentProduct.finalPrice || currentProduct.effectivePrice || currentProduct.price || 0);
   const oldPrice = Number(currentProduct.compareAtPrice || currentProduct.oldPrice || 0);
@@ -478,13 +465,12 @@ function ProductInfo({ product, lang, actions, onPreorder, reviewCount = 0 }) {
   const preorderDeposit = preorder ? calculatePreorderDeposit(price) : null;
   const preorderEtaText = product.preorder?.eta || product.eta || getPreorderEtaText(lang);
 
-  function showCartError(result) {
-    const available = Number(result?.available || 0);
+  function showCartError() {
     notify(
       "error",
       lang === "en"
-        ? `Only ${available} item(s) available.`
-        : `Sản phẩm này chỉ còn ${available} sản phẩm trong kho.`
+        ? "Not enough stock available for this quantity."
+        : "Số lượng bạn chọn vượt quá tồn kho hiện có."
     );
   }
 
@@ -1187,11 +1173,13 @@ export default function ProductDetailPage() {
   const [product, setProduct] = useState(null);
   const [detailLoading, setDetailLoading] = useState(true);
   const [detailError, setDetailError] = useState("");
-  const [relatedDbProducts, setRelatedDbProducts] = useState([]);
   const [activeImage, setActiveImage] = useState(0);
-  const [bestSellers, setBestSellers] = useState([]);
-  const [bestSellersLoading, setBestSellersLoading] = useState(true);
-  const [recentlyViewed, setRecentlyViewed] = useState([]);
+  const [relatedProducts, setRelatedProducts] = useState([]);
+  const [relatedLoading, setRelatedLoading] = useState(true);
+  const [mostViewedProducts, setMostViewedProducts] = useState([]);
+  const [mostViewedLoading, setMostViewedLoading] = useState(true);
+  const [bestSellingProducts, setBestSellingProducts] = useState([]);
+  const [bestSellingLoading, setBestSellingLoading] = useState(true);
 
   useEffect(() => {
     let alive = true;
@@ -1220,31 +1208,47 @@ export default function ProductDetailPage() {
     };
   }, [slug, t.notFound]);
 
-  const relatedCategoryId = product?.categoryId || product?.category?.id || "";
-  const [relatedLoading, setRelatedLoading] = useState(true);
-
   useEffect(() => {
     let alive = true;
-    setRelatedLoading(true);
 
-    getStorefrontProductsPageFromApi({
-      categoryIds: relatedCategoryId ? [relatedCategoryId] : [],
-      limit: 8,
-    })
-      .then(({ products: items }) => {
-        if (alive) setRelatedDbProducts(items || []);
+    if (!slug) {
+      setRelatedProducts([]);
+      setMostViewedProducts([]);
+      setBestSellingProducts([]);
+      setRelatedLoading(false);
+      setMostViewedLoading(false);
+      setBestSellingLoading(false);
+      return;
+    }
+
+    setRelatedLoading(true);
+    setMostViewedLoading(true);
+    setBestSellingLoading(true);
+
+    getStorefrontProductRecommendationsApi(slug)
+      .then(({ related, mostViewed, bestSelling }) => {
+        if (!alive) return;
+        setRelatedProducts(related || []);
+        setMostViewedProducts(mostViewed || []);
+        setBestSellingProducts(bestSelling || []);
       })
       .catch(() => {
-        if (alive) setRelatedDbProducts([]);
+        if (!alive) return;
+        setRelatedProducts([]);
+        setMostViewedProducts([]);
+        setBestSellingProducts([]);
       })
       .finally(() => {
-        if (alive) setRelatedLoading(false);
+        if (!alive) return;
+        setRelatedLoading(false);
+        setMostViewedLoading(false);
+        setBestSellingLoading(false);
       });
 
     return () => {
       alive = false;
     };
-  }, [relatedCategoryId]);
+  }, [slug]);
 
   function startPreorderCheckout(product, qty = 1) {
     const quantity = Math.max(1, Number(qty) || 1);
@@ -1320,56 +1324,13 @@ export default function ProductDetailPage() {
       .catch(() => setProductReviews(Array.isArray(product.reviews) ? product.reviews : []));
   }, [product?.id, product?.slug, product?.reviews]);
 
-  const relatedProducts = useMemo(() => {
-    if (!product) return [];
-    return (relatedDbProducts || [])
-      .filter((item) => item.id !== product.id && item.active !== false)
-      .filter((item) =>
-        item.grade === product.grade ||
-        item.categoryId === product.categoryId ||
-        item.category?.id === product.category?.id ||
-        item.brand === product.brand
-      )
-      .slice(0, 4);
-  }, [relatedDbProducts, product]);
-
   useEffect(() => {
     if (product) {
       actions.track("product_view", { productId: product.id, page: `/product/${product.slug || product.id}` });
       trackProductView(product);
-      setRecentlyViewed(getRecentlyViewed({ excludeId: product.id, limit: 10 }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product?.id]);
-
-  useEffect(() => {
-    let alive = true;
-    setBestSellersLoading(true);
-
-    getStorefrontProductsPageFromApi({ sort: "popular", limit: 10 })
-      .then(({ products: items }) => {
-        if (alive) setBestSellers(items || []);
-      })
-      .catch(() => {
-        if (alive) setBestSellers([]);
-      })
-      .finally(() => {
-        if (alive) setBestSellersLoading(false);
-      });
-
-    return () => {
-      alive = false;
-    };
-  }, []);
-
-  const bestSellerProducts = useMemo(() => {
-    if (!product) return [];
-    const relatedIds = new Set(relatedProducts.map((item) => item.id));
-    return (bestSellers || [])
-      .filter((item) => item.id !== product.id && item.active !== false && !relatedIds.has(item.id))
-      .slice(0, 8);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bestSellers, product, relatedProducts]);
 
   if (detailLoading) {
     return (
@@ -1498,15 +1459,15 @@ export default function ProductDetailPage() {
 
         <RecommendationSection
           title={t.viewedTitle}
-          products={recentlyViewed}
-          loading={false}
+          products={mostViewedProducts}
+          loading={mostViewedLoading}
           lang={lang}
         />
 
         <RecommendationSection
           title={t.bestSellerTitle}
-          products={bestSellerProducts}
-          loading={bestSellersLoading}
+          products={bestSellingProducts}
+          loading={bestSellingLoading}
           lang={lang}
           viewAllHref="/shop?collection=best_sellers"
           viewAllLabel={t.viewAll}

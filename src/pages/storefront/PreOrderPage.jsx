@@ -74,11 +74,11 @@ function getCopy(lang) {
         ? "Contact the shop for HG/RG/MG/PG recommendations based on budget and ETA."
         : "Liên hệ shop để được tư vấn dòng HG/RG/MG/PG phù hợp ngân sách và lịch hàng.",
     chat: lang === "en" ? "Chat with shop" : "Chat với shop",
-    trust: lang === "en" ? "Deposit process ready" : "Hỗ trợ quy trình đặt cọc",
+    trust: lang === "en" ? "Transparent ordering process" : "Quy trình đặt hàng minh bạch",
     trustDesc:
       lang === "en"
-        ? "Checkout will show deposit amount and remaining balance clearly."
-        : "Checkout sẽ hiển thị rõ tiền cọc và số tiền còn lại.",
+        ? "The checkout page will clearly show price and quantity before you confirm your order."
+        : "Trang thanh toán sẽ hiển thị rõ giá và số lượng trước khi bạn xác nhận đặt hàng.",
   };
 }
 

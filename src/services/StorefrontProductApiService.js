@@ -329,6 +329,24 @@ export async function getStorefrontProductDetailForStorefront(key = "") {
   return mapBackendProductToStorefront(backendProduct);
 }
 
+export async function getStorefrontProductRecommendationsApi(key = "") {
+  const empty = { related: [], mostViewed: [], bestSelling: [] };
+  if (!key) return empty;
+
+  try {
+    const data = await publicJsonRequest(`/products/${encodeURIComponent(key)}/recommendations`);
+    if (!data?.success) return empty;
+
+    return {
+      related: Array.isArray(data.related) ? data.related.map(mapBackendProductToStorefront) : [],
+      mostViewed: Array.isArray(data.mostViewed) ? data.mostViewed.map(mapBackendProductToStorefront) : [],
+      bestSelling: Array.isArray(data.bestSelling) ? data.bestSelling.map(mapBackendProductToStorefront) : [],
+    };
+  } catch {
+    return empty;
+  }
+}
+
 export function mapBackendCategoryToStorefront(category = {}) {
   const id = category.id || category.slug || category.code;
   const group = category.categoryGroup || category.group || null;

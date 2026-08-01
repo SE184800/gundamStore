@@ -26,6 +26,8 @@ import {
 import { getStorefrontShippingMethodsApi } from "../../services/ShippingApiService";
 import { useLang } from "../../store/CmsStore";
 import { clearSavedCheckoutInfo, getSavedCheckoutInfo, saveCheckoutInfo } from "../../services/SavedCheckoutInfoService";
+import { getStorefrontProductByKeyFromApi } from "../../services/StorefrontProductApiService";
+import { getOrderErrorCode, getOrderErrorMessage } from "../../services/OrderErrorHandler";
 
 const money = (n) => (Number(n) || 0).toLocaleString("vi-VN") + "đ";
 
@@ -427,6 +429,49 @@ export default function CheckoutPage() {
     return true;
   }
 
+  async function reloadDraftItemPrices() {
+    if (!draft) return;
+
+    const updatedItems = await Promise.all(
+      draft.items.map(async (item) => {
+        try {
+          const product = await getStorefrontProductByKeyFromApi(item.slug || item.productId || item.id);
+          if (!product) return item;
+
+          const variant = item.variantId || item.variantSku
+            ? (product.variants || []).find(
+                (v) => v.id === item.variantId || v.sku === item.variantSku
+              )
+            : null;
+
+          const latestPrice = Number(variant?.price ?? product.price);
+          return Number.isFinite(latestPrice) && latestPrice > 0
+            ? { ...item, price: latestPrice }
+            : item;
+        } catch {
+          return item;
+        }
+      })
+    );
+
+    setDraft((prev) => {
+      if (!prev) return prev;
+      const subtotal = updatedItems.reduce(
+        (sum, item) => sum + (Number(item.price) || 0) * (Number(item.quantity) || 1),
+        0
+      );
+      return {
+        ...prev,
+        items: updatedItems,
+        subtotal,
+        total: Math.max(
+          0,
+          subtotal + (Number(prev.shippingFee) || 0) - (Number(prev.discount) || 0) - (Number(prev.shippingDiscount) || 0)
+        ),
+      };
+    });
+  }
+
   async function submitOrder() {
     if (placingOrder) return;
     if (!validateCustomer()) return;
@@ -472,17 +517,17 @@ export default function CheckoutPage() {
       clearCartItems(draft.items.map((item) => item.id));
       clearCheckoutDraft();
 
-      navigate(`/order-success/${mappedOrder.orderCode || mappedOrder.id}`);
+      navigate(`/order-success/${mappedOrder.orderCode}`);
     } catch (error) {
       console.error("Create order API failed", error);
 
-      setErrors([
-        error?.message ||
-        (lang === "en"
-          ? "Cannot create the order. Please check product mapping, variant or availability."
-          : "Không thể tạo đơn hàng. Vui lòng kiểm tra sản phẩm, phân loại hoặc trạng thái pre-order."),
-      ]);
+      const code = getOrderErrorCode(error);
 
+      if (code === "PRICE_CHANGED") {
+        await reloadDraftItemPrices();
+      }
+
+      setErrors([getOrderErrorMessage(error, lang)]);
       setApiNotice("");
     } finally {
       setPlacingOrder(false);

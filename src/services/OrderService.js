@@ -330,7 +330,7 @@ function mapBackendOrderForStorefront(order = {}) {
     ...order,
     id: order.orderNo || order.id,
     backendOrderId: order.id,
-    orderCode: order.orderNo || order.orderCode || order.id,
+    orderCode: order.orderNo || order.orderCode || "",
     customer: {
       name: order.customerName || "",
       phone: order.customerPhone || "",

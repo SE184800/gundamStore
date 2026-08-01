@@ -1,5 +1,6 @@
 import { normalizeCartItem, normalizeItems, normalizeText, resolveName } from "./PricingService";
 import { getStock } from "./InventoryService";
+import { getProductPreorderInfo } from "../utils/productAvailability";
 
 const CART_KEY = "gundam-cart-final";
 const CHECKOUT_KEY = "gundam-checkout-draft";
@@ -49,14 +50,7 @@ function sameItem(a = {}, b = {}) {
 export const PREORDER_MAX_QTY = 99;
 
 export function isPreorderProduct(product = {}) {
-  const collections = Array.isArray(product.collections) ? product.collections : [];
-  return (
-    String(product.status || "").toLowerCase().includes("pre") ||
-    collections.some((collection) => {
-      const key = String(collection || "").toLowerCase();
-      return key.includes("preorder") || key.includes("pre_order") || key === "order_items";
-    })
-  );
+  return getProductPreorderInfo(product).canOrder;
 }
 
 function dedupeCart(cart = []) {

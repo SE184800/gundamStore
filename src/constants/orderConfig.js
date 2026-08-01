@@ -241,5 +241,7 @@ export function calculatePreorderDeposit(price = 0, rate = PREORDER_DEPOSIT_RATE
 }
 
 export function getPreorderEtaText(lang = "vi") {
-  return lang === "en" ? "Estimated 30-60 days" : "Dự kiến 30-60 ngày";
+  return lang === "en"
+    ? "Estimated arrival time will be confirmed by the shop."
+    : "Thời gian dự kiến sẽ được shop xác nhận.";
 }

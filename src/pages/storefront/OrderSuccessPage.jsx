@@ -50,7 +50,7 @@ export default function OrderSuccessPage() {
   const localOrder = getOrderById(id);
   const order = backendOrder || successSnapshot?.order || localOrder;
   const source = backendOrder ? "synced" : localOrder ? "recorded" : "";
-  const publicCode = order?.orderCode || order?.orderNo || order?.code || order?.id || id;
+  const publicCode = order?.orderCode || order?.orderNo || order?.code || id;
 
   useEffect(() => {
     let alive = true;
@@ -140,7 +140,7 @@ export default function OrderSuccessPage() {
 
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
             <Link
-              to={`/order-lookup?code=${encodeURIComponent(publicCode)}${successSnapshot?.lookup?.phone ? `&phone=${encodeURIComponent(successSnapshot.lookup.phone)}` : ""}`}
+              to={`/order-lookup?code=${encodeURIComponent(publicCode)}${successSnapshot?.lookup?.phone ? `&phone=${encodeURIComponent(successSnapshot.lookup.phone)}` : ""}${successSnapshot?.lookup?.email ? `&email=${encodeURIComponent(successSnapshot.lookup.email)}` : ""}`}
               className="rounded-2xl bg-blue-700 px-6 py-4 font-black text-white"
             >
               <PackageSearch size={18} className="mr-2 inline" />

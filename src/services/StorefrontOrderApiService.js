@@ -175,6 +175,7 @@ export function buildCreateOrderPayload({
       variantId: item.variantId || item.backendVariantId || "",
       variantSku: item.variantSku || "",
       quantity: Number(item.quantity) || 1,
+      expectedPrice: Number(item.price) || 0,
     })),
   };
 }

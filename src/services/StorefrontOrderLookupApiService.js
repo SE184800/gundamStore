@@ -138,7 +138,7 @@ export function mapBackendOrderForStorefront(order = {}) {
   return {
     id: order.id,
     backendOrderId: order.id,
-    orderCode: order.orderNo || order.orderCode || order.id,
+    orderCode: order.orderNo || order.orderCode || "",
     orderNo: order.orderNo || "",
     orderType: order.orderType === "preorder" ? ORDER_TYPE.PREORDER : ORDER_TYPE.NORMAL,
     preorder:

@@ -7,6 +7,7 @@ import { addProductToCart, forceCartBadgeSync, saveBuyNowDraft, validateCartStoc
 import { addMyWishlistItem, hasAccountToken } from "../../services/AccountApiService";
 import Toast from "../../utils/Toast";
 import useToast from "../../hooks/useToast";
+import { getProductAvailability, getProductPreorderInfo } from "../../utils/productAvailability";
 function getImage(product) {
   return (
     product?.cardUrl ||
@@ -31,14 +32,6 @@ function hasCommercialDiscount(product = {}) {
   return Boolean(product.activePromotion) ||
     Number(product.discountAmount || 0) > 0 ||
     (finalPrice > 0 && compareAtPrice > finalPrice);
-}
-
-function hasPreorderTag(product = {}) {
-  const collections = Array.isArray(product.collections) ? product.collections : [];
-  return collections.some((collection) => {
-    const key = String(collection || "").toLowerCase();
-    return key.includes("preorder") || key.includes("pre_order") || key === "order_items";
-  });
 }
 
 function ProductCard({ product, lang: langProp, actions, badge, onAddToCart }) {
@@ -78,8 +71,8 @@ function ProductCard({ product, lang: langProp, actions, badge, onAddToCart }) {
   const soldCount = Number(product?.sold) || 0;
   const stock = Number(product?.stock ?? 0);
   const detailUrl = getProductUrl(product);
-  const isPreorder = String(product?.status || "").toLowerCase().includes("pre") || hasPreorderTag(product);
-  const isOutOfStock = !isPreorder && stock <= 0;
+  const isPreorder = getProductPreorderInfo(product).canOrder;
+  const isOutOfStock = !getProductAvailability(product).canAddToCart;
   const maxQty = isPreorder ? 99 : Math.max(1, stock);
   const outOfStockLabel = lang === "en" ? "Out of stock" : "Hết hàng";
 
@@ -91,13 +84,12 @@ function ProductCard({ product, lang: langProp, actions, badge, onAddToCart }) {
     titleSave: lang === "en" ? "Save to wishlist" : "Lưu yêu thích",
   };
 
-  function showCartError(result) {
-    const available = Number(result?.available || 0);
+  function showCartError() {
     notify(
       "error",
       lang === "en"
-        ? `Only ${available} item(s) available.`
-        : `Sản phẩm này chỉ còn ${available} sản phẩm trong kho.`
+        ? "Not enough stock available for this quantity."
+        : "Số lượng bạn chọn vượt quá tồn kho hiện có."
     );
   }
 

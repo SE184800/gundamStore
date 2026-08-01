@@ -52,6 +52,7 @@ function getCopy(lang) {
     back: lang === "en" ? "Back to orders" : "Quay lại đơn hàng",
     notFound: lang === "en" ? "Order not found" : "Không tìm thấy đơn hàng",
     orderTracking: lang === "en" ? "Order Tracking" : "Theo dõi đơn hàng",
+    orderRecorded: lang === "en" ? "Order recorded" : "Đơn hàng đã ghi nhận",
     createdAt: lang === "en" ? "Created at" : "Ngày đặt",
     currentStatus: lang === "en" ? "Current status" : "Trạng thái hiện tại",
     products: lang === "en" ? "Order items" : "Sản phẩm trong đơn",
@@ -483,14 +484,14 @@ export default function OrderDetailPage() {
                 <p className="text-sm font-black uppercase tracking-[0.2em] text-blue-600">
                   {t.orderTracking}
                 </p>
-                <h1 className="mt-2 text-3xl font-black text-slate-950">{order.orderCode || order.orderNo || order.id}</h1>
+                <h1 className="mt-2 text-3xl font-black text-slate-950">{order.orderCode || order.orderNo}</h1>
                 <p className="mt-2 text-sm font-semibold text-slate-500">
                   {t.createdAt}: {order.createdAt ? new Date(order.createdAt).toLocaleString("vi-VN") : "-"}
                 </p>
 
                 <div className="mt-3">
                   <span className="rounded-full bg-emerald-50 px-3 py-2 text-xs font-black text-emerald-700">
-                    {"Order recorded"}
+                    {t.orderRecorded}
                   </span>
                 </div>
                 <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-slate-500">
