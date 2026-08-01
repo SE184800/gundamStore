@@ -191,6 +191,7 @@ export function mapBackendProductToStorefront(product = {}) {
     activePromotion: product.activePromotion || null,
     discountAmount: Number(product.discountAmount || 0),
     sellable: product.sellable !== false,
+    availability: product.availability && typeof product.availability === "object" ? product.availability : null,
     source: "backend",
     backendRaw: product,
   };

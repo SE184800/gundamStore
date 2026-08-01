@@ -290,7 +290,7 @@ function ProductCard({ product, lang: langProp, actions, badge, onAddToCart }) {
                 e.stopPropagation();
                 window.location.href = detailUrl;
               }}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 px-3 py-3 text-sm font-black text-white shadow-lg shadow-amber-100 transition hover:scale-[1.01]"
+              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-900 px-3 py-3 text-sm font-black text-white shadow-lg shadow-blue-200 transition hover:scale-[1.01] hover:bg-blue-950"
             >
               <Zap size={17} />
               {t("product.preorderNow")}

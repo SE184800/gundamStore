@@ -611,7 +611,7 @@ function ProductInfo({ product, lang, actions, onPreorder, reviewCount = 0 }) {
     <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm lg:p-5">
       <Toast show={toast.show} type={toast.type} message={toast.message} onClose={dismiss} />
       <div className="flex flex-wrap gap-1.5">
-        <span className={`rounded-lg px-2.5 py-1 text-[11px] font-black text-white ${preorder ? "bg-violet-600" : isOutOfStock ? "bg-slate-500" : "bg-emerald-600"}`}>
+        <span className={`rounded-lg px-2.5 py-1 text-[11px] font-black text-white ${preorder ? "bg-blue-900" : isOutOfStock ? "bg-slate-500" : "bg-emerald-600"}`}>
           {preorder ? t.preorder : isOutOfStock ? t.outOfStock : t.inStock}
         </span>
         <span className="rounded-lg border border-blue-100 bg-blue-50 px-2.5 py-1 text-[11px] font-black text-blue-700">{t.authentic}</span>
@@ -633,7 +633,7 @@ function ProductInfo({ product, lang, actions, onPreorder, reviewCount = 0 }) {
           <div className="grid gap-3 sm:grid-cols-2">
             {variants.map((variant) => {
               const selected = selectedVariantId === variant.id;
-              const disabled = variant.active === false || (Number(variant.stock || 0) <= 0 && !isPreorder(variant));
+              const disabled = variant.active === false || (Number(variant.stock || 0) <= 0 && !preorder);
 
               return (
                 <button
@@ -699,14 +699,14 @@ function ProductInfo({ product, lang, actions, onPreorder, reviewCount = 0 }) {
       </div>
 
       {preorder ? (
-        <div className="mt-3 rounded-2xl border border-violet-200 bg-violet-50 p-3">
-          <div className="mb-2 flex items-center gap-2 text-xs font-black text-violet-800"><Clock size={16} /> {t.preorder}</div>
+        <div className="mt-3 rounded-2xl border border-blue-200 bg-blue-50 p-3">
+          <div className="mb-2 flex items-center gap-2 text-xs font-black text-blue-900"><Clock size={16} /> {t.preorder}</div>
           <div className="grid gap-2 sm:grid-cols-3">
             <div className="rounded-xl bg-white p-2.5 shadow-sm"><div className="text-[11px] font-bold text-slate-500">{t.deposit}</div><div className="mt-0.5 text-sm font-black text-slate-950">{money(preorderDeposit?.depositAmount)}</div></div>
             <div className="rounded-xl bg-white p-2.5 shadow-sm"><div className="text-[11px] font-bold text-slate-500">{t.eta}</div><div className="mt-0.5 text-sm font-black text-slate-950">{preorderEtaText}</div></div>
-            <div className="rounded-xl bg-white p-2.5 shadow-sm"><div className="text-[11px] font-bold text-slate-500">Status</div><div className="mt-0.5 text-sm font-black text-violet-700">Open</div></div>
+            <div className="rounded-xl bg-white p-2.5 shadow-sm"><div className="text-[11px] font-bold text-slate-500">Status</div><div className="mt-0.5 text-sm font-black text-red-600">Open</div></div>
           </div>
-          <p className="mt-2 text-[11px] leading-5 text-violet-800/80">{t.preorderNote}</p>
+          <p className="mt-2 text-[11px] leading-5 text-blue-900/70">{t.preorderNote}</p>
         </div>
       ) : (
         <div className={`mt-3 flex items-center gap-2 rounded-xl border p-3 text-xs font-black ${isOutOfStock
@@ -729,14 +729,14 @@ function ProductInfo({ product, lang, actions, onPreorder, reviewCount = 0 }) {
           <>
             <button
               onClick={handleAddToCart}
-              className="rounded-xl border border-violet-200 bg-white px-4 py-2.5 text-sm font-black text-violet-700 shadow-sm hover:bg-violet-50"
+              className="rounded-xl border border-blue-200 bg-white px-4 py-2.5 text-sm font-black text-blue-900 shadow-sm hover:bg-blue-50"
             >
               <ShoppingCart className="mr-2 inline" size={16} />
               {t.addToCart}
             </button>
             <button
               onClick={() => onPreorder ? onPreorder(currentProduct, qty) : actions.addToCart(currentProduct.id, qty)}
-              className="rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-black text-white shadow-lg shadow-violet-200 hover:bg-violet-700"
+              className="rounded-xl bg-blue-900 px-4 py-2.5 text-sm font-black text-white shadow-lg shadow-blue-200 hover:bg-blue-950"
             >
               <Zap className="mr-2 inline" size={16} />
               {t.preorderNow}
