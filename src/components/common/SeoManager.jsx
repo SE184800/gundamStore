@@ -29,7 +29,7 @@ function getProductAvailability(product) {
     return "https://schema.org/PreOrder";
   }
 
-  if (stock > 0) {
+  if (stock > 0 || status === "instock") {
     return "https://schema.org/InStock";
   }
 

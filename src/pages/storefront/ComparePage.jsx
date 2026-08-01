@@ -7,6 +7,7 @@ import {
   getStorefrontProductDetailForStorefront,
   getStorefrontProductsPageFromApi,
 } from "../../services/StorefrontProductApiService";
+import { getProductAvailability } from "../../utils/productAvailability";
 
 function getCopy(lang) {
   return {
@@ -27,6 +28,8 @@ function getCopy(lang) {
     grade: "Grade",
     scale: "Scale",
     status: lang === "en" ? "Status" : "Tình trạng",
+    inStockLabel: lang === "en" ? "In stock" : "Còn hàng",
+    outOfStockLabel: lang === "en" ? "Out of stock" : "Hết hàng",
     stock: lang === "en" ? "Stock" : "Tồn kho",
     brand: lang === "en" ? "Brand" : "Thương hiệu",
     difficulty: lang === "en" ? "Difficulty" : "Độ khó",
@@ -149,7 +152,7 @@ export default function ComparePage() {
     ["price", t.price, (product) => money(product.price)],
     ["grade", t.grade, (product) => product.grade || "-"],
     ["scale", t.scale, (product) => product.scale || "-"],
-    ["status", t.status, (product) => product.status || "-"],
+    ["status", t.status, (product) => (getProductAvailability(product).inStock ? t.inStockLabel : t.outOfStockLabel)],
     ["stock", t.stock, (product) => product.stock ?? 0],
     ["brand", t.brand, (product) => product.brand || "Bandai"],
     ["difficulty", t.difficulty, (product) => product.difficulty || "Intermediate"],

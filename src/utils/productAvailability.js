@@ -33,7 +33,8 @@ export function getProductPreorderInfo(product = {}) {
 export function getProductAvailability(product = {}) {
   const { canOrder } = getProductPreorderInfo(product);
   const stock = Number(product?.stock ?? 0);
-  const legacyInStock = canOrder || stock > 0;
+  const statusInStock = String(product?.status || "").toLowerCase() === "instock";
+  const legacyInStock = canOrder || stock > 0 || statusInStock;
 
   const availability = product?.availability;
   if (availability && typeof availability === "object") {
