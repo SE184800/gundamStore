@@ -277,7 +277,7 @@ export default function CartPage() {
 
   return (
     <PageShell>
-      <main className="min-h-screen bg-[#F5F7FB] px-4 pb-28 pt-6 md:px-6 md:pt-8 lg:pb-8">
+      <main className="min-h-screen bg-[#F5F7FB] px-4 pb-28 pt-6 md:px-6 md:pt-8 lg:pb-8 lg:pr-28">
         <div className="mx-auto max-w-7xl">
           <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
