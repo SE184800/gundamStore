@@ -157,6 +157,16 @@ export default function EventsPage() {
             attendees: Number(event.attendees || 0),
           }));
 
+        if (!normalized.length) {
+          setEvents(fallbackEvents);
+          setSelected(fallbackEvents[0] || null);
+          const firstDate = new Date(fallbackEvents[0].date);
+          if (!Number.isNaN(firstDate.getTime())) {
+            setMonth(new Date(firstDate.getFullYear(), firstDate.getMonth(), 1));
+          }
+          return;
+        }
+
         setEvents(normalized);
         setSelected(normalized[0] || null);
 
@@ -172,8 +182,8 @@ export default function EventsPage() {
       .catch((error) => {
         console.error("PUBLIC_EVENTS_LOAD_ERROR", error);
         if (alive) {
-          setEvents([]);
-          setSelected(null);
+          setEvents(fallbackEvents);
+          setSelected(fallbackEvents[0] || null);
         }
       })
       .finally(() => {
