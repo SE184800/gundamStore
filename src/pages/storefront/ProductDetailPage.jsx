@@ -10,6 +10,7 @@ import {
   Clock,
   CreditCard,
   Factory,
+  FileText,
   GitCompareArrows,
   Heart,
   Layers3,
@@ -921,12 +922,11 @@ function ShopInfoCard({ lang }) {
           <div className="text-lg font-black text-slate-950">{t.shopName}</div>
         </div>
       </div>
-      <div className="grid grid-cols-3 gap-2 text-center">
-        {[t.shopRating, t.shopResponse, t.shopProducts].map((item) => (
-          <div key={item} className="rounded-2xl bg-slate-50 p-3 text-xs font-black text-slate-700">{item}</div>
-        ))}
-      </div>
-      <div className="mt-4 grid grid-cols-2 gap-3">
+      {/* Star rating and product-count chips were removed: they were hardcoded
+          marketing copy ("5.0 đánh giá", "500+ sản phẩm") with no real data
+          behind them. Add them back once a real shop-rating/product-count
+          source is wired up. */}
+      <div className="grid grid-cols-2 gap-3">
         <button className="rounded-2xl bg-blue-700 px-4 py-3 text-sm font-black text-white shadow-lg shadow-blue-100 hover:bg-blue-800">{t.chatShop}</button>
         <a href="/shop" className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-center text-sm font-black text-slate-700 shadow-sm hover:bg-slate-50">{t.viewShop}</a>
       </div>
@@ -934,17 +934,43 @@ function ShopInfoCard({ lang }) {
   );
 }
 
-function ProductInfoFields({ product, lang }) {
-  const t = copy[lang];
+// Merges the legacy fixed fields (SKU/brand/grade/scale/material/difficulty)
+// with the backend's real specs[] array, so the same attribute never shows
+// up twice with two different values. A specs[] entry always wins over the
+// generic fallback; any specs entry that isn't one of the canonical fields
+// (e.g. Height, Model No.) is appended so real backend data isn't dropped.
+function getMergedSpecs(product = {}, t) {
+  const specs = Array.isArray(product.specs) ? product.specs : [];
+  const findSpec = (labels) =>
+    specs.find((spec) => labels.includes(String(spec?.label || "").trim().toLowerCase()));
+
+  const canonicalLabels = new Set([
+    "maker", "brand", "thương hiệu",
+    "grade",
+    "scale", "tỷ lệ",
+    "material", "chất liệu",
+    "difficulty", "độ khó",
+  ]);
 
   const fields = [
     { label: t.sku, value: product.sku || product.id, icon: Tag },
-    { label: t.brand, value: product.brand || "Bandai Spirits", icon: Factory },
-    { label: t.grade, value: product.grade || "Gunpla", icon: Layers3 },
-    { label: t.scale, value: product.scale || "1/144", icon: Ruler },
-    { label: t.material, value: product.material || "PS / ABS", icon: ShieldCheck },
-    { label: t.difficulty, value: product.difficulty || "Intermediate", icon: Box },
+    { label: t.brand, value: findSpec(["maker", "brand", "thương hiệu"])?.value || product.brand || "Bandai Spirits", icon: Factory },
+    { label: t.grade, value: findSpec(["grade"])?.value || product.grade || "Gunpla", icon: Layers3 },
+    { label: t.scale, value: findSpec(["scale", "tỷ lệ"])?.value || product.scale || "1/144", icon: Ruler },
+    { label: t.material, value: findSpec(["material", "chất liệu"])?.value || product.material || "PS / ABS", icon: ShieldCheck },
+    { label: t.difficulty, value: findSpec(["difficulty", "độ khó"])?.value || product.difficulty || "Intermediate", icon: Box },
   ];
+
+  const extraSpecs = specs
+    .filter((spec) => spec?.value && !canonicalLabels.has(String(spec?.label || "").trim().toLowerCase()))
+    .map((spec) => ({ label: spec.label, value: spec.value, icon: Ruler }));
+
+  return [...fields, ...extraSpecs];
+}
+
+function ProductInfoFields({ product, lang }) {
+  const t = copy[lang];
+  const fields = getMergedSpecs(product, t);
 
   return (
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -962,129 +988,97 @@ function ProductInfoFields({ product, lang }) {
   );
 }
 
-function ProductDetailTabs({ product, lang }) {
-  const t = copy[lang];
-  const tabs = [
-    { key: "info", label: t.tabInfo },
-    { key: "desc", label: t.tabDesc },
-    { key: "policy", label: t.tabPolicy },
-  ];
-  const [active, setActive] = useState("info");
-  const [descExpanded, setDescExpanded] = useState(false);
-  const boxItems = product.boxItems || ["Runner nhựa đầy đủ", "Decal sheet", "Beam Rifle", "Shield", "Beam Saber", "Sách hướng dẫn"];
-  const descText = productLongDesc(product, lang, t.defaultDesc);
-  const descIsLong = descText.length > 420;
+// Generic expand/collapse section used for every secondary block on the
+// product page (specs, description, shipping, policy, returns, reviews,
+// related products) so the page opens short and the shopper picks what to
+// read instead of scrolling past everything at once.
+function CollapsibleSection({ title, icon: Icon, defaultOpen = false, badge, children }) {
+  const [open, setOpen] = useState(defaultOpen);
 
   return (
-    <div className="rounded-3xl border border-slate-200 bg-white shadow-sm">
-      <div className="flex gap-1 overflow-x-auto border-b border-slate-100 px-4 pt-4 sm:px-5">
-        {tabs.map((tab) => (
-          <button
-            key={tab.key}
-            type="button"
-            onClick={() => setActive(tab.key)}
-            aria-selected={active === tab.key}
-            className={`shrink-0 border-b-2 px-3 pb-3 text-sm font-black transition ${active === tab.key
-              ? "border-blue-600 text-blue-700"
-              : "border-transparent text-slate-500 hover:text-slate-800"
-              }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      <div className="p-5">
-        {active === "info" && (
-          <div className="space-y-5">
-            <ProductInfoFields product={product} lang={lang} />
-            <div>
-              <h3 className="mb-3 text-base font-black text-slate-950">{t.boxTitle}</h3>
-              <div className="grid gap-3 sm:grid-cols-2">
-                {boxItems.map((item) => {
-                  const itemText = text(item, lang, "");
-                  return (
-                    <div key={itemText} className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3 text-sm font-bold text-slate-700">
-                      <CheckCircle2 className="text-emerald-600" size={18} />{itemText}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {active === "desc" && (
-          <div>
-            <p className={`text-sm leading-7 text-slate-600 whitespace-pre-line ${!descExpanded && descIsLong ? "line-clamp-6" : ""}`}>
-              {descText}
-            </p>
-            {descIsLong && (
-              <button
-                type="button"
-                onClick={() => setDescExpanded((value) => !value)}
-                className="mt-2 inline-flex items-center gap-1 text-xs font-black text-blue-700 hover:text-blue-800"
-              >
-                {descExpanded ? t.showLess : t.showMore}
-                <ChevronDown className={`transition-transform ${descExpanded ? "rotate-180" : ""}`} size={14} />
-              </button>
-            )}
-          </div>
-        )}
-
-        {active === "policy" && (
-          <PolicyAccordion
-            sections={[
-              { title: t.shippingTitle, icon: Truck, items: [t.shipping1, t.shipping2, t.shipping3] },
-              { title: t.policyTitle, icon: ShieldCheck, items: [t.policy1, t.policy2, t.policy3] },
-              { title: t.returnTitle, icon: RotateCcw, items: [t.return1, t.return2, t.return3] },
-            ]}
-          />
-        )}
-      </div>
+    <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+      <button
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        aria-expanded={open}
+        className="flex w-full items-center justify-between gap-3 p-5 text-left"
+      >
+        <span className="flex items-center gap-2 text-base font-black text-slate-950">
+          {Icon && <Icon className="text-blue-600" size={20} />}
+          {title}
+          {badge}
+        </span>
+        <ChevronDown
+          className={`shrink-0 text-slate-400 transition-transform ${open ? "rotate-180" : ""}`}
+          size={18}
+        />
+      </button>
+      {open && <div className="border-t border-slate-100 p-5">{children}</div>}
     </div>
   );
 }
 
-function PolicyAccordion({ sections }) {
-  const [openIndex, setOpenIndex] = useState(-1);
+function PolicyList({ items }) {
+  return items.map((item) => (
+    <div key={item} className="mb-3 flex gap-3 text-sm leading-6 text-slate-600 last:mb-0">
+      <CheckCircle2 className="mt-0.5 shrink-0 text-emerald-600" size={18} />
+      {item}
+    </div>
+  ));
+}
+
+function ProductDetailSections({ product, lang }) {
+  const t = copy[lang];
+  const [descExpanded, setDescExpanded] = useState(false);
+  const boxItems = product.boxItems?.length ? product.boxItems : ["Runner nhựa đầy đủ", "Decal sheet", "Beam Rifle", "Shield", "Beam Saber", "Sách hướng dẫn"];
+  const descText = productLongDesc(product, lang, t.defaultDesc);
+  const descIsLong = descText.length > 420;
 
   return (
-    <div className="divide-y divide-slate-100 rounded-3xl border border-slate-200 bg-white shadow-sm">
-      {sections.map((section, index) => {
-        const Icon = section.icon;
-        const isOpen = openIndex === index;
+    <div className="space-y-3">
+      <CollapsibleSection title={t.productInfoTitle} icon={Layers3}>
+        <ProductInfoFields product={product} lang={lang} />
+      </CollapsibleSection>
 
-        return (
-          <div key={section.title}>
-            <button
-              type="button"
-              onClick={() => setOpenIndex(isOpen ? -1 : index)}
-              aria-expanded={isOpen}
-              className="flex w-full items-center justify-between gap-3 p-5 text-left"
-            >
-              <span className="flex items-center gap-2 text-base font-black text-slate-950">
-                {Icon && <Icon className="text-blue-600" size={20} />}
-                {section.title}
-              </span>
-              <ChevronDown
-                className={`shrink-0 text-slate-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
-                size={18}
-              />
-            </button>
-            {isOpen && (
-              <div className="px-5 pb-5">
-                {section.items.map((item) => (
-                  <div key={item} className="mb-3 flex gap-3 text-sm leading-6 text-slate-600 last:mb-0">
-                    <CheckCircle2 className="mt-0.5 shrink-0 text-emerald-600" size={18} />
-                    {item}
-                  </div>
-                ))}
+      <CollapsibleSection title={t.descTitle} icon={FileText}>
+        <p className={`text-sm leading-7 text-slate-600 whitespace-pre-line ${!descExpanded && descIsLong ? "line-clamp-6" : ""}`}>
+          {descText}
+        </p>
+        {descIsLong && (
+          <button
+            type="button"
+            onClick={() => setDescExpanded((value) => !value)}
+            className="mt-2 inline-flex items-center gap-1 text-xs font-black text-blue-700 hover:text-blue-800"
+          >
+            {descExpanded ? t.showLess : t.showMore}
+            <ChevronDown className={`transition-transform ${descExpanded ? "rotate-180" : ""}`} size={14} />
+          </button>
+        )}
+
+        <h4 className="mb-3 mt-5 text-sm font-black text-slate-950">{t.boxTitle}</h4>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {boxItems.map((item) => {
+            const itemText = text(item, lang, "");
+            return (
+              <div key={itemText} className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3 text-sm font-bold text-slate-700">
+                <CheckCircle2 className="text-emerald-600" size={18} />{itemText}
               </div>
-            )}
-          </div>
-        );
-      })}
+            );
+          })}
+        </div>
+      </CollapsibleSection>
+
+      <CollapsibleSection title={t.shippingTitle} icon={Truck}>
+        <PolicyList items={[t.shipping1, t.shipping2, t.shipping3]} />
+      </CollapsibleSection>
+
+      <CollapsibleSection title={t.policyTitle} icon={ShieldCheck}>
+        <PolicyList items={[t.policy1, t.policy2, t.policy3]} />
+      </CollapsibleSection>
+
+      <CollapsibleSection title={t.returnTitle} icon={RotateCcw}>
+        <PolicyList items={[t.return1, t.return2, t.return3]} />
+      </CollapsibleSection>
     </div>
   );
 }
@@ -1102,6 +1096,7 @@ function Reviews({ product, reviews, lang, onSubmitted }) {
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  const [open, setOpen] = useState(false);
 
   function patch(field, value) {
     setDraft((prev) => ({ ...prev, [field]: value }));
@@ -1149,74 +1144,88 @@ function Reviews({ product, reviews, lang, onSubmitted }) {
 
   return (
     <section className="mx-auto max-w-[1440px] px-4 py-4 lg:px-8">
-      <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="mb-3 flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-black text-slate-950">{t.customerReviewsTitle}</h2>
-            <div className="mt-0.5 text-xs font-bold text-slate-500">{reviews.length} {t.reviews}</div>
-          </div>
-          <div className="flex items-center gap-3">
+      <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+        <button
+          type="button"
+          onClick={() => setOpen((value) => !value)}
+          aria-expanded={open}
+          className="flex w-full items-center justify-between gap-3 p-5 text-left"
+        >
+          <span className="flex items-center gap-3">
+            <span className="text-base font-black text-slate-950">{t.customerReviewsTitle}</span>
+            <span className="text-xs font-bold text-slate-500">{reviews.length} {t.reviews}</span>
             {avgRating > 0 && (
-              <div className="flex items-center gap-1 text-amber-400">
+              <span className="flex items-center gap-1 text-amber-400">
                 {Array.from({ length: 5 }).map((_, index) => (
-                  <Star key={index} size={15} fill={index < Math.round(avgRating) ? "currentColor" : "none"} />
+                  <Star key={index} size={14} fill={index < Math.round(avgRating) ? "currentColor" : "none"} />
+                ))}
+              </span>
+            )}
+          </span>
+          <ChevronDown
+            className={`shrink-0 text-slate-400 transition-transform ${open ? "rotate-180" : ""}`}
+            size={18}
+          />
+        </button>
+
+        {open && (
+          <div className="border-t border-slate-100 p-5 pt-4">
+            <div className="mb-3 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowForm((value) => !value)}
+                className="rounded-xl border border-blue-100 bg-blue-50 px-3 py-1.5 text-xs font-black text-blue-700 hover:bg-blue-100"
+              >
+                {lang === "vi" ? "Viết đánh giá" : "Write a review"}
+              </button>
+            </div>
+
+            {reviews.length ? (
+              <div className="grid gap-2 lg:grid-cols-3">
+                {reviews.slice(0, 6).map((review) => (
+                  <div key={review.id} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                    <div className="mb-1.5 flex gap-1 text-amber-400">
+                      {Array.from({ length: Number(review.rating || 5) }).map((_, index) => <Star key={index} size={12} fill="currentColor" />)}
+                    </div>
+                    <div className="text-xs font-black text-slate-950">{review.customerName || review.customer || review.name || "Builder"}</div>
+                    {review.verifiedPurchase && (
+                      <div className="mt-1 inline-flex rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-black text-blue-700">
+                        Verified purchase
+                      </div>
+                    )}
+                    {review.title && <div className="mt-1.5 text-xs font-black text-slate-900">{review.title}</div>}
+                    <p className="mt-1 text-xs leading-5 text-slate-600">{review.content || review.comment}</p>
+                    {review.adminReply && (
+                      <div className="mt-2 rounded-lg bg-white px-2.5 py-1.5 text-[11px] font-bold text-blue-700">
+                        Shop reply: {review.adminReply}
+                      </div>
+                    )}
+                  </div>
                 ))}
               </div>
+            ) : (
+              <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-5 text-center text-xs font-bold text-slate-500">{t.noReviews}</div>
             )}
-            <button
-              type="button"
-              onClick={() => setShowForm((value) => !value)}
-              className="rounded-xl border border-blue-100 bg-blue-50 px-3 py-1.5 text-xs font-black text-blue-700 hover:bg-blue-100"
-            >
-              {lang === "vi" ? "Viết đánh giá" : "Write a review"}
-            </button>
-          </div>
-        </div>
 
-        {reviews.length ? (
-          <div className="grid gap-2 lg:grid-cols-3">
-            {reviews.slice(0, 6).map((review) => (
-              <div key={review.id} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                <div className="mb-1.5 flex gap-1 text-amber-400">
-                  {Array.from({ length: Number(review.rating || 5) }).map((_, index) => <Star key={index} size={12} fill="currentColor" />)}
+            {showForm && (
+              <div className="mt-4 rounded-2xl border border-blue-100 bg-blue-50 p-4">
+                <div className="text-sm font-black text-blue-900">{lang === "vi" ? "Viết đánh giá" : "Write a review"}</div>
+                <div className="mt-3 grid gap-2 md:grid-cols-2">
+                  <input value={draft.customerName} onChange={(e) => patch("customerName", e.target.value)} placeholder={lang === "vi" ? "Tên của bạn" : "Your name"} className="rounded-xl border border-blue-100 px-3 py-2.5 text-sm font-bold outline-none" />
+                  <input value={draft.customerEmail} onChange={(e) => patch("customerEmail", e.target.value)} placeholder="Email" className="rounded-xl border border-blue-100 px-3 py-2.5 text-sm font-bold outline-none" />
+                  <input value={draft.orderNo} onChange={(e) => patch("orderNo", e.target.value)} placeholder={lang === "vi" ? "Mã đơn hàng nếu có" : "Order no if any"} className="rounded-xl border border-blue-100 px-3 py-2.5 text-sm font-bold outline-none" />
+                  <select value={draft.rating} onChange={(e) => patch("rating", Number(e.target.value))} className="rounded-xl border border-blue-100 px-3 py-2.5 text-sm font-bold outline-none">
+                    {[5, 4, 3, 2, 1].map((rating) => <option key={rating} value={rating}>{rating} stars</option>)}
+                  </select>
+                  <input value={draft.title} onChange={(e) => patch("title", e.target.value)} placeholder={lang === "vi" ? "Tiêu đề" : "Title"} className="rounded-xl border border-blue-100 px-3 py-2.5 text-sm font-bold outline-none md:col-span-2" />
+                  <textarea value={draft.content} onChange={(e) => patch("content", e.target.value)} rows={3} placeholder={lang === "vi" ? "Nội dung đánh giá" : "Review content"} className="rounded-xl border border-blue-100 px-3 py-2.5 text-sm font-bold outline-none md:col-span-2" />
                 </div>
-                <div className="text-xs font-black text-slate-950">{review.customerName || review.customer || review.name || "Builder"}</div>
-                {review.verifiedPurchase && (
-                  <div className="mt-1 inline-flex rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-black text-blue-700">
-                    Verified purchase
-                  </div>
-                )}
-                {review.title && <div className="mt-1.5 text-xs font-black text-slate-900">{review.title}</div>}
-                <p className="mt-1 text-xs leading-5 text-slate-600">{review.content || review.comment}</p>
-                {review.adminReply && (
-                  <div className="mt-2 rounded-lg bg-white px-2.5 py-1.5 text-[11px] font-bold text-blue-700">
-                    Shop reply: {review.adminReply}
-                  </div>
-                )}
+                {message && <div className="mt-2 text-xs font-black text-blue-800">{message}</div>}
+                <button onClick={() => void submitReview()} disabled={busy} className="mt-3 rounded-xl bg-blue-700 px-4 py-2.5 text-xs font-black text-white disabled:opacity-50">
+                  {busy ? "..." : lang === "vi" ? "Gửi đánh giá" : "Submit review"}
+                </button>
               </div>
-            ))}
-          </div>
-        ) : (
-          <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-5 text-center text-xs font-bold text-slate-500">{t.noReviews}</div>
-        )}
-
-        {showForm && (
-          <div className="mt-4 rounded-2xl border border-blue-100 bg-blue-50 p-4">
-            <div className="text-sm font-black text-blue-900">{lang === "vi" ? "Viết đánh giá" : "Write a review"}</div>
-            <div className="mt-3 grid gap-2 md:grid-cols-2">
-              <input value={draft.customerName} onChange={(e) => patch("customerName", e.target.value)} placeholder={lang === "vi" ? "Tên của bạn" : "Your name"} className="rounded-xl border border-blue-100 px-3 py-2.5 text-sm font-bold outline-none" />
-              <input value={draft.customerEmail} onChange={(e) => patch("customerEmail", e.target.value)} placeholder="Email" className="rounded-xl border border-blue-100 px-3 py-2.5 text-sm font-bold outline-none" />
-              <input value={draft.orderNo} onChange={(e) => patch("orderNo", e.target.value)} placeholder={lang === "vi" ? "Mã đơn hàng nếu có" : "Order no if any"} className="rounded-xl border border-blue-100 px-3 py-2.5 text-sm font-bold outline-none" />
-              <select value={draft.rating} onChange={(e) => patch("rating", Number(e.target.value))} className="rounded-xl border border-blue-100 px-3 py-2.5 text-sm font-bold outline-none">
-                {[5, 4, 3, 2, 1].map((rating) => <option key={rating} value={rating}>{rating} stars</option>)}
-              </select>
-              <input value={draft.title} onChange={(e) => patch("title", e.target.value)} placeholder={lang === "vi" ? "Tiêu đề" : "Title"} className="rounded-xl border border-blue-100 px-3 py-2.5 text-sm font-bold outline-none md:col-span-2" />
-              <textarea value={draft.content} onChange={(e) => patch("content", e.target.value)} rows={3} placeholder={lang === "vi" ? "Nội dung đánh giá" : "Review content"} className="rounded-xl border border-blue-100 px-3 py-2.5 text-sm font-bold outline-none md:col-span-2" />
-            </div>
-            {message && <div className="mt-2 text-xs font-black text-blue-800">{message}</div>}
-            <button onClick={() => void submitReview()} disabled={busy} className="mt-3 rounded-xl bg-blue-700 px-4 py-2.5 text-xs font-black text-white disabled:opacity-50">
-              {busy ? "..." : lang === "vi" ? "Gửi đánh giá" : "Submit review"}
-            </button>
+            )}
           </div>
         )}
       </div>
@@ -1237,8 +1246,50 @@ function ProductCardSkeleton() {
   );
 }
 
-function RecommendationSection({ title, products, loading, lang, viewAllHref, viewAllLabel }) {
+function RecommendationSection({ title, products, loading, lang, viewAllHref, viewAllLabel, collapsible = false }) {
+  const [open, setOpen] = useState(false);
   if (!loading && (!products || products.length === 0)) return null;
+
+  const grid = (
+    <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5">
+      {loading
+        ? Array.from({ length: 5 }).map((_, index) => <ProductCardSkeleton key={index} />)
+        : products.map((item) => <ProductCard key={item.id} product={item} lang={lang} />)}
+    </div>
+  );
+
+  if (collapsible) {
+    return (
+      <section className="mx-auto max-w-[1440px] px-4 py-4 lg:px-8">
+        <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+          <button
+            type="button"
+            onClick={() => setOpen((value) => !value)}
+            aria-expanded={open}
+            className="flex w-full items-center justify-between gap-3 p-5 text-left"
+          >
+            <span className="text-base font-black text-slate-950">{title}</span>
+            <ChevronDown
+              className={`shrink-0 text-slate-400 transition-transform ${open ? "rotate-180" : ""}`}
+              size={18}
+            />
+          </button>
+          {open && (
+            <div className="border-t border-slate-100 p-5 pt-4">
+              {viewAllHref && (
+                <div className="mb-4 flex justify-end">
+                  <a href={viewAllHref} className="inline-flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-black text-blue-700 hover:bg-blue-50">
+                    {viewAllLabel}<ArrowRight size={14} />
+                  </a>
+                </div>
+              )}
+              {grid}
+            </div>
+          )}
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="mx-auto max-w-[1440px] px-4 py-4 lg:px-8">
@@ -1251,11 +1302,7 @@ function RecommendationSection({ title, products, loading, lang, viewAllHref, vi
             </a>
           )}
         </div>
-        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5">
-          {loading
-            ? Array.from({ length: 5 }).map((_, index) => <ProductCardSkeleton key={index} />)
-            : products.map((item) => <ProductCard key={item.id} product={item} lang={lang} />)}
-        </div>
+        {grid}
       </div>
     </section>
   );
@@ -1504,7 +1551,7 @@ export default function ProductDetailPage() {
         </section>
 
         <section className="mx-auto grid max-w-[1440px] gap-5 px-4 py-4 lg:grid-cols-[1fr_360px] lg:px-8">
-          <ProductDetailTabs product={product} lang={lang} />
+          <ProductDetailSections product={product} lang={lang} />
 
           <div className="space-y-5">
             <ShopInfoCard lang={lang} />
@@ -1525,6 +1572,7 @@ export default function ProductDetailPage() {
           lang={lang}
           viewAllHref="/shop"
           viewAllLabel={t.viewAll}
+          collapsible
         />
 
         <RecommendationSection
