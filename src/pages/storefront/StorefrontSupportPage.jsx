@@ -131,7 +131,7 @@ export default function StorefrontSupportPage({ defaultType = "COMPLAINT" }) {
         description={t.desc}
       />
 
-      <main className="min-h-screen bg-[#F5F7FB] px-4 py-8 md:px-6">
+      <main className="min-h-screen bg-[#F5F7FB] px-4 py-8 md:px-6 lg:pr-28">
         <div className="mx-auto max-w-7xl">
           <p className="text-sm font-black uppercase tracking-[0.2em] text-blue-600">
             Customer care
