@@ -134,6 +134,9 @@ const copy = {
     return1: "Đổi trả nếu lỗi do nhà sản xuất theo chính sách shop.",
     return2: "Khuyến khích quay video mở hộp để xử lý nhanh hơn.",
     return3: "Không hỗ trợ đổi trả nếu runner đã cắt/lắp ráp.",
+    tabInfo: "Thông tin sản phẩm",
+    tabDesc: "Mô tả sản phẩm",
+    tabPolicy: "Chính sách & bảo hành",
     customerReviewsTitle: "Đánh giá khách hàng",
     noReviews: "Sản phẩm chưa có đánh giá được duyệt.",
     relatedTitle: "Sản phẩm liên quan",
@@ -213,6 +216,9 @@ const copy = {
     return1: "Return support for manufacturing defects according to shop policy.",
     return2: "Unboxing video helps the shop process issues faster.",
     return3: "No returns after runners are cut or assembled.",
+    tabInfo: "Product information",
+    tabDesc: "Description",
+    tabPolicy: "Policies & warranty",
     customerReviewsTitle: "Customer reviews",
     noReviews: "No approved reviews for this product yet.",
     relatedTitle: "Related products",
@@ -931,7 +937,7 @@ function ShopInfoCard({ lang }) {
   );
 }
 
-function ProductInfoTable({ product, lang }) {
+function ProductInfoFields({ product, lang }) {
   const t = copy[lang];
 
   const fields = [
@@ -944,19 +950,85 @@ function ProductInfoTable({ product, lang }) {
   ];
 
   return (
-    <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-      <h2 className="mb-4 text-xl font-black text-slate-950">{t.productInfoTitle}</h2>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {fields.map((field) => {
-          const Icon = field.icon;
-          return (
-            <div key={field.label} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <Icon className="mb-2 text-blue-600" size={20} />
-              <div className="text-xs font-black uppercase text-slate-500">{field.label}</div>
-              <div className="mt-1 font-black text-slate-950">{field.value}</div>
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      {fields.map((field) => {
+        const Icon = field.icon;
+        return (
+          <div key={field.label} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <Icon className="mb-2 text-blue-600" size={20} />
+            <div className="text-xs font-black uppercase text-slate-500">{field.label}</div>
+            <div className="mt-1 font-black text-slate-950">{field.value}</div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function ProductDetailTabs({ product, lang }) {
+  const t = copy[lang];
+  const tabs = [
+    { key: "info", label: t.tabInfo },
+    { key: "desc", label: t.tabDesc },
+    { key: "policy", label: t.tabPolicy },
+  ];
+  const [active, setActive] = useState("info");
+  const boxItems = product.boxItems || ["Runner nhựa đầy đủ", "Decal sheet", "Beam Rifle", "Shield", "Beam Saber", "Sách hướng dẫn"];
+
+  return (
+    <div className="rounded-3xl border border-slate-200 bg-white shadow-sm">
+      <div className="flex gap-1 overflow-x-auto border-b border-slate-100 px-4 pt-4 sm:px-5">
+        {tabs.map((tab) => (
+          <button
+            key={tab.key}
+            type="button"
+            onClick={() => setActive(tab.key)}
+            aria-selected={active === tab.key}
+            className={`shrink-0 border-b-2 px-3 pb-3 text-sm font-black transition ${active === tab.key
+              ? "border-blue-600 text-blue-700"
+              : "border-transparent text-slate-500 hover:text-slate-800"
+              }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="p-5">
+        {active === "info" && (
+          <div className="space-y-5">
+            <ProductInfoFields product={product} lang={lang} />
+            <div>
+              <h3 className="mb-3 text-base font-black text-slate-950">{t.boxTitle}</h3>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {boxItems.map((item) => {
+                  const itemText = text(item, lang, "");
+                  return (
+                    <div key={itemText} className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3 text-sm font-bold text-slate-700">
+                      <CheckCircle2 className="text-emerald-600" size={18} />{itemText}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-          );
-        })}
+          </div>
+        )}
+
+        {active === "desc" && (
+          <p className="text-sm leading-7 text-slate-600 whitespace-pre-line">
+            {productLongDesc(product, lang, t.defaultDesc)}
+          </p>
+        )}
+
+        {active === "policy" && (
+          <PolicyAccordion
+            sections={[
+              { title: t.shippingTitle, icon: Truck, items: [t.shipping1, t.shipping2, t.shipping3] },
+              { title: t.policyTitle, icon: ShieldCheck, items: [t.policy1, t.policy2, t.policy3] },
+              { title: t.returnTitle, icon: RotateCcw, items: [t.return1, t.return2, t.return3] },
+            ]}
+          />
+        )}
       </div>
     </div>
   );
@@ -1408,38 +1480,10 @@ export default function ProductDetailPage() {
         </section>
 
         <section className="mx-auto grid max-w-[1440px] gap-5 px-4 py-4 lg:grid-cols-[1fr_360px] lg:px-8">
-          <div className="space-y-5">
-            <ProductInfoTable product={product} lang={lang} />
-
-            <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-              <h2 className="mb-4 text-xl font-black text-slate-950">{t.descTitle}</h2>
-              <p className="text-sm leading-7 text-slate-600 whitespace-pre-line">
-                {productLongDesc(product, lang, t.defaultDesc)}
-              </p>
-
-              <h3 className="mb-3 mt-6 text-base font-black text-slate-950">{t.boxTitle}</h3>
-              <div className="grid gap-3 sm:grid-cols-2">
-                {(product.boxItems || ["Runner nhựa đầy đủ", "Decal sheet", "Beam Rifle", "Shield", "Beam Saber", "Sách hướng dẫn"]).map((item) => {
-                  const itemText = text(item, lang, "");
-                  return (
-                    <div key={itemText} className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3 text-sm font-bold text-slate-700">
-                      <CheckCircle2 className="text-emerald-600" size={18} />{itemText}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
+          <ProductDetailTabs product={product} lang={lang} />
 
           <div className="space-y-5">
             <ShopInfoCard lang={lang} />
-            <PolicyAccordion
-              sections={[
-                { title: t.shippingTitle, icon: Truck, items: [t.shipping1, t.shipping2, t.shipping3] },
-                { title: t.policyTitle, icon: ShieldCheck, items: [t.policy1, t.policy2, t.policy3] },
-                { title: t.returnTitle, icon: RotateCcw, items: [t.return1, t.return2, t.return3] },
-              ]}
-            />
           </div>
         </section>
 
