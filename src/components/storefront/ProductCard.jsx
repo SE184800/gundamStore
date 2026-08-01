@@ -188,7 +188,7 @@ function ProductCard({ product, lang: langProp, actions, badge, onAddToCart }) {
 
             {commercialDiscount && (
               <div className={`absolute left-3 z-10 rounded-lg bg-red-600 px-2.5 py-1 text-[11px] font-black text-white ${badge ? "top-11" : "top-3"}`}>
-                Sale
+                {discountPercent > 0 ? `-${discountPercent}%` : lang === "en" ? "Sale" : "Sale"}
               </div>
             )}
 
