@@ -35,7 +35,10 @@ const copy = {
     buyNow: "MUA NGAY",
     collection: "XEM BỘ SƯU TẬP",
     fastShip: "GIAO NHANH",
-    fastShipDesc: "Ship hỏa tốc 2H tại HCM & giao toàn quốc",
+    // Neutral wording — the previous "Ship hỏa tốc 2H tại HCM" claim wasn't
+    // backed by any real capability/config in this codebase; don't restore
+    // a specific speed/coverage claim without confirming it's still true.
+    fastShipDesc: "Giao hàng toàn quốc",
     sealed: "HỘP NGUYÊN VẸN",
     sealedDesc: "Đóng gói kỹ càng, bảo vệ tuyệt đối",
     authentic: "MINH BẠCH HÀNG",
@@ -78,7 +81,7 @@ const copy = {
     buyNow: "BUY NOW",
     collection: "VIEW COLLECTION",
     fastShip: "FAST SHIPPING",
-    fastShipDesc: "2H express in HCMC & nationwide delivery",
+    fastShipDesc: "Nationwide delivery",
     sealed: "MINT BOX CARE",
     sealedDesc: "Careful packing and box protection",
     authentic: "CLEAR SOURCE",

@@ -101,7 +101,6 @@ export const STRINGS = {
     },
     footer: {
       intro: "Gundam Store VN — điểm đến cho builder, collector và cộng đồng Gunpla.",
-      location: "TP.HCM, Việt Nam",
       productGroup: "Sản phẩm",
       communityGroup: "Cộng đồng",
       supportGroup: "Hỗ trợ",
@@ -224,7 +223,6 @@ export const STRINGS = {
     },
     footer: {
       intro: "Gundam Store VN — a destination for builders, collectors and the Gunpla community.",
-      location: "Ho Chi Minh City, Vietnam",
       productGroup: "Products",
       communityGroup: "Community",
       supportGroup: "Support",
@@ -317,7 +315,6 @@ export const STATIC_TEXT_EN = {
   "Email của bạn": "Your email",
   "Gửi": "Send",
   "Gundam Store VN — điểm đến cho builder, collector và cộng đồng Gunpla.": "Gundam Store VN — a destination for builders, collectors and the Gunpla community.",
-  "TP.HCM, Việt Nam": "Ho Chi Minh City, Vietnam",
   "Cập nhật preorder, restock, sự kiện và voucher cho builder.": "Receive preorder, restock, event and voucher updates for builders.",
   "AI Chatbot": "AI Chatbot",
   "Tư vấn khách hàng": "Customer support",

@@ -1,4 +1,4 @@
-import { Facebook, Mail, MapPin, MessageCircle, Youtube,Phone } from "lucide-react";
+import { Facebook, Mail, MessageCircle, Youtube,Phone } from "lucide-react";
 import { useI18n } from "../../i18n";
 import { useCms } from "../../store/CmsStore";
 import Logo from "./Logo";
@@ -49,9 +49,11 @@ export default function Footer() {
             </p>
 
             <div className="mt-5 space-y-3 text-sm font-bold text-white/70">
-              <div className="flex items-center gap-2">
-                <MapPin size={17} /> {t("footer.location")}
-              </div>
+              {/*
+                No hardcoded "TP.HCM, Việt Nam" placeholder here — the real
+                registered address (business.registeredAddress) is already
+                shown further down, conditionally, only when actually set.
+              */}
               <div className="flex items-center gap-2">
                 <Mail size={17} /> support@gundamstore.vn
               </div>

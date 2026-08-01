@@ -13,69 +13,6 @@ import { MapContainer, Marker, Popup, TileLayer } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
-const fallbackEvents = [
-  {
-    id: "event-1",
-    type: "internal",
-    mode: "offline",
-    status: "Open Registration",
-    title: "Gunpla Build Workshop",
-    date: "2026-06-08",
-    time: "14:00 - 17:00",
-    location: "Gundam Store VN Studio",
-    address: "Quận 1, TP.HCM",
-    organizer: "Gundam Store VN",
-    fee: "Miễn phí",
-    slots: "24 slots",
-    attendees: 18,
-    lat: 10.7769,
-    lng: 106.7009,
-    desc: "Workshop thực hành cắt runner, xử lý nub mark, panel line và hoàn thiện mô hình cho người mới.",
-    agenda: ["Tool cơ bản", "Xử lý nub mark", "Panel line", "Q&A cùng builder"],
-    cta: "Đăng ký tham gia",
-  },
-  {
-    id: "event-2",
-    type: "external",
-    mode: "offline",
-    status: "Upcoming",
-    title: "Bandai Hobby Showcase",
-    date: "2026-06-16",
-    time: "10:00 - 20:00",
-    location: "Hobby Expo Hall",
-    address: "Bangkok, Thailand",
-    organizer: "Bandai / Community",
-    fee: "Theo BTC",
-    slots: "Public event",
-    attendees: 120,
-    lat: 13.7563,
-    lng: 100.5018,
-    desc: "Triển lãm mô hình, release mới và khu vực trưng bày Gunpla trong khu vực.",
-    agenda: ["Showcase", "Display booth", "Community meetup"],
-    cta: "Xem thông tin",
-  },
-  {
-    id: "event-3",
-    type: "internal",
-    mode: "livestream",
-    status: "Live Soon",
-    title: "Livestream Pre-order Opening",
-    date: "2026-07-05",
-    time: "20:00 - 21:30",
-    location: "YouTube / Facebook Live",
-    address: "Online",
-    organizer: "Gundam Store VN",
-    fee: "Miễn phí",
-    slots: "Online",
-    attendees: 86,
-    lat: 35.6762,
-    lng: 139.6503,
-    desc: "Livestream mở preorder, giới thiệu hàng mới, mini game voucher và hỏi đáp cùng collector.",
-    agenda: ["Unbox hàng mới", "Mở preorder", "Mini game", "Q&A"],
-    cta: "Xem livestream",
-  },
-];
-
 function tone(event) {
   if (event.mode === "livestream") return "purple";
   if (event.mode === "online") return "cyan";
@@ -157,16 +94,6 @@ export default function EventsPage() {
             attendees: Number(event.attendees || 0),
           }));
 
-        if (!normalized.length) {
-          setEvents(fallbackEvents);
-          setSelected(fallbackEvents[0] || null);
-          const firstDate = new Date(fallbackEvents[0].date);
-          if (!Number.isNaN(firstDate.getTime())) {
-            setMonth(new Date(firstDate.getFullYear(), firstDate.getMonth(), 1));
-          }
-          return;
-        }
-
         setEvents(normalized);
         setSelected(normalized[0] || null);
 
@@ -181,10 +108,8 @@ export default function EventsPage() {
       })
       .catch((error) => {
         console.error("PUBLIC_EVENTS_LOAD_ERROR", error);
-        if (alive) {
-          setEvents(fallbackEvents);
-          setSelected(fallbackEvents[0] || null);
-        }
+        // No fake fallback event — an empty list correctly falls through to
+        // the "Chưa có sự kiện được công bố." empty state below.
       })
       .finally(() => {
         if (alive) setLoading(false);

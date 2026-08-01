@@ -1,5 +1,5 @@
 import PageShell from "../../components/common/PageShell";
-import { Mail, MapPin, MessageCircle, Phone } from "lucide-react";
+import { Mail, MessageCircle, Phone } from "lucide-react";
 
 export default function ContactPage() {
   return (
@@ -15,10 +15,18 @@ export default function ContactPage() {
 
         <section className="mt-8 grid gap-5 lg:grid-cols-[0.8fr_1.2fr]">
           <div className="space-y-4">
-            <Info icon={Phone} title="Hotline" value="0900 000 000" />
+            {/*
+              Hotline reuses the real number from FloatingChat.jsx's support
+              channel list — that entry is currently flagged
+              status:"Maintenance", active:false (the Zalo channel using the
+              same number is Active). Confirm it's live before relying on it.
+              No physical store address is shown — there's no confirmed real
+              address in this codebase, only a placeholder ("TP.HCM, Việt
+              Nam") that was removed rather than kept as unverified fake data.
+            */}
+            <Info icon={Phone} title="Hotline" value="0931817801" />
             <Info icon={MessageCircle} title="Zalo/Facebook" value="Chat với shop 09:00 - 22:00" />
             <Info icon={Mail} title="Email" value="support@gundamstore.vn" />
-            <Info icon={MapPin} title="Địa chỉ" value="TP.HCM, Việt Nam" />
           </div>
 
           <form className="rounded-5xl border border-slate-200 bg-white p-6 shadow-sm">

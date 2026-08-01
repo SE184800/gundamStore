@@ -217,6 +217,14 @@ function buildProductSeo(pathname, products, lang) {
   const description = cleanText(getName(product.description, lang) || product.desc || SITE_CONFIG.defaultDescription);
   const image = absoluteImage(getProductImage(product));
 
+  // Only emit AggregateRating when both fields are backed by real data —
+  // no fake 4.9/1-review fallback. reviewCount isn't wired up to the real
+  // reviews API from here yet, so it's currently always 0 for every
+  // product and the whole block is omitted until that's connected.
+  const realRatingValue = Number(product.rating) || 0;
+  const realReviewCount = Number(product.reviewCount || product.reviews || 0);
+  const hasRealAggregateRating = realRatingValue > 0 && realReviewCount > 0;
+
   return {
     title: `${name} | Gundam Store VN`,
     description,
@@ -233,11 +241,15 @@ function buildProductSeo(pathname, products, lang) {
         name: product.brand || "Bandai Spirits",
       },
       category: [product.grade, product.scale, "Gunpla"].filter(Boolean).join(" / "),
-      aggregateRating: {
-        "@type": "AggregateRating",
-        ratingValue: Number(product.rating || 4.9),
-        reviewCount: Number(product.reviewCount || product.reviews || 1),
-      },
+      ...(hasRealAggregateRating
+        ? {
+            aggregateRating: {
+              "@type": "AggregateRating",
+              ratingValue: realRatingValue,
+              reviewCount: realReviewCount,
+            },
+          }
+        : {}),
       offers: {
         "@type": "Offer",
         url: buildUrl(pathname),
