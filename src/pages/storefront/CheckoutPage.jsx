@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { MapPin, Truck, CreditCard, ShieldCheck, AlertCircle, Check } from "lucide-react";
 import {
@@ -27,7 +27,11 @@ import { getStorefrontShippingMethodsApi } from "../../services/ShippingApiServi
 import { useLang } from "../../store/CmsStore";
 import { clearSavedCheckoutInfo, getSavedCheckoutInfo, saveCheckoutInfo } from "../../services/SavedCheckoutInfoService";
 import { getStorefrontProductByKeyFromApi } from "../../services/StorefrontProductApiService";
-import { getOrderErrorCode, getOrderErrorMessage } from "../../services/OrderErrorHandler";
+import {
+  findDraftItemForOrderError,
+  getDetailedOrderErrorMessage,
+  getOrderErrorCode,
+} from "../../services/OrderErrorHandler";
 
 const money = (n) => (Number(n) || 0).toLocaleString("vi-VN") + "đ";
 
@@ -138,6 +142,11 @@ export default function CheckoutPage() {
   const [draft, setDraft] = useState(null);
   const [errors, setErrors] = useState([]);
   const [placingOrder, setPlacingOrder] = useState(false);
+  // React state updates are batched/async — a fast double-click can fire
+  // submitOrder twice before the first setPlacingOrder(true) commits and
+  // disables the button. A ref updates synchronously, so it's the real guard;
+  // placingOrder state stays just for the button's visual disabled/label state.
+  const submittingRef = useRef(false);
   const [apiNotice, setApiNotice] = useState("");
   const [voucherInput, setVoucherInput] = useState("");
   const [appliedVoucher, setAppliedVoucher] = useState(null);
@@ -477,10 +486,11 @@ export default function CheckoutPage() {
   }
 
   async function submitOrder() {
-    if (placingOrder) return;
+    if (submittingRef.current) return;
     if (!validateCustomer()) return;
     if (!validateDraftStock()) return;
 
+    submittingRef.current = true;
     setPlacingOrder(true);
     setApiNotice("");
 
@@ -531,9 +541,14 @@ export default function CheckoutPage() {
         await reloadDraftItemPrices();
       }
 
-      setErrors([getOrderErrorMessage(error, lang)]);
+      const detail = error?.data?.detail || null;
+      const affectedItem = findDraftItemForOrderError(draft?.items, detail);
+      const itemName = affectedItem ? getItemName(affectedItem, lang) : "";
+
+      setErrors([getDetailedOrderErrorMessage(error, lang, itemName)]);
       setApiNotice("");
     } finally {
+      submittingRef.current = false;
       setPlacingOrder(false);
     }
   }
