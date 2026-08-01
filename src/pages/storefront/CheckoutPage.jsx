@@ -96,6 +96,10 @@ function getCopy(lang) {
         ? "Save shipping info for next purchase"
         : "Lưu thông tin nhận hàng cho lần mua sau",
     clearSavedInfo: lang === "en" ? "Clear saved info" : "Xóa thông tin đã lưu",
+    saveInfoHint:
+      lang === "en"
+        ? "Saved only on this device/browser, not sent to any server. No payment info is stored."
+        : "Chỉ lưu trên thiết bị/trình duyệt này, không gửi lên máy chủ. Không lưu thông tin thanh toán.",
     savedInfoLoaded:
       lang === "en"
         ? "Loaded your saved shipping info."
@@ -733,30 +737,35 @@ export default function CheckoutPage() {
                 </div>
 
                 {!hasAccountToken() && (
-                  <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-slate-50 px-4 py-3">
-                    <label className="flex items-center gap-2 text-sm font-bold text-slate-700">
-                      <input
-                        type="checkbox"
-                        checked={saveInfoForNextTime}
-                        onChange={(e) => setSaveInfoForNextTime(e.target.checked)}
-                        className="h-4 w-4"
-                      />
-                      {t.saveInfoLabel}
-                    </label>
+                  <div className="mt-4 rounded-2xl bg-slate-50 px-4 py-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <label className="flex items-center gap-2 text-sm font-bold text-slate-700">
+                        <input
+                          type="checkbox"
+                          checked={saveInfoForNextTime}
+                          onChange={(e) => setSaveInfoForNextTime(e.target.checked)}
+                          className="h-4 w-4"
+                        />
+                        {t.saveInfoLabel}
+                      </label>
 
-                    {saveInfoForNextTime && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          clearSavedCheckoutInfo();
-                          setSaveInfoForNextTime(false);
-                          setSavedInfoNotice("");
-                        }}
-                        className="text-xs font-black text-slate-400 hover:text-red-500"
-                      >
-                        {t.clearSavedInfo}
-                      </button>
-                    )}
+                      {saveInfoForNextTime && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            clearSavedCheckoutInfo();
+                            setSaveInfoForNextTime(false);
+                            setSavedInfoNotice("");
+                          }}
+                          className="text-xs font-black text-slate-400 hover:text-red-500"
+                        >
+                          {t.clearSavedInfo}
+                        </button>
+                      )}
+                    </div>
+                    <p className="mt-1.5 text-xs font-semibold leading-5 text-slate-400">
+                      {t.saveInfoHint}
+                    </p>
                   </div>
                 )}
               </div>

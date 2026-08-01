@@ -177,7 +177,7 @@ function ProductCard({ product, lang: langProp, actions, badge, onAddToCart }) {
 
   return (
     <>
-      <article className="product-card-mobile group overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:border-blue-200 hover:shadow-xl sm:rounded-3xl">
+      <article className="product-card-mobile group flex h-full flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:border-blue-200 hover:shadow-xl sm:rounded-3xl">
         <a href={detailUrl} className="block">
           <div className="relative aspect-square overflow-hidden bg-slate-100">
             {badge && (
@@ -214,10 +214,13 @@ function ProductCard({ product, lang: langProp, actions, badge, onAddToCart }) {
           </div>
         </a>
 
-        <div className="p-3 sm:p-4">
+        <div className="flex flex-1 flex-col p-3 sm:p-4">
           <div className="mb-2 flex items-start justify-between gap-2">
-            <a href={detailUrl} className="block flex-1">
-              <h3 className="line-clamp-2 min-h-[40px] text-sm font-black leading-snug text-slate-950 transition hover:text-blue-700 sm:min-h-[44px] sm:text-base">
+            <a href={detailUrl} className="block flex-1 text-left">
+              <h3
+                title={name}
+                className="line-clamp-2 min-h-[40px] text-left text-sm font-black leading-snug text-slate-950 transition hover:text-blue-700 sm:min-h-[44px] sm:text-base sm:line-clamp-3"
+              >
                 {name}
               </h3>
             </a>
@@ -272,6 +275,7 @@ function ProductCard({ product, lang: langProp, actions, badge, onAddToCart }) {
             )}
           </div>
 
+          <div className="mt-auto">
           {wishlistMessage && (
             <div data-wishlist-card-message="true" className={`mb-3 rounded-2xl px-3 py-2 text-xs font-black ${wishlistSaved ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>
               {wishlistMessage}
@@ -306,6 +310,7 @@ function ProductCard({ product, lang: langProp, actions, badge, onAddToCart }) {
                   : t("product.addToCart")}
             </button>
           )}
+          </div>
         </div>
       </article>
 

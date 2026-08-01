@@ -1,30 +1,15 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import {
   CalendarClock,
   ClipboardCheck,
   PackageCheck,
   ShieldCheck,
-  ShoppingCart,
   WalletCards,
-  Zap,
 } from "lucide-react";
 import PageShell from "../../components/common/PageShell";
 import { useLang } from "../../store/CmsStore";
-import { addProductToCart, forceCartBadgeSync, saveCheckoutDraft } from "../../services/CartService";
 import { getStorefrontProductsPageFromApi } from "../../services/StorefrontProductApiService";
-import useToast from "../../hooks/useToast";
-import Toast from "../../utils/Toast";
-import {
-  ORDER_TYPE,
-  PAYMENT_STATUS,
-  PREORDER_STATUS,
-  calculatePreorderDeposit,
-  getLocalized,
-  getPreorderEtaText,
-} from "../../constants/orderConfig";
-
-const money = (n) => (Number(n) || 0).toLocaleString("vi-VN") + "đ";
+import ProductCard from "../../components/storefront/ProductCard";
 
 function getCopy(lang) {
   return {
@@ -47,13 +32,6 @@ function getCopy(lang) {
     items: lang === "en" ? "items" : "sản phẩm",
     loading: lang === "en" ? "Loading pre-order products..." : "Đang tải sản phẩm pre-order...",
     empty: lang === "en" ? "No pre-order products available right now." : "Hiện chưa có sản phẩm pre-order nào.",
-    fullPrice: lang === "en" ? "Full price" : "Giá sản phẩm",
-    depositNow: lang === "en" ? "Deposit now" : "Cọc trước",
-    remaining: lang === "en" ? "Remaining" : "Còn lại",
-    etaLabel: lang === "en" ? "ETA" : "Dự kiến về hàng",
-    preorderNow: lang === "en" ? "ORDER NOW" : "ĐẶT HÀNG NGAY",
-    addToCart: lang === "en" ? "Add to cart" : "Thêm vào giỏ",
-    addToCartSuccess: lang === "en" ? "Added to cart." : "Đã thêm sản phẩm vào giỏ hàng thành công!",
     viewGuide: lang === "en" ? "VIEW PRE-ORDER GUIDE" : "XEM HƯỚNG DẪN PRE-ORDER",
     policyTitle: lang === "en" ? "Pre-order policy" : "Chính sách đặt trước",
     policy1:
@@ -82,31 +60,9 @@ function getCopy(lang) {
   };
 }
 
-function getProductName(product, lang) {
-  return getLocalized(product?.name, lang, product?.name || "Gunpla");
-}
-
-function getProductShort(product, lang) {
-  return getLocalized(product?.short, lang, lang === "en" ? "Upcoming official Bandai kit." : "Hàng Bandai sắp về.");
-}
-
-function getProductImage(product) {
-  return (
-    product?.cardUrl ||
-    product?.media?.card ||
-    product?.media?.home ||
-    product?.media?.detailMain ||
-    product?.imageUrl ||
-    product?.images?.[0] ||
-    "/images/products/hi-nu.jpg"
-  );
-}
-
 export default function PreOrderPage() {
-  const navigate = useNavigate();
   const [lang] = useLang();
   const t = getCopy(lang);
-  const { toast, notify, dismiss } = useToast(2500);
 
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -131,76 +87,18 @@ export default function PreOrderPage() {
     };
   }, []);
 
-  const displayRows = products;
-
-  function startPreorder(product) {
-    const price = Number(product.price) || 0;
-    const deposit = calculatePreorderDeposit(price);
-    const name = getProductName(product, lang);
-    const etaText = product.eta || getPreorderEtaText(lang);
-
-    saveCheckoutDraft({
-      orderType: ORDER_TYPE.PREORDER,
-      items: [
-        {
-          id: product.id,
-          name,
-          image: getProductImage(product),
-          price,
-          quantity: 1,
-          selected: true,
-          status: "preorder",
-        },
-      ],
-      subtotal: price,
-      shippingFee: 0,
-      discount: 0,
-      shippingDiscount: 0,
-      voucherCode: "",
-      total: deposit.depositAmount,
-      shippingMethod: "FAST",
-      preorder: {
-        status: PREORDER_STATUS.DEPOSIT_PENDING,
-        eta: etaText,
-        fullAmount: deposit.fullAmount,
-        depositRate: deposit.depositRate,
-        depositAmount: deposit.depositAmount,
-        remainingAmount: deposit.remainingAmount,
-        depositStatus: PAYMENT_STATUS.UNPAID,
-        balanceStatus: PAYMENT_STATUS.UNPAID,
-      },
-    });
-
-    navigate("/checkout");
-  }
-
-  function addToCart(product) {
-    const name = getProductName(product, lang);
-
-    addProductToCart({
-      ...product,
-      name,
-      image: getProductImage(product),
-      status: "preorder",
-    }, 1);
-
-    forceCartBadgeSync();
-    notify("success", t.addToCartSuccess);
-  }
-
   function scrollToGuide() {
     document.getElementById("preorder-guide")?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   return (
     <PageShell>
-      <Toast show={toast.show} type={toast.type} message={toast.message} onClose={dismiss} />
       <main className="mx-auto max-w-[1440px] px-4 py-8 lg:px-8">
         <section className="relative overflow-hidden rounded-6xl bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 p-8 text-white shadow-[0_30px_120px_rgba(15,23,42,0.25)]">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_75%_35%,rgba(59,130,246,0.35),transparent_35%)]" />
           <div className="relative z-10 grid gap-8 lg:grid-cols-[1fr_360px] lg:items-end">
             <div className="max-w-3xl">
-              <div className="inline-flex rounded-full bg-amber-400 px-4 py-2 text-xs font-black uppercase tracking-[0.25em] text-slate-950">
+              <div className="inline-flex rounded-full bg-blue-500 px-4 py-2 text-xs font-black uppercase tracking-[0.25em] text-white">
                 {t.badge}
               </div>
               <h1 className="mt-5 text-5xl font-black leading-[0.95] md:text-7xl">
@@ -219,7 +117,7 @@ export default function PreOrderPage() {
             </div>
 
             <div className="rounded-4xl border border-white/10 bg-white/10 p-5 backdrop-blur">
-              <div className="flex items-center gap-2 text-sm font-black text-amber-200">
+              <div className="flex items-center gap-2 text-sm font-black text-blue-200">
                 <ShieldCheck size={18} />
                 {t.trust}
               </div>
@@ -240,13 +138,13 @@ export default function PreOrderPage() {
         <section className="mt-8 rounded-5xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
             <div>
-              <div className="inline-flex rounded-full bg-amber-50 px-3 py-1 text-xs font-black uppercase text-amber-700">
+              <div className="inline-flex rounded-full bg-blue-50 px-3 py-1 text-xs font-black uppercase text-blue-700">
                 {t.nowOpen}
               </div>
               <h2 className="mt-2 text-3xl font-black text-slate-950">{t.openProducts}</h2>
             </div>
-            <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-black text-amber-700">
-              {displayRows.length} {t.items}
+            <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-black text-blue-700">
+              {products.length} {t.items}
             </span>
           </div>
 
@@ -254,88 +152,15 @@ export default function PreOrderPage() {
             <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-10 text-center text-sm font-bold text-slate-500">
               {t.loading}
             </div>
-          ) : displayRows.length === 0 ? (
+          ) : products.length === 0 ? (
             <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-10 text-center text-sm font-bold text-slate-500">
               {t.empty}
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-3 xl:grid-cols-4">
-              {displayRows.map((product) => {
-                const price = Number(product.price) || 0;
-                const deposit = calculatePreorderDeposit(price);
-                const name = getProductName(product, lang);
-                const short = getProductShort(product, lang);
-
-                return (
-                  <article
-                    key={product.id}
-                    className="overflow-hidden rounded-4xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl"
-                  >
-                    <a href={`/product/${product.slug || product.id}`} className="block">
-                      <div className="relative aspect-square bg-slate-100">
-                        <img
-                          src={getProductImage(product)}
-                          alt={name}
-                          loading="lazy"
-                          className="h-full w-full object-cover"
-                        />
-                      </div>
-                    </a>
-
-                    <div className="p-4 text-left">
-                      <a href={`/product/${product.slug || product.id}`}>
-                        <h3
-                          title={name}
-                          className="line-clamp-2 min-h-[44px] text-base font-black leading-snug text-slate-950 hover:text-blue-700"
-                        >
-                          {name}
-                        </h3>
-                      </a>
-                      <p className="mt-2 line-clamp-2 text-sm font-semibold leading-6 text-slate-500">
-                        {short}
-                      </p>
-
-                      <div className="mt-4 space-y-2 rounded-2xl bg-amber-50 p-3 text-sm">
-                        <div className="flex justify-between">
-                          <span className="font-bold text-amber-800">{t.fullPrice}</span>
-                          <b>{money(deposit.fullAmount)}</b>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="font-bold text-amber-800">{t.depositNow}</span>
-                          <b className="text-red-600">{money(deposit.depositAmount)}</b>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="font-bold text-amber-800">{t.remaining}</span>
-                          <b>{money(deposit.remainingAmount)}</b>
-                        </div>
-                      </div>
-
-                      <div className="mt-3 rounded-2xl bg-blue-50 p-3 text-xs font-bold leading-5 text-blue-700">
-                        {t.etaLabel}: {product.eta || getPreorderEtaText(lang)}
-                      </div>
-
-                      <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
-                        <button
-                          type="button"
-                          onClick={() => startPreorder(product)}
-                          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 py-3 text-sm font-black text-white shadow-lg shadow-blue-100 transition hover:bg-blue-700"
-                        >
-                          <Zap size={16} />
-                          {t.preorderNow}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => addToCart(product)}
-                          className="flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700 shadow-sm transition hover:border-blue-200 hover:text-blue-700"
-                        >
-                          <ShoppingCart size={16} />
-                          {t.addToCart}
-                        </button>
-                      </div>
-                    </div>
-                  </article>
-                );
-              })}
+              {products.map((product) => (
+                <ProductCard key={product.id} product={product} lang={lang} />
+              ))}
             </div>
           )}
         </section>
