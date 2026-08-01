@@ -1,8 +1,12 @@
 import { Facebook, Mail, MapPin, MessageCircle, Youtube,Phone } from "lucide-react";
 import { useI18n } from "../../i18n";
+import { useCms } from "../../store/CmsStore";
 import Logo from "./Logo";
 export default function Footer() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  const { state } = useCms();
+  const business = state?.settings?.businessInfo || {};
+  const hasBusinessInfo = Boolean(business.taxCode || business.licenseNumber);
 
   const groups = [
     {
@@ -110,6 +114,32 @@ export default function Footer() {
             </div> */}
           {/* </div> */}
         </div>
+
+        {hasBusinessInfo && (
+          <div className="mt-10 border-t border-white/10 pt-6 text-xs font-semibold leading-6 text-white/50">
+            <div className="font-black uppercase tracking-[0.15em] text-white/70">
+              {lang === "en" ? "Business registration" : `Hộ kinh doanh ${state?.settings?.shopName || ""}`.trim()}
+            </div>
+            <div className="mt-2 grid gap-x-8 gap-y-1 sm:grid-cols-2">
+              {business.taxCode && (
+                <div>{lang === "en" ? "Tax code" : "MST"}: {business.taxCode}</div>
+              )}
+              {business.licenseNumber && (
+                <div>
+                  {lang === "en" ? "Business license No." : "GPKD số"} {business.licenseNumber}
+                  {business.licenseIssuedBy ? ` — ${business.licenseIssuedBy}` : ""}
+                  {business.licenseIssuedDate ? ` (${business.licenseIssuedDate})` : ""}
+                </div>
+              )}
+              {business.legalRepresentative && (
+                <div>{lang === "en" ? "Legal representative" : "Người đại diện"}: {business.legalRepresentative}</div>
+              )}
+              {business.registeredAddress && (
+                <div>{lang === "en" ? "Registered address" : "Địa chỉ"}: {business.registeredAddress}</div>
+              )}
+            </div>
+          </div>
+        )}
 
         <div className="mt-10 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-5 text-xs font-bold text-white/45 md:pr-24">
           <div>{t("footer.rights")}</div>

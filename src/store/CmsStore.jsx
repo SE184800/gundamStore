@@ -43,6 +43,16 @@ const initialState = {
     hotline: "0909 123 456",
     zalo: "https://zalo.me/",
     facebook: "https://www.facebook.com/gundamstorevn",
+    // Filled in once real business registration data is available; the footer
+    // only renders the legal-info block once taxCode or licenseNumber is set.
+    businessInfo: {
+      taxCode: "",
+      licenseNumber: "",
+      licenseIssuedBy: "",
+      licenseIssuedDate: "",
+      legalRepresentative: "",
+      registeredAddress: "",
+    },
   },
   user: null,
   cart: [
