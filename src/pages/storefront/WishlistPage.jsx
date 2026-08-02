@@ -25,6 +25,7 @@ import {
   hasAccountToken,
   removeMyWishlistItem,
 } from "../../services/AccountApiService";
+import { addProductToCart, forceCartBadgeSync, validateCartStock } from "../../services/CartService";
 
 function getCopy(lang) {
   return {
@@ -67,6 +68,10 @@ function getCopy(lang) {
         : "Không thể xóa danh sách yêu thích.",
     addCart:
       lang === "en" ? "Added to cart." : "Đã thêm sản phẩm vào giỏ hàng.",
+    addCartError:
+      lang === "en"
+        ? "This product is out of stock."
+        : "Sản phẩm này đã hết hàng.",
     inStock: lang === "en" ? "In stock" : "Còn hàng",
     outOfStock: lang === "en" ? "Out of stock" : "Hết hàng",
     addToCart: lang === "en" ? "Add to cart" : "Thêm vào giỏ",
@@ -405,7 +410,18 @@ export default function WishlistPage() {
   }
 
   function addToCart(product) {
-    actions.addToCart(product.backendProductId || product.productId || product.id, 1);
+    setError("");
+    setMessage("");
+
+    const cartProduct = { ...product, name: { vi: product.nameVi, en: product.nameEn } };
+    const validation = validateCartStock(cartProduct, 1);
+    if (!validation.ok) {
+      setError(t.addCartError);
+      return;
+    }
+
+    addProductToCart(cartProduct, 1);
+    forceCartBadgeSync();
     setMessage(t.addCart);
   }
 

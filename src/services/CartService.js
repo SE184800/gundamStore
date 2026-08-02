@@ -1,6 +1,16 @@
 import { normalizeCartItem, normalizeItems, normalizeText, resolveName } from "./PricingService";
 import { getStock } from "./InventoryService";
-import { getProductPreorderInfo } from "../utils/productAvailability";
+import { getProductAvailability, getProductPreorderInfo } from "../utils/productAvailability";
+
+// The public product API never returns a real numeric stock count (list and
+// detail responses only carry availability.inStock/canAddToCart booleans) —
+// used as the assumed quantity ceiling when a product's availability says
+// it can be added to cart but no real number exists anywhere (no cached
+// admin inventory record, no product.stock). Without this, available always
+// resolved to 0 and every add-to-cart/buy-now on a non-preorder product
+// failed with a false "exceeds stock" error for any customer session that
+// never touched the admin Products page (i.e. basically every real shopper).
+export const UNSPECIFIED_STOCK_QTY_CAP = 99;
 
 const CART_KEY = "gundam-cart-final";
 const CHECKOUT_KEY = "gundam-checkout-draft";
@@ -157,12 +167,18 @@ export function validateCartStock(product, quantity = 1, products = []) {
     : null;
 
   const preorder = isPreorderProduct(product) || isPreorderProduct(item);
+  const hasRealStockNumber = cachedStock !== null || productStock > 0;
+  const canAddToCart = getProductAvailability(product).canAddToCart;
 
   const available = preorder
     ? Math.max(PREORDER_MAX_QTY, Number(product?.stock || item.stock || 0))
     : item.variantId
       ? Number(product?.stock || item.stock || 0)
-      : Number(stock?.available || product?.stock || 0);
+      : hasRealStockNumber
+        ? Number(stock?.available || product?.stock || 0)
+        : canAddToCart
+          ? UNSPECIFIED_STOCK_QTY_CAP
+          : 0;
 
   if (available <= 0) {
     return { ok: false, reason: "OUT_OF_STOCK", available, currentQty, requestQty, item };

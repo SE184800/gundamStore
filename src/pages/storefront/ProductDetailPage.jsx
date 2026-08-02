@@ -97,6 +97,8 @@ const copy = {
     notifySubmit: "Đăng ký báo hàng",
     notifySuccess: "Đã ghi nhận. Shop sẽ báo khi hàng về.",
     deposit: "Cọc trước",
+    statusLabel: "Trạng thái",
+    statusOpen: "Đang mở",
     eta: "Dự kiến về",
     preorderNote: "Đơn pre-order sẽ được ghi nhận cọc, shop nhắc thanh toán phần còn lại khi hàng về.",
     voucherTitle: "Ưu đãi cho sản phẩm này",
@@ -179,6 +181,8 @@ const copy = {
     notifySubmit: "Register alert",
     notifySuccess: "Saved. The shop will notify you when available.",
     deposit: "Deposit",
+    statusLabel: "Status",
+    statusOpen: "Open",
     eta: "ETA",
     preorderNote: "Pre-order deposit will be recorded. The shop will remind you to pay the remaining balance when the item arrives.",
     voucherTitle: "Product deals",
@@ -699,7 +703,7 @@ function ProductInfo({ product, lang, actions, onPreorder, reviewCount = 0 }) {
           <div className="grid gap-2 sm:grid-cols-3">
             <div className="rounded-xl bg-white p-2.5 shadow-sm"><div className="text-[11px] font-bold text-slate-500">{t.deposit}</div><div className="mt-0.5 text-sm font-black text-slate-950">{money(preorderDeposit?.depositAmount)}</div></div>
             <div className="rounded-xl bg-white p-2.5 shadow-sm"><div className="text-[11px] font-bold text-slate-500">{t.eta}</div><div className="mt-0.5 text-sm font-black text-slate-950">{preorderEtaText}</div></div>
-            <div className="rounded-xl bg-white p-2.5 shadow-sm"><div className="text-[11px] font-bold text-slate-500">Status</div><div className="mt-0.5 text-sm font-black text-red-600">Open</div></div>
+            <div className="rounded-xl bg-white p-2.5 shadow-sm"><div className="text-[11px] font-bold text-slate-500">{t.statusLabel}</div><div className="mt-0.5 text-sm font-black text-red-600">{t.statusOpen}</div></div>
           </div>
           <p className="mt-2 text-[11px] leading-5 text-blue-900/70">{t.preorderNote}</p>
         </div>
@@ -766,7 +770,7 @@ function ProductInfo({ product, lang, actions, onPreorder, reviewCount = 0 }) {
       </div>
 
       {/* RestockAlertFormStart */}
-      {(preorder || Number(currentProduct.stock || 0) <= 0 || String(currentProduct.status || "").toLowerCase().includes("coming")) && (
+      {(preorder || isOutOfStock || String(currentProduct.status || "").toLowerCase().includes("coming")) && (
         <form onSubmit={submitRestockAlert} className="mt-3 rounded-2xl border border-cyan-100 bg-cyan-50 p-3">
           <div className="mb-2 flex items-center gap-2 text-xs font-black text-cyan-800">
             <BellRing size={16} />
@@ -921,7 +925,7 @@ function ShopInfoCard({ lang }) {
           behind them. Add them back once a real shop-rating/product-count
           source is wired up. */}
       <div className="grid grid-cols-2 gap-3">
-        <button className="rounded-2xl bg-blue-700 px-4 py-3 text-sm font-black text-white shadow-lg hover:bg-blue-800">{t.chatShop}</button>
+        <a href="/contact" className="rounded-2xl bg-blue-700 px-4 py-3 text-center text-sm font-black text-white shadow-lg hover:bg-blue-800">{t.chatShop}</a>
         <a href="/shop" className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-center text-sm font-black text-slate-700 shadow-sm hover:bg-slate-50">{t.viewShop}</a>
       </div>
     </div>
@@ -1023,7 +1027,11 @@ function PolicyList({ items }) {
 function ProductDetailSections({ product, lang }) {
   const t = copy[lang];
   const [descExpanded, setDescExpanded] = useState(false);
-  const boxItems = product.boxItems?.length ? product.boxItems : ["Runner nhựa đầy đủ", "Decal sheet", "Beam Rifle", "Shield", "Beam Saber", "Sách hướng dẫn"];
+  // No generic "Runner/Decal/Beam Rifle/Shield/Beam Saber" filler when the
+  // backend has no real boxItems for this product — that list was a fixed
+  // Gunpla-weapon-kit fallback shown for every product regardless of what it
+  // actually is (e.g. a display base or tool has no Beam Rifle in the box).
+  const boxItems = product.boxItems?.length ? product.boxItems : [];
   const descText = productLongDesc(product, lang, t.defaultDesc);
   const descIsLong = descText.length > 420;
 
@@ -1048,6 +1056,8 @@ function ProductDetailSections({ product, lang }) {
           </button>
         )}
 
+        {boxItems.length > 0 && (
+        <>
         <h4 className="mb-3 mt-5 text-sm font-black text-slate-950">{t.boxTitle}</h4>
         <div className="grid gap-3 sm:grid-cols-2">
           {boxItems.map((item) => {
@@ -1059,6 +1069,8 @@ function ProductDetailSections({ product, lang }) {
             );
           })}
         </div>
+        </>
+        )}
       </CollapsibleSection>
 
       <CollapsibleSection title={t.shippingTitle}>

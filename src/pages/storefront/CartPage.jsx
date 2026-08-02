@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Minus, Plus, Trash2, TicketPercent, ShieldCheck, Truck } from "lucide-react";
-import { getCart, isPreorderProduct, PREORDER_MAX_QTY, saveCart, saveCheckoutDraft } from "../../services/CartService";
+import { getCart, isPreorderProduct, PREORDER_MAX_QTY, saveCart, saveCheckoutDraft, UNSPECIFIED_STOCK_QTY_CAP } from "../../services/CartService";
 import { validateStorefrontVoucherApi, translateVoucherMessage } from "../../services/StorefrontVoucherApiService";
 import { getStock } from "../../services/InventoryService";
+import { getProductAvailability } from "../../utils/productAvailability";
 import PageShell from "../../components/common/PageShell";
 import ProductCard from "../../components/storefront/ProductCard";
 import { getStorefrontProductsPageFromApi } from "../../services/StorefrontProductApiService";
@@ -200,14 +201,19 @@ export default function CartPage() {
   const availableMap = useMemo(() => {
     const map = new Map();
     cart.forEach((item) => {
-      const rawAvailable =
-        Number(
-          getStock(item.backendProductId || item.productId || item.id || item.slug || item.sku)
-            .available
-        ) ||
-        Number(item.stock || 0) ||
-        0;
-      const available = isPreorderProduct(item) ? Math.max(PREORDER_MAX_QTY, rawAvailable) : rawAvailable;
+      const stockLookup = getStock(item.backendProductId || item.productId || item.id || item.slug || item.sku);
+      const hasRealStockNumber = (stockLookup?.source && stockLookup.source !== "missing") || Number(item.stock || 0) > 0;
+      const rawAvailable = Number(stockLookup?.available || item.stock || 0);
+      // Same gap as CartService.validateCartStock: the public API never returns a
+      // real stock count, so trust availability.canAddToCart instead of assuming 0
+      // when there's no cached/real number for this item.
+      const available = isPreorderProduct(item)
+        ? Math.max(PREORDER_MAX_QTY, rawAvailable)
+        : hasRealStockNumber
+          ? rawAvailable
+          : getProductAvailability(item).canAddToCart
+            ? UNSPECIFIED_STOCK_QTY_CAP
+            : 0;
       map.set(getCartIdentity(item), available);
     });
     return map;
@@ -389,10 +395,12 @@ export default function CartPage() {
                       <span className="inline-flex items-center gap-1 text-blue-700">
                         <ShieldCheck size={12} /> {t.guaranteed}
                       </span>
-                      <span className="text-slate-300">•</span>
-                      <span className={item.backendProductId ? "text-emerald-700" : "text-amber-700"}>
-                        {item.backendProductId ? (item.sku || item.backendProductId) : "Local"}
-                      </span>
+                      {item.sku && (
+                        <>
+                          <span className="text-slate-300">•</span>
+                          <span className="text-emerald-700">{item.sku}</span>
+                        </>
+                      )}
                       <span className="text-slate-300">•</span>
                       <span className={available <= 0 ? "text-red-500" : "text-emerald-700"}>
                         {available <= 0 ? t.outOfStockLabel : t.inStockLabel}
