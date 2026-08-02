@@ -149,6 +149,16 @@ function Section({ title, desc, children, action }) {
   );
 }
 
+// The dashboard KPI API reports order status as an upper-case enum key
+// (e.g. "PLACED"), while ORDER_STATUS_LABELS is keyed by the Title Case
+// form ("Placed") used everywhere else in admin — normalize before lookup
+// so the chart shows the same Vietnamese labels as the orders page instead
+// of the raw enum falling through untranslated.
+function normalizeOrderStatusKey(status = "") {
+  const value = String(status || "");
+  return value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
+}
+
 function shortDate(value) {
   if (!value) return "-";
   return new Date(value).toLocaleString("vi-VN");
@@ -240,7 +250,7 @@ export default function AdminDashboard() {
         <Section title={t.orderStatusMix} desc={t.last30Days}>
           <div className="space-y-3">
             {Object.entries(charts.orderStatusSummary || {}).map(([status, value]) => (
-              <BarRow key={status} label={getOrderStatusLabel(status, lang)} value={value} max={maxOrderStatus} tone="bg-violet-600" />
+              <BarRow key={status} label={getOrderStatusLabel(normalizeOrderStatusKey(status), lang)} value={value} max={maxOrderStatus} tone="bg-violet-600" />
             ))}
             {!Object.keys(charts.orderStatusSummary || {}).length && <div className="rounded-2xl border border-dashed border-slate-200 p-6 text-center text-sm font-bold text-slate-400">{t.noOrderStatus}</div>}
           </div>
