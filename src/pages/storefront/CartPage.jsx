@@ -7,7 +7,7 @@ import { getStock } from "../../services/InventoryService";
 import PageShell from "../../components/common/PageShell";
 import ProductCard from "../../components/storefront/ProductCard";
 import { getStorefrontProductsPageFromApi } from "../../services/StorefrontProductApiService";
-import { SHIPPING_METHODS, getLocalized } from "../../constants/orderConfig";
+import { getLocalized } from "../../constants/orderConfig";
 import { getStorefrontShippingMethodsApi } from "../../services/ShippingApiService";
 import { useI18n } from "../../i18n";
 import Toast from "../../utils/Toast";
@@ -90,19 +90,28 @@ export default function CartPage() {
     }
   });
   const [shippingMethod, setShippingMethod] = useState("FAST");
-  const [shippingMethods, setShippingMethods] = useState(SHIPPING_METHODS);
+  const [shippingMethods, setShippingMethods] = useState([]);
+  const [shippingMethodsError, setShippingMethodsError] = useState("");
   const [suggestedProducts, setSuggestedProducts] = useState([]);
   const [appliedVoucher, setAppliedVoucher] = useState(null);
   const [voucherChecking, setVoucherChecking] = useState(false);
 
   useEffect(() => {
     let alive = true;
-    getStorefrontShippingMethodsApi().then((methods) => {
-      if (alive && Array.isArray(methods) && methods.length) setShippingMethods(methods);
-    });
+    getStorefrontShippingMethodsApi()
+      .then((methods) => {
+        if (alive) setShippingMethods(methods);
+      })
+      .catch((error) => {
+        if (alive) {
+          setShippingMethods([]);
+          setShippingMethodsError(error?.message || (lang === "en" ? "Cannot load shipping methods." : "Không tải được phương thức vận chuyển."));
+        }
+      });
     return () => {
       alive = false;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -130,7 +139,7 @@ export default function CartPage() {
   );
   const selectedShipping =
     shippingMethods.find((item) => item.value === shippingMethod) || shippingMethods[0];
-  const baseShippingFee = selectedItems.length ? Number(selectedShipping.fee || 0) : 0;
+  const baseShippingFee = selectedItems.length ? Number(selectedShipping?.fee || 0) : 0;
   const voucher = {
     valid: Boolean(appliedVoucher?.valid),
     discount: Number(appliedVoucher?.discount) || 0,
@@ -561,26 +570,30 @@ export default function CartPage() {
                   {t.shipping}
                 </div>
 
-                <div className="grid gap-2">
-                  {shippingMethods.map((method) => (
-                    <label
-                      key={method.value}
-                      className={`cursor-pointer rounded-2xl border bg-white p-3 text-sm ${shippingMethod === method.value ? "border-blue-500 ring-2 ring-blue-100" : "border-slate-200"
-                        }`}
-                    >
-                      <input
-                        type="radio"
-                        name="cartShipping"
-                        checked={shippingMethod === method.value}
-                        onChange={() => setShippingMethod(method.value)}
-                        className="mr-2"
-                      />
-                      <b>{getLocalized(method.label, lang)}</b>
-                      <span className="ml-2 font-black text-red-500">{money(method.fee)}</span>
-                      <p className="mt-1 text-xs font-semibold text-slate-500">{getLocalized(method.desc, lang)}</p>
-                    </label>
-                  ))}
-                </div>
+                {shippingMethodsError ? (
+                  <p className="text-xs font-bold text-red-500">{shippingMethodsError}</p>
+                ) : (
+                  <div className="grid gap-2">
+                    {shippingMethods.map((method) => (
+                      <label
+                        key={method.value}
+                        className={`cursor-pointer rounded-2xl border bg-white p-3 text-sm ${shippingMethod === method.value ? "border-blue-500 ring-2 ring-blue-100" : "border-slate-200"
+                          }`}
+                      >
+                        <input
+                          type="radio"
+                          name="cartShipping"
+                          checked={shippingMethod === method.value}
+                          onChange={() => setShippingMethod(method.value)}
+                          className="mr-2"
+                        />
+                        <b>{getLocalized(method.label, lang)}</b>
+                        <span className="ml-2 font-black text-red-500">{money(method.fee)}</span>
+                        <p className="mt-1 text-xs font-semibold text-slate-500">{getLocalized(method.desc, lang)}</p>
+                      </label>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="mt-3 space-y-2 text-sm">

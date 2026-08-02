@@ -1,15 +1,11 @@
 import { apiRequest } from "./ApiClient";
-import { SHIPPING_METHODS } from "../constants/orderConfig";
 
 export async function getStorefrontShippingMethodsApi() {
-  try {
-    const data = await apiRequest("/api/shipping-methods", { method: "GET", token: "" });
-    if (data?.success && Array.isArray(data.shippingMethods) && data.shippingMethods.length) {
-      return data.shippingMethods;
-    }
-  } catch {
-    // fall through to local defaults
+  const data = await apiRequest("/api/shipping-methods", { method: "GET", token: "" });
+
+  if (!data?.success || !Array.isArray(data.shippingMethods) || !data.shippingMethods.length) {
+    throw new Error(data?.message || "Cannot load shipping methods.");
   }
 
-  return SHIPPING_METHODS;
+  return data.shippingMethods;
 }

@@ -1,7 +1,7 @@
 ﻿import { apiRequest } from "./ApiClient";
 
 export async function getInventoryDashboardApi() {
-  const data = await apiRequest("/api/inventory/api/dashboard");
+  const data = await apiRequest("/api/inventory/dashboard");
 
   if (!data?.success) {
     throw new Error(data?.message || "Cannot load inventory dashboard.");

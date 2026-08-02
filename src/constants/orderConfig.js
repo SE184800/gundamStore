@@ -81,21 +81,6 @@ export const PAYMENT_METHODS = [
   { value: "WALLET", label: { vi: "Ví điện tử/ cổng thanh toán (Đang cập nhật)", en: "E-wallet / payment gateway (Coming soon)" } },
 ];
 
-export const SHIPPING_METHODS = [
-  {
-    value: "FAST",
-    fee: 30000,
-    label: { vi: "Giao nhanh", en: "Fast delivery" },
-    desc: { vi: "Dự kiến 1-3 ngày", en: "Estimated 1-3 days" },
-  },
-  {
-    value: "EXPRESS",
-    fee: 60000,
-    label: { vi: "Hỏa tốc", en: "Express delivery" },
-    desc: { vi: "Ưu tiên xử lý, nội thành", en: "Priority handling, urban areas" },
-  },
-];
-
 export const CANCEL_REASONS = [
   { value: "changed_mind", label: { vi: "Đổi ý không mua nữa", en: "Changed mind" } },
   { value: "wrong_item", label: { vi: "Đặt nhầm sản phẩm", en: "Wrong item ordered" } },
@@ -184,10 +169,6 @@ export function getPaymentStatusOptions(lang = "vi") {
     value,
     label: getPaymentStatusLabel(value, lang),
   }));
-}
-
-export function getShippingMethod(value) {
-  return SHIPPING_METHODS.find((item) => item.value === value) || SHIPPING_METHODS[0];
 }
 
 export function maskPhone(phone = "") {

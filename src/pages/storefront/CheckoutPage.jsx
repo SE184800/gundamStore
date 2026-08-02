@@ -20,7 +20,6 @@ import { getMyAccount, getMyAddresses, hasAccountToken } from "../../services/Ac
 import {
   ORDER_TYPE,
   PAYMENT_METHODS,
-  SHIPPING_METHODS,
   getLocalized,
 } from "../../constants/orderConfig";
 import { getStorefrontShippingMethodsApi } from "../../services/ShippingApiService";
@@ -108,6 +107,12 @@ function getCopy(lang) {
       lang === "en"
         ? "Loaded your saved shipping info."
         : "Đã điền thông tin nhận hàng đã lưu trước đó.",
+    shippingMethodsLoading: lang === "en" ? "Loading shipping methods..." : "Đang tải phương thức vận chuyển...",
+    shippingMethodsError:
+      lang === "en"
+        ? "Cannot load shipping methods. Please try again."
+        : "Không tải được phương thức vận chuyển. Vui lòng thử lại.",
+    retry: lang === "en" ? "Retry" : "Thử lại",
   };
 }
 
@@ -169,18 +174,32 @@ export default function CheckoutPage() {
 
   const [savedAddresses, setSavedAddresses] = useState([]);
   const [selectedAddressId, setSelectedAddressId] = useState("");
-  const [shippingMethods, setShippingMethods] = useState(SHIPPING_METHODS);
+  const [shippingMethods, setShippingMethods] = useState([]);
+  const [shippingMethodsLoading, setShippingMethodsLoading] = useState(true);
+  const [shippingMethodsError, setShippingMethodsError] = useState("");
   const [saveInfoForNextTime, setSaveInfoForNextTime] = useState(false);
   const [savedInfoNotice, setSavedInfoNotice] = useState("");
 
+  function loadShippingMethods() {
+    setShippingMethodsLoading(true);
+    setShippingMethodsError("");
+
+    getStorefrontShippingMethodsApi()
+      .then((methods) => {
+        setShippingMethods(methods);
+      })
+      .catch((error) => {
+        setShippingMethods([]);
+        setShippingMethodsError(error?.message || t.shippingMethodsError);
+      })
+      .finally(() => {
+        setShippingMethodsLoading(false);
+      });
+  }
+
   useEffect(() => {
-    let alive = true;
-    getStorefrontShippingMethodsApi().then((methods) => {
-      if (alive && Array.isArray(methods) && methods.length) setShippingMethods(methods);
-    });
-    return () => {
-      alive = false;
-    };
+    loadShippingMethods();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function applySavedAddress(address) {
@@ -487,6 +506,7 @@ export default function CheckoutPage() {
 
   async function submitOrder() {
     if (submittingRef.current) return;
+    if (shippingMethodsLoading || !shippingMethods.length) return;
     if (!validateCustomer()) return;
     if (!validateDraftStock()) return;
 
@@ -790,28 +810,45 @@ export default function CheckoutPage() {
                   <Truck size={22} /> {t.shippingTitle}
                 </h2>
 
-                <div className="mt-5 grid gap-4 md:grid-cols-2">
-                  {shippingMethods.map((method) => (
-                    <label
-                      key={method.value}
-                      className={`cursor-pointer rounded-2xl border p-4 hover:border-blue-500 ${customer.shippingMethod === method.value ? "border-blue-500 ring-2 ring-blue-100" : ""
-                        }`}
+                {shippingMethodsLoading ? (
+                  <p className="mt-5 text-sm font-semibold text-slate-400">
+                    {t.shippingMethodsLoading}
+                  </p>
+                ) : shippingMethodsError ? (
+                  <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-red-100 bg-red-50 p-4">
+                    <p className="text-sm font-bold text-red-600">{shippingMethodsError}</p>
+                    <button
+                      type="button"
+                      onClick={loadShippingMethods}
+                      className="rounded-xl bg-red-600 px-4 py-2 text-xs font-black text-white hover:bg-red-700"
                     >
-                      <input
-                        type="radio"
-                        name="shipping"
-                        checked={customer.shippingMethod === method.value}
-                        onChange={() => setCustomer({ ...customer, shippingMethod: method.value })}
-                        className="mr-2"
-                      />
-                      <b>{getLocalized(method.label, lang)}</b>
-                      <span className="ml-2 font-black text-red-500">{money(method.fee)}</span>
-                      <p className="mt-1 text-sm text-slate-500">
-                        {getLocalized(method.desc, lang)}
-                      </p>
-                    </label>
-                  ))}
-                </div>
+                      {t.retry}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="mt-5 grid gap-4 md:grid-cols-2">
+                    {shippingMethods.map((method) => (
+                      <label
+                        key={method.value}
+                        className={`cursor-pointer rounded-2xl border p-4 hover:border-blue-500 ${customer.shippingMethod === method.value ? "border-blue-500 ring-2 ring-blue-100" : ""
+                          }`}
+                      >
+                        <input
+                          type="radio"
+                          name="shipping"
+                          checked={customer.shippingMethod === method.value}
+                          onChange={() => setCustomer({ ...customer, shippingMethod: method.value })}
+                          className="mr-2"
+                        />
+                        <b>{getLocalized(method.label, lang)}</b>
+                        <span className="ml-2 font-black text-red-500">{money(method.fee)}</span>
+                        <p className="mt-1 text-sm text-slate-500">
+                          {getLocalized(method.desc, lang)}
+                        </p>
+                      </label>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="rounded-xl bg-white p-6 shadow-sm">
@@ -948,7 +985,7 @@ export default function CheckoutPage() {
 
               <button
                 onClick={submitOrder}
-                disabled={placingOrder}
+                disabled={placingOrder || shippingMethodsLoading || !shippingMethods.length}
                 className="mt-6 hidden w-full rounded-2xl bg-blue-700 py-4 font-black text-white shadow-lg hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60 lg:block"
               >
                 {placingOrder ? t.placing : t.placeOrder}
@@ -973,7 +1010,7 @@ export default function CheckoutPage() {
           </div>
           <button
             onClick={submitOrder}
-            disabled={placingOrder}
+            disabled={placingOrder || shippingMethodsLoading || !shippingMethods.length}
             className="rounded-xl bg-blue-700 px-6 py-3 text-sm font-black text-white shadow-lg hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {placingOrder ? t.placing : t.placeOrder}

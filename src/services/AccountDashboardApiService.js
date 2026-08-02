@@ -2,7 +2,7 @@
 import { mapBackendOrderForStorefront } from "./StorefrontOrderLookupApiService";
 
 export async function getMyAccountDashboardApi() {
-  const data = await apiRequest("/api/account/api/dashboard", {
+  const data = await apiRequest("/api/account/dashboard", {
     token: getStoredAccountToken(),
   });
 

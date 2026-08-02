@@ -2,11 +2,12 @@ import { useEffect, useState } from "react";
 import PageShell from "../../components/common/PageShell";
 import ProductCard from "../../components/storefront/ProductCard";
 import { useCms, useLang } from "../../store/CmsStore";
-import { getStorefrontProductsForStorefront } from "../../services/StorefrontProductApiService";
+import { getStorefrontActivePromotionsApi } from "../../services/StorefrontPromotionApiService";
+import { mapBackendProductToStorefront } from "../../services/StorefrontProductApiService";
+import { formatCurrency } from "../../utils/format";
 import {
   BellRing,
   Flame,
-  Gift,
   PackageCheck,
   ShieldCheck,
   TicketPercent,
@@ -28,43 +29,58 @@ function getCopy(lang) {
     comingSoon: lang === "en" ? "Coming Soon" : "Sắp về",
     voucher: "Voucher",
     combo: lang === "en" ? "Builder Combo" : "Combo Builder",
+    loading: lang === "en" ? "Loading promotions..." : "Đang tải khuyến mãi...",
+    empty:
+      lang === "en"
+        ? "No active promotions right now. Check back soon!"
+        : "Hiện chưa có khuyến mãi nào đang diễn ra. Quay lại sau nhé!",
+    error:
+      lang === "en"
+        ? "Cannot load promotions right now. Please try again."
+        : "Không tải được khuyến mãi lúc này. Vui lòng thử lại.",
+    retry: lang === "en" ? "Retry" : "Thử lại",
+    seeAll: lang === "en" ? "See all" : "Xem tất cả",
   };
+}
+
+function getPromotionDiscountLabel(promo, lang) {
+  const type = String(promo?.type || "").toUpperCase();
+  const value = Number(promo?.value || 0);
+
+  if (type === "PERCENT") return `-${value}%`;
+  if (type === "FIXED") return `-${formatCurrency(value)}`;
+  return lang === "en" ? "Deal" : "Ưu đãi";
 }
 
 export default function PromotionsPage() {
   const { actions } = useCms();
   const [lang] = useLang();
   const t = getCopy(lang);
-  const [products, setProducts] = useState([]);
+  const [promotions, setPromotions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  useEffect(() => {
-    let alive = true;
+  function loadPromotions() {
     setLoading(true);
-    getStorefrontProductsForStorefront()
-      .then((list) => {
-        if (alive) setProducts(Array.isArray(list) ? list : []);
+    setError("");
+
+    getStorefrontActivePromotionsApi()
+      .then((rows) => {
+        setPromotions(Array.isArray(rows) ? rows : []);
       })
       .catch(() => {
-        if (alive) setProducts([]);
+        setPromotions([]);
+        setError(t.error);
       })
       .finally(() => {
-        if (alive) setLoading(false);
+        setLoading(false);
       });
-    return () => {
-      alive = false;
-    };
+  }
+
+  useEffect(() => {
+    loadPromotions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const deals = products.filter((product) => {
-    const collections = product.collections || [];
-    return (
-      collections.includes("sale_products") ||
-      Number(product.oldPrice || product.compareAtPrice || 0) > Number(product.price || 0)
-    );
-  });
-
-  const displayDeals = deals.length ? deals : products.slice(0, 4);
 
   return (
     <PageShell>
@@ -116,24 +132,56 @@ export default function PromotionsPage() {
               <h2 className="mt-2 text-3xl font-black text-slate-950">{t.flashSale}</h2>
             </div>
 
-            <a href="/flash-sale" className="rounded-2xl bg-slate-950 px-5 py-3 text-sm font-black text-white">
-              Xem tất cả
+            <a href="/shop" className="rounded-2xl bg-slate-950 px-5 py-3 text-sm font-black text-white">
+              {t.seeAll}
             </a>
           </div>
 
           {loading ? (
-            <div className="py-10 text-center text-sm font-black text-slate-400">
-              {lang === "en" ? "Loading..." : "Đang tải..."}
+            <div className="py-10 text-center text-sm font-black text-slate-400">{t.loading}</div>
+          ) : error ? (
+            <div className="flex flex-col items-center gap-3 py-10 text-center">
+              <p className="text-sm font-black text-red-500">{error}</p>
+              <button
+                type="button"
+                onClick={loadPromotions}
+                className="rounded-2xl bg-slate-950 px-5 py-3 text-sm font-black text-white"
+              >
+                {t.retry}
+              </button>
             </div>
-          ) : displayDeals.length === 0 ? (
-            <div className="py-10 text-center text-sm font-black text-slate-400">
-              {lang === "en" ? "No deals right now." : "Hiện chưa có sản phẩm khuyến mãi."}
-            </div>
+          ) : promotions.length === 0 ? (
+            <div className="py-10 text-center text-sm font-black text-slate-400">{t.empty}</div>
           ) : (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {displayDeals.slice(0, 4).map((product) => (
-                <ProductCard key={product.id} product={product} lang={lang} actions={actions} badge="SALE" />
-              ))}
+            <div className="space-y-8">
+              {promotions.map((promo) => {
+                const products = (promo.products || [])
+                  .map((entry) => entry.product)
+                  .filter(Boolean)
+                  .map(mapBackendProductToStorefront);
+
+                if (!products.length) return null;
+
+                return (
+                  <div key={promo.id}>
+                    <div className="mb-3 flex items-center gap-3">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-red-500 px-3 py-1 text-xs font-black text-white">
+                        <TicketPercent size={14} />
+                        {getPromotionDiscountLabel(promo, lang)}
+                      </span>
+                      <h3 className="text-xl font-black text-slate-950">
+                        {(lang === "en" ? promo.nameEn : promo.nameVi) || promo.nameVi || promo.nameEn}
+                      </h3>
+                    </div>
+
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                      {products.map((product) => (
+                        <ProductCard key={product.id} product={product} lang={lang} actions={actions} badge="SALE" />
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
         </section>
