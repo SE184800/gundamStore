@@ -1,3 +1,4 @@
+// DEPRECATED - dùng /admin/inventory/adjustments thay thế, xem báo cáo điều tra ngày 2026-08-02
 import { useEffect, useMemo, useState } from "react";
 import { RefreshCcw, Save, Search } from "lucide-react";
 import AdminPageHeader from "../../components/admin/AdminPageHeader";

@@ -1659,7 +1659,7 @@ export default function AdminProducts() {
 
   function goToProductInventory(product) {
     if (!product?.id) return;
-    window.location.href = `/admin/inventory?productId=${encodeURIComponent(product.id)}`;
+    window.location.href = `/admin/inventory/adjustments?productId=${encodeURIComponent(product.id)}`;
   }
 
   function previewProduct(product) {

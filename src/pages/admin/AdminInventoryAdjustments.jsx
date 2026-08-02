@@ -62,6 +62,9 @@ export default function AdminInventoryAdjustments() {
   }
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const productId = params.get("productId") || "";
+    if (productId) setDraft((prev) => ({ ...prev, productId }));
     void reload();
   }, []);
 

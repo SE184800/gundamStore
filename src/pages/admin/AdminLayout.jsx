@@ -291,7 +291,6 @@ export default function AdminLayout() {
       </NavGroup>
 
       <NavGroup title={t.inventoryOperations}>
-        <NavItem to="/admin/inventory" icon={Package} label={t.inventory} />
         <NavItem to="/admin/inventory/receipts" icon={Truck} label={t.inventoryReceipts} />
         <NavItem to="/admin/inventory/adjustments" icon={SlidersHorizontal} label={t.inventoryAdjustments} />
         <NavItem to="/admin/inventory/stock-count" icon={ClipboardCheck} label={t.stockCount} />
