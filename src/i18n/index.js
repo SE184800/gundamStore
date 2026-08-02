@@ -91,7 +91,7 @@ export const STRINGS = {
       addToCart: "Thêm vào giỏ",
       buyNow: "Mua ngay",
       preorder: "Pre-order",
-      preorderNow: "ĐẶT HÀNG NGAY",
+      preorderNow: "Đặt hàng ngay",
       inStock: "Còn hàng",
       stockReady: "Sẵn trong kho",
       preorderContact: "Pre-order / Liên hệ",
