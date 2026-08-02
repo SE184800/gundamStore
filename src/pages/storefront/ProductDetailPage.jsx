@@ -78,7 +78,7 @@ const copy = {
     addToCart: "Thêm vào giỏ",
     soldOut: "Hết hàng",
     buyNow: "Đặt hàng ngay",
-    preorderNow: "ĐẶT HÀNG NGAY",
+    preorderNow: "Đặt hàng ngay",
     favorite: "Yêu thích",
     saved: "Đã lưu",
     wishlistLogin: "Vui lòng đăng nhập để lưu yêu thích.",

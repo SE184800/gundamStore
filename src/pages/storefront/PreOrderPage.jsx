@@ -35,7 +35,7 @@ function getCopy(lang) {
     items: lang === "en" ? "items" : "sản phẩm",
     loading: lang === "en" ? "Loading pre-order products..." : "Đang tải sản phẩm pre-order...",
     empty: lang === "en" ? "No pre-order products available right now." : "Hiện chưa có sản phẩm pre-order nào.",
-    viewGuide: lang === "en" ? "VIEW PRE-ORDER GUIDE" : "XEM HƯỚNG DẪN PRE-ORDER",
+    viewGuide: lang === "en" ? "View pre-order guide" : "Xem hướng dẫn pre-order",
     policyTitle: lang === "en" ? "Pre-order policy" : "Chính sách đặt trước",
     policy1:
       lang === "en"
