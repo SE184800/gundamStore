@@ -36,6 +36,14 @@ a {
   -webkit-line-clamp: 2;
 }
 
+.preorder-carousel-track {
+  scrollbar-width: none;
+}
+
+.preorder-carousel-track::-webkit-scrollbar {
+  display: none;
+}
+
 @keyframes bannerProgress {
   from {
     width: 0%;

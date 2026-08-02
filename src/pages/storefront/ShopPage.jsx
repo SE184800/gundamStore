@@ -468,7 +468,14 @@ export default function ShopPage() {
   const t = text[lang];
 
   const [query, setQuery] = useState("");
-  const [stock, setStock] = useState("all");
+  const [stock, setStock] = useState(() => {
+    try {
+      const value = new URLSearchParams(window.location.search).get("stock");
+      return ["all", "inStock", "preorder", "sale", "outOfStock"].includes(value) ? value : "all";
+    } catch {
+      return "all";
+    }
+  });
   const [selectedCategoryId, setSelectedCategoryId] = useState("all");
   const [sort, setSort] = useState("popular");
   const [brand, setBrand] = useState("");

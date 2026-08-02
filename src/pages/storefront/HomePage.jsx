@@ -1,7 +1,9 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowRight,
   Boxes,
+  ChevronLeft,
+  ChevronRight,
   Layers,
   Package,
   Puzzle,
@@ -568,10 +570,87 @@ function FeaturedCategories({ lang }) {
   );
 }
 
+// Horizontal-scroll carousel used only for the "Hàng order" (pre-order)
+// section: cards always render at a fixed width (never stretched/shrunk to
+// fill a row) and overflow into a scrollable track instead. Desktop gets
+// arrow buttons that only show up when there's actually something to scroll
+// to in that direction; mobile relies on touch scroll + snap.
+function PreOrderCarousel({ products, lang, actions }) {
+  const trackRef = useRef(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  useEffect(() => {
+    const el = trackRef.current;
+    if (!el) return undefined;
+
+    function updateScrollState() {
+      setCanScrollLeft(el.scrollLeft > 4);
+      setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
+    }
+
+    updateScrollState();
+    el.addEventListener("scroll", updateScrollState, { passive: true });
+    const observer = new ResizeObserver(updateScrollState);
+    observer.observe(el);
+    return () => {
+      el.removeEventListener("scroll", updateScrollState);
+      observer.disconnect();
+    };
+  }, [products.length]);
+
+  function scrollByDirection(direction) {
+    const el = trackRef.current;
+    if (!el) return;
+    el.scrollBy({ left: direction * Math.min(el.clientWidth * 0.9, 600), behavior: "smooth" });
+  }
+
+  return (
+    <div className="relative">
+      {canScrollLeft && (
+        <button
+          type="button"
+          onClick={() => scrollByDirection(-1)}
+          aria-label="Cuộn trái"
+          className="absolute left-0 top-1/2 z-10 hidden -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200 bg-white p-2 text-slate-700 shadow-md transition hover:border-blue-300 hover:text-blue-700 sm:flex"
+        >
+          <ChevronLeft size={18} />
+        </button>
+      )}
+
+      <div
+        ref={trackRef}
+        className="preorder-carousel-track flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth pb-1"
+      >
+        {products.map((product) => (
+          <div key={product.id} className="w-[240px] max-w-[80vw] shrink-0 snap-start">
+            <ProductCard product={product} lang={lang} actions={actions} />
+          </div>
+        ))}
+      </div>
+
+      {canScrollRight && (
+        <button
+          type="button"
+          onClick={() => scrollByDirection(1)}
+          aria-label="Cuộn phải"
+          className="absolute right-0 top-1/2 z-10 hidden translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200 bg-white p-2 text-slate-700 shadow-md transition hover:border-blue-300 hover:text-blue-700 sm:flex"
+        >
+          <ChevronRight size={18} />
+        </button>
+      )}
+    </div>
+  );
+}
+
 function ProductSection({ section, products, lang, actions, badge, isFirst = false }) {
   const t = copy[lang];
   const sectionProducts = getSectionProducts(products, section);
   const title = text(section.title, lang, t.newArrivals);
+  const isPreOrderSection = section.id === "order-items";
+  const viewAllHref = isPreOrderSection
+    ? "/shop?stock=preorder"
+    : `/shop?collection=${encodeURIComponent(section.dataSource || section.id || "")}`;
 
   return (
     <section className={`p-4 ${isFirst ? "" : "border-t border-slate-100"}`}>
@@ -580,13 +659,15 @@ function ProductSection({ section, products, lang, actions, badge, isFirst = fal
           <span className="rounded-lg border border-blue-100 bg-blue-50 px-2.5 py-1 text-[10px] font-black text-blue-700">{badge}</span>
           <h2 className="text-xl font-black text-blue-700">{title}</h2>
         </div>
-        <a href={`/shop?collection=${encodeURIComponent(section.dataSource || section.id || "")}`} className="inline-flex items-center gap-1 text-xs font-black text-blue-700 hover:underline">
+        <a href={viewAllHref} className="inline-flex items-center gap-1 text-xs font-black text-blue-700 hover:underline">
           {t.viewAll}<ArrowRight size={13} />
         </a>
       </div>
 
       {sectionProducts.length ? (
-        sectionProducts.length === 1 ? (
+        isPreOrderSection ? (
+          <PreOrderCarousel products={sectionProducts} lang={lang} actions={actions} />
+        ) : sectionProducts.length === 1 ? (
           <div className="home-mobile-product-grid grid grid-cols-1 gap-3">
             <div className="max-w-xs">
               <ProductCard product={sectionProducts[0]} lang={lang} actions={actions} />
