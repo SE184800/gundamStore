@@ -29,7 +29,7 @@ const WishlistPage = lazy(() => import("./pages/storefront/WishlistPage"));
 const ComparePage = lazy(() => import("./pages/storefront/ComparePage"));
 const FAQPage = lazy(() => import("./pages/storefront/FAQPage"));
 const ReturnPolicyPage = lazy(() => import("./pages/storefront/ReturnPolicyPage"));
-const ContactPage = lazy(() => import("./pages/storefront/ContactPage"));
+const AboutPage = lazy(() => import("./pages/storefront/AboutPage"));
 const NewsPage = lazy(() => import("./pages/storefront/NewsPage"));
 const NewsDetailPage = lazy(() => import("./pages/storefront/NewsDetailPage"));
 const EventsPage = lazy(() => import("./pages/storefront/EventsPage"));
@@ -218,6 +218,7 @@ export default function App() {
           <Route path="/favorites" element={<WishlistPage />} />
           <Route path="/compare" element={<ComparePage />} />
           <Route path="/return-policy" element={<PolicyPage pageKey="return-policy" />} />
+          <Route path="/about" element={<AboutPage />} />
 
           {/* Content & Blogs */}
           <Route path="/news" element={<NewsPage />} />

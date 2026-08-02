@@ -1,5 +1,14 @@
 import { apiRequest } from "./ApiClient";
 
+export async function getPublicNavigationApi() {
+  const data = await apiRequest("/api/content/navigation", {
+    method: "GET",
+    token: "",
+  });
+  if (!data?.success) throw new Error(data?.message || "Cannot load navigation.");
+  return Array.isArray(data.navigation) ? data.navigation : [];
+}
+
 export async function getPublicNewsApi() {
   const data = await apiRequest("/api/content/news", {
     method: "GET",
