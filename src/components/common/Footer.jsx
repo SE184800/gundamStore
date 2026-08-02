@@ -15,7 +15,7 @@ export default function Footer() {
         [t("header.allProducts"), "/shop"],
         [t("header.preorder"), "/pre-order"],
         [t("header.promotions"), "/promotions"],
-        [t("header.tools"), "/shop?category=tools"],
+        [t("header.tools"), "/shop?category=catgrp-tools-paint-accessories"],
       ],
     },
     {

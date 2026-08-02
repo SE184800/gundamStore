@@ -6,7 +6,7 @@ export default function AboutPage() {
     <PageShell>
       <main className="mx-auto max-w-[1100px] px-4 py-8 lg:px-8">
         <section className="rounded-2xl bg-gradient-to-br from-blue-700 to-cyan-500 p-8 text-white">
-          <div className="text-xs font-black tracking-wide text-white/75">About us</div>
+          <div className="text-xs font-black tracking-wide text-white/75">Giới thiệu</div>
           <h1 className="mt-4 text-5xl font-black">Về Gundam Store VN</h1>
           <p className="mt-3 max-w-2xl text-sm font-semibold leading-7 text-white/80">
             Gundam Store VN là cửa hàng chuyên mô hình Gunpla/Gundam chính hãng Bandai, với sản phẩm

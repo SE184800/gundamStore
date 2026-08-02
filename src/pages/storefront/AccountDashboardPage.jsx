@@ -6,7 +6,6 @@ import {
   Loader2,
   MapPin,
   PackageCheck,
-  ShieldCheck,
   ShoppingBag,
   Ticket,
   UserRound,
@@ -30,7 +29,13 @@ function getCopy(lang) {
         : "Theo dõi đơn hàng, giao hàng, hỗ trợ, địa chỉ và yêu thích từ tài khoản backend.",
     loginRequired:
       lang === "en" ? "Please sign in to view your account." : "Vui lòng đăng nhập để xem tài khoản.",
+    loadError:
+      lang === "en"
+        ? "Cannot load your account right now. Please try again."
+        : "Không tải được thông tin tài khoản. Vui lòng thử lại.",
     login: lang === "en" ? "Sign in" : "Đăng nhập",
+    itemsCount: lang === "en" ? "item(s)" : "sản phẩm",
+    orderLabel: lang === "en" ? "Order" : "Đơn",
     loading: lang === "en" ? "Loading account..." : "Đang tải tài khoản...",
     totalOrders: lang === "en" ? "Total orders" : "Tổng đơn hàng",
     activeOrders: lang === "en" ? "Active orders" : "Đơn đang xử lý",
@@ -95,7 +100,7 @@ export default function AccountDashboardPage() {
         setDashboard(data);
       } catch (err) {
         if (!alive) return;
-        setError(err?.message || t.loginRequired);
+        setError(err?.status === 401 ? t.loginRequired : t.loadError);
       } finally {
         if (alive) setLoading(false);
       }
@@ -199,7 +204,7 @@ export default function AccountDashboardPage() {
                               </span>
                             </div>
                             <div className="mt-3 flex items-center justify-between text-sm font-black">
-                              <span className="text-slate-500">{order.items?.length || 0} item(s)</span>
+                              <span className="text-slate-500">{order.items?.length || 0} {t.itemsCount}</span>
                               <span className="text-red-500">{money(order.total)}</span>
                             </div>
                           </Link>
@@ -222,7 +227,7 @@ export default function AccountDashboardPage() {
                             </div>
                             <div className="mt-2 text-sm font-black text-slate-900">{ticket.issue}</div>
                             <div className="mt-1 text-xs font-bold text-slate-500">
-                              Order {ticket.orderNo || "-"} · {shortDate(ticket.createdAt)}
+                              {t.orderLabel} {ticket.orderNo || "-"} · {shortDate(ticket.createdAt)}
                             </div>
                           </div>
                         ))}
@@ -258,11 +263,6 @@ export default function AccountDashboardPage() {
                   </section>
                 </section>
               </section>
-
-              <div className="mt-4 rounded-xl bg-blue-50 p-4 text-sm font-bold text-blue-800">
-                <ShieldCheck size={16} className="mr-1 inline" />
-                Account data is loaded from backend account APIs.
-              </div>
             </>
           )}
         </div>

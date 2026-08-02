@@ -41,6 +41,7 @@ import {
 } from "../../services/AccountApiService";
 import { isCompareSaved, toggleCompare } from "../../services/CompareService";
 import { getProductAvailability, getProductPreorderInfo } from "../../utils/productAvailability";
+import { isMeaningfulScale } from "../../utils/format";
 import { registerRestockAlert } from "../../services/RestockAlertService";
 import {
   getStorefrontProductDetailForStorefront,
@@ -597,7 +598,7 @@ function ProductInfo({ product, lang, actions, onPreorder, reviewCount = 0 }) {
       setAlertMessage(t.notifySuccess);
       setAlertForm({ name: "", phone: "", note: "" });
     } catch (error) {
-      setAlertError(error?.message || "Request failed.");
+      setAlertError(error?.message || (lang === "en" ? "Request failed. Please try again." : "Gửi yêu cầu thất bại. Vui lòng thử lại."));
     }
   }
 
@@ -949,7 +950,11 @@ function getMergedSpecs(product = {}, t) {
     { label: t.sku, value: product.sku || product.id },
     { label: t.brand, value: findSpec(["maker", "brand", "thương hiệu"])?.value || product.brand || "Bandai Spirits" },
     { label: t.grade, value: findSpec(["grade"])?.value || product.grade || "Gunpla" },
-    { label: t.scale, value: findSpec(["scale", "tỷ lệ"])?.value || product.scale || "1/144" },
+    {
+      label: t.scale,
+      value:
+        [findSpec(["scale", "tỷ lệ"])?.value, product.scale].find(isMeaningfulScale) || "1/144",
+    },
     { label: t.material, value: findSpec(["material", "chất liệu"])?.value || product.material || "PS / ABS" },
     { label: t.difficulty, value: findSpec(["difficulty", "độ khó"])?.value || product.difficulty || "Intermediate" },
   ];
@@ -1470,7 +1475,7 @@ export default function ProductDetailPage() {
       <PageShell>
         <section className="mx-auto max-w-[960px] px-4 py-16 text-center">
           <div className="rounded-xl border border-slate-200 bg-white p-10 text-sm font-black text-slate-500 shadow-sm">
-            Loading product...
+            {lang === "en" ? "Loading product..." : "Đang tải sản phẩm..."}
           </div>
         </section>
       </PageShell>

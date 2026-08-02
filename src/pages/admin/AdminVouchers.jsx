@@ -117,7 +117,7 @@ export default function AdminVouchers() {
       const rows = await getAdminVouchersApi();
       setVouchers(rows);
     } catch (error) {
-      setApiError(error?.message || "Cannot load vouchers.");
+      setApiError(error?.message || "Không tải được danh sách voucher.");
     } finally {
       setLoading(false);
     }
@@ -180,7 +180,7 @@ export default function AdminVouchers() {
       setDrawerOpen(false);
       await reload();
     } catch (error) {
-      notify("error", error?.message || "Save voucher failed.");
+      notify("error", error?.message || "Lưu voucher thất bại.");
     }
   }
 
@@ -191,7 +191,7 @@ export default function AdminVouchers() {
       await deactivateAdminVoucherApi(item.id);
       await reload();
     } catch (error) {
-      notify("error", error?.message || "Deactivate voucher failed.");
+      notify("error", error?.message || "Vô hiệu hóa voucher thất bại.");
     }
   }
 

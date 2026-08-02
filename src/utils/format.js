@@ -15,6 +15,14 @@ export function productPayable(product) {
   return Number(product?.price || 0);
 }
 
+// Backend sends "N/A" as a literal placeholder for products with no real
+// scale (accessories, non-Gunpla figures) — treat it like an empty value so
+// it never leaks to customers as raw text or a bogus filter option.
+export function isMeaningfulScale(value) {
+  const normalized = String(value || "").trim();
+  return Boolean(normalized) && normalized.toUpperCase() !== "N/A";
+}
+
 export function makeSlug(text) {
   return String(text || "")
     .normalize("NFD").replace(/[\u0300-\u036f]/g, "")

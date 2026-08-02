@@ -105,7 +105,10 @@ export default function OrderLookupPage() {
       if (err?.status === 404) {
         setError(t.notFound);
       } else if (err?.status === 429) {
-        setError(err?.message || "Bạn thao tác quá nhanh. Vui lòng thử lại sau.");
+        setError(
+          err?.message ||
+            (lang === "en" ? "You're doing that too fast. Please try again shortly." : "Bạn thao tác quá nhanh. Vui lòng thử lại sau.")
+        );
       } else {
         setError(err?.message || t.notFound);
       }

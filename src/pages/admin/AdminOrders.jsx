@@ -302,7 +302,7 @@ export default function AdminOrders() {
       await updateAdminOrderStatusApi(order.id, status, note);
       await reload();
     } catch (error) {
-      notify("error", error?.message || "Update status failed.");
+      notify("error", error?.message || "Cập nhật trạng thái đơn thất bại.");
     }
   }
 
@@ -329,7 +329,7 @@ export default function AdminOrders() {
       });
       await reload();
     } catch (error) {
-      notify("error", error?.message || "Update payment failed.");
+      notify("error", error?.message || "Cập nhật thanh toán thất bại.");
     }
   }
 
@@ -348,7 +348,7 @@ export default function AdminOrders() {
 
       notify("success", "Đã lưu thanh toán.");
     } catch (error) {
-      notify("error", error?.message || "Save payment failed.");
+      notify("error", error?.message || "Lưu thanh toán thất bại.");
     }
   }
 
@@ -371,7 +371,7 @@ export default function AdminOrders() {
 
       notify("success", "Đã lưu vận chuyển.");
     } catch (error) {
-      notify("error", error?.message || "Save shipping failed.");
+      notify("error", error?.message || "Lưu vận chuyển thất bại.");
     }
   }
 

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Heart, ShoppingCart, Star } from "lucide-react";
-import { formatCurrency } from "../../utils/format";
+import { formatCurrency, isMeaningfulScale } from "../../utils/format";
 import { resolveText, useI18n } from "../../i18n";
 import { addProductToCart, forceCartBadgeSync, validateCartStock } from "../../services/CartService";
 import { addMyWishlistItem, hasAccountToken } from "../../services/AccountApiService";
@@ -110,7 +110,10 @@ function ProductCard({ product, lang: langProp, actions, badge, onAddToCart }) {
     else addProductToCart(product, qty);
 
     forceCartBadgeSync();
-    notify("success", `Đã thêm sản phẩm vào giỏ hàng thành công!`);
+    notify(
+      "success",
+      lang === "en" ? "Added to cart successfully!" : "Đã thêm sản phẩm vào giỏ hàng thành công!"
+    );
     actions?.track?.("add_to_cart", { productId: product?.id, qty });
     return true;
   }
@@ -191,7 +194,7 @@ function ProductCard({ product, lang: langProp, actions, badge, onAddToCart }) {
           </div>
 
           <div className="mb-3 flex items-center justify-between text-sm">
-            <span className="font-semibold text-slate-500">{product?.scale || "1/144"}</span>
+            <span className="font-semibold text-slate-500">{isMeaningfulScale(product?.scale) ? product.scale : "1/144"}</span>
             <span className="font-black text-blue-700">
               {isOutOfStock ? outOfStockLabel : isPreorder ? t("product.preorder") : t("product.inStock")}
             </span>

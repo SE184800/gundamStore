@@ -1638,7 +1638,7 @@ export default function AdminProducts() {
         setPricePrompt(saved);
       }
     } catch (error) {
-      notify("error", error?.message || "Save product failed.");
+      notify("error", error?.message || (lang === "en" ? "Save product failed." : "Lưu sản phẩm thất bại."));
     }
   }
 
@@ -1690,7 +1690,7 @@ export default function AdminProducts() {
       await updateAdminProductApi(product.id, next);
       await reload();
     } catch (error) {
-      notify("error", error?.message || "Update publish status failed.");
+      notify("error", error?.message || (lang === "en" ? "Update publish status failed." : "Cập nhật trạng thái publish thất bại."));
     }
   }
 

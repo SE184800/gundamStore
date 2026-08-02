@@ -55,7 +55,7 @@ export default function AdminInventoryAdjustments() {
         return;
       }
 
-      setApiError(error?.message || "Cannot load adjustments.");
+      setApiError(error?.message || "Không tải được danh sách điều chỉnh tồn.");
     } finally {
       setLoading(false);
     }
@@ -107,7 +107,7 @@ export default function AdminInventoryAdjustments() {
       await reload();
       notify("success", "Đã điều chỉnh tồn kho.");
     } catch (error) {
-      notify("error", error?.message || "Create stock adjustment failed.");
+      notify("error", error?.message || "Tạo phiếu điều chỉnh tồn thất bại.");
     }
   }
 

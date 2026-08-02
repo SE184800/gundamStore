@@ -17,6 +17,7 @@ import {
 import AdminPageHeader from "../../components/admin/AdminPageHeader";
 import { formatCurrency } from "../../utils/format";
 import { getAdminDashboardKpisApi } from "../../services/AdminDashboardApiService";
+import { getOrderStatusLabel } from "../../constants/orderConfig";
 import { useLang } from "../../store/CmsStore";
 
 function getCopy(lang) {
@@ -171,7 +172,7 @@ export default function AdminDashboard() {
       // Keep the last successfully loaded numbers on screen instead of
       // wiping them to zero — a transient refresh failure (e.g. backend
       // cold start) shouldn't make a healthy store look dead.
-      setApiError(error?.message || "Cannot load dashboard.");
+      setApiError(error?.message || (lang === "en" ? "Cannot load dashboard." : "Không tải được dữ liệu bảng điều khiển."));
     } finally {
       setLoading(false);
     }
@@ -239,7 +240,7 @@ export default function AdminDashboard() {
         <Section title={t.orderStatusMix} desc={t.last30Days}>
           <div className="space-y-3">
             {Object.entries(charts.orderStatusSummary || {}).map(([status, value]) => (
-              <BarRow key={status} label={status} value={value} max={maxOrderStatus} tone="bg-violet-600" />
+              <BarRow key={status} label={getOrderStatusLabel(status, lang)} value={value} max={maxOrderStatus} tone="bg-violet-600" />
             ))}
             {!Object.keys(charts.orderStatusSummary || {}).length && <div className="rounded-2xl border border-dashed border-slate-200 p-6 text-center text-sm font-bold text-slate-400">{t.noOrderStatus}</div>}
           </div>

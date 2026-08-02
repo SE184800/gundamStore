@@ -87,7 +87,7 @@ export default function AdminCMSBanners() {
       setBanners(bannerRows);
       setHeroSettings(settings || defaultHeroSettings);
     } catch (err) {
-      setError(err?.message || "Cannot load banners.");
+      setError(err?.message || (lang === "en" ? "Cannot load banners." : "Không tải được banner."));
     } finally {
       setLoading(false);
     }
@@ -258,28 +258,28 @@ export default function AdminCMSBanners() {
 
       if (draft.id) {
         await updateAdminBanner(draft.id, payload);
-        setMessage("Banner updated.");
+        setMessage(lang === "en" ? "Banner updated." : "Đã cập nhật banner.");
       } else {
         await createAdminBanner(payload);
-        setMessage("Banner created.");
+        setMessage(lang === "en" ? "Banner created." : "Đã tạo banner.");
       }
 
       setOpen(false);
       await refresh();
     } catch (err) {
-      setError(err?.message || "Cannot save banner.");
+      setError(err?.message || (lang === "en" ? "Cannot save banner." : "Không lưu được banner."));
     }
   }
 
   async function removeBanner(id) {
-    if (!window.confirm("Delete this banner?")) return;
+    if (!window.confirm(lang === "en" ? "Delete this banner?" : "Xóa banner này?")) return;
 
     try {
       await deleteAdminBanner(id);
-      setMessage("Banner deleted.");
+      setMessage(lang === "en" ? "Banner deleted." : "Đã xóa banner.");
       await refresh();
     } catch (err) {
-      setError(err?.message || "Cannot delete banner.");
+      setError(err?.message || (lang === "en" ? "Cannot delete banner." : "Không xóa được banner."));
     }
   }
 
@@ -291,9 +291,9 @@ export default function AdminCMSBanners() {
       });
 
       setHeroSettings(next || { ...heroSettings, ...patch });
-      setMessage("Hero settings updated.");
+      setMessage(lang === "en" ? "Hero settings updated." : "Đã cập nhật cấu hình hero.");
     } catch (err) {
-      setError(err?.message || "Cannot update hero settings.");
+      setError(err?.message || (lang === "en" ? "Cannot update hero settings." : "Không cập nhật được cấu hình hero."));
     }
   }
 

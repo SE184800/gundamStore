@@ -379,7 +379,7 @@ export default function CartPage() {
                   const removeItem = () => {
                     const nextCart = cart.filter((x) => !isSameCartItem(x, item));
                     updateCart(nextCart);
-                    notify("error", lang === "en" ? "Removed product from cart." : "Đã xóa sản phẩm khỏi giỏ hàng.");
+                    notify("success", lang === "en" ? "Removed product from cart." : "Đã xóa sản phẩm khỏi giỏ hàng.");
                   };
 
                   const badgeLine = (

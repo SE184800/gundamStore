@@ -75,7 +75,7 @@ export default function AdminCustomers() {
       setCustomers(data.customers);
       setSummary(data.summary || null);
     } catch (error) {
-      setApiError(error?.message || "Cannot load customers.");
+      setApiError(error?.message || "Không tải được danh sách khách hàng.");
     } finally {
       setLoading(false);
     }
@@ -120,7 +120,7 @@ export default function AdminCustomers() {
         active: item.active !== false,
       });
     } catch (error) {
-      notify("error", error?.message || "Cannot load customer detail.");
+      notify("error", error?.message || "Không tải được chi tiết khách hàng.");
       setDrawerOpen(false);
     } finally {
       setDetailLoading(false);
@@ -143,7 +143,7 @@ export default function AdminCustomers() {
       setNoteDraft({ type: "NOTE", content: "" });
       await reload();
     } catch (error) {
-      notify("error", error?.message || "Cannot add note.");
+      notify("error", error?.message || "Thêm ghi chú thất bại.");
     }
   }
 
@@ -157,7 +157,7 @@ export default function AdminCustomers() {
       await reload();
       notify("success", "Customer profile updated.");
     } catch (error) {
-      notify("error", error?.message || "Cannot update customer.");
+      notify("error", error?.message || "Cập nhật khách hàng thất bại.");
     }
   }
 

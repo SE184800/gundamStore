@@ -9,6 +9,7 @@ import {
   getStorefrontProductsPageFromApi,
 } from "../../services/StorefrontProductApiService";
 import { getProductAvailability, getProductPreorderInfo } from "../../utils/productAvailability";
+import { isMeaningfulScale } from "../../utils/format";
 
 const text = {
   vi: {
@@ -28,6 +29,7 @@ const text = {
     priceLow: "Giá thấp đến cao",
     priceHigh: "Giá cao đến thấp",
     noProducts: "Không có sản phẩm phù hợp.",
+    loadError: "Không tải được dữ liệu sản phẩm. Vui lòng thử tải lại trang.",
     loading: "Đang tải...",
     loadMore: "Xem thêm sản phẩm",
     result: "sản phẩm phù hợp",
@@ -64,6 +66,7 @@ const text = {
     priceLow: "Price low to high",
     priceHigh: "Price high to low",
     noProducts: "No products match.",
+    loadError: "Could not load product data. Please try reloading the page.",
     loading: "Loading...",
     loadMore: "Load more",
     result: "matching products",
@@ -548,8 +551,9 @@ export default function ShopPage() {
       })
       .catch((error) => {
         if (!alive) return;
+        console.error("SHOP_CATEGORY_TREE_ERROR", error);
         setCategoryTreeFromApi([]);
-        setCatalogError(error?.message || "Storefront catalog sync skipped.");
+        setCatalogError(t.loadError);
       });
     return () => { alive = false; };
   }, []);
@@ -633,7 +637,7 @@ export default function ShopPage() {
     [fullCatalog]
   );
   const scaleOptions = useMemo(
-    () => Array.from(new Set(fullCatalog.map((p) => p.scale).filter(Boolean))).sort(),
+    () => Array.from(new Set(fullCatalog.map((p) => p.scale).filter(isMeaningfulScale))).sort(),
     [fullCatalog]
   );
 
@@ -688,9 +692,10 @@ export default function ShopPage() {
       })
       .catch((error) => {
         if (!alive) return;
+        console.error("SHOP_PRODUCTS_PAGE_ERROR", error);
         setProducts([]);
         setProductMeta({ total: 0, totalPages: 1 });
-        setCatalogError(error?.message || "Storefront product sync skipped.");
+        setCatalogError(t.loadError);
       })
       .finally(() => {
         if (alive) setProductsLoading(false);

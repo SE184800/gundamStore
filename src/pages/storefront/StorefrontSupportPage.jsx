@@ -29,8 +29,8 @@ function getCopy(lang) {
     title: lang === "en" ? "Support / Contact Center" : "Trung tâm hỗ trợ / liên hệ",
     desc:
       lang === "en"
-        ? "Submit order support, return, refund, damaged box or missing part requests. Your ticket will be handled in the seller center."
-        : "Gửi yêu cầu hỗ trợ đơn hàng, đổi trả, hoàn tiền, móp hộp hoặc thiếu phụ kiện. Ticket sẽ được xử lý trong seller center.",
+        ? "Submit order support, return, refund, damaged box or missing part requests. Our team will review and follow up with you."
+        : "Gửi yêu cầu hỗ trợ đơn hàng, đổi trả, hoàn tiền, móp hộp hoặc thiếu phụ kiện. Đội ngũ shop sẽ xem xét và phản hồi cho bạn.",
     orderNo: lang === "en" ? "Order number" : "Mã đơn hàng",
     name: lang === "en" ? "Your name" : "Tên của bạn",
     phone: lang === "en" ? "Phone" : "Số điện thoại",
@@ -38,12 +38,12 @@ function getCopy(lang) {
     type: lang === "en" ? "Request type" : "Loại yêu cầu",
     issue: lang === "en" ? "Issue summary" : "Tóm tắt vấn đề",
     description: lang === "en" ? "Detailed description" : "Mô tả chi tiết",
-    submit: lang === "en" ? "Submit ticket" : "Gửi ticket",
+    submit: lang === "en" ? "Submit request" : "Gửi yêu cầu",
     submitting: lang === "en" ? "Submitting..." : "Đang gửi...",
     success:
       lang === "en"
-        ? "Ticket submitted successfully."
-        : "Đã gửi ticket thành công.",
+        ? "Request submitted successfully."
+        : "Đã gửi yêu cầu thành công.",
     required:
       lang === "en"
         ? "Please fill name, phone, issue and description."
@@ -118,7 +118,7 @@ export default function StorefrontSupportPage({ defaultType = "COMPLAINT" }) {
         description: "",
       }));
     } catch (err) {
-      setError(err?.message || "Cannot submit ticket.");
+      setError(err?.message || (lang === "en" ? "Cannot submit ticket. Please try again." : "Gửi yêu cầu thất bại. Vui lòng thử lại."));
     } finally {
       setBusy(false);
     }
@@ -228,7 +228,7 @@ export default function StorefrontSupportPage({ defaultType = "COMPLAINT" }) {
               {result && (
                 <div className="mt-4 rounded-2xl bg-emerald-50 p-4 text-sm font-black text-emerald-700">
                   <CheckCircle2 size={16} className="mr-1 inline" />
-                  {t.success} Ticket: {result.ticketNo}
+                  {t.success} {lang === "en" ? "Ticket" : "Mã yêu cầu"}: {result.ticketNo}
                 </div>
               )}
 
@@ -258,9 +258,9 @@ export default function StorefrontSupportPage({ defaultType = "COMPLAINT" }) {
                   {lang === "en" ? "How support works" : "Quy trình hỗ trợ"}
                 </h2>
                 <div className="mt-4 space-y-3 text-sm font-bold leading-6">
-                  <div><PackageSearch size={16} className="mr-1 inline" /> {lang === "en" ? "Submit ticket with order number if available." : "Gửi ticket kèm mã đơn nếu có."}</div>
-                  <div><ShieldCheck size={16} className="mr-1 inline" /> {lang === "en" ? "Seller center verifies issue and order items." : "Seller center kiểm tra vấn đề và sản phẩm trong đơn."}</div>
-                  <div><RotateCcw size={16} className="mr-1 inline" /> {lang === "en" ? "Return/refund resolution is updated on the ticket." : "Kết quả đổi trả/hoàn tiền được cập nhật trên ticket."}</div>
+                  <div><PackageSearch size={16} className="mr-1 inline" /> {lang === "en" ? "Submit your request with order number if available." : "Gửi yêu cầu kèm mã đơn nếu có."}</div>
+                  <div><ShieldCheck size={16} className="mr-1 inline" /> {lang === "en" ? "Our team verifies the issue and order items." : "Shop kiểm tra vấn đề và sản phẩm trong đơn."}</div>
+                  <div><RotateCcw size={16} className="mr-1 inline" /> {lang === "en" ? "Return/refund resolution is updated on your request." : "Kết quả đổi trả/hoàn tiền được cập nhật trên yêu cầu của bạn."}</div>
                 </div>
               </div>
 

@@ -418,7 +418,7 @@ export default function OrderDetailPage() {
       notify("success", t.requestSent);
       setRefreshKey((value) => value + 1);
     } catch (error) {
-      notify("error", error?.message || "Request failed.");
+      notify("error", error?.message || (lang === "en" ? "Request failed. Please try again." : "Yêu cầu thất bại. Vui lòng thử lại."));
     }
   }
 
@@ -465,7 +465,7 @@ export default function OrderDetailPage() {
       setModalType(null);
       setRefreshKey((value) => value + 1);
     } catch (error) {
-      notify("error", error?.message || "Request failed.");
+      notify("error", error?.message || (lang === "en" ? "Request failed. Please try again." : "Yêu cầu thất bại. Vui lòng thử lại."));
     }
   }
 

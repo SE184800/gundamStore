@@ -72,7 +72,7 @@ export default function Header() {
   }, [lang]);
   function handleLogout() {
     setUserMenuOpen(false);
-    notify("success", "Đăng xuất thành công !");
+    notify("success", lang === "en" ? "Signed out successfully." : "Đăng xuất thành công.");
     actions.logout();
   }
   function submitHeaderSearch(event) {
