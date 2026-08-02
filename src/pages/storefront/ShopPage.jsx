@@ -977,7 +977,7 @@ export default function ShopPage() {
           )}
 
           {isProductsLoading && visibleProducts.length === 0 ? (
-            <div className="shop-mobile-grid grid grid-cols-2 gap-3 sm:grid-cols-2 xl:grid-cols-3 sm:gap-4">
+            <div className="shop-mobile-grid grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 sm:gap-4">
               {Array.from({ length: pageSize }).map((_, index) => (
                 <ProductCardSkeleton key={index} />
               ))}
@@ -985,7 +985,7 @@ export default function ShopPage() {
           ) : visibleProducts.length > 0 ? (
             <div
               id="shop-product-grid"
-              className="shop-mobile-grid scroll-mt-28 grid grid-cols-2 gap-3 sm:grid-cols-2 xl:grid-cols-3 sm:gap-4"
+              className="shop-mobile-grid scroll-mt-28 grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 sm:gap-4"
             >
               {visibleProducts.map((product) => <ProductCard key={product.id} product={product} lang={lang} actions={actions} />)}
             </div>

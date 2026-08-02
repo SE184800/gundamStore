@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
-import { Edit3, ImagePlus, Plus, RefreshCcw, Search, Trash2 } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { Edit3, ImagePlus, MoreVertical, Plus, RefreshCcw, Search, Trash2 } from "lucide-react";
 import AdminDrawer from "../../components/admin/AdminDrawer";
 import {
   AdminImageUploader,
@@ -88,15 +89,17 @@ const STATUS_OPTIONS = [
 
 const TONE_OPTIONS = ["blue", "cyan", "sky", "red", "gold", "slate", "violet"];
 
-const PRODUCT_TABS = [
-  { id: "all", label: "All" },
-  { id: "selling", label: "Selling" },
-  { id: "outOfStock", label: "Out of stock" },
-  { id: "missingPrice", label: "Missing price" },
-  { id: "draft", label: "Draft" },
-  { id: "hidden", label: "Hidden" },
-  { id: "dataIssue", label: "Data issue" },
-];
+function getProductTabs(lang) {
+  return [
+    { id: "all", label: lang === "en" ? "All" : "Tất cả" },
+    { id: "selling", label: lang === "en" ? "Selling" : "Đang bán" },
+    { id: "outOfStock", label: lang === "en" ? "Out of stock" : "Hết hàng" },
+    { id: "missingPrice", label: lang === "en" ? "Missing price" : "Thiếu giá" },
+    { id: "draft", label: lang === "en" ? "Draft" : "Nháp" },
+    { id: "hidden", label: lang === "en" ? "Hidden" : "Đã ẩn" },
+    { id: "dataIssue", label: lang === "en" ? "Data issue" : "Lỗi dữ liệu" },
+  ];
+}
 
 function getCopy(lang) {
   return {
@@ -129,6 +132,33 @@ function getCopy(lang) {
         : "Chưa có sản phẩm backend.",
     edit: lang === "en" ? "Edit product" : "Sửa sản phẩm",
     newProduct: lang === "en" ? "New product" : "Sản phẩm mới",
+    colActions: lang === "en" ? "Actions" : "Thao tác",
+    colImage: lang === "en" ? "Image" : "Hình ảnh",
+    colProduct: lang === "en" ? "Product" : "Sản phẩm",
+    colSkuSlug: lang === "en" ? "SKU / Slug" : "SKU / Slug",
+    colCategory: lang === "en" ? "Category" : "Danh mục",
+    colSupplier: lang === "en" ? "Supplier" : "Nhà cung cấp",
+    colGroups: lang === "en" ? "Groups" : "Nhóm",
+    colPrice: lang === "en" ? "Price" : "Giá",
+    colStock: lang === "en" ? "Stock" : "Tồn kho",
+    colStatus: lang === "en" ? "Status" : "Trạng thái",
+    loadingProducts: lang === "en" ? "Loading backend products..." : "Đang tải sản phẩm...",
+    actionEdit: lang === "en" ? "Edit" : "Sửa",
+    actionSetPrice: lang === "en" ? "Set price" : "Đặt giá",
+    actionSetDiscount: lang === "en" ? "Set discount" : "Đặt khuyến mãi",
+    actionAdjustStock: lang === "en" ? "Adjust stock" : "Điều chỉnh tồn kho",
+    actionPreview: lang === "en" ? "Preview" : "Xem trước",
+    actionPublish: lang === "en" ? "Publish" : "Xuất bản",
+    actionUnpublish: lang === "en" ? "Unpublish" : "Ẩn sản phẩm",
+    actionDelete: lang === "en" ? "Delete permanently" : "Xóa vĩnh viễn",
+    moreActions: lang === "en" ? "More actions" : "Thêm thao tác",
+    loading: lang === "en" ? "Loading..." : "Đang tải...",
+    eyebrow: lang === "en" ? "Product Information Management" : "Quản lý thông tin sản phẩm",
+    statTotal: lang === "en" ? "Total products" : "Tổng sản phẩm",
+    statActive: lang === "en" ? "Active" : "Đang bán",
+    statWithImages: lang === "en" ? "With images" : "Có hình ảnh",
+    statStock: lang === "en" ? "Stock" : "Tồn kho",
+    statInventoryValue: lang === "en" ? "Inventory value" : "Giá trị tồn kho",
   };
 }
 
@@ -1207,7 +1237,7 @@ function ProductBulkImportExportPanel({ onImported }) {
     <section className="mb-4 rounded-3xl border border-blue-100 bg-blue-50 p-4">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <div className="text-sm font-black text-blue-900">Mass Create / Update Products</div>
+          <div className="text-sm font-black text-blue-900">Tạo / cập nhật hàng loạt sản phẩm</div>
           <p className="mt-1 text-sm font-semibold text-blue-800/80">
             Import CSV bằng Excel, cập nhật theo SKU và upload nhiều ảnh tự động lên Supabase.
           </p>
@@ -1226,14 +1256,14 @@ function ProductBulkImportExportPanel({ onImported }) {
             onClick={() => void exportAdminProductsCsv()}
             className="rounded-2xl border border-emerald-200 bg-white px-4 py-2 text-xs font-black text-emerald-700 hover:bg-emerald-50"
           >
-            Export sản phẩm
+            Xuất sản phẩm
           </button>
           <button
             type="button"
             onClick={() => setOpen((value) => !value)}
             className="rounded-2xl bg-blue-700 px-4 py-2 text-xs font-black text-white hover:bg-blue-800"
           >
-            {open ? "Đóng import" : "Mass Import"}
+            {open ? "Đóng import" : "Nhập hàng loạt"}
           </button>
         </div>
       </div>
@@ -1315,7 +1345,7 @@ function ProductBulkImportExportPanel({ onImported }) {
                   onClick={() => void previewImport()}
                   className="rounded-2xl bg-slate-900 px-4 py-2 text-xs font-black text-white disabled:opacity-50"
                 >
-                  {busy ? "Đang xử lý..." : "Preview"}
+                  {busy ? "Đang xử lý..." : "Xem trước"}
                 </button>
                 <button
                   type="button"
@@ -1323,7 +1353,7 @@ function ProductBulkImportExportPanel({ onImported }) {
                   onClick={() => void commitImport()}
                   className="rounded-2xl bg-emerald-600 px-4 py-2 text-xs font-black text-white disabled:opacity-50"
                 >
-                  Commit
+                  Xác nhận nhập
                 </button>
               </div>
             </div>
@@ -1348,7 +1378,7 @@ function ProductBulkImportExportPanel({ onImported }) {
               {preview && (
                 <div className="mt-3 overflow-hidden rounded-2xl border border-slate-200">
                   <div className="grid grid-cols-2 gap-2 bg-slate-50 p-3 text-xs font-black text-slate-600 md:grid-cols-5">
-                    <div>Total: {preview.totalRows}</div>
+                    <div>Tổng: {preview.totalRows}</div>
                     <div className="text-emerald-600">Hợp lệ: {preview.validRows}</div>
                     <div className="text-blue-600">Tạo: {preview.createRows || 0}</div>
                     <div className="text-violet-600">Cập nhật: {preview.updateRows || 0}</div>
@@ -1395,6 +1425,44 @@ export default function AdminProducts() {
   const [productTab, setProductTab] = useState("all");
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState("");
+  const [openActionsId, setOpenActionsId] = useState(null);
+  const [actionsMenuPos, setActionsMenuPos] = useState(null);
+  const actionsMenuRef = useRef(null);
+  const actionsTriggerRef = useRef(null);
+
+  function closeActionsMenu() {
+    setOpenActionsId(null);
+    setActionsMenuPos(null);
+  }
+
+  function toggleActionsMenu(event, productId) {
+    if (openActionsId === productId) {
+      closeActionsMenu();
+      return;
+    }
+    const rect = event.currentTarget.getBoundingClientRect();
+    setActionsMenuPos({ top: rect.bottom + 4, left: Math.max(8, rect.right - 208) });
+    setOpenActionsId(productId);
+  }
+
+  useEffect(() => {
+    if (!openActionsId) return undefined;
+
+    function handleClickOutside(event) {
+      const insideMenu = actionsMenuRef.current && actionsMenuRef.current.contains(event.target);
+      const insideTrigger = actionsTriggerRef.current && actionsTriggerRef.current.contains(event.target);
+      if (!insideMenu && !insideTrigger) closeActionsMenu();
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    window.addEventListener("scroll", closeActionsMenu, true);
+    window.addEventListener("resize", closeActionsMenu);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      window.removeEventListener("scroll", closeActionsMenu, true);
+      window.removeEventListener("resize", closeActionsMenu);
+    };
+  }, [openActionsId]);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [draft, setDraft] = useState(emptyDraft);
   const [pricePrompt, setPricePrompt] = useState(null);
@@ -1677,7 +1745,7 @@ export default function AdminProducts() {
       )}
 
       <AdminPageHeader
-        eyebrow="Product Information Management"
+        eyebrow={t.eyebrow}
         title={t.title}
         desc={t.desc}
         action={
@@ -1707,30 +1775,30 @@ export default function AdminProducts() {
 
       <section className="mb-4 grid gap-4 md:grid-cols-5">
         <div className="rounded-3xl bg-white p-5 shadow-sm">
-          <p className="text-xs font-black uppercase text-slate-400">Total products</p>
+          <p className="text-xs font-black uppercase text-slate-400">{t.statTotal}</p>
           <p className="mt-2 text-2xl font-black">{summary.total}</p>
         </div>
         <div className="rounded-3xl bg-white p-5 shadow-sm">
-          <p className="text-xs font-black uppercase text-slate-400">Active</p>
+          <p className="text-xs font-black uppercase text-slate-400">{t.statActive}</p>
           <p className="mt-2 text-2xl font-black text-emerald-600">{summary.active}</p>
         </div>
         <div className="rounded-3xl bg-white p-5 shadow-sm">
-          <p className="text-xs font-black uppercase text-slate-400">With images</p>
+          <p className="text-xs font-black uppercase text-slate-400">{t.statWithImages}</p>
           <p className="mt-2 text-2xl font-black text-violet-600">{summary.images}</p>
         </div>
         <div className="rounded-3xl bg-white p-5 shadow-sm">
-          <p className="text-xs font-black uppercase text-slate-400">Stock</p>
+          <p className="text-xs font-black uppercase text-slate-400">{t.statStock}</p>
           <p className="mt-2 text-2xl font-black text-blue-600">{summary.stock}</p>
         </div>
         <div className="rounded-3xl bg-white p-5 shadow-sm">
-          <p className="text-xs font-black uppercase text-slate-400">Inventory value</p>
+          <p className="text-xs font-black uppercase text-slate-400">{t.statInventoryValue}</p>
           <p className="mt-2 text-2xl font-black text-red-500">{formatCurrency(summary.inventoryValue)}</p>
         </div>
       </section>
 
       <section className="mb-4 rounded-md border border-slate-200 bg-white p-4">
         <div className="mb-4 flex flex-wrap gap-2">
-          {PRODUCT_TABS.map((tab) => (
+          {getProductTabs(lang).map((tab) => (
             <button
               key={tab.id}
               type="button"
@@ -1761,26 +1829,26 @@ export default function AdminProducts() {
             className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-black text-slate-700 hover:bg-slate-50"
           >
             <RefreshCcw size={15} className="mr-1 inline" />
-            {loading ? "Loading..." : t.refresh}
+            {loading ? t.loading : t.refresh}
           </button>
         </div>
       </section>
 
       <section className="overflow-hidden rounded-md border border-slate-200 bg-white">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1450px] text-sm">
+          <table className="w-full min-w-[1150px] text-sm">
             <thead className="bg-slate-50 text-left text-xs font-black uppercase text-slate-500">
               <tr>
-                <th className="px-4 py-3">Actions</th>
-                <th className="px-4 py-3">Image</th>
-                <th className="px-4 py-3">Product</th>
-                <th className="px-4 py-3">SKU / Slug</th>
-                <th className="px-4 py-3">Category</th>
-                <th className="px-4 py-3">Supplier</th>
-                <th className="px-4 py-3">Groups</th>
-                <th className="px-4 py-3 text-right">Price</th>
-                <th className="px-4 py-3 text-right">Stock</th>
-                <th className="px-4 py-3">Status</th>
+                <th className="px-4 py-3">{t.colActions}</th>
+                <th className="px-4 py-3">{t.colImage}</th>
+                <th className="px-4 py-3">{t.colProduct}</th>
+                <th className="px-4 py-3">{t.colSkuSlug}</th>
+                <th className="px-4 py-3">{t.colCategory}</th>
+                <th className="px-4 py-3">{t.colSupplier}</th>
+                <th className="px-4 py-3">{t.colGroups}</th>
+                <th className="px-4 py-3 text-right">{t.colPrice}</th>
+                <th className="px-4 py-3 text-right">{t.colStock}</th>
+                <th className="px-4 py-3">{t.colStatus}</th>
               </tr>
             </thead>
 
@@ -1788,74 +1856,87 @@ export default function AdminProducts() {
               {rows.length === 0 ? (
                 <tr>
                   <td colSpan="10" className="px-4 py-12 text-center font-bold text-slate-400">
-                    {loading ? "Loading backend products..." : t.noRows}
+                    {loading ? t.loadingProducts : t.noRows}
                   </td>
                 </tr>
               ) : (
                 rows.map((product) => (
                   <tr key={product.id} className="border-t border-slate-100 hover:bg-slate-50">
                     <td className="px-4 py-3">
-                      <div className="flex min-w-[220px] flex-wrap gap-2">
+                      <div className="flex min-w-[140px] items-center gap-2">
                         <button
                           onClick={() => openEdit(product)}
                           className="rounded-md border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50"
                         >
                           <Edit3 size={14} className="mr-1 inline" />
-                          Edit
+                          {t.actionEdit}
                         </button>
 
                         <button
                           type="button"
-                          onClick={() => goToProductPricing(product)}
-                          className="rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-black text-blue-700 hover:bg-blue-100"
+                          ref={openActionsId === product.id ? actionsTriggerRef : null}
+                          onClick={(event) => toggleActionsMenu(event, product.id)}
+                          className="rounded-md border border-slate-300 bg-white p-2 text-slate-600 hover:bg-slate-50"
+                          aria-label={t.moreActions}
+                          title={t.moreActions}
                         >
-                          Set price
+                          <MoreVertical size={16} />
                         </button>
 
-                        <button
-                          type="button"
-                          onClick={() => goToProductPromotion(product)}
-                          className="rounded-md border border-fuchsia-200 bg-fuchsia-50 px-3 py-2 text-xs font-black text-fuchsia-700 hover:bg-fuchsia-100"
-                        >
-                          Set discount
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => goToProductInventory(product)}
-                          className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-black text-amber-700 hover:bg-amber-100"
-                        >
-                          Adjust stock
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => previewProduct(product)}
-                          className="rounded-md border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50"
-                        >
-                          Preview
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => void toggleProductPublish(product)}
-                          className={`rounded-md px-3 py-2 text-xs font-black ${product.active === false || ["inactive", "draft"].includes(String(product.status || "").toLowerCase())
-                              ? "border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-                              : "border border-slate-300 bg-slate-100 text-slate-600 hover:bg-slate-200"
-                            }`}
-                        >
-                          {product.active === false || ["inactive", "draft"].includes(String(product.status || "").toLowerCase())
-                            ? "Publish"
-                            : "Unpublish"}
-                        </button>
-
-                        <button
-                          onClick={() => void removeProduct(product)}
-                          className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-600 hover:bg-red-100"
-                          title="Xóa vĩnh viễn"
-                        >
-                          <Trash2 size={14} />
-                        </button>
+                        {openActionsId === product.id && actionsMenuPos && createPortal(
+                          <div
+                            ref={actionsMenuRef}
+                            style={{ position: "fixed", top: actionsMenuPos.top, left: actionsMenuPos.left }}
+                            className="z-50 w-52 overflow-hidden rounded-md border border-slate-200 bg-white py-1 shadow-lg"
+                          >
+                            <button
+                              type="button"
+                              onClick={() => { goToProductPricing(product); closeActionsMenu(); }}
+                              className="block w-full px-3 py-2 text-left text-xs font-black text-blue-700 hover:bg-blue-50"
+                            >
+                              {t.actionSetPrice}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => { goToProductPromotion(product); closeActionsMenu(); }}
+                              className="block w-full px-3 py-2 text-left text-xs font-black text-fuchsia-700 hover:bg-fuchsia-50"
+                            >
+                              {t.actionSetDiscount}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => { goToProductInventory(product); closeActionsMenu(); }}
+                              className="block w-full px-3 py-2 text-left text-xs font-black text-amber-700 hover:bg-amber-50"
+                            >
+                              {t.actionAdjustStock}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => { previewProduct(product); closeActionsMenu(); }}
+                              className="block w-full px-3 py-2 text-left text-xs font-bold text-slate-700 hover:bg-slate-50"
+                            >
+                              {t.actionPreview}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => { void toggleProductPublish(product); closeActionsMenu(); }}
+                              className="block w-full px-3 py-2 text-left text-xs font-bold text-slate-700 hover:bg-slate-50"
+                            >
+                              {product.active === false || ["inactive", "draft"].includes(String(product.status || "").toLowerCase())
+                                ? t.actionPublish
+                                : t.actionUnpublish}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => { void removeProduct(product); closeActionsMenu(); }}
+                              className="block w-full border-t border-slate-100 px-3 py-2 text-left text-xs font-bold text-red-600 hover:bg-red-50"
+                            >
+                              <Trash2 size={13} className="mr-1 inline" />
+                              {t.actionDelete}
+                            </button>
+                          </div>,
+                          document.body
+                        )}
                       </div>
                     </td>
 

@@ -17,6 +17,60 @@ import {
 import AdminPageHeader from "../../components/admin/AdminPageHeader";
 import { formatCurrency } from "../../utils/format";
 import { getAdminDashboardKpisApi } from "../../services/AdminDashboardApiService";
+import { useLang } from "../../store/CmsStore";
+
+function getCopy(lang) {
+  return {
+    eyebrow: lang === "en" ? "Executive Operations" : "Điều hành tổng quan",
+    title: lang === "en" ? "Admin KPI Dashboard" : "Bảng điều khiển KPI",
+    desc:
+      lang === "en"
+        ? "One-page operating view across sales, products, inventory, fulfillment, customers, reviews and complaints."
+        : "Toàn cảnh vận hành trên một màn hình: bán hàng, sản phẩm, tồn kho, giao hàng, khách hàng, đánh giá và khiếu nại.",
+    loading: lang === "en" ? "Loading..." : "Đang tải...",
+    refresh: lang === "en" ? "Refresh" : "Tải lại",
+    revenueToday: lang === "en" ? "Revenue today" : "Doanh thu hôm nay",
+    validOrders: lang === "en" ? "Valid non-cancelled orders" : "Đơn hợp lệ, chưa huỷ",
+    revenue30: lang === "en" ? "Revenue 30 days" : "Doanh thu 30 ngày",
+    ordersToday: lang === "en" ? "Orders today" : "Đơn hôm nay",
+    ordersIn30: (count) => (lang === "en" ? `${count} orders in 30 days` : `${count} đơn trong 30 ngày`),
+    customers: lang === "en" ? "Customers" : "Khách hàng",
+    registeredAccounts: lang === "en" ? "Registered accounts" : "Tài khoản đã đăng ký",
+    activeProducts: lang === "en" ? "Active products" : "Sản phẩm đang bán",
+    productIssues: (count) => (lang === "en" ? `${count} product data issue(s)` : `${count} sản phẩm lỗi dữ liệu`),
+    lowStock: lang === "en" ? "Low stock" : "Sắp hết hàng",
+    stockThreshold: lang === "en" ? "Stock <= 5" : "Tồn kho <= 5",
+    needTracking: lang === "en" ? "Need tracking" : "Cần mã vận đơn",
+    missingTrackingHint: lang === "en" ? "Shipping orders missing tracking" : "Đơn đang giao thiếu mã vận đơn",
+    openComplaints: lang === "en" ? "Open complaints" : "Khiếu nại đang mở",
+    pendingReviews: (count) => (lang === "en" ? `${count} pending review(s)` : `${count} đánh giá chờ duyệt`),
+    revenueTrend: lang === "en" ? "Revenue trend" : "Xu hướng doanh thu",
+    last14Days: lang === "en" ? "Last 14 days from backend orders" : "14 ngày gần nhất, dữ liệu từ đơn hàng",
+    orderStatusMix: lang === "en" ? "Order status mix" : "Tỉ lệ trạng thái đơn",
+    last30Days: lang === "en" ? "Last 30 days" : "30 ngày gần nhất",
+    noOrderStatus: lang === "en" ? "No order status data." : "Chưa có dữ liệu trạng thái đơn.",
+    fulfillmentQueue: lang === "en" ? "Fulfillment queue" : "Hàng chờ xử lý giao hàng",
+    operationalLoad: lang === "en" ? "Operational load by stage" : "Khối lượng công việc theo giai đoạn",
+    topProducts: lang === "en" ? "Top products" : "Sản phẩm bán chạy",
+    byRevenue30: lang === "en" ? "By revenue, last 30 days" : "Theo doanh thu, 30 ngày gần nhất",
+    qty: lang === "en" ? "Qty" : "SL",
+    noSalesItem: lang === "en" ? "No sales item data." : "Chưa có dữ liệu bán hàng.",
+    activeVouchers: lang === "en" ? "Active vouchers" : "Voucher đang chạy",
+    activeCampaigns: lang === "en" ? "Commercial campaigns in market" : "Chương trình khuyến mãi đang áp dụng",
+    used: lang === "en" ? "Used" : "Đã dùng",
+    noActiveVouchers: lang === "en" ? "No active vouchers." : "Chưa có voucher nào đang chạy.",
+    productDataIssues: lang === "en" ? "Product data issues" : "Sản phẩm lỗi dữ liệu",
+    needAdminAction: lang === "en" ? "Need commercial/product admin action" : "Cần admin xử lý giá/thông tin sản phẩm",
+    noProductIssues: lang === "en" ? "No product data issues." : "Không có sản phẩm lỗi dữ liệu.",
+    lowStockWatchlist: lang === "en" ? "Low stock watchlist" : "Danh sách sắp hết hàng",
+    activeStockHint: lang === "en" ? "Active products with stock <= 5" : "Sản phẩm đang bán có tồn kho <= 5",
+    stockLooksGood: lang === "en" ? "Stock level looks good." : "Tồn kho đang ổn.",
+    fulfillmentActionQueue: lang === "en" ? "Fulfillment action queue" : "Hàng chờ xử lý giao hàng",
+    latestFulfillment: lang === "en" ? "Latest active fulfillment orders" : "Đơn đang giao gần nhất",
+    missingTracking: lang === "en" ? "Missing tracking" : "Thiếu mã vận đơn",
+    generatedAt: lang === "en" ? "Generated at" : "Cập nhật lúc",
+  };
+}
 
 function StatCard({ icon: Icon, label, value, hint, tone = "blue" }) {
   const toneMap = {
@@ -100,6 +154,8 @@ function shortDate(value) {
 }
 
 export default function AdminDashboard() {
+  const [lang] = useLang();
+  const t = getCopy(lang);
   const [data, setData] = useState(null);
   const [apiError, setApiError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -144,16 +200,16 @@ export default function AdminDashboard() {
   return (
     <>
       <AdminPageHeader
-        eyebrow="Executive Operations"
-        title="Admin KPI Dashboard"
-        desc="One-page operating view across sales, products, inventory, fulfillment, customers, reviews and complaints."
+        eyebrow={t.eyebrow}
+        title={t.title}
+        desc={t.desc}
         action={
           <button
             onClick={() => void reload()}
             className="rounded-md border border-slate-300 bg-white px-4 py-2 text-xs font-black text-slate-700 hover:bg-slate-50"
           >
             <RefreshCcw size={15} className="mr-1 inline" />
-            {loading ? "Loading..." : "Refresh"}
+            {loading ? t.loading : t.refresh}
           </button>
         }
       />
@@ -165,33 +221,33 @@ export default function AdminDashboard() {
       )}
 
       <section className="mb-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <StatCard icon={WalletCards} label="Revenue today" value={stat(formatCurrency(kpis.revenueToday || 0))} hint="Valid non-cancelled orders" tone="emerald" />
-        <StatCard icon={BarChart3} label="Revenue 30 days" value={stat(formatCurrency(kpis.revenue30 || 0))} hint={`AOV ${formatCurrency(kpis.avgOrderValue30 || 0)}`} tone="blue" />
-        <StatCard icon={ShoppingCart} label="Orders today" value={stat(kpis.ordersToday || 0)} hint={`${kpis.orders30 || 0} orders in 30 days`} tone="violet" />
-        <StatCard icon={Users} label="Customers" value={stat(kpis.customers || 0)} hint="Registered accounts" tone="slate" />
-        <StatCard icon={Boxes} label="Active products" value={stat(kpis.activeProducts || 0)} hint={`${kpis.productIssues || 0} product data issue(s)`} tone={kpis.productIssues ? "amber" : "emerald"} />
-        <StatCard icon={PackageSearch} label="Low stock" value={stat(kpis.lowStockProducts || 0)} hint="Stock <= 5" tone={kpis.lowStockProducts ? "amber" : "emerald"} />
-        <StatCard icon={Truck} label="Need tracking" value={stat(kpis.fulfillmentNeedsTracking || 0)} hint="Shipping orders missing tracking" tone={kpis.fulfillmentNeedsTracking ? "red" : "emerald"} />
-        <StatCard icon={Ticket} label="Open complaints" value={stat(kpis.openComplaints || 0)} hint={`${kpis.pendingReviews || 0} pending review(s)`} tone={kpis.openComplaints ? "red" : "emerald"} />
+        <StatCard icon={WalletCards} label={t.revenueToday} value={stat(formatCurrency(kpis.revenueToday || 0))} hint={t.validOrders} tone="emerald" />
+        <StatCard icon={BarChart3} label={t.revenue30} value={stat(formatCurrency(kpis.revenue30 || 0))} hint={`AOV ${formatCurrency(kpis.avgOrderValue30 || 0)}`} tone="blue" />
+        <StatCard icon={ShoppingCart} label={t.ordersToday} value={stat(kpis.ordersToday || 0)} hint={t.ordersIn30(kpis.orders30 || 0)} tone="violet" />
+        <StatCard icon={Users} label={t.customers} value={stat(kpis.customers || 0)} hint={t.registeredAccounts} tone="slate" />
+        <StatCard icon={Boxes} label={t.activeProducts} value={stat(kpis.activeProducts || 0)} hint={t.productIssues(kpis.productIssues || 0)} tone={kpis.productIssues ? "amber" : "emerald"} />
+        <StatCard icon={PackageSearch} label={t.lowStock} value={stat(kpis.lowStockProducts || 0)} hint={t.stockThreshold} tone={kpis.lowStockProducts ? "amber" : "emerald"} />
+        <StatCard icon={Truck} label={t.needTracking} value={stat(kpis.fulfillmentNeedsTracking || 0)} hint={t.missingTrackingHint} tone={kpis.fulfillmentNeedsTracking ? "red" : "emerald"} />
+        <StatCard icon={Ticket} label={t.openComplaints} value={stat(kpis.openComplaints || 0)} hint={t.pendingReviews(kpis.pendingReviews || 0)} tone={kpis.openComplaints ? "red" : "emerald"} />
       </section>
 
       <section className="grid gap-4 xl:grid-cols-[1.4fr_1fr]">
-        <Section title="Revenue trend" desc="Last 14 days from backend orders">
+        <Section title={t.revenueTrend} desc={t.last14Days}>
           <MiniTrend data={charts.dailyTrend || []} />
         </Section>
 
-        <Section title="Order status mix" desc="Last 30 days">
+        <Section title={t.orderStatusMix} desc={t.last30Days}>
           <div className="space-y-3">
             {Object.entries(charts.orderStatusSummary || {}).map(([status, value]) => (
               <BarRow key={status} label={status} value={value} max={maxOrderStatus} tone="bg-violet-600" />
             ))}
-            {!Object.keys(charts.orderStatusSummary || {}).length && <div className="rounded-2xl border border-dashed border-slate-200 p-6 text-center text-sm font-bold text-slate-400">No order status data.</div>}
+            {!Object.keys(charts.orderStatusSummary || {}).length && <div className="rounded-2xl border border-dashed border-slate-200 p-6 text-center text-sm font-bold text-slate-400">{t.noOrderStatus}</div>}
           </div>
         </Section>
       </section>
 
       <section className="mt-4 grid gap-4 xl:grid-cols-3">
-        <Section title="Fulfillment queue" desc="Operational load by stage">
+        <Section title={t.fulfillmentQueue} desc={t.operationalLoad}>
           <div className="space-y-3">
             {Object.entries(charts.fulfillmentSummary || {}).map(([stage, value]) => (
               <BarRow key={stage} label={stage} value={value} max={maxFulfillment} tone={stage === "needsTracking" ? "bg-red-600" : "bg-blue-600"} />
@@ -199,23 +255,23 @@ export default function AdminDashboard() {
           </div>
         </Section>
 
-        <Section title="Top products" desc="By revenue, last 30 days">
+        <Section title={t.topProducts} desc={t.byRevenue30}>
           <div className="space-y-3">
             {(charts.topProducts || []).map((item) => (
               <div key={`${item.sku}-${item.name}`} className="rounded-2xl bg-slate-50 p-3">
                 <div className="text-xs font-black text-slate-500">{item.sku}</div>
                 <div className="mt-1 line-clamp-1 text-sm font-black text-slate-950">{item.name}</div>
                 <div className="mt-2 flex justify-between text-xs font-black">
-                  <span className="text-blue-700">Qty {item.quantity}</span>
+                  <span className="text-blue-700">{t.qty} {item.quantity}</span>
                   <span className="text-emerald-700">{formatCurrency(item.revenue)}</span>
                 </div>
               </div>
             ))}
-            {!(charts.topProducts || []).length && <div className="rounded-2xl border border-dashed border-slate-200 p-6 text-center text-sm font-bold text-slate-400">No sales item data.</div>}
+            {!(charts.topProducts || []).length && <div className="rounded-2xl border border-dashed border-slate-200 p-6 text-center text-sm font-bold text-slate-400">{t.noSalesItem}</div>}
           </div>
         </Section>
 
-        <Section title="Active vouchers" desc="Commercial campaigns in market">
+        <Section title={t.activeVouchers} desc={t.activeCampaigns}>
           <div className="space-y-3">
             {(queues.vouchers || []).slice(0, 8).map((voucher) => (
               <div key={voucher.id} className="rounded-2xl bg-slate-50 p-3">
@@ -225,17 +281,17 @@ export default function AdminDashboard() {
                 </div>
                 <div className="mt-1 text-xs font-bold text-slate-500">{voucher.name}</div>
                 <div className="mt-2 text-xs font-bold text-slate-600">
-                  Used {voucher.usedCount || 0}/{voucher.usageLimit || "∞"}
+                  {t.used} {voucher.usedCount || 0}/{voucher.usageLimit || "∞"}
                 </div>
               </div>
             ))}
-            {!(queues.vouchers || []).length && <div className="rounded-2xl border border-dashed border-slate-200 p-6 text-center text-sm font-bold text-slate-400">No active vouchers.</div>}
+            {!(queues.vouchers || []).length && <div className="rounded-2xl border border-dashed border-slate-200 p-6 text-center text-sm font-bold text-slate-400">{t.noActiveVouchers}</div>}
           </div>
         </Section>
       </section>
 
       <section className="mt-4 grid gap-4 xl:grid-cols-3">
-        <Section title="Product data issues" desc="Need commercial/product admin action">
+        <Section title={t.productDataIssues} desc={t.needAdminAction}>
           <div className="space-y-3">
             {(queues.productIssues || []).map((product) => (
               <div key={product.id} className="rounded-2xl border border-amber-100 bg-amber-50 p-3">
@@ -248,11 +304,11 @@ export default function AdminDashboard() {
                 </div>
               </div>
             ))}
-            {!(queues.productIssues || []).length && <div className="rounded-2xl bg-emerald-50 p-5 text-sm font-black text-emerald-700"><CheckCircle2 size={15} className="mr-1 inline" /> No product data issues.</div>}
+            {!(queues.productIssues || []).length && <div className="rounded-2xl bg-emerald-50 p-5 text-sm font-black text-emerald-700"><CheckCircle2 size={15} className="mr-1 inline" /> {t.noProductIssues}</div>}
           </div>
         </Section>
 
-        <Section title="Low stock watchlist" desc="Active products with stock <= 5">
+        <Section title={t.lowStockWatchlist} desc={t.activeStockHint}>
           <div className="space-y-3">
             {(queues.lowStockProducts || []).map((product) => (
               <div key={product.id} className="grid grid-cols-[1fr_auto] rounded-2xl bg-slate-50 p-3">
@@ -263,11 +319,11 @@ export default function AdminDashboard() {
                 <div className="text-lg font-black text-red-600">{product.stock}</div>
               </div>
             ))}
-            {!(queues.lowStockProducts || []).length && <div className="rounded-2xl bg-emerald-50 p-5 text-sm font-black text-emerald-700">Stock level looks good.</div>}
+            {!(queues.lowStockProducts || []).length && <div className="rounded-2xl bg-emerald-50 p-5 text-sm font-black text-emerald-700">{t.stockLooksGood}</div>}
           </div>
         </Section>
 
-        <Section title="Fulfillment action queue" desc="Latest active fulfillment orders">
+        <Section title={t.fulfillmentActionQueue} desc={t.latestFulfillment}>
           <div className="space-y-3">
             {(queues.fulfillment || []).map((order) => (
               <div key={order.id} className="rounded-2xl bg-slate-50 p-3">
@@ -277,7 +333,7 @@ export default function AdminDashboard() {
                 </div>
                 <div className="mt-1 text-xs font-bold text-slate-500">{order.customerName} · {order.customerPhone}</div>
                 <div className="mt-2 flex justify-between text-xs font-black">
-                  <span className={order.trackingCode ? "text-emerald-600" : "text-red-600"}>{order.trackingCode || "Missing tracking"}</span>
+                  <span className={order.trackingCode ? "text-emerald-600" : "text-red-600"}>{order.trackingCode || t.missingTracking}</span>
                   <span>{shortDate(order.createdAt)}</span>
                 </div>
               </div>
@@ -288,7 +344,7 @@ export default function AdminDashboard() {
 
       {data?.generatedAt && (
         <div className="mt-4 text-right text-xs font-bold text-slate-400">
-          Generated at {shortDate(data.generatedAt)}
+          {t.generatedAt} {shortDate(data.generatedAt)}
         </div>
       )}
     </>

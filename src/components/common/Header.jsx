@@ -148,7 +148,11 @@ export default function Header() {
 
           {/* CỤM ĐIỀU HƯỚNG TÀI KHOẢN BẢN PC */}
           <div className="ml-auto hidden items-center gap-1.5 md:flex">
-            <div className="group relative flex h-11 items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3.5 text-sm font-semibold text-slate-700 shadow-sm transition-all hover:bg-slate-100 hover:border-slate-300 cursor-pointer">
+            <div
+              className="group relative flex h-11 items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3.5 text-sm font-semibold text-slate-700 shadow-sm transition-all hover:bg-slate-100 hover:border-slate-300 cursor-pointer"
+              title="Ngôn ngữ / Language"
+              aria-label="Ngôn ngữ / Language"
+            >
               <Globe size={16} className="text-slate-500" />
               <ChevronDown size={14} className="text-slate-400 transition-transform duration-300 group-hover:rotate-180" />
               <div className="absolute right-0 top-full z-50 pt-2 hidden w-32 group-hover:block">

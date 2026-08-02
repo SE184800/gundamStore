@@ -593,7 +593,7 @@ function ProductSection({ section, products, lang, actions, badge, isFirst = fal
             </div>
           </div>
         ) : (
-          <div className="home-mobile-product-grid grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-3">
+          <div className="home-mobile-product-grid grid grid-cols-[repeat(auto-fill,minmax(200px,240px))] justify-start gap-3">
             {sectionProducts.map((product) => (
               <ProductCard key={product.id} product={product} lang={lang} actions={actions} />
             ))}

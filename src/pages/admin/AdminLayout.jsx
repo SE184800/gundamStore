@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation, Link } from "react-router-dom"; // 🟢 ĐÃ THÊM: Import Link để điều hướng SPA an toàn
 import {
   Activity,
@@ -12,6 +12,7 @@ import {
   KeyRound,
   LayoutDashboard,
   Megaphone,
+  Menu,
   MessageCircle,
   Package,
   Percent,
@@ -257,6 +258,78 @@ export default function AdminLayout() {
   const t = copy[lang] || copy.vi;
   const location = useLocation();
   const pageTitle = getPageTitle(location.pathname, t);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+  useEffect(() => {
+    setMobileNavOpen(false);
+  }, [location.pathname]);
+
+  const sidebarNav = (
+    <nav className="px-3 py-4 h-[calc(100vh-64px)] overflow-y-auto">
+      <NavGroup title={t.dashboard}>
+        <NavItem to="/admin" exact icon={LayoutDashboard} label={t.dashboard} />
+      </NavGroup>
+
+      <NavGroup title={t.storefrontCms}>
+        <NavItem to="/admin/cms" icon={Store} label={t.cmsOverview} />
+        <NavItem to="/admin/cms/pages" icon={FileText} label={t.pages} />
+        <NavItem to="/admin/cms/home-builder" icon={ShoppingBag} label={t.homeBuilder} />
+        <NavItem to="/admin/cms/banners" icon={Image} label={t.banners} />
+        <NavItem to="/admin/news" icon={FileText} label={t.news} />
+        <NavItem to="/admin/events" icon={CalendarDays} label={t.events} />
+        <NavItem to="/admin/cms/navigation" icon={ClipboardList} label={t.navigation} />
+        <NavItem to="/admin/cms/media" icon={UploadCloud} label={t.media} />
+        <NavItem to="/admin/cms/theme-seo" icon={Wand2} label={t.themeSeo} />
+      </NavGroup>
+
+      <NavGroup title={t.productManagement}>
+        <NavItem to="/admin/products" icon={Package} label={t.products} />
+        <NavItem to="/admin/product-categories" icon={Tags} label={t.categories} />
+        <NavItem to="/admin/suppliers" icon={Truck} label={t.suppliers} />
+        <NavItem to="/admin/product-groups" icon={ShoppingCart} label={t.groups} />
+        <NavItem to="/admin/product-group-mapping" icon={ClipboardList} label={t.groupMapping} />
+      </NavGroup>
+
+      <NavGroup title={t.inventoryOperations}>
+        <NavItem to="/admin/inventory" icon={Package} label={t.inventory} />
+        <NavItem to="/admin/inventory/receipts" icon={Truck} label={t.inventoryReceipts} />
+        <NavItem to="/admin/inventory/adjustments" icon={SlidersHorizontal} label={t.inventoryAdjustments} />
+        <NavItem to="/admin/inventory/stock-count" icon={ClipboardCheck} label={t.stockCount} />
+        <NavItem to="/admin/inventory/transactions" icon={History} label={t.inventoryTransactions} />
+      </NavGroup>
+
+      <NavGroup title={t.pricingOperations}>
+        <NavItem to="/admin/pricing" icon={WalletCards} label={t.pricing} />
+        <NavItem to="/admin/promotions" icon={Percent} label={t.promotions} />
+        <NavItem to="/admin/vouchers" icon={WalletCards} label={t.vouchers} />
+      </NavGroup>
+
+      <NavGroup title={t.sales}>
+        <NavItem to="/admin/orders" icon={ShoppingCart} label={t.orders} />
+        <NavItem to="/admin/shipping" icon={Route} label={t.shipping} />
+        <NavItem to="/admin/fulfillment" icon={Truck} label={t.fulfillment} />
+        <NavItem to="/admin/customers" icon={Users} label={t.customers} />
+        <NavItem to="/admin/restock-alerts" icon={Bell} label={t.restockAlerts} />
+      </NavGroup>
+
+      <NavGroup title={t.customerService}>
+        <NavItem to="/admin/chats" icon={MessageCircle} label={t.chats} />
+        <NavItem to="/admin/reviews" icon={Star} label={t.reviews} />
+        <NavItem to="/admin/community-gallery" icon={Image} label={t.gallery} />
+        <NavItem to="/admin/complaints" icon={ShieldAlert} label={t.complaints} />
+        <NavItem to="/admin/communication" icon={Megaphone} label={t.communication} />
+      </NavGroup>
+
+      <NavGroup title={t.system}>
+        <NavItem to="/admin/analytics" icon={Activity} label={t.analytics} />
+        <NavItem to="/admin/audit-logs" icon={History} label={t.auditLogs} />
+        <NavItem to="/admin/users" icon={Users} label={t.adminUsers} />
+        <NavItem to="/admin/change-password" icon={KeyRound} label={t.changePassword} />
+        <NavItem to="/admin/settings" icon={Settings} label={t.settings} />
+        <NavItem to="/admin/qa-helper" icon={TestTube2} label={t.qaHelper} />
+      </NavGroup>
+    </nav>
+  );
 
   return (
     <div className="admin-layout-shell min-h-screen bg-slate-100 text-slate-900">
@@ -264,79 +337,40 @@ export default function AdminLayout() {
       <div className="grid min-h-screen lg:grid-cols-[268px_1fr]">
         <aside className="hidden border-r border-slate-200 bg-white lg:block">
           <AdminLogo t={t} />
-
-          <nav className="px-3 py-4 h-[calc(100vh-64px)] overflow-y-auto">
-            <NavGroup title={t.dashboard}>
-              <NavItem to="/admin" exact icon={LayoutDashboard} label={t.dashboard} />
-            </NavGroup>
-
-            <NavGroup title={t.storefrontCms}>
-              <NavItem to="/admin/cms" icon={Store} label={t.cmsOverview} />
-              <NavItem to="/admin/cms/pages" icon={FileText} label={t.pages} />
-              <NavItem to="/admin/cms/home-builder" icon={ShoppingBag} label={t.homeBuilder} />
-              <NavItem to="/admin/cms/banners" icon={Image} label={t.banners} />
-              <NavItem to="/admin/news" icon={FileText} label={t.news} />
-              <NavItem to="/admin/events" icon={CalendarDays} label={t.events} />
-              <NavItem to="/admin/cms/navigation" icon={ClipboardList} label={t.navigation} />
-              <NavItem to="/admin/cms/media" icon={UploadCloud} label={t.media} />
-              <NavItem to="/admin/cms/theme-seo" icon={Wand2} label={t.themeSeo} />
-            </NavGroup>
-
-            <NavGroup title={t.productManagement}>
-              <NavItem to="/admin/products" icon={Package} label={t.products} />
-              <NavItem to="/admin/product-categories" icon={Tags} label={t.categories} />
-              <NavItem to="/admin/suppliers" icon={Truck} label={t.suppliers} />
-              <NavItem to="/admin/product-groups" icon={ShoppingCart} label={t.groups} />
-              <NavItem to="/admin/product-group-mapping" icon={ClipboardList} label={t.groupMapping} />
-            </NavGroup>
-
-            <NavGroup title={t.inventoryOperations}>
-              <NavItem to="/admin/inventory" icon={Package} label={t.inventory} />
-              <NavItem to="/admin/inventory/receipts" icon={Truck} label={t.inventoryReceipts} />
-              <NavItem to="/admin/inventory/adjustments" icon={SlidersHorizontal} label={t.inventoryAdjustments} />
-              <NavItem to="/admin/inventory/stock-count" icon={ClipboardCheck} label={t.stockCount} />
-              <NavItem to="/admin/inventory/transactions" icon={History} label={t.inventoryTransactions} />
-            </NavGroup>
-
-            <NavGroup title={t.pricingOperations}>
-              <NavItem to="/admin/pricing" icon={WalletCards} label={t.pricing} />
-              <NavItem to="/admin/promotions" icon={Percent} label={t.promotions} />
-              <NavItem to="/admin/vouchers" icon={WalletCards} label={t.vouchers} />
-            </NavGroup>
-
-            <NavGroup title={t.sales}>
-              <NavItem to="/admin/orders" icon={ShoppingCart} label={t.orders} />
-              <NavItem to="/admin/shipping" icon={Route} label={t.shipping} />
-              <NavItem to="/admin/fulfillment" icon={Truck} label={t.fulfillment} />
-              <NavItem to="/admin/customers" icon={Users} label={t.customers} />
-              <NavItem to="/admin/restock-alerts" icon={Bell} label={t.restockAlerts} />
-            </NavGroup>
-
-            <NavGroup title={t.customerService}>
-              <NavItem to="/admin/chats" icon={MessageCircle} label={t.chats} />
-              <NavItem to="/admin/reviews" icon={Star} label={t.reviews} />
-              <NavItem to="/admin/community-gallery" icon={Image} label={t.gallery} />
-              <NavItem to="/admin/complaints" icon={ShieldAlert} label={t.complaints} />
-              <NavItem to="/admin/communication" icon={Megaphone} label={t.communication} />
-            </NavGroup>
-
-            <NavGroup title={t.system}>
-              <NavItem to="/admin/analytics" icon={Activity} label={t.analytics} />
-              <NavItem to="/admin/audit-logs" icon={History} label={t.auditLogs} />
-              <NavItem to="/admin/users" icon={Users} label={t.adminUsers} />
-              <NavItem to="/admin/change-password" icon={KeyRound} label={t.changePassword} />
-              <NavItem to="/admin/settings" icon={Settings} label={t.settings} />
-              <NavItem to="/admin/qa-helper" icon={TestTube2} label={t.qaHelper} />
-            </NavGroup>
-          </nav>
+          {sidebarNav}
         </aside>
+
+        {mobileNavOpen && (
+          <div className="fixed inset-0 z-40 lg:hidden">
+            <div
+              className="absolute inset-0 bg-slate-950/50"
+              onClick={() => setMobileNavOpen(false)}
+              aria-hidden="true"
+            />
+            <aside className="absolute inset-y-0 left-0 w-72 max-w-[80vw] border-r border-slate-200 bg-white shadow-xl">
+              <AdminLogo t={t} />
+              {sidebarNav}
+            </aside>
+          </div>
+        )}
 
         <main className="admin-main min-w-0">
           <header className="sticky top-0 z-30 border-b border-slate-200 bg-white">
             <div className="flex min-h-16 items-center justify-between gap-4 px-4 lg:px-6">
-              <div>
-                <div className="text-lg font-black text-slate-950">{pageTitle}</div>
-                <div className="text-xs font-semibold text-slate-500">Gundam Store VN Admin V4</div>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setMobileNavOpen(true)}
+                  className="rounded-md border border-slate-300 bg-white p-2 text-slate-600 hover:bg-slate-50 lg:hidden"
+                  aria-label="Mở menu"
+                  title="Mở menu"
+                >
+                  <Menu size={18} />
+                </button>
+                <div>
+                  <div className="text-lg font-black text-slate-950">{pageTitle}</div>
+                  <div className="text-xs font-semibold text-slate-500">Gundam Store VN Admin V4</div>
+                </div>
               </div>
 
               <div className="flex items-center gap-2">
