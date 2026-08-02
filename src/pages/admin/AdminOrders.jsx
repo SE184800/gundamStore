@@ -664,7 +664,7 @@ export default function AdminOrders() {
                           {order.createdAt ? new Date(order.createdAt).toLocaleString("vi-VN") : "-"}
                         </div>
                         <div className="mt-2 inline-flex rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-black text-emerald-700">
-                          DB ORDER
+                          {lang === "en" ? "DB ORDER" : "ĐƠN HỆ THỐNG"}
                         </div>
                       </td>
 
@@ -752,7 +752,7 @@ export default function AdminOrders() {
                   {selectedOrder.orderCode || selectedOrder.id}
                 </h2>
                 <div className="mt-2 inline-flex rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-black text-emerald-700">
-                  System order
+                  {lang === "en" ? "System order" : "Đơn hệ thống"}
                 </div>
                 <p className="mt-1 text-sm text-slate-500">
                   {selectedOrder.createdAt

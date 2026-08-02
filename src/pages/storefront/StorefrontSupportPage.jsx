@@ -134,7 +134,7 @@ export default function StorefrontSupportPage({ defaultType = "COMPLAINT" }) {
       <main className="min-h-screen bg-[#F5F7FB] px-4 py-8 md:px-6 lg:pr-28">
         <div className="mx-auto max-w-7xl">
           <p className="text-sm font-black tracking-wide text-blue-600">
-            Customer care
+            {lang === "en" ? "Customer care" : "Chăm sóc khách hàng"}
           </p>
           <h1 className="mt-2 text-4xl font-black text-slate-950">{t.title}</h1>
           <p className="mt-3 max-w-3xl text-sm font-semibold leading-7 text-slate-500">

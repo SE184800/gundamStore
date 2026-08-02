@@ -36,6 +36,7 @@ function getCopy(lang) {
     completed: lang === "en" ? "Completed" : "Hoàn tất",
     cancelled: lang === "en" ? "Cancelled" : "Đã hủy",
     empty: lang === "en" ? "No orders found." : "Không có đơn phù hợp.",
+    shopNow: lang === "en" ? "Shop now" : "Mua sắm ngay",
     items: lang === "en" ? "items" : "sản phẩm",
     total: lang === "en" ? "Total" : "Tổng tiền",
     detail: lang === "en" ? "View detail" : "Xem chi tiết",
@@ -191,7 +192,15 @@ export default function MyOrdersPage() {
             <div className="mt-8 space-y-4">
               {filtered.length === 0 ? (
                 <div className="rounded-xl bg-white p-10 text-center font-bold text-slate-500">
-                  {t.empty}
+                  <div>{t.empty}</div>
+                  {orders.length === 0 && (
+                    <Link
+                      to="/shop"
+                      className="mt-5 inline-block rounded-2xl bg-blue-700 px-5 py-3 text-sm font-black text-white"
+                    >
+                      {t.shopNow}
+                    </Link>
+                  )}
                 </div>
               ) : (
                 filtered.map((order) => (

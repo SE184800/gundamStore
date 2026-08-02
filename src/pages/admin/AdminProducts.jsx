@@ -2058,7 +2058,7 @@ export default function AdminProducts() {
         subtitle={draft.id ? draft.sku : "PostgreSQL backend product"}
         onClose={() => setDrawerOpen(false)}
         onSave={save}
-        saveLabel="Save product"
+        saveLabel={lang === "en" ? "Save product" : "Lưu sản phẩm"}
       >
         <ProductForm draft={draft} setDraft={setDraft} reference={reference} />
       </AdminDrawer>

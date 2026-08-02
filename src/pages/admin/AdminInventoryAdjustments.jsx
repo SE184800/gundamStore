@@ -115,22 +115,22 @@ export default function AdminInventoryAdjustments() {
     <>
       <Toast show={toast.show} type={toast.type} message={toast.message} onClose={dismiss} />
       <AdminPageHeader
-        eyebrow="Inventory Management"
+        eyebrow="Quản lý tồn kho"
         title="Điều chỉnh tồn kho"
-        desc="Tạo phiếu điều chỉnh tồn riêng, tăng/giảm tồn và ghi lịch sử transaction."
+        desc="Tạo phiếu điều chỉnh tồn riêng, tăng/giảm tồn và ghi lịch sử giao dịch."
         action={
           <button
             onClick={() => void reload()}
             className="rounded-md border border-slate-300 bg-white px-4 py-2 text-xs font-black text-slate-700 hover:bg-slate-50"
           >
             <RefreshCcw size={15} className="mr-1 inline" />
-            Refresh
+            Tải lại
           </button>
         }
       />
 
       <section className="mb-4 rounded-3xl border border-emerald-100 bg-emerald-50 p-4 text-sm font-bold text-emerald-800">
-        PostgreSQL Stock Adjustment · {loading ? "Loading..." : `${adjustments.length} adjustments`}
+        Điều chỉnh tồn kho PostgreSQL · {loading ? "Đang tải..." : `${adjustments.length} phiếu điều chỉnh`}
       </section>
 
       {apiError && (
@@ -207,11 +207,11 @@ export default function AdminInventoryAdjustments() {
               <tr>
                 <th className="px-4 py-3">Mã phiếu</th>
                 <th className="px-4 py-3">Sản phẩm</th>
-                <th className="px-4 py-3 text-right">Delta</th>
-                <th className="px-4 py-3 text-right">Before</th>
-                <th className="px-4 py-3 text-right">After</th>
-                <th className="px-4 py-3">Reason</th>
-                <th className="px-4 py-3">Time</th>
+                <th className="px-4 py-3 text-right">Chênh lệch</th>
+                <th className="px-4 py-3 text-right">Tồn trước</th>
+                <th className="px-4 py-3 text-right">Tồn sau</th>
+                <th className="px-4 py-3">Lý do</th>
+                <th className="px-4 py-3">Thời gian</th>
               </tr>
             </thead>
             <tbody>

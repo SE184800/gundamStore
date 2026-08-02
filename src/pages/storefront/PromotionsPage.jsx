@@ -40,6 +40,28 @@ function getCopy(lang) {
         : "Không tải được khuyến mãi lúc này. Vui lòng thử lại.",
     retry: lang === "en" ? "Retry" : "Thử lại",
     seeAll: lang === "en" ? "See all" : "Xem tất cả",
+    flashSaleDesc: lang === "en" ? "Today's deals" : "Deal trong ngày",
+    restockDesc: lang === "en" ? "Popular kits are back" : "Hàng hot về lại",
+    limitedDesc: lang === "en" ? "Collector items" : "Hàng collector",
+    comingSoonDesc: lang === "en" ? "Track the ETA" : "Theo dõi ETA",
+    flashSaleTitle: lang === "en" ? "Up to 20% off" : "Giảm đến 20%",
+    flashSaleCardDesc:
+      lang === "en"
+        ? "Applies to hot kits and builder accessories."
+        : "Áp dụng cho mẫu hot và phụ kiện builder.",
+    huntNow: lang === "en" ? "Hunt now" : "Săn ngay",
+    restockTitle: lang === "en" ? "Just restocked" : "Hàng vừa về lại",
+    restockCardDesc:
+      lang === "en"
+        ? "Previously sold-out kits are back in stock."
+        : "Các mẫu từng hết hàng nay đã có lại.",
+    viewRestock: lang === "en" ? "View restock" : "Xem restock",
+    limitedTitle: lang === "en" ? "Limited / P-Bandai" : "Limited / P-Bandai",
+    limitedCardDesc:
+      lang === "en"
+        ? "Hard-to-find editions for collectors."
+        : "Phiên bản khó săn cho collector.",
+    viewLimited: lang === "en" ? "View limited" : "Xem limited",
   };
 }
 
@@ -109,18 +131,18 @@ export default function PromotionsPage() {
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <PromoMiniCard href="/flash-sale" icon={Flame} title={t.flashSale} desc="Deal trong ngày" tone="red" />
-              <PromoMiniCard href="/restock" icon={PackageCheck} title={t.restock} desc="Hàng hot về lại" tone="blue" />
-              <PromoMiniCard href="/limited" icon={ShieldCheck} title={t.limited} desc="Collector items" tone="violet" />
-              <PromoMiniCard href="/coming-soon" icon={BellRing} title={t.comingSoon} desc="Theo dõi ETA" tone="amber" />
+              <PromoMiniCard href="/flash-sale" icon={Flame} title={t.flashSale} desc={t.flashSaleDesc} tone="red" />
+              <PromoMiniCard href="/restock" icon={PackageCheck} title={t.restock} desc={t.restockDesc} tone="blue" />
+              <PromoMiniCard href="/limited" icon={ShieldCheck} title={t.limited} desc={t.limitedDesc} tone="violet" />
+              <PromoMiniCard href="/coming-soon" icon={BellRing} title={t.comingSoon} desc={t.comingSoonDesc} tone="amber" />
             </div>
           </div>
         </section>
 
         <section className="mt-8 grid gap-5 lg:grid-cols-3">
-          <CampaignCard href="/flash-sale" label="Flash Sale" title="Giảm đến 20%" desc="Áp dụng cho mẫu hot và phụ kiện builder." cta="Săn ngay" className="from-blue-900 to-blue-700" />
-          <CampaignCard href="/restock" label="Restock" title="Hàng vừa về lại" desc="Các mẫu từng hết hàng nay đã có lại." cta="Xem restock" className="from-blue-800 to-cyan-600" />
-          <CampaignCard href="/limited" label="Limited" title="Limited / P-Bandai" desc="Phiên bản khó săn cho collector." cta="Xem limited" className="from-slate-900 to-blue-800" />
+          <CampaignCard href="/flash-sale" label="Flash Sale" title={t.flashSaleTitle} desc={t.flashSaleCardDesc} cta={t.huntNow} className="from-blue-900 to-blue-700" />
+          <CampaignCard href="/restock" label="Restock" title={t.restockTitle} desc={t.restockCardDesc} cta={t.viewRestock} className="from-blue-800 to-cyan-600" />
+          <CampaignCard href="/limited" label="Limited" title={t.limitedTitle} desc={t.limitedCardDesc} cta={t.viewLimited} className="from-slate-900 to-blue-800" />
         </section>
 
         <section id="flash-sale" className="mt-8 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">

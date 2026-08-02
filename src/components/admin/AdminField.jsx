@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { ImagePlus, Info, UploadCloud, X } from "lucide-react";
 import { uploadAdminMediaImages, uploadAdminMediaVideo } from "../../services/AdminMediaApiService";
+import { useLang } from "../../store/CmsStore";
 
 export function AdminFieldTip({ children }) {
   if (!children) return null;
@@ -14,13 +15,15 @@ export function AdminFieldTip({ children }) {
 }
 
 export function AdminFieldLabel({ label, required, tip }) {
+  const [lang] = useLang();
+
   return (
     <div className="mb-1.5">
       <div className="flex items-center gap-2 text-sm font-black text-slate-800">
         <span>{label}</span>
         {required && (
           <span className="rounded bg-red-50 px-1.5 py-0.5 text-[10px] font-black text-red-600">
-            Required
+            {lang === "en" ? "Required" : "Bắt buộc"}
           </span>
         )}
       </div>
@@ -143,6 +146,7 @@ export function AdminImageUploader({
   onChange,
   recommended = "1200 x 630 px",
 }) {
+  const [lang] = useLang();
   const [preview, setPreview] = useState(value || "");
   const [uploading, setUploading] = useState(false);
 
@@ -160,13 +164,13 @@ export function AdminImageUploader({
       const url = pickUploadedImageUrl(data?.images?.[0]) || data?.url || "";
 
       if (!url) {
-        throw new Error("Backend did not return uploaded image URL.");
+        throw new Error(lang === "en" ? "Backend did not return uploaded image URL." : "Backend không trả về URL ảnh đã tải lên.");
       }
 
       setPreview(url);
       onChange?.(url);
     } catch (error) {
-      window.alert(error?.message || "Invalid image file.");
+      window.alert(error?.message || (lang === "en" ? "Invalid image file." : "File ảnh không hợp lệ."));
     } finally {
       setUploading(false);
       event.target.value = "";
@@ -189,8 +193,8 @@ export function AdminImageUploader({
           ) : (
             <div className="text-center">
               <ImagePlus className="mx-auto text-slate-300" size={32} />
-              <div className="mt-2 text-sm font-black text-slate-800">No image selected</div>
-              <div className="mt-1 text-xs font-semibold text-slate-500">Recommended: {recommended}</div>
+              <div className="mt-2 text-sm font-black text-slate-800">{lang === "en" ? "No image selected" : "Chưa chọn ảnh"}</div>
+              <div className="mt-1 text-xs font-semibold text-slate-500">{lang === "en" ? "Recommended" : "Khuyến nghị"}: {recommended}</div>
             </div>
           )}
         </div>
@@ -198,7 +202,7 @@ export function AdminImageUploader({
         <div className="mt-3 flex gap-2">
           <label className={`inline-flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-xs font-black text-white ${uploading ? "bg-blue-400" : "bg-blue-700 hover:bg-blue-800"}`}>
             <UploadCloud size={14} />
-            {uploading ? "Uploading..." : "Upload image"}
+            {uploading ? (lang === "en" ? "Uploading..." : "Đang tải lên...") : (lang === "en" ? "Upload image" : "Tải ảnh lên")}
             <input type="file" accept="image/*" className="hidden" disabled={uploading} onChange={handleUpload} />
           </label>
 
@@ -208,7 +212,7 @@ export function AdminImageUploader({
             className="inline-flex items-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50"
           >
             <X size={14} />
-            Remove
+            {lang === "en" ? "Remove" : "Xóa"}
           </button>
         </div>
       </div>
@@ -224,6 +228,7 @@ export function AdminMultiImageUploader({
   onChange,
   recommended = "1200 x 1200 px",
 }) {
+  const [lang] = useLang();
   const images = Array.isArray(value) ? value.filter(Boolean) : [];
   const [uploading, setUploading] = useState(false);
 
@@ -237,13 +242,13 @@ export function AdminMultiImageUploader({
       const uploadedUrls = (data?.images || []).map(pickUploadedImageUrl).filter(Boolean);
 
       if (!uploadedUrls.length) {
-        throw new Error("Backend did not return uploaded gallery image URLs.");
+        throw new Error(lang === "en" ? "Backend did not return uploaded gallery image URLs." : "Backend không trả về URL ảnh gallery đã tải lên.");
       }
 
       const next = Array.from(new Set([...images, ...uploadedUrls]));
       onChange?.(next);
     } catch (error) {
-      window.alert(error?.message || "Invalid gallery image file.");
+      window.alert(error?.message || (lang === "en" ? "Invalid gallery image file." : "File ảnh gallery không hợp lệ."));
     } finally {
       setUploading(false);
       event.target.value = "";
@@ -277,7 +282,9 @@ export function AdminMultiImageUploader({
                 </div>
                 <div className="flex items-center justify-between gap-2 p-2">
                   <span className="text-[11px] font-black text-slate-500">
-                    {index === 0 ? "Primary" : `Gallery ${index + 1}`}
+                    {index === 0
+                      ? (lang === "en" ? "Primary" : "Ảnh chính")
+                      : (lang === "en" ? `Gallery ${index + 1}` : `Ảnh ${index + 1}`)}
                   </span>
                   <div className="flex gap-1">
                     <button type="button" onClick={() => move(index, -1)} className="rounded border px-2 py-1 text-[11px] font-bold">↑</button>
@@ -292,8 +299,8 @@ export function AdminMultiImageUploader({
           <div className="flex min-h-36 items-center justify-center rounded-md border border-slate-200 bg-white text-center">
             <div>
               <ImagePlus className="mx-auto text-slate-300" size={32} />
-              <div className="mt-2 text-sm font-black text-slate-800">No gallery images selected</div>
-              <div className="mt-1 text-xs font-semibold text-slate-500">Recommended: {recommended}</div>
+              <div className="mt-2 text-sm font-black text-slate-800">{lang === "en" ? "No gallery images selected" : "Chưa chọn ảnh gallery"}</div>
+              <div className="mt-1 text-xs font-semibold text-slate-500">{lang === "en" ? "Recommended" : "Khuyến nghị"}: {recommended}</div>
             </div>
           </div>
         )}
@@ -301,7 +308,7 @@ export function AdminMultiImageUploader({
         <div className="mt-3">
           <label className={`inline-flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-xs font-black text-white ${uploading ? "bg-blue-400" : "bg-blue-700 hover:bg-blue-800"}`}>
             <UploadCloud size={14} />
-            {uploading ? "Uploading..." : "Upload multiple images"}
+            {uploading ? (lang === "en" ? "Uploading..." : "Đang tải lên...") : (lang === "en" ? "Upload multiple images" : "Tải nhiều ảnh lên")}
             <input type="file" accept="image/*" multiple className="hidden" disabled={uploading} onChange={handleUpload} />
           </label>
         </div>
@@ -318,6 +325,7 @@ export function AdminVideoUploader({
   onChange,
   accept = "video/*",
 }) {
+  const [lang] = useLang();
   const [preview, setPreview] = useState(value || "");
   const [uploading, setUploading] = useState(false);
 
@@ -335,13 +343,13 @@ export function AdminVideoUploader({
       const url = pickUploadedVideoUrl(data);
 
       if (!url) {
-        throw new Error("Backend did not return uploaded video URL.");
+        throw new Error(lang === "en" ? "Backend did not return uploaded video URL." : "Backend không trả về URL video đã tải lên.");
       }
 
       setPreview(url);
       onChange?.(url);
     } catch (error) {
-      window.alert(error?.message || "Invalid video file.");
+      window.alert(error?.message || (lang === "en" ? "Invalid video file." : "File video không hợp lệ."));
     } finally {
       setUploading(false);
       event.target.value = "";
@@ -364,8 +372,8 @@ export function AdminVideoUploader({
           ) : (
             <div className="text-center">
               <UploadCloud className="mx-auto text-slate-300" size={32} />
-              <div className="mt-2 text-sm font-black text-slate-800">No video selected</div>
-              <div className="mt-1 text-xs font-semibold text-slate-500">MP4/WebM recommended</div>
+              <div className="mt-2 text-sm font-black text-slate-800">{lang === "en" ? "No video selected" : "Chưa chọn video"}</div>
+              <div className="mt-1 text-xs font-semibold text-slate-500">{lang === "en" ? "MP4/WebM recommended" : "Khuyến nghị MP4/WebM"}</div>
             </div>
           )}
         </div>
@@ -373,7 +381,7 @@ export function AdminVideoUploader({
         <div className="mt-3 flex gap-2">
           <label className={`inline-flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-xs font-black text-white ${uploading ? "bg-blue-400" : "bg-blue-700 hover:bg-blue-800"}`}>
             <UploadCloud size={14} />
-            {uploading ? "Uploading..." : "Upload video"}
+            {uploading ? (lang === "en" ? "Uploading..." : "Đang tải lên...") : (lang === "en" ? "Upload video" : "Tải video lên")}
             <input type="file" accept={accept} className="hidden" disabled={uploading} onChange={handleUpload} />
           </label>
 
@@ -383,7 +391,7 @@ export function AdminVideoUploader({
             className="inline-flex items-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50"
           >
             <X size={14} />
-            Remove
+            {lang === "en" ? "Remove" : "Xóa"}
           </button>
         </div>
       </div>

@@ -1,4 +1,5 @@
 import { Save, X } from "lucide-react";
+import { useLang } from "../../store/CmsStore";
 
 export default function AdminDrawer({
   open,
@@ -7,13 +8,16 @@ export default function AdminDrawer({
   children,
   onClose,
   onSave,
-  saveLabel = "Save changes",
+  saveLabel,
 }) {
+  const [lang] = useLang();
   if (!open) return null;
+
+  const resolvedSaveLabel = saveLabel || (lang === "en" ? "Save changes" : "Lưu thay đổi");
 
   return (
     <div className="fixed inset-0 z-50">
-      <button className="absolute inset-0 bg-slate-900/30" onClick={onClose} aria-label="Close drawer" />
+      <button className="absolute inset-0 bg-slate-900/30" onClick={onClose} aria-label={lang === "en" ? "Close drawer" : "Đóng"} />
 
       <aside className="absolute right-0 top-0 flex h-full w-full max-w-[920px] flex-col bg-white shadow-2xl">
         <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
@@ -37,7 +41,7 @@ export default function AdminDrawer({
             onClick={onClose}
             className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50"
           >
-            Cancel
+            {lang === "en" ? "Cancel" : "Hủy"}
           </button>
 
           <button
@@ -45,7 +49,7 @@ export default function AdminDrawer({
             className="inline-flex items-center gap-2 rounded-md bg-blue-700 px-4 py-2 text-sm font-black text-white hover:bg-blue-800"
           >
             <Save size={16} />
-            {saveLabel}
+            {resolvedSaveLabel}
           </button>
         </div>
       </aside>

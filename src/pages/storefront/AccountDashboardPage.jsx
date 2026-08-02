@@ -75,6 +75,22 @@ function shortDate(value) {
   return new Date(value).toLocaleString("vi-VN");
 }
 
+const TICKET_STATUS_LABELS = {
+  NEW: { vi: "Mới", en: "New" },
+  VERIFYING: { vi: "Đang xác minh", en: "Verifying" },
+  WAITING_CUSTOMER: { vi: "Chờ phản hồi khách", en: "Waiting on customer" },
+  APPROVED: { vi: "Đã duyệt", en: "Approved" },
+  REJECTED: { vi: "Từ chối", en: "Rejected" },
+  RESOLVED: { vi: "Đã xử lý", en: "Resolved" },
+  CLOSED: { vi: "Đã đóng", en: "Closed" },
+};
+
+function getTicketStatusLabel(status, lang) {
+  const entry = TICKET_STATUS_LABELS[String(status || "").toUpperCase()];
+  if (!entry) return status || "-";
+  return lang === "en" ? entry.en : entry.vi;
+}
+
 export default function AccountDashboardPage() {
   const [lang] = useLang();
   const t = getCopy(lang);
@@ -223,7 +239,7 @@ export default function AccountDashboardPage() {
                           <div key={ticket.id} className="rounded-2xl bg-slate-50 p-4">
                             <div className="flex items-center justify-between gap-3">
                               <div className="font-black text-blue-700">{ticket.ticketNo}</div>
-                              <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-black text-amber-700">{ticket.status}</span>
+                              <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-black text-amber-700">{getTicketStatusLabel(ticket.status, lang)}</span>
                             </div>
                             <div className="mt-2 text-sm font-black text-slate-900">{ticket.issue}</div>
                             <div className="mt-1 text-xs font-bold text-slate-500">

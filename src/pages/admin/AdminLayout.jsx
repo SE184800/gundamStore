@@ -214,7 +214,7 @@ function NavGroup({ title, children }) {
 function getPageTitle(pathname, t) {
   if (pathname === "/admin") return t.dashboard;
   if (pathname.includes("/admin/cms/pages")) return t.pages;
-  if (pathname.includes("/admin/cms/home-builder")) return t.homeBuilder;
+  if (pathname.includes("/admin/home-builder")) return t.homeBuilder;
   if (pathname.includes("/admin/cms/banners")) return t.banners;
   if (pathname.includes("/admin/cms/navigation")) return t.navigation;
   if (pathname.includes("/admin/cms/media")) return t.media;
@@ -273,7 +273,7 @@ export default function AdminLayout() {
       <NavGroup title={t.storefrontCms}>
         <NavItem to="/admin/cms" icon={Store} label={t.cmsOverview} />
         <NavItem to="/admin/cms/pages" icon={FileText} label={t.pages} />
-        <NavItem to="/admin/cms/home-builder" icon={ShoppingBag} label={t.homeBuilder} />
+        <NavItem to="/admin/home-builder" icon={ShoppingBag} label={t.homeBuilder} />
         <NavItem to="/admin/cms/banners" icon={Image} label={t.banners} />
         <NavItem to="/admin/news" icon={FileText} label={t.news} />
         <NavItem to="/admin/events" icon={CalendarDays} label={t.events} />
