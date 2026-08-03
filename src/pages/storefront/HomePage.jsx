@@ -508,7 +508,7 @@ function TrustStrip({ lang }) {
 
   return (
     <section className="mx-auto max-w-[1440px] px-4 py-2 sm:py-4 lg:px-8">
-      <div className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl bg-blue-800/40 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl bg-blue-800/40 shadow-sm sm:grid-cols-4">
         {items.map(([Icon, stat, desc]) => (
           <div
             key={stat}
@@ -898,6 +898,8 @@ export default function HomePage() {
           error={bannerApiError}
         />
 
+        <TrustStrip lang={lang} />
+
         <FeaturedCategories lang={lang} />
 
         <main className="mx-auto max-w-[1440px] px-4 pb-8 lg:px-8">
@@ -920,8 +922,6 @@ export default function HomePage() {
             ))}
           </div>
         </main>
-
-        <TrustStrip lang={lang} />
 
         <ContentHighlights
           news={homepageNews}
