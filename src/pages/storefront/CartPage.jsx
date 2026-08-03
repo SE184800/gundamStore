@@ -292,7 +292,7 @@ export default function CartPage() {
 
   return (
     <PageShell>
-      <main className="min-h-screen bg-[#F5F7FB] px-4 pb-28 pt-6 md:px-6 md:pt-8 xl:pb-8 xl:pr-28">
+      <main className="min-h-screen bg-[#F5F7FB] px-4 pb-28 pt-6 md:px-6 md:pt-8 xl:pb-8">
         <div className="mx-auto max-w-7xl">
           <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
@@ -311,7 +311,7 @@ export default function CartPage() {
 
           <div className="grid gap-6 xl:grid-cols-[1fr_390px]">
             <section className="space-y-4">
-              <div className="hidden rounded-xl bg-white px-5 py-3 text-xs font-black tracking-wide text-slate-400 shadow-sm xl:grid xl:grid-cols-[40px_1fr_110px_130px_130px_56px]">
+              <div className="hidden rounded-xl bg-white px-5 py-3 text-xs font-black tracking-wide text-slate-400 shadow-sm xl:grid xl:grid-cols-[40px_minmax(260px,1fr)_110px_130px_130px_56px]">
                 <div>
                   <input
                     type="checkbox"
@@ -422,7 +422,7 @@ export default function CartPage() {
                       className={`rounded-2xl bg-white shadow-sm ${overStock ? "ring-2 ring-red-200" : ""}`}
                     >
                       {/* Desktop row */}
-                      <div className="hidden xl:grid xl:grid-cols-[40px_1fr_110px_130px_130px_56px] xl:items-center xl:gap-4 xl:p-4">
+                      <div className="hidden xl:grid xl:grid-cols-[40px_minmax(260px,1fr)_110px_130px_130px_56px] xl:items-center xl:gap-4 xl:p-4">
                         <input
                           type="checkbox"
                           checked={item.selected !== false}
@@ -544,7 +544,12 @@ export default function CartPage() {
               )}
             </section>
 
-            <aside className="h-fit rounded-xl border border-slate-200 bg-white p-6 shadow-sm xl:sticky xl:top-24">
+            {/* xl:mr-24 keeps the sticky "Đặt hàng" button clear of the fixed
+                bottom-right chat/Zalo/Messenger stack (see commit b81b49d) —
+                scoped to just this column instead of shrinking the whole
+                page (that approach cost the product list ~110px for no
+                reason, see cart-layout root-cause investigation). */}
+            <aside className="h-fit rounded-xl border border-slate-200 bg-white p-6 shadow-sm xl:sticky xl:top-24 xl:mr-24">
               <h2 className="text-xl font-black text-slate-950">{t.paymentSummary}</h2>
 
               <div className="mt-3 rounded-2xl bg-blue-50 p-3.5">
