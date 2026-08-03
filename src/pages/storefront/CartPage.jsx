@@ -292,7 +292,7 @@ export default function CartPage() {
 
   return (
     <PageShell>
-      <main className="min-h-screen bg-[#F5F7FB] px-4 pb-28 pt-6 md:px-6 md:pt-8 lg:pb-8 lg:pr-28">
+      <main className="min-h-screen bg-[#F5F7FB] px-4 pb-28 pt-6 md:px-6 md:pt-8 xl:pb-8 xl:pr-28">
         <div className="mx-auto max-w-7xl">
           <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
@@ -309,9 +309,9 @@ export default function CartPage() {
             </Link>
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-[1fr_390px]">
+          <div className="grid gap-6 xl:grid-cols-[1fr_390px]">
             <section className="space-y-4">
-              <div className="hidden rounded-xl bg-white px-5 py-3 text-xs font-black tracking-wide text-slate-400 shadow-sm md:grid md:grid-cols-[40px_1fr_110px_130px_130px_56px]">
+              <div className="hidden rounded-xl bg-white px-5 py-3 text-xs font-black tracking-wide text-slate-400 shadow-sm xl:grid xl:grid-cols-[40px_1fr_110px_130px_130px_56px]">
                 <div>
                   <input
                     type="checkbox"
@@ -328,7 +328,7 @@ export default function CartPage() {
               </div>
 
               {cart.length > 0 && (
-                <label className="flex items-center justify-between rounded-2xl bg-white px-4 py-3 shadow-sm md:hidden">
+                <label className="flex items-center justify-between rounded-2xl bg-white px-4 py-3 shadow-sm xl:hidden">
                   <span className="flex items-center gap-2 text-sm font-black text-slate-700">
                     <input
                       type="checkbox"
@@ -388,6 +388,14 @@ export default function CartPage() {
                     notify("success", lang === "en" ? "Removed product from cart." : "Đã xóa sản phẩm khỏi giỏ hàng.");
                   };
 
+                  // Cart items only carry variantName when it's a real, human-picked
+                  // variant label — but on some products that value collapses back to
+                  // the raw SKU (e.g. "30MM-30MM-BEXM-6-ROUNDNOVA-I-1-144-27292"), which
+                  // isn't something a customer should see. Show it only when it reads
+                  // as an actual name, not a re-print of the SKU.
+                  const friendlyVariantLabel =
+                    item.variantName && item.variantName !== item.sku ? item.variantName : "";
+
                   const badgeLine = (
                     <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[11px] font-bold text-slate-500">
                       <span>{t.authenticPack}</span>
@@ -395,10 +403,10 @@ export default function CartPage() {
                       <span className="inline-flex items-center gap-1 text-blue-700">
                         <ShieldCheck size={12} /> {t.guaranteed}
                       </span>
-                      {item.sku && (
+                      {friendlyVariantLabel && (
                         <>
                           <span className="text-slate-300">•</span>
-                          <span className="text-emerald-700">{item.sku}</span>
+                          <span className="text-emerald-700">{friendlyVariantLabel}</span>
                         </>
                       )}
                       <span className="text-slate-300">•</span>
@@ -414,7 +422,7 @@ export default function CartPage() {
                       className={`rounded-2xl bg-white shadow-sm ${overStock ? "ring-2 ring-red-200" : ""}`}
                     >
                       {/* Desktop row */}
-                      <div className="hidden md:grid md:grid-cols-[40px_1fr_110px_130px_130px_56px] md:items-center md:gap-4 md:p-4">
+                      <div className="hidden xl:grid xl:grid-cols-[40px_1fr_110px_130px_130px_56px] xl:items-center xl:gap-4 xl:p-4">
                         <input
                           type="checkbox"
                           checked={item.selected !== false}
@@ -476,7 +484,7 @@ export default function CartPage() {
                       </div>
 
                       {/* Mobile card */}
-                      <div className="p-3.5 md:hidden">
+                      <div className="p-3.5 xl:hidden">
                         <div className="flex items-start gap-2">
                           <label className="-ml-2 flex h-11 w-8 shrink-0 items-start justify-center pt-1">
                             <input
@@ -536,7 +544,7 @@ export default function CartPage() {
               )}
             </section>
 
-            <aside className="h-fit rounded-xl border border-slate-200 bg-white p-6 shadow-sm lg:sticky lg:top-24">
+            <aside className="h-fit rounded-xl border border-slate-200 bg-white p-6 shadow-sm xl:sticky xl:top-24">
               <h2 className="text-xl font-black text-slate-950">{t.paymentSummary}</h2>
 
               <div className="mt-3 rounded-2xl bg-blue-50 p-3.5">
@@ -638,7 +646,7 @@ export default function CartPage() {
 
               <button
                 onClick={goCheckout}
-                className="mt-5 hidden w-full rounded-2xl bg-blue-700 py-4 font-black text-white shadow-lg hover:bg-blue-800 lg:block"
+                className="mt-5 hidden w-full rounded-2xl bg-blue-700 py-4 font-black text-white shadow-lg hover:bg-blue-800 xl:block"
               >
                 {t.checkout} ({selectedItems.length})
               </button>
@@ -648,7 +656,7 @@ export default function CartPage() {
       </main>
 
       {cart.length > 0 && (
-        <div className="fixed inset-x-0 bottom-[calc(76px+env(safe-area-inset-bottom))] z-[100000] border-t border-slate-200 bg-white px-4 py-3 shadow-sm lg:hidden">
+        <div className="fixed inset-x-0 bottom-[calc(76px+env(safe-area-inset-bottom))] z-[100000] border-t border-slate-200 bg-white px-4 py-3 shadow-sm md:bottom-0 xl:hidden">
           <div className="mx-auto flex max-w-7xl items-center justify-between gap-3">
             <div>
               <div className="text-[11px] font-bold text-slate-500">{t.total}</div>
