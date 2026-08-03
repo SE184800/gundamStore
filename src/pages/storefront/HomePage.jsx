@@ -507,18 +507,18 @@ function TrustStrip({ lang }) {
   ];
 
   return (
-    <section className="mx-auto max-w-[1440px] px-4 py-2 sm:py-4 lg:px-8">
-      <div className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl bg-blue-800/40 shadow-sm sm:grid-cols-4">
-        {items.map(([Icon, stat, desc]) => (
+    <section className="mx-auto max-w-[1440px] px-4 mt-4 mb-2 sm:mt-6 sm:mb-4 lg:px-8">
+      <div className="mobile-hide-scrollbar flex snap-x snap-mandatory gap-0 overflow-x-auto rounded-2xl border-[0.5px] border-slate-200 bg-white shadow-sm sm:grid sm:grid-cols-4 sm:overflow-visible">
+        {items.map(([Icon, stat, desc], index) => (
           <div
             key={stat}
-            className="flex flex-col items-center gap-2 bg-blue-900 px-4 py-6 text-center sm:py-7"
+            className={`flex w-[168px] shrink-0 snap-start flex-col items-center gap-2 px-4 py-6 text-center sm:w-auto sm:py-7 ${index > 0 ? "sm:border-l-[0.5px] sm:border-slate-200" : ""}`}
           >
-            <Icon size={22} strokeWidth={1.5} className="text-blue-300" />
-            <div className="text-lg font-black tracking-wide text-white sm:text-xl">
+            <Icon size={22} strokeWidth={1.5} className="text-blue-700" />
+            <div className="text-lg font-black tracking-wide text-blue-950 sm:text-xl">
               {stat}
             </div>
-            <div className="text-[10px] font-bold uppercase leading-4 tracking-wide text-blue-200/80 sm:text-xs">
+            <div className="text-[10px] font-bold uppercase leading-4 tracking-wide text-slate-500 sm:text-xs">
               {desc}
             </div>
           </div>
