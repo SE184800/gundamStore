@@ -6,8 +6,10 @@ import {
 } from "../constants/orderConfig";
 
 const ORDER_SUCCESS_SESSION_KEY = "gundam-last-order-success";
+const JUST_PLACED_ORDER_KEY = "gundam-order-just-placed";
+const JUST_PLACED_ORDER_TTL_MS = 10 * 60 * 1000;
 
-const API_TO_UI_STATUS = {
+export const API_TO_UI_STATUS = {
   PLACED: ORDER_STATUS.PLACED,
   CONFIRMED: ORDER_STATUS.CONFIRMED,
   PACKING: ORDER_STATUS.PACKING,
@@ -128,6 +130,16 @@ function buildOrderTimeline(order = {}, shipment = null) {
   return rows.filter((item) => item.time || item.status === ORDER_STATUS.PLACED);
 }
 
+export function mapOrderSummaryForStorefront(order = {}) {
+  return {
+    orderNo: order.orderNo || "",
+    createdAt: order.createdAt || "",
+    status: API_TO_UI_STATUS[order.status] || order.status || ORDER_STATUS.PLACED,
+    total: Number(order.total) || 0,
+    itemCount: Number(order.itemCount) || 0,
+  };
+}
+
 export function mapBackendOrderForStorefront(order = {}) {
   const shipments = Array.isArray(order.shipments)
     ? [...order.shipments].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
@@ -246,6 +258,38 @@ export function getOrderSuccessSnapshot(id = "") {
 
   const store = readSuccessStore();
   return store[key] || null;
+}
+
+export function saveJustPlacedOrderFlag({ orderNo = "", total = 0, phone = "" } = {}) {
+  const code = cleanContact(orderNo);
+  if (!code) return;
+
+  try {
+    sessionStorage.setItem(
+      JUST_PLACED_ORDER_KEY,
+      JSON.stringify({ orderNo: code, total: Number(total) || 0, phone: cleanContact(phone), ts: Date.now() })
+    );
+  } catch {
+    // sessionStorage can be unavailable in strict browser modes.
+  }
+}
+
+// One-time read: the banner should only appear right after checkout, not on
+// every later visit to the homepage, so this clears the flag as it reads it.
+export function consumeJustPlacedOrderFlag() {
+  try {
+    const raw = sessionStorage.getItem(JUST_PLACED_ORDER_KEY);
+    sessionStorage.removeItem(JUST_PLACED_ORDER_KEY);
+
+    if (!raw) return null;
+
+    const data = JSON.parse(raw);
+    if (!data?.orderNo || Date.now() - Number(data.ts || 0) > JUST_PLACED_ORDER_TTL_MS) return null;
+
+    return data;
+  } catch {
+    return null;
+  }
 }
 
 function buildPublicOrderPath(id = "", lookup = {}) {

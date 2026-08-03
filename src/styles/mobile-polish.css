@@ -545,11 +545,11 @@ body {
     gap: 3px !important;
     border-radius: 14px !important;
     color: #64748b !important;
-    font-size: 9px !important;
+    font-size: 10px !important;
     font-weight: 900 !important;
     line-height: 1 !important;
     text-decoration: none !important;
-    letter-spacing: -0.02em !important;
+    letter-spacing: -0.01em !important;
     transition: all 0.18s ease !important;
   }
 
@@ -558,8 +558,12 @@ body {
     height: 17px !important;
   }
 
+  /* Vietnamese diacritics need real room to render legibly — the previous
+     9px/48px box clipped/ellipsized "Sản phẩm" and "Đặt hàng" on real
+     devices, which read as a spelling error even though the text was
+     correct. */
   .mobile-bottom-tab-item span {
-    max-width: 48px !important;
+    max-width: 62px !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
     white-space: nowrap !important;
@@ -582,7 +586,11 @@ body {
 
 @media (max-width: 390px) {
   .mobile-bottom-tab-item {
-    font-size: 8.5px !important;
+    font-size: 9px !important;
+  }
+
+  .mobile-bottom-tab-item span {
+    max-width: 56px !important;
   }
 
   .mobile-bottom-tab-item svg {

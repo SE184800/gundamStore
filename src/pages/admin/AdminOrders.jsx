@@ -4,6 +4,7 @@ import {
   Download,
   Eye,
   FileText,
+  Printer,
   RefreshCcw,
   Search,
   Truck,
@@ -25,6 +26,7 @@ import Toast from "../../utils/Toast";
 import { escapePrintHtml } from "../../utils/escapePrintHtml";
 import {
   getAdminOrdersFromApi,
+  markShippingLabelPrintedApi,
   updateAdminOrderPaymentApi,
   updateAdminOrderShippingApi,
   updateAdminOrderStatusApi,
@@ -453,6 +455,68 @@ export default function AdminOrders() {
     win.print();
   }
 
+  // Mẫu in tạm thời, sẽ thay bằng mẫu chính thức khi có file thiết kế từ Product.
+  async function printShippingLabel(order) {
+    const orderCode = escapePrintHtml(order.orderCode || order.id || "");
+    const customerName = escapePrintHtml(order.customer?.name || "");
+    const customerPhone = escapePrintHtml(order.customer?.phone || "");
+    const customerAddress = escapePrintHtml(order.customer?.address || "");
+    const shippingMethod = escapePrintHtml(order.shippingMethod || "-");
+    const labelTitle = escapePrintHtml(lang === "en" ? "Shipping Label" : "Vận đơn");
+    const orderLabel = escapePrintHtml(lang === "en" ? "Order" : "Mã đơn");
+    const customerLabel = escapePrintHtml(lang === "en" ? "Recipient" : "Người nhận");
+    const phoneLabel = escapePrintHtml(lang === "en" ? "Phone" : "SĐT");
+    const addressLabel = escapePrintHtml(lang === "en" ? "Address" : "Địa chỉ");
+    const methodLabel = escapePrintHtml(lang === "en" ? "Shipping method" : "Phương thức vận chuyển");
+    const itemsTitle = escapePrintHtml(lang === "en" ? "Items" : "Danh sách sản phẩm");
+    const qtyLabel = escapePrintHtml(lang === "en" ? "Qty" : "SL");
+
+    const itemsHtml = (order.items || [])
+      .map((item) => {
+        const itemName = escapePrintHtml(item.name || "");
+        const qty = Number(item.quantity || 1);
+        return `<p>${itemName} — ${qtyLabel}: ${qty}</p>`;
+      })
+      .join("");
+
+    const html = `
+      <html>
+        <head>
+          <title>${labelTitle} ${orderCode}</title>
+          <meta charset="utf-8" />
+        </head>
+        <body style="font-family: Arial; padding: 24px;">
+          <h2>${labelTitle}</h2>
+          <p style="font-size: 18px;"><b>${orderLabel}:</b> ${orderCode}</p>
+          <hr/>
+          <p><b>${customerLabel}:</b> ${customerName}</p>
+          <p><b>${phoneLabel}:</b> ${customerPhone}</p>
+          <p><b>${addressLabel}:</b> ${customerAddress}</p>
+          <p><b>${methodLabel}:</b> ${shippingMethod}</p>
+          <hr/>
+          <p><b>${itemsTitle}:</b></p>
+          ${itemsHtml}
+        </body>
+      </html>
+    `;
+
+    const win = window.open("", "_blank", "noopener,noreferrer");
+    if (win) {
+      win.document.open();
+      win.document.write(html);
+      win.document.close();
+      win.print();
+    }
+
+    try {
+      await markShippingLabelPrintedApi(order.id);
+      await reload();
+      notify("success", lang === "en" ? "Marked as printed." : "Đã đánh dấu vận đơn đã in.");
+    } catch (error) {
+      notify("error", error?.message || (lang === "en" ? "Could not mark label as printed." : "Không thể đánh dấu đã in vận đơn."));
+    }
+  }
+
   return (
     <div className="space-y-6">
       <Toast show={toast.show} type={toast.type} message={toast.message} onClose={dismiss} />
@@ -650,8 +714,17 @@ export default function AdminOrders() {
                           <button
                             onClick={() => printPickList(order)}
                             className="rounded-xl bg-slate-100 p-2 text-slate-700"
+                            title={lang === "en" ? "Print pick list" : "In phiếu soạn hàng"}
                           >
                             <FileText size={17} />
+                          </button>
+
+                          <button
+                            onClick={() => printShippingLabel(order)}
+                            className="rounded-xl bg-slate-100 p-2 text-slate-700"
+                            title={lang === "en" ? "Print shipping label" : "In vận đơn"}
+                          >
+                            <Printer size={17} />
                           </button>
                         </div>
                       </td>
@@ -663,8 +736,21 @@ export default function AdminOrders() {
                         <div className="text-xs text-slate-400">
                           {order.createdAt ? new Date(order.createdAt).toLocaleString("vi-VN") : "-"}
                         </div>
-                        <div className="mt-2 inline-flex rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-black text-emerald-700">
-                          {lang === "en" ? "DB ORDER" : "ĐƠN HỆ THỐNG"}
+                        <div className="mt-2 flex flex-wrap gap-1">
+                          <span className="inline-flex rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-black text-emerald-700">
+                            {lang === "en" ? "DB ORDER" : "ĐƠN HỆ THỐNG"}
+                          </span>
+                          <span
+                            className={`inline-flex rounded-full px-2 py-1 text-[10px] font-black ${
+                              order.shippingLabelPrintedAt
+                                ? "bg-blue-50 text-blue-700"
+                                : "bg-amber-50 text-amber-700"
+                            }`}
+                          >
+                            {order.shippingLabelPrintedAt
+                              ? (lang === "en" ? "Label printed" : "Đã in vận đơn")
+                              : (lang === "en" ? "Label not printed" : "Chưa in vận đơn")}
+                          </span>
                         </div>
                       </td>
 

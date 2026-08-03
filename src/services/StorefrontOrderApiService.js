@@ -44,6 +44,7 @@ export function buildCreateOrderPayload({
     paymentMethod: normalizePaymentMethod(customer.paymentMethod),
     paymentReference: customer.paymentReference || "",
     note: customer.note || "",
+    preferredDeliveryTime: customer.preferredDeliveryTime || "",
     items: (draft.items || []).map((item) => ({
       productId: normalizeProductId(item),
       sku: item.sku || "",

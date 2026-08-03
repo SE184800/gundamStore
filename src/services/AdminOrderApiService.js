@@ -128,6 +128,7 @@ export function mapBackendOrder(order = {}) {
       note: shipment?.note || "",
     },
     shippingHistory: Array.isArray(order.shipments) ? [...order.shipments].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)) : [],
+    shippingLabelPrintedAt: order.shippingLabelPrintedAt || null,
 
     status: uiStatus,
 
@@ -209,6 +210,18 @@ export async function updateAdminOrderShippingApi(orderId, shippingInfo = {}) {
 
   if (!data?.success || !data.order) {
     throw new Error("Backend did not return updated shipping order.");
+  }
+
+  return mapBackendOrder(data.order);
+}
+
+export async function markShippingLabelPrintedApi(orderId) {
+  const data = await apiRequest(`/api/orders/admin/${orderId}/shipping-label/mark-printed`, {
+    method: "PATCH",
+  });
+
+  if (!data?.success || !data.order) {
+    throw new Error("Backend did not return updated order.");
   }
 
   return mapBackendOrder(data.order);

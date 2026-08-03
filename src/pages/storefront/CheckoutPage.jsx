@@ -14,6 +14,7 @@ import {
 import {
   mapBackendOrderForStorefront,
   saveOrderSuccessSnapshot,
+  saveJustPlacedOrderFlag,
 } from "../../services/StorefrontOrderLookupApiService";
 import PageShell from "../../components/common/PageShell";
 import { getMyAccount, getMyAddresses, hasAccountToken } from "../../services/AccountApiService";
@@ -41,7 +42,6 @@ function getCopy(lang) {
     stepCart: lang === "en" ? "Cart" : "Giỏ hàng",
     stepCheckout: lang === "en" ? "Checkout" : "Thanh toán",
     stepDone: lang === "en" ? "Done" : "Hoàn tất",
-    noDraft: lang === "en" ? "No checkout data found" : "Không có dữ liệu checkout",
     backCart: lang === "en" ? "Back to cart" : "Quay lại giỏ hàng",
     addressTitle: lang === "en" ? "Shipping address" : "Địa chỉ nhận hàng",
     savedAddresses: lang === "en" ? "Saved addresses" : "Địa chỉ đã lưu",
@@ -56,6 +56,11 @@ function getCopy(lang) {
     shippingTitle: lang === "en" ? "Shipping method" : "Phương thức vận chuyển",
     paymentTitle: lang === "en" ? "Payment method" : "Phương thức thanh toán",
     note: lang === "en" ? "Message for the shop" : "Lời nhắn cho shop",
+    preferredDeliveryTime: lang === "en" ? "Preferred delivery time" : "Thời gian giao hàng mong muốn",
+    preferredDeliveryTimeNone: lang === "en" ? "No preference" : "Không yêu cầu",
+    preferredDeliveryTimeOffice: lang === "en" ? "Office hours" : "Giờ hành chính",
+    preferredDeliveryTimeAfterOffice: lang === "en" ? "After office hours" : "Ngoài giờ hành chính",
+    preferredDeliveryTimeWeekend: lang === "en" ? "Weekend" : "Cuối tuần",
     summary: lang === "en" ? "Order summary" : "Tóm tắt đơn hàng",
     saved: lang === "en" ? "Order will be saved into the order management system." : "Đơn hàng được lưu vào hệ thống quản lý đơn hàng.",
     subtotal: lang === "en" ? "Subtotal" : "Tạm tính",
@@ -116,6 +121,31 @@ function getCopy(lang) {
   };
 }
 
+// List-driven so a new optional checkout field only needs one entry here
+// (key must match a `customer` state field) instead of hand-written JSX —
+// add the next one (e.g. gift wrap, invoice request) the same way.
+function getCheckoutExtraFields(t) {
+  return [
+    {
+      key: "note",
+      type: "textarea",
+      label: t.note,
+      rows: 4,
+    },
+    {
+      key: "preferredDeliveryTime",
+      type: "select",
+      label: t.preferredDeliveryTime,
+      options: [
+        { value: "", label: t.preferredDeliveryTimeNone },
+        { value: t.preferredDeliveryTimeOffice, label: t.preferredDeliveryTimeOffice },
+        { value: t.preferredDeliveryTimeAfterOffice, label: t.preferredDeliveryTimeAfterOffice },
+        { value: t.preferredDeliveryTimeWeekend, label: t.preferredDeliveryTimeWeekend },
+      ],
+    },
+  ];
+}
+
 function sanitizeText(value = "", max = 255) {
   return String(value || "")
     .replace(/[<>]/g, "")
@@ -145,6 +175,7 @@ export default function CheckoutPage() {
   const t = getCopy(lang);
 
   const [draft, setDraft] = useState(null);
+  const [draftChecked, setDraftChecked] = useState(false);
   const [errors, setErrors] = useState([]);
   const [placingOrder, setPlacingOrder] = useState(false);
   // React state updates are batched/async — a fast double-click can fire
@@ -167,6 +198,7 @@ export default function CheckoutPage() {
     district: "",
     province: "Hồ Chí Minh",
     note: "",
+    preferredDeliveryTime: "",
     paymentMethod: "COD",
     shippingMethod: "FAST",
   });
@@ -222,6 +254,7 @@ export default function CheckoutPage() {
 
     const checkoutDraft = getCheckoutDraft();
     setDraft(checkoutDraft);
+    setDraftChecked(true);
 
     if (checkoutDraft?.voucherCode) {
       setVoucherInput(checkoutDraft.voucherCode);
@@ -300,6 +333,16 @@ export default function CheckoutPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // No checkout draft after the initial load check means this page was
+  // reached with nothing to check out (refresh, browser back after an order
+  // was already placed and its draft cleared, or a direct/bookmarked visit)
+  // — send the shopper home instead of stranding them on a dead-end error card.
+  useEffect(() => {
+    if (draftChecked && !draft) {
+      navigate("/", { replace: true });
+    }
+  }, [draftChecked, draft, navigate]);
+
   const selectedShipping =
     shippingMethods.find((item) => item.value === customer.shippingMethod) || shippingMethods[0];
   const isPreorder = draft?.orderType === ORDER_TYPE.PREORDER;
@@ -362,21 +405,10 @@ export default function CheckoutPage() {
   }, [draft, selectedShipping, appliedVoucher]);
 
   if (!draft) {
-    return (
-      <PageShell>
-        <main className="min-h-screen bg-slate-50 p-10">
-          <div className="mx-auto max-w-3xl rounded-xl bg-white p-10 text-center">
-            <h1 className="text-2xl font-black">{t.noDraft}</h1>
-            <button
-              onClick={() => navigate("/cart")}
-              className="mt-5 rounded-2xl bg-blue-700 px-6 py-3 font-black text-white"
-            >
-              {t.backCart}
-            </button>
-          </div>
-        </main>
-      </PageShell>
-    );
+    // Either still checking sessionStorage for a draft, or none was found —
+    // the redirect-home effect above handles the latter. Render nothing
+    // instead of a dead-end error card while that settles.
+    return <PageShell><main className="min-h-screen bg-slate-50" /></PageShell>;
   }
 
   async function applyBackendVoucher(codeOverride, draftOverride) {
@@ -523,6 +555,7 @@ export default function CheckoutPage() {
       district: sanitizeText(customer.district || "", 80),
       province: sanitizeText(customer.province || "Hồ Chí Minh", 80),
       note: sanitizeText(customer.note, 280),
+      preferredDeliveryTime: sanitizeText(customer.preferredDeliveryTime || "", 120),
       paymentMethod: customer.paymentMethod,
       shippingMethod: customer.shippingMethod,
     };
@@ -548,10 +581,15 @@ export default function CheckoutPage() {
       const mappedOrder = mapBackendOrderForStorefront(apiOrder);
 
       saveOrderSuccessSnapshot(mappedOrder, cleanCustomer);
+      saveJustPlacedOrderFlag({
+        orderNo: mappedOrder.orderCode,
+        total: mappedOrder.total,
+        phone: cleanCustomer.phone,
+      });
       clearCartItems(draft.items);
       clearCheckoutDraft();
 
-      navigate(`/order-success/${mappedOrder.orderCode}`);
+      navigate("/");
     } catch (error) {
       console.error("Create order API failed", error);
 
@@ -877,13 +915,42 @@ export default function CheckoutPage() {
                   ))}
                 </div>
 
-                <textarea
-                  value={customer.note}
-                  onChange={(e) => setCustomer({ ...customer, note: e.target.value })}
-                  placeholder={t.note}
-                  rows={4}
-                  className="mt-5 w-full rounded-2xl border px-4 py-3 outline-none focus:border-blue-500"
-                />
+                <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                  {getCheckoutExtraFields(t).map((field) => (
+                    <label key={field.key} className={`block ${field.type === "textarea" ? "sm:col-span-2" : ""}`}>
+                      <span className="text-sm font-black text-slate-700">{field.label}</span>
+
+                      {field.type === "textarea" ? (
+                        <textarea
+                          value={customer[field.key] || ""}
+                          onChange={(e) => setCustomer({ ...customer, [field.key]: e.target.value })}
+                          placeholder={field.label}
+                          rows={field.rows || 3}
+                          className="mt-2 w-full rounded-2xl border px-4 py-3 outline-none focus:border-blue-500"
+                        />
+                      ) : field.type === "select" ? (
+                        <select
+                          value={customer[field.key] || ""}
+                          onChange={(e) => setCustomer({ ...customer, [field.key]: e.target.value })}
+                          className="mt-2 w-full rounded-2xl border px-4 py-3 text-sm outline-none focus:border-blue-500"
+                        >
+                          {field.options.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <input
+                          value={customer[field.key] || ""}
+                          onChange={(e) => setCustomer({ ...customer, [field.key]: e.target.value })}
+                          placeholder={field.label}
+                          className="mt-2 w-full rounded-2xl border px-4 py-3 text-sm outline-none focus:border-blue-500"
+                        />
+                      )}
+                    </label>
+                  ))}
+                </div>
               </div>
             </section>
 

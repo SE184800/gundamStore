@@ -3,14 +3,17 @@ import {
   ArrowRight,
   Award,
   Boxes,
+  CheckCircle2,
   ChevronLeft,
   ChevronRight,
   Layers,
   Puzzle,
+  Search,
   ShieldCheck,
   Truck,
   Users,
   Wrench,
+  X,
 } from "lucide-react";
 import PageShell from "../../components/common/PageShell";
 import { useCms } from "../../store/CmsStore";
@@ -19,6 +22,7 @@ import { getSafeHref } from "../../utils/urlSafety";
 import ProductCard from "../../components/storefront/ProductCard";
 import { getStorefrontProductsForStorefront } from "../../services/StorefrontProductApiService";
 import { getStorefrontHomeBannersFromApi } from "../../services/BannerApiService";
+import { consumeJustPlacedOrderFlag } from "../../services/StorefrontOrderLookupApiService";
 import {
   getPublicEventsApi,
   getPublicNewsApi,
@@ -798,6 +802,59 @@ function ContentHighlights({ news = [], events = [], lang = "vi" }) {
 }
 
 
+function OrderPlacedBanner({ lang }) {
+  const [order, setOrder] = useState(null);
+
+  useEffect(() => {
+    setOrder(consumeJustPlacedOrderFlag());
+  }, []);
+
+  if (!order) return null;
+
+  const money = (n) => (Number(n) || 0).toLocaleString("vi-VN") + "đ";
+  const lookupHref = order.phone ? `/order-lookup?phone=${encodeURIComponent(order.phone)}` : "/order-lookup";
+
+  return (
+    <section className="mx-auto max-w-[1440px] px-4 pt-4 lg:px-8">
+      <div className="relative flex flex-col gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-start gap-3 pr-6">
+          <CheckCircle2 className="mt-0.5 shrink-0 text-emerald-600" size={22} />
+          <div>
+            <div className="font-black text-emerald-800">
+              {lang === "en" ? "Order placed successfully!" : "Đặt hàng thành công!"}
+            </div>
+            <div className="mt-1 text-sm font-bold text-emerald-700">
+              {lang === "en" ? "Order code" : "Mã đơn"}: <span className="text-emerald-900">{order.orderNo}</span>
+              {order.total > 0 && (
+                <>
+                  {" "}· {lang === "en" ? "Total" : "Tổng tiền"}: <span className="text-emerald-900">{money(order.total)}</span>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <a
+          href={lookupHref}
+          className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-emerald-700 px-4 py-2.5 text-sm font-black text-white hover:bg-emerald-800"
+        >
+          <Search size={16} />
+          {lang === "en" ? "Track this order" : "Tra cứu đơn hàng"}
+        </a>
+
+        <button
+          type="button"
+          onClick={() => setOrder(null)}
+          aria-label={lang === "en" ? "Dismiss" : "Đóng"}
+          className="absolute right-3 top-3 text-emerald-700/60 hover:text-emerald-800 sm:static"
+        >
+          <X size={18} />
+        </button>
+      </div>
+    </section>
+  );
+}
+
 export default function HomePage() {
   const [backendProducts, setBackendProducts] = useState([]);
   const [homepageNews, setHomepageNews] = useState([]);
@@ -888,6 +945,8 @@ export default function HomePage() {
 
   return (
     <PageShell>
+      <OrderPlacedBanner lang={lang} />
+
       <div className="relative">
         <Hero
           banners={dbBanners}

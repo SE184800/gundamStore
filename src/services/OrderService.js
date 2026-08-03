@@ -1,4 +1,5 @@
 ﻿import { apiRequest } from "./ApiClient";
+import { mapOrderSummaryForStorefront } from "./StorefrontOrderLookupApiService";
 import { normalizeItems, calcSubtotal } from "./PricingService";
 import { reduceStock, restoreStock, logOrderStockReservation, logOrderStockRestore } from "./InventoryService";
 import {
@@ -376,6 +377,25 @@ export async function lookupPublicOrderFromApi(orderCode = "", { phone = "", ema
   }
 
   return mapBackendOrderForStorefront(data.order);
+}
+
+export async function lookupPublicOrdersByPhoneFromApi(phone = "") {
+  const cleanPhone = String(phone || "").trim();
+
+  if (!cleanPhone) {
+    throw new Error("Phone number is required.");
+  }
+
+  const params = new URLSearchParams({ phone: cleanPhone });
+  const data = await apiRequest(`/api/orders/public/by-phone?${params.toString()}`, {
+    token: "",
+  });
+
+  if (!data?.success) {
+    throw new Error(data?.message || "Unable to look up orders.");
+  }
+
+  return Array.isArray(data.orders) ? data.orders.map(mapOrderSummaryForStorefront) : [];
 }
 
 
