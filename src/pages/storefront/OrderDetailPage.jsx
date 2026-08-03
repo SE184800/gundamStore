@@ -572,7 +572,7 @@ export default function OrderDetailPage() {
                         <div className="mt-2 font-black text-red-500">{money(item.price)}</div>
                       </div>
 
-                      <div className="font-black text-slate-950">
+                      <div className="font-black text-red-500">
                         {money((item.price || 0) * (item.quantity || 1))}
                       </div>
                     </div>
@@ -659,7 +659,7 @@ export default function OrderDetailPage() {
 
                 <div className="mt-4 space-y-3 text-sm">
                   <div className="flex justify-between"><span>{t.subtotal}</span><b>{money(order.subtotal)}</b></div>
-                  <div className="flex justify-between"><span>{t.shippingFee}</span><b>{money(order.shippingFee)}</b></div>
+                  <div className="flex justify-between"><span>{t.shippingFee}</span><b className="text-red-500">{money(order.shippingFee)}</b></div>
                   <div className="flex justify-between text-green-600"><span>{t.discount}</span><b>-{money(order.discount)}</b></div>
                   <div className="flex justify-between text-green-600"><span>{t.shippingDiscount}</span><b>-{money(order.shippingDiscount)}</b></div>
                   <div className="flex justify-between"><span>{t.voucher}</span><b>{order.voucherCode || "-"}</b></div>

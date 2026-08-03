@@ -446,7 +446,7 @@ export default function CartPage() {
                           </div>
                         </div>
 
-                        <div className="text-right text-xs font-semibold text-slate-400">
+                        <div className="text-right text-xs font-semibold text-red-500">
                           {money(item.price)}
                         </div>
 
@@ -533,7 +533,7 @@ export default function CartPage() {
                             </button>
                           </div>
                           <div className="text-right">
-                            <div className="text-[10px] font-semibold text-slate-400">{money(item.price)}</div>
+                            <div className="text-[10px] font-semibold text-red-500">{money(item.price)}</div>
                             <div className="text-sm font-black text-red-500">{money(lineTotal)}</div>
                           </div>
                         </div>
@@ -630,7 +630,7 @@ export default function CartPage() {
 
                 <div className="flex justify-between">
                   <span>{t.shippingFee}</span>
-                  <b>{money(baseShippingFee)}</b>
+                  <b className="text-red-500">{money(baseShippingFee)}</b>
                 </div>
 
                 <div className="flex justify-between text-green-600">

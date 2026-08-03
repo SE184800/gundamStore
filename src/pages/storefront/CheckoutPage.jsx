@@ -1024,7 +1024,7 @@ export default function CheckoutPage() {
 
                 <div className="flex justify-between">
                   <span>{t.shippingFee}</span>
-                  <b>{money(pricing.shippingFee)}</b>
+                  <b className="text-red-500">{money(pricing.shippingFee)}</b>
                 </div>
 
                 <div className="flex justify-between text-green-600">
