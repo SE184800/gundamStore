@@ -100,7 +100,7 @@ export const STRINGS = {
       defaultName: "Sản phẩm Gundam",
     },
     footer: {
-      intro: "Gundam Store VN — điểm đến cho builder, collector và cộng đồng Gunpla.",
+      intro: "Gundam Store VN – nơi kết nối cộng đồng đam mê mô hình Gunpla, chia sẻ kinh nghiệm lắp ráp và lan tỏa niềm vui sưu tầm.",
       productGroup: "Sản phẩm",
       communityGroup: "Cộng đồng",
       supportGroup: "Hỗ trợ",
@@ -222,7 +222,7 @@ export const STRINGS = {
       defaultName: "Gundam product",
     },
     footer: {
-      intro: "Gundam Store VN — a destination for builders, collectors and the Gunpla community.",
+      intro: "Gundam Store VN – a hub connecting the Gunpla-loving community, sharing build experience and spreading the joy of collecting.",
       productGroup: "Products",
       communityGroup: "Community",
       supportGroup: "Support",
@@ -314,7 +314,7 @@ export const STATIC_TEXT_EN = {
   "Nhận tin hàng mới": "Get new arrival updates",
   "Email của bạn": "Your email",
   "Gửi": "Send",
-  "Gundam Store VN — điểm đến cho builder, collector và cộng đồng Gunpla.": "Gundam Store VN — a destination for builders, collectors and the Gunpla community.",
+  "Gundam Store VN – nơi kết nối cộng đồng đam mê mô hình Gunpla, chia sẻ kinh nghiệm lắp ráp và lan tỏa niềm vui sưu tầm.": "Gundam Store VN – a hub connecting the Gunpla-loving community, sharing build experience and spreading the joy of collecting.",
   "Cập nhật preorder, restock, sự kiện và voucher cho builder.": "Receive preorder, restock, event and voucher updates for builders.",
   "AI Chatbot": "AI Chatbot",
   "Tư vấn khách hàng": "Customer support",

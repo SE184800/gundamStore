@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowRight,
@@ -63,7 +63,7 @@ import {
 const copy = {
   vi: {
     home: "Trang chủ",
-    shop: "Trang bán hàng",
+    genericCategory: "Sản phẩm",
     inStock: "Hàng sẵn",
     outOfStock: "Hết hàng",
     preorder: "Pre-order",
@@ -147,7 +147,7 @@ const copy = {
   },
   en: {
     home: "Home",
-    shop: "Shop",
+    genericCategory: "Product",
     inStock: "In stock",
     outOfStock: "Out of stock",
     preorder: "Pre-order",
@@ -250,6 +250,19 @@ function productName(product, lang) {
   return text(product.name, lang, product.title || "Gundam Model Kit");
 }
 
+function productCategoryCrumb(product, lang, fallbackLabel) {
+  const category = product?.category;
+  const key = category?.id || category?.slug || category?.code || "";
+
+  if (!category || !key) {
+    return { label: fallbackLabel, href: "/shop" };
+  }
+
+  const label = (lang === "en" ? category.nameEn : category.nameVi) || category.nameVi || category.nameEn || fallbackLabel;
+
+  return { label, href: `/shop?category=${encodeURIComponent(key)}` };
+}
+
 function collapseBlankLines(value = "") {
   return String(value || "")
     .replace(/\r\n/g, "\n")
@@ -344,9 +357,19 @@ function mergeProductVariant(product = {}, variant = null) {
 
 function GundamVisual({ tone = "blue", imageUrl, large = false, priority = false, alt = "", zoom = false }) {
   const [loaded, setLoaded] = useState(false);
+  const imgRef = useRef(null);
 
   useEffect(() => {
-    setLoaded(false);
+    // If the browser already has this image decoded (cache hit, or it
+    // finished loading before this effect ran), the "load" event on the
+    // <img> below may never fire for this mount, leaving `loaded` stuck at
+    // false and the image invisible (opacity-0) forever. Checking
+    // `.complete` here catches that case instead of relying on the event.
+    if (imgRef.current?.complete && imgRef.current.naturalWidth > 0) {
+      setLoaded(true);
+    } else {
+      setLoaded(false);
+    }
   }, [imageUrl]);
 
   // All tone variants stay within the blue/slate brand family — this
@@ -368,6 +391,7 @@ function GundamVisual({ tone = "blue", imageUrl, large = false, priority = false
       <div className={`relative h-full overflow-hidden rounded-2xl bg-slate-100 ${zoom ? "group cursor-zoom-in" : ""}`}>
         {!loaded && <div className="absolute inset-0 animate-pulse bg-slate-200" />}
         <img
+          ref={imgRef}
           src={imageUrl}
           alt={alt}
           className={`h-full w-full object-cover transition duration-300 ${loaded ? "opacity-100" : "opacity-0"} ${zoom ? "group-hover:scale-125" : ""}`}
@@ -1508,13 +1532,18 @@ export default function ProductDetailPage() {
   }
 
   const gallery = product.images?.length ? product.images : [null, null, null, null];
+  const categoryCrumb = productCategoryCrumb(product, lang, t.genericCategory);
 
   return (
     <PageShell>
       <main>
         <section className="mx-auto max-w-[1440px] px-4 py-5 lg:px-8">
           <div className="mb-4 flex flex-wrap items-center gap-2 text-sm font-bold text-slate-500">
-            <span>{t.home}</span><ChevronRight size={16} /><span>{t.shop}</span><ChevronRight size={16} /><span className="text-slate-950">{productName(product, lang)}</span>
+            <a href="/" className="hover:text-blue-700">{t.home}</a>
+            <ChevronRight size={16} />
+            <a href={categoryCrumb.href} className="hover:text-blue-700">{categoryCrumb.label}</a>
+            <ChevronRight size={16} />
+            <span className="text-slate-950">{productName(product, lang)}</span>
           </div>
 
           <div className="grid gap-5 lg:grid-cols-[1.02fr_0.98fr]">

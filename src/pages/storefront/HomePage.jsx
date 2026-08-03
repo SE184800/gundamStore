@@ -1,15 +1,15 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowRight,
+  Award,
   Boxes,
   ChevronLeft,
   ChevronRight,
   Layers,
-  Package,
   Puzzle,
-  Search,
   ShieldCheck,
   Truck,
+  Users,
   Wrench,
 } from "lucide-react";
 import PageShell from "../../components/common/PageShell";
@@ -36,17 +36,14 @@ const copy = {
     chip3: "Giá tốt mỗi ngày",
     buyNow: "Mua ngay",
     collection: "Xem bộ sưu tập",
-    fastShip: "Giao nhanh",
-    // Neutral wording — the previous "Ship hỏa tốc 2H tại HCM" claim wasn't
-    // backed by any real capability/config in this codebase; don't restore
-    // a specific speed/coverage claim without confirming it's still true.
-    fastShipDesc: "Giao hàng toàn quốc",
-    sealed: "Hộp nguyên vẹn",
-    sealedDesc: "Đóng gói kỹ càng, bảo vệ tuyệt đối",
-    authentic: "Minh bạch hàng",
-    authenticDesc: "Cam kết hàng chính hãng, ghi rõ nguồn",
-    orderLookupSupport: "Hỗ trợ tra cứu",
-    orderLookupSupportDesc: "Tra cứu trạng thái đơn hàng mọi lúc",
+    statYears: "10+ NĂM",
+    statYearsDesc: "KINH NGHIỆM",
+    statCustomers: "10.000+",
+    statCustomersDesc: "KHÁCH HÀNG TIN TƯỞNG",
+    statAuthentic: "100%",
+    statAuthenticDesc: "SẢN PHẨM CHÍNH HÃNG",
+    statShipping: "GIAO HÀNG",
+    statShippingDesc: "TOÀN QUỐC",
     featuredCategories: "Danh mục nổi bật",
     bandaiGundam: "Bandai-Gundam",
     gradesLineup: "HG-RG-MG-PG",
@@ -82,14 +79,14 @@ const copy = {
     chip3: "Best daily deals",
     buyNow: "Buy now",
     collection: "View collection",
-    fastShip: "Fast shipping",
-    fastShipDesc: "Nationwide delivery",
-    sealed: "Mint box care",
-    sealedDesc: "Careful packing and box protection",
-    authentic: "Clear source",
-    authenticDesc: "Authentic products with transparent info",
-    orderLookupSupport: "Order lookup",
-    orderLookupSupportDesc: "Check your order status anytime",
+    statYears: "10+ YEARS",
+    statYearsDesc: "OF EXPERIENCE",
+    statCustomers: "10,000+",
+    statCustomersDesc: "TRUSTED CUSTOMERS",
+    statAuthentic: "100%",
+    statAuthenticDesc: "AUTHENTIC PRODUCTS",
+    statShipping: "NATIONWIDE",
+    statShippingDesc: "DELIVERY",
     featuredCategories: "Featured categories",
     bandaiGundam: "Bandai-Gundam",
     gradesLineup: "HG-RG-MG-PG",
@@ -503,32 +500,26 @@ function HeroV2Classic({ banners, lang, actions, settings }) {
 function TrustStrip({ lang }) {
   const t = copy[lang];
   const items = [
-    [ShieldCheck, t.authentic, t.authenticDesc],
-    [Package, t.sealed, t.sealedDesc],
-    [Search, t.orderLookupSupport, t.orderLookupSupportDesc],
-    [Truck, t.fastShip, t.fastShipDesc],
+    [Award, t.statYears, t.statYearsDesc],
+    [Users, t.statCustomers, t.statCustomersDesc],
+    [ShieldCheck, t.statAuthentic, t.statAuthenticDesc],
+    [Truck, t.statShipping, t.statShippingDesc],
   ];
 
   return (
     <section className="mx-auto max-w-[1440px] px-4 py-2 sm:py-4 lg:px-8">
-      <div className="mobile-hide-scrollbar flex gap-2 overflow-x-auto rounded-2xl border border-blue-100 bg-white p-2 shadow-sm sm:grid sm:grid-cols-2 sm:gap-0 sm:overflow-hidden sm:p-0 lg:grid-cols-4">
-        {items.map(([Icon, title, desc], index) => (
+      <div className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl bg-white/10 sm:grid-cols-4">
+        {items.map(([Icon, stat, desc]) => (
           <div
-            key={title}
-            className={`flex min-w-[154px] shrink-0 items-center gap-2 rounded-xl bg-blue-50/60 px-3 py-2.5 sm:min-w-0 sm:rounded-none sm:bg-transparent sm:p-4 ${index > 0 ? "sm:border-l sm:border-blue-50" : ""}`}
+            key={stat}
+            className="flex flex-col items-center gap-2 bg-slate-950 px-4 py-6 text-center sm:py-7"
           >
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-700 sm:h-10 sm:w-10">
-              <Icon size={20} />
+            <Icon size={22} strokeWidth={1.5} className="text-white/70" />
+            <div className="text-lg font-black tracking-wide text-white sm:text-xl">
+              {stat}
             </div>
-
-            <div className="min-w-0">
-              <div className="truncate text-[11px] font-black tracking-wide text-blue-900 sm:text-xs">
-                {title}
-              </div>
-
-              <div className="mt-1 hidden text-xs font-medium leading-5 text-slate-500 sm:block">
-                {desc}
-              </div>
+            <div className="text-[10px] font-bold uppercase leading-4 tracking-wide text-white/55 sm:text-xs">
+              {desc}
             </div>
           </div>
         ))}
