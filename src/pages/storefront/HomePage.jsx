@@ -508,17 +508,17 @@ function TrustStrip({ lang }) {
 
   return (
     <section className="mx-auto max-w-[1440px] px-4 py-2 sm:py-4 lg:px-8">
-      <div className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl bg-white/10 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl bg-blue-800/40 sm:grid-cols-4">
         {items.map(([Icon, stat, desc]) => (
           <div
             key={stat}
-            className="flex flex-col items-center gap-2 bg-slate-950 px-4 py-6 text-center sm:py-7"
+            className="flex flex-col items-center gap-2 bg-blue-900 px-4 py-6 text-center sm:py-7"
           >
-            <Icon size={22} strokeWidth={1.5} className="text-white/70" />
+            <Icon size={22} strokeWidth={1.5} className="text-blue-300" />
             <div className="text-lg font-black tracking-wide text-white sm:text-xl">
               {stat}
             </div>
-            <div className="text-[10px] font-bold uppercase leading-4 tracking-wide text-white/55 sm:text-xs">
+            <div className="text-[10px] font-bold uppercase leading-4 tracking-wide text-blue-200/80 sm:text-xs">
               {desc}
             </div>
           </div>
