@@ -313,7 +313,7 @@ export function FlashSaleSection({ lang = "vi", actions }) {
       <div className="bg-gradient-to-b from-red-50/70 to-white p-4 sm:p-5">
         <div className="no-scrollbar flex snap-x scroll-px-1 gap-3 overflow-x-auto pb-1">
           {products.slice(0, 12).map((product) => (
-            <div key={product.id} className="snap-start">
+            <div key={product.id} className="shrink-0 snap-start">
               <FlashSaleCard product={product} lang={lang} actions={actions} />
             </div>
           ))}
