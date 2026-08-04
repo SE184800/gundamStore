@@ -84,6 +84,43 @@ export function ShopStatsBar({ lang = "vi" }) {
   );
 }
 
+function FlashSaleProgress({ sold = 0, stock = 0, lang = "vi" }) {
+  const soldCount = Number(sold) || 0;
+  const stockCount = Number(stock) || 0;
+
+  // Public storefront API doesn't always expose a real remaining-stock number
+  // for flash-sale products — only show the sold/total progress bar when we
+  // actually have one, otherwise fall back to the real sold count alone
+  // instead of fabricating a denominator.
+  if (!(stockCount > 0)) {
+    if (soldCount <= 0) return null;
+    return (
+      <div className="mt-2 inline-flex items-center gap-1 text-[11px] font-black text-red-600">
+        <Flame size={12} className="fill-red-500 text-red-500" />
+        {lang === "en" ? `${soldCount} sold` : `Đã bán ${soldCount}`}
+      </div>
+    );
+  }
+
+  const total = stockCount + soldCount;
+  const percent = Math.min(100, Math.max(soldCount > 0 ? 6 : 0, Math.round((soldCount / total) * 100)));
+
+  return (
+    <div className="mt-2">
+      <div className="h-3.5 w-full overflow-hidden rounded-full bg-red-100">
+        <div
+          className="h-full rounded-full bg-gradient-to-r from-red-600 to-orange-500 transition-all"
+          style={{ width: `${percent}%` }}
+        />
+      </div>
+      <div className="mt-1 flex items-center justify-between text-[10px] font-bold text-slate-500">
+        <span>{lang === "en" ? `${soldCount} sold` : `Đã bán ${soldCount}`}</span>
+        <span>{lang === "en" ? `${total - soldCount} left` : `Còn ${total - soldCount}`}</span>
+      </div>
+    </div>
+  );
+}
+
 export function FlashSaleSection({ lang = "vi", actions }) {
   const t = copy[lang];
   const [promotions, setPromotions] = useState([]);
@@ -124,25 +161,30 @@ export function FlashSaleSection({ lang = "vi", actions }) {
   if (!products.length) return null;
 
   return (
-    <div className="mt-4 rounded-2xl border border-red-100 bg-red-50/40 p-4 shadow-sm sm:p-5">
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <div className="inline-flex items-center gap-2 text-base font-black text-red-600 sm:text-lg">
-          <Flame size={19} />
-          {t.flashSaleTitle}
+    <div className="mt-4 overflow-hidden rounded-2xl border border-red-200 shadow-sm shadow-red-100">
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-gradient-to-r from-red-600 to-orange-500 px-4 py-3 sm:px-5 sm:py-4">
+        <div className="inline-flex items-center gap-2 text-white">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/20">
+            <Flame size={17} className="fill-white text-white" />
+          </span>
+          <span className="text-base font-black uppercase tracking-wide sm:text-lg">{t.flashSaleTitle}</span>
         </div>
         {nearestEndDate && (
-          <div className="flex items-center gap-2 text-xs font-bold text-slate-600 sm:text-sm">
-            <span>{t.flashSaleEndsIn}</span>
-            <CountdownTimer endDate={nearestEndDate} className="text-red-600" />
+          <div className="flex items-center gap-2 text-xs font-bold text-white sm:text-sm">
+            <span className="text-white/90">{t.flashSaleEndsIn}</span>
+            <CountdownTimer endDate={nearestEndDate} variant="light" />
           </div>
         )}
       </div>
-      <div className="mobile-hide-scrollbar flex gap-3 overflow-x-auto pb-1">
-        {products.slice(0, 12).map((product) => (
-          <div key={product.id} className="w-40 shrink-0 sm:w-48">
-            <ProductCard product={product} lang={lang} actions={actions} badge="SALE" />
-          </div>
-        ))}
+      <div className="bg-gradient-to-b from-red-50/70 to-white p-4 sm:p-5">
+        <div className="mobile-hide-scrollbar flex gap-3 overflow-x-auto pb-1">
+          {products.slice(0, 12).map((product) => (
+            <div key={product.id} className="w-40 shrink-0 sm:w-48">
+              <ProductCard product={product} lang={lang} actions={actions} badge="SALE" />
+              <FlashSaleProgress sold={product.sold} stock={product.stock} lang={lang} />
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

@@ -18,7 +18,7 @@ function splitDuration(ms) {
 
 const pad = (n) => String(n).padStart(2, "0");
 
-export default function CountdownTimer({ endDate, className = "" }) {
+export default function CountdownTimer({ endDate, className = "", variant = "dark" }) {
   const [remaining, setRemaining] = useState(() => getRemainingMs(endDate));
 
   useEffect(() => {
@@ -30,15 +30,20 @@ export default function CountdownTimer({ endDate, className = "" }) {
   if (!endDate || remaining <= 0) return null;
 
   const { days, hours, minutes, seconds } = splitDuration(remaining);
+  const boxClass =
+    variant === "light"
+      ? "rounded-md bg-white px-2 py-1 text-red-600 shadow-sm"
+      : "rounded bg-slate-950 px-1.5 py-0.5 text-white";
+  const dayClass = variant === "light" ? "mr-0.5 text-white" : "mr-0.5";
 
   return (
     <div className={`flex items-center gap-1 font-black tabular-nums ${className}`}>
-      {days > 0 && <span className="mr-0.5">{days}d</span>}
-      <span className="rounded bg-slate-950 px-1.5 py-0.5 text-white">{pad(hours)}</span>
-      <span>:</span>
-      <span className="rounded bg-slate-950 px-1.5 py-0.5 text-white">{pad(minutes)}</span>
-      <span>:</span>
-      <span className="rounded bg-slate-950 px-1.5 py-0.5 text-white">{pad(seconds)}</span>
+      {days > 0 && <span className={dayClass}>{days}d</span>}
+      <span className={boxClass}>{pad(hours)}</span>
+      <span className={variant === "light" ? "text-white" : ""}>:</span>
+      <span className={boxClass}>{pad(minutes)}</span>
+      <span className={variant === "light" ? "text-white" : ""}>:</span>
+      <span className={boxClass}>{pad(seconds)}</span>
     </div>
   );
 }

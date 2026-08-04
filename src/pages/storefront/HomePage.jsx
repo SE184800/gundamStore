@@ -21,6 +21,7 @@ import { translateStaticText } from "../../i18n";
 import { getSafeHref } from "../../utils/urlSafety";
 import ProductCard from "../../components/storefront/ProductCard";
 import { getStorefrontProductsForStorefront } from "../../services/StorefrontProductApiService";
+import { FlashSaleSection } from "../../components/storefront/ShopHeaderBlocks";
 import { getStorefrontHomeBannersFromApi } from "../../services/BannerApiService";
 import { consumeJustPlacedOrderFlag } from "../../services/StorefrontOrderLookupApiService";
 import {
@@ -958,6 +959,10 @@ export default function HomePage() {
         />
 
         <TrustStrip lang={lang} />
+
+        <section className="mx-auto max-w-[1440px] px-4 lg:px-8">
+          <FlashSaleSection lang={lang} actions={actions} />
+        </section>
 
         <FeaturedCategories lang={lang} />
 

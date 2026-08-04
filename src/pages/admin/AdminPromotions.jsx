@@ -20,13 +20,45 @@ const TYPE_OPTIONS = [
   { value: "FIXED", label: "Giảm số tiền / Fixed amount" },
 ];
 
+// datetime-local inputs need "YYYY-MM-DDTHH:mm" in the browser's own local
+// wall-clock time (not UTC) — this shifts a Date by its own timezone offset
+// so toISOString() (always UTC) prints back the local wall-clock value.
+function toLocalDateTimeInputValue(date) {
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0, 16);
+}
+
 function todayInput() {
-  return new Date().toISOString().slice(0, 10);
+  return toLocalDateTimeInputValue(new Date());
 }
 
 function toInputDate(value) {
   if (!value) return "";
-  return new Date(value).toISOString().slice(0, 10);
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? "" : toLocalDateTimeInputValue(d);
+}
+
+// Converts a datetime-local input value (parsed by the browser as local time)
+// into a real UTC ISO string for the API — sending the raw "YYYY-MM-DDTHH:mm"
+// string as-is would get reinterpreted as UTC by a backend running in a
+// different timezone, shifting the campaign's actual start/end by hours.
+function toApiDateTime(value) {
+  if (!value) return null;
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? null : d.toISOString();
+}
+
+function formatDateTimeDisplay(value) {
+  if (!value) return "";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleString("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 function makeCode(value = "") {
@@ -274,8 +306,8 @@ export default function AdminPromotions() {
         nameEn: draft.nameEn,
         type: draft.type,
         value: Number(draft.value || 0),
-        startDate: draft.startDate,
-        endDate: draft.endDate,
+        startDate: toApiDateTime(draft.startDate),
+        endDate: toApiDateTime(draft.endDate),
         active: draft.active !== false,
         priority: Number(draft.priority || 0),
         note: draft.note,
@@ -400,7 +432,7 @@ export default function AdminPromotions() {
                   </td>
 
                   <td className="px-4 py-3 text-slate-600">
-                    {toInputDate(item.startDate)} → {toInputDate(item.endDate) || "Không giới hạn"}
+                    {formatDateTimeDisplay(item.startDate)} → {formatDateTimeDisplay(item.endDate) || "Không giới hạn"}
                   </td>
 
                   <td className="px-4 py-3 text-right font-black">{item.products?.length || 0}</td>
@@ -434,8 +466,8 @@ export default function AdminPromotions() {
             <AdminSelect label="Loại giảm giá" options={TYPE_OPTIONS} value={draft.type} onChange={(value) => patch("type", value)} />
             <AdminTextField label={draft.type === "PERCENT" ? "Giá trị %" : "Số tiền giảm"} type="number" value={draft.value} onChange={(value) => patch("value", value)} />
             <AdminTextField label="Priority" type="number" value={draft.priority} onChange={(value) => patch("priority", value)} />
-            <AdminTextField label="Từ ngày" type="date" value={draft.startDate} onChange={(value) => patch("startDate", value)} />
-            <AdminTextField label="Đến ngày" type="date" value={draft.endDate} onChange={(value) => patch("endDate", value)} />
+            <AdminTextField label="Từ ngày giờ" type="datetime-local" value={draft.startDate} onChange={(value) => patch("startDate", value)} />
+            <AdminTextField label="Đến ngày giờ" type="datetime-local" value={draft.endDate} onChange={(value) => patch("endDate", value)} />
           </div>
 
           <AdminToggle label="Active" checked={draft.active !== false} onChange={(value) => patch("active", value)} />
