@@ -28,6 +28,8 @@ const PUBLIC_API_CACHE_RULES = [
   { pattern: /^\/api\/products\/(?!admin(?:\/|$)|home(?:\/|$)|categories(?:\/|$))[^/?#]+\/?$/i, ttlMs: 10 * 60_000, staleMs: 24 * 60 * 60_000 },
   { pattern: /^\/api\/banners\/home\/?$/i, ttlMs: 10 * 60_000, staleMs: 24 * 60 * 60_000 },
   { pattern: /^\/api\/reviews\/product\/[^/?#]+\/?$/i, ttlMs: 10 * 60_000, staleMs: 24 * 60 * 60_000 },
+  { pattern: /^\/api\/promotions\/public\/active\/?$/i, ttlMs: 5 * 60_000, staleMs: 24 * 60 * 60_000 },
+  { pattern: /^\/api\/products\/[^/?#]+\/recommendations\/?$/i, ttlMs: 10 * 60_000, staleMs: 24 * 60 * 60_000 },
 ];
 
 const backgroundRefreshes = new Set();
