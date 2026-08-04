@@ -29,6 +29,8 @@ import PageShell from "../../components/common/PageShell";
 import useToast from "../../hooks/useToast";
 import Toast from "../../utils/Toast";
 import ProductCard from "../../components/storefront/ProductCard";
+import useShopStats from "../../hooks/useShopStats";
+import useContactChannels from "../../hooks/useContactChannels";
 import { useCms } from "../../store/CmsStore";
 import { translateStaticText } from "../../i18n";
 import { addProductToCart, forceCartBadgeSync, saveBuyNowDraft, saveCheckoutDraft, validateCartStock } from "../../services/CartService";
@@ -110,7 +112,9 @@ const copy = {
     payment3: "Ví điện tử/ cổng thanh toán (Đang cập nhật)",
     shopTitle: "Thông tin shop",
     shopName: "Gundam Store VN",
-    shopResponse: "Phản hồi nhanh",
+    shopNoReviews: "Chưa có đánh giá",
+    shopReviewsSuffix: "đánh giá",
+    shopProductsSuffix: "sản phẩm đang bán",
     chatShop: "Chat shop",
     viewShop: "Xem shop",
     shippingTitle: "Cam kết giao hàng",
@@ -194,7 +198,9 @@ const copy = {
     payment3: "E-wallet/ payment gateway (Coming soon)",
     shopTitle: "Shop information",
     shopName: "Gundam Store VN",
-    shopResponse: "Fast response",
+    shopNoReviews: "No reviews yet",
+    shopReviewsSuffix: "reviews",
+    shopProductsSuffix: "products on sale",
     chatShop: "Chat shop",
     viewShop: "View shop",
     shippingTitle: "Delivery guarantee",
@@ -934,6 +940,12 @@ function MarketplaceExtras({ lang, product }) {
 
 function ShopInfoCard({ lang }) {
   const t = copy[lang];
+  const { stats } = useShopStats();
+  const { zaloUrl } = useContactChannels();
+
+  const totalActiveProducts = Number(stats?.totalActiveProducts || 0);
+  const totalReviews = Number(stats?.totalReviews || 0);
+  const averageRating = Number(stats?.averageRating || 0);
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -944,12 +956,31 @@ function ShopInfoCard({ lang }) {
           <div className="text-lg font-black text-slate-950">{t.shopName}</div>
         </div>
       </div>
-      {/* Star rating and product-count chips were removed: they were hardcoded
-          marketing copy ("5.0 đánh giá", "500+ sản phẩm") with no real data
-          behind them. Add them back once a real shop-rating/product-count
-          source is wired up. */}
+      {/* key forces a fresh DOM subtree once stats load — see ShopHeaderBlocks.jsx
+          for why an in-place text update alone gets silently reverted here. */}
+      <div key={stats ? "loaded" : "loading"} className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-bold text-slate-500">
+        {totalReviews > 0 ? (
+          <span className="inline-flex items-center gap-1">
+            <Star size={14} className="fill-amber-400 text-amber-400" />
+            <span className="text-slate-950">{averageRating.toFixed(1)}</span>
+            <span className="text-slate-400">·</span>
+            <span>{totalReviews} {t.shopReviewsSuffix}</span>
+          </span>
+        ) : (
+          <span>{t.shopNoReviews}</span>
+        )}
+        <span className="text-slate-300">|</span>
+        <span>{totalActiveProducts} {t.shopProductsSuffix}</span>
+      </div>
       <div className="grid grid-cols-2 gap-3">
-        <a href="/contact" className="rounded-2xl bg-blue-700 px-4 py-3 text-center text-sm font-black text-white shadow-lg hover:bg-blue-800">{t.chatShop}</a>
+        <a
+          href={zaloUrl || "/contact"}
+          target={zaloUrl ? "_blank" : undefined}
+          rel={zaloUrl ? "noreferrer" : undefined}
+          className="rounded-2xl bg-blue-700 px-4 py-3 text-center text-sm font-black text-white shadow-lg hover:bg-blue-800"
+        >
+          {t.chatShop}
+        </a>
         <a href="/shop" className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-center text-sm font-black text-slate-700 shadow-sm hover:bg-slate-50">{t.viewShop}</a>
       </div>
     </div>

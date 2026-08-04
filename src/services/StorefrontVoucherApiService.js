@@ -1,5 +1,15 @@
 import { apiRequest } from "./ApiClient";
 
+export async function getActiveStorefrontVouchersApi() {
+  const data = await apiRequest("/api/vouchers/public/active");
+
+  if (!data?.success || !Array.isArray(data.vouchers)) {
+    throw new Error(data?.message || "Cannot load vouchers.");
+  }
+
+  return data.vouchers;
+}
+
 export async function validateStorefrontVoucherApi(payload = {}) {
   const data = await apiRequest("/api/vouchers/validate", {
     method: "POST",

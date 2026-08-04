@@ -10,6 +10,7 @@ import {
 } from "../../services/StorefrontProductApiService";
 import { getProductAvailability, getProductPreorderInfo } from "../../utils/productAvailability";
 import { isMeaningfulScale } from "../../utils/format";
+import { ShopStatsBar, FlashSaleSection, VoucherSection, CategoryTabsBar } from "../../components/storefront/ShopHeaderBlocks";
 
 const text = {
   vi: {
@@ -823,6 +824,11 @@ export default function ShopPage() {
             ))}
           </div>
         </div>
+
+        <ShopStatsBar lang={lang} />
+        <FlashSaleSection lang={lang} actions={actions} />
+        <VoucherSection lang={lang} />
+        <CategoryTabsBar tree={categoryTree} activeId={selectedCategoryId} onSelect={selectCategory} lang={lang} />
       </section>
 
       <section className="mx-auto grid max-w-[1440px] gap-5 px-3 py-4 sm:px-4 lg:grid-cols-[320px_1fr] lg:px-8">

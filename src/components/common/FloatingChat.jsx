@@ -1,15 +1,9 @@
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Bot, MessageCircle, Users, X, Send } from "lucide-react";
-import { useCms } from "../../store/CmsStore";
 import { useI18n } from "../../i18n";
 import useToast from "../../hooks/useToast";
 import Toast from "../../utils/Toast";
-
-const defaultCommunications = [
-  { id: "1", name: "Zalo hỗ trợ CSKH", platform: "Zalo", value: "https://zalo.me/0931817801", status: "Active", active: true },
-  { id: "2", name: "Messenger Fanpage", platform: "Messenger", value: "https://m.me/tri.nguyen.nam.minh", status: "Active", active: true },
-  { id: "3", name: "Hotline Tư vấn 24/7", platform: "Hotline", value: "0931817801", status: "Maintenance", active: false }
-];
+import useContactChannels from "../../hooks/useContactChannels";
 
 const ZALO_LOGO = import.meta.env.VITE_ZALO_LOGO;
 const MESSENGER_LOGO = import.meta.env.VITE_MESSENGER_LOGO;
@@ -27,13 +21,13 @@ function ChatLogoImage({ src, alt, className }) {
 }
 
 export default function FloatingChat() {
-  const { state } = useCms();
   const [open, setOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [chatType, setChatType] = useState("ai");
   const { t } = useI18n();
   const chatRef = useRef(null);
   const { toast, notify, dismiss } = useToast();
+  const { zaloUrl: ZALO_URL, facebookUrl: FACEBOOK_URL } = useContactChannels();
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -45,34 +39,6 @@ export default function FloatingChat() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
-  const allCommunications = useMemo(() => {
-    const currentStoreList = state.communications || [];
-    const baseRows = defaultCommunications.map(d => currentStoreList.find(c => String(c.id) === String(d.id)) || d);
-    const extraRows = currentStoreList.filter(c => !defaultCommunications.some(d => String(d.id) === String(c.id)));
-    return [...baseRows, ...extraRows];
-  }, [state.communications]);
-
-  const isAvailable = (c) => {
-    if (c.active === false) return false;
-    const currentStatus = String(c.status || "Active").toLowerCase();
-    if (currentStatus === "inactive" || currentStatus === "maintenance") return false;
-    return true;
-  };
-
-  const ZALO_URL = useMemo(() => {
-    const primaryZalo = allCommunications.find(c => String(c.id) === "1" && c.platform === "Zalo" && isAvailable(c));
-    if (primaryZalo) return primaryZalo.value;
-    const backupZalo = allCommunications.find(c => c.platform === "Zalo" && isAvailable(c));
-    return backupZalo ? backupZalo.value : "";
-  }, [allCommunications]);
-
-  const FACEBOOK_URL = useMemo(() => {
-    const primaryFB = allCommunications.find(c => String(c.id) === "2" && c.platform === "Messenger" && isAvailable(c));
-    if (primaryFB) return primaryFB.value;
-    const backupFB = allCommunications.find(c => c.platform === "Messenger" && isAvailable(c));
-    return backupFB ? backupFB.value : "";
-  }, [allCommunications]);
 
   const handleNavigation = (e, url, defaultPrefix) => {
     e.preventDefault();
