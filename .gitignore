@@ -11,3 +11,9 @@ patch-language-ui.py
 *.backup*
 .env.local
 .env.*.local
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+!.env.example
