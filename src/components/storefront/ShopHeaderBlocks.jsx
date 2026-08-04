@@ -1,12 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
-import { Check, Copy, Flame, Star, Store, Ticket } from "lucide-react";
-import ProductCard from "./ProductCard";
+import { Check, ChevronRight, Copy, Flame, ShoppingCart, Star, Store, Ticket } from "lucide-react";
 import CountdownTimer from "../common/CountdownTimer";
 import useShopStats from "../../hooks/useShopStats";
 import { formatCurrency } from "../../utils/format";
 import { getStorefrontActivePromotionsApi } from "../../services/StorefrontPromotionApiService";
 import { getActiveStorefrontVouchersApi } from "../../services/StorefrontVoucherApiService";
 import { mapBackendProductToStorefront } from "../../services/StorefrontProductApiService";
+import { addProductToCart, forceCartBadgeSync, validateCartStock } from "../../services/CartService";
+import { getProductAvailability, getProductPreorderInfo } from "../../utils/productAvailability";
+import { resolveText, useI18n } from "../../i18n";
+import Toast from "../../utils/Toast";
+import useToast from "../../hooks/useToast";
 
 const copy = {
   vi: {
@@ -15,7 +19,12 @@ const copy = {
     reviewsCount: (count) => `${count} đánh giá`,
     noReviews: "Chưa có đánh giá",
     flashSaleTitle: "Flash Sale",
+    flashSaleSubtitle: "Giá sốc mỗi ngày - số lượng có hạn",
     flashSaleEndsIn: "Kết thúc sau",
+    flashSaleViewAll: "Xem tất cả ưu đãi",
+    flashSaleBuyNow: "Mua ngay",
+    flashSaleOptions: "Chọn mua",
+    flashSaleJustLaunched: "Vừa mở bán",
     voucherTitle: "Voucher khả dụng",
     voucherMinOrder: (amount) => `Đơn tối thiểu ${formatCurrency(amount)}`,
     voucherCopy: "Sao chép mã",
@@ -28,7 +37,12 @@ const copy = {
     reviewsCount: (count) => `${count} reviews`,
     noReviews: "No reviews yet",
     flashSaleTitle: "Flash Sale",
+    flashSaleSubtitle: "Unbeatable prices - limited quantities",
     flashSaleEndsIn: "Ends in",
+    flashSaleViewAll: "View all deals",
+    flashSaleBuyNow: "Buy now",
+    flashSaleOptions: "Options",
+    flashSaleJustLaunched: "Just launched",
     voucherTitle: "Available vouchers",
     voucherMinOrder: (amount) => `Min. order ${formatCurrency(amount)}`,
     voucherCopy: "Copy code",
@@ -84,40 +98,138 @@ export function ShopStatsBar({ lang = "vi" }) {
   );
 }
 
-function FlashSaleProgress({ sold = 0, stock = 0, lang = "vi" }) {
+function getFlashSaleUrgencyPercent(sold = 0) {
   const soldCount = Number(sold) || 0;
-  const stockCount = Number(stock) || 0;
+  if (soldCount <= 0) return 0;
+  // The public API intentionally never exposes real remaining stock (avoids
+  // leaking inventory data), so this fill is a decorative urgency cue derived
+  // only from the public sold count — it never claims an exact stock ratio.
+  return Math.min(94, Math.round(22 + Math.log2(soldCount + 1) * 11));
+}
 
-  // Public storefront API doesn't always expose a real remaining-stock number
-  // for flash-sale products — only show the sold/total progress bar when we
-  // actually have one, otherwise fall back to the real sold count alone
-  // instead of fabricating a denominator.
-  if (!(stockCount > 0)) {
-    if (soldCount <= 0) return null;
-    return (
-      <div className="mt-2 inline-flex items-center gap-1 text-[11px] font-black text-red-600">
-        <Flame size={12} className="fill-red-500 text-red-500" />
-        {lang === "en" ? `${soldCount} sold` : `Đã bán ${soldCount}`}
-      </div>
-    );
+function FlashSaleCard({ product, lang = "vi", actions }) {
+  const i18n = useI18n();
+  const t = copy[lang];
+  const { toast: toastConfig, notify, dismiss } = useToast(2200);
+
+  const name = resolveText(product?.name, lang, i18n.t("product.defaultName"));
+  const detailUrl = `/product/${product?.slug || product?.id || ""}`;
+  const image = product?.cardUrl || product?.imageUrl || product?.images?.[0] || "/images/products/hi-nu.jpg";
+  const price = Number(product?.finalPrice || product?.price || 0);
+  const oldPrice = Number(product?.compareAtPrice || product?.oldPrice || 0);
+  const discountPercent = oldPrice > price && price > 0 ? Math.round((1 - price / oldPrice) * 100) : 0;
+  const soldCount = Number(product?.sold) || 0;
+  const urgencyPercent = getFlashSaleUrgencyPercent(soldCount);
+  const hasVariants = Boolean(product?.hasVariants) && Array.isArray(product?.variants) && product.variants.length > 0;
+  const isPreorder = getProductPreorderInfo(product).canOrder;
+  const isOutOfStock = !getProductAvailability(product).canAddToCart;
+  const outOfStockLabel = lang === "en" ? "Out of stock" : "Hết hàng";
+
+  function buyNow(e) {
+    e?.preventDefault?.();
+    e?.stopPropagation?.();
+
+    if (hasVariants || isPreorder) {
+      window.location.href = detailUrl;
+      return;
+    }
+    if (isOutOfStock) {
+      notify("error", outOfStockLabel);
+      return;
+    }
+    const validation = validateCartStock(product, 1);
+    if (!validation.ok) {
+      notify("error", lang === "en" ? "Not enough stock available." : "Số lượng vượt quá tồn kho hiện có.");
+      return;
+    }
+    addProductToCart(product, 1);
+    forceCartBadgeSync();
+    notify("success", lang === "en" ? "Added to cart!" : "Đã thêm vào giỏ hàng!");
+    actions?.track?.("add_to_cart", { productId: product?.id, qty: 1, source: "flash_sale" });
   }
 
-  const total = stockCount + soldCount;
-  const percent = Math.min(100, Math.max(soldCount > 0 ? 6 : 0, Math.round((soldCount / total) * 100)));
-
   return (
-    <div className="mt-2">
-      <div className="h-3.5 w-full overflow-hidden rounded-full bg-red-100">
-        <div
-          className="h-full rounded-full bg-gradient-to-r from-red-600 to-orange-500 transition-all"
-          style={{ width: `${percent}%` }}
-        />
-      </div>
-      <div className="mt-1 flex items-center justify-between text-[10px] font-bold text-slate-500">
-        <span>{lang === "en" ? `${soldCount} sold` : `Đã bán ${soldCount}`}</span>
-        <span>{lang === "en" ? `${total - soldCount} left` : `Còn ${total - soldCount}`}</span>
-      </div>
-    </div>
+    <>
+      <article className="group flex h-full w-40 shrink-0 flex-col overflow-hidden rounded-2xl border border-red-100 bg-white shadow-sm shadow-red-100/40 transition hover:-translate-y-0.5 hover:shadow-md sm:w-52">
+        <a href={detailUrl} className="block">
+          <div className="relative aspect-square overflow-hidden bg-slate-50">
+            {discountPercent > 0 && (
+              <div className="absolute left-0 top-2 z-10 rounded-r-full bg-gradient-to-r from-red-600 to-orange-500 py-1 pl-2.5 pr-3 text-[11px] font-black text-white shadow-sm">
+                -{discountPercent}%
+              </div>
+            )}
+            <img
+              src={image}
+              alt={name}
+              className="h-full w-full object-contain transition duration-300 group-hover:scale-105"
+              loading="lazy"
+              decoding="async"
+            />
+          </div>
+        </a>
+
+        <div className="flex flex-1 flex-col p-2.5 sm:p-3">
+          <a href={detailUrl} className="block">
+            <h3
+              title={name}
+              className="line-clamp-2 min-h-[32px] text-left text-xs font-bold leading-snug text-slate-950 transition group-hover:text-red-700 sm:min-h-[36px] sm:text-sm"
+            >
+              {name}
+            </h3>
+          </a>
+
+          <div className="mt-1.5">
+            {oldPrice > price && (
+              <div className="text-[11px] font-semibold text-slate-400 line-through">{formatCurrency(oldPrice)}</div>
+            )}
+            <div className="text-sm font-black text-red-600 sm:text-base">{formatCurrency(price)}</div>
+          </div>
+
+          {urgencyPercent > 0 ? (
+            <div className="mt-2">
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-red-100">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-orange-500 to-red-600 transition-all"
+                  style={{ width: `${urgencyPercent}%` }}
+                />
+              </div>
+              <div className="mt-1 inline-flex items-center gap-1 text-[10px] font-bold text-red-500">
+                <Flame size={10} className="fill-red-500 text-red-500" />
+                {lang === "en" ? `${soldCount} sold` : `Đã bán ${soldCount}`}
+              </div>
+            </div>
+          ) : (
+            <div className="mt-2 text-[10px] font-bold text-slate-400">{t.flashSaleJustLaunched}</div>
+          )}
+
+          <div className="mt-auto pt-2.5">
+            <button
+              type="button"
+              onClick={buyNow}
+              disabled={isOutOfStock}
+              className={`flex w-full items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-xs font-black text-white transition ${
+                isOutOfStock
+                  ? "cursor-not-allowed bg-slate-300"
+                  : isPreorder
+                    ? "bg-blue-900 hover:bg-blue-950"
+                    : "bg-gradient-to-r from-red-600 to-orange-500 hover:from-red-700 hover:to-orange-600"
+              }`}
+            >
+              <ShoppingCart size={14} />
+              {isOutOfStock
+                ? outOfStockLabel
+                : isPreorder
+                  ? (lang === "en" ? "Pre-order" : "Đặt trước")
+                  : hasVariants
+                    ? t.flashSaleOptions
+                    : t.flashSaleBuyNow}
+            </button>
+          </div>
+        </div>
+      </article>
+
+      <Toast show={toastConfig.show} type={toastConfig.type} message={toastConfig.message} onClose={dismiss} />
+    </>
   );
 }
 
@@ -143,11 +255,25 @@ export function FlashSaleSection({ lang = "vi", actions }) {
     const seen = new Set();
     const merged = [];
     for (const promo of promotions) {
+      const type = String(promo.type || "PERCENT").toUpperCase();
+      const value = Number(promo.value || 0);
       for (const entry of promo.products || []) {
-        const product = entry?.product || entry;
-        if (!product?.id || seen.has(product.id)) continue;
-        seen.add(product.id);
-        merged.push(mapBackendProductToStorefront(product));
+        const rawProduct = entry?.product || entry;
+        if (!rawProduct?.id || seen.has(rawProduct.id)) continue;
+        seen.add(rawProduct.id);
+
+        const mapped = mapBackendProductToStorefront(rawProduct);
+        const sellingPrice = Number(mapped.price || 0);
+        // The public promotions API doesn't return a pre-computed discounted
+        // price per product, only the campaign's type/value — so the final
+        // price is derived here with the same formula the admin preview uses.
+        const discount =
+          type === "PERCENT"
+            ? Math.round((sellingPrice * Math.min(Math.max(value, 0), 100)) / 100)
+            : Math.min(Math.max(value, 0), sellingPrice);
+        const finalPrice = Math.max(0, sellingPrice - discount);
+
+        merged.push({ ...mapped, price: finalPrice, finalPrice, oldPrice: sellingPrice, compareAtPrice: sellingPrice });
       }
     }
     return merged;
@@ -161,30 +287,45 @@ export function FlashSaleSection({ lang = "vi", actions }) {
   if (!products.length) return null;
 
   return (
-    <div className="mt-4 overflow-hidden rounded-2xl border border-red-200 shadow-sm shadow-red-100">
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-gradient-to-r from-red-600 to-orange-500 px-4 py-3 sm:px-5 sm:py-4">
-        <div className="inline-flex items-center gap-2 text-white">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/20">
-            <Flame size={17} className="fill-white text-white" />
+    <div className="mt-4 overflow-hidden rounded-2xl border border-red-200 shadow-lg shadow-red-100/50">
+      <div className="relative flex flex-wrap items-center justify-between gap-3 overflow-hidden bg-gradient-to-r from-red-600 via-red-600 to-orange-500 px-4 py-4 sm:px-6 sm:py-5">
+        <div className="pointer-events-none absolute -right-6 -top-10 h-32 w-32 rounded-full bg-white/10" />
+        <div className="pointer-events-none absolute -bottom-10 left-1/3 h-24 w-24 rounded-full bg-white/10" />
+
+        <div className="relative inline-flex items-center gap-2.5 text-white">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/20">
+            <Flame size={20} className="fill-white text-white" />
           </span>
-          <span className="text-base font-black uppercase tracking-wide sm:text-lg">{t.flashSaleTitle}</span>
+          <div>
+            <div className="text-lg font-black uppercase leading-tight tracking-wide sm:text-xl">{t.flashSaleTitle}</div>
+            <div className="text-[11px] font-bold text-white/80 sm:text-xs">{t.flashSaleSubtitle}</div>
+          </div>
         </div>
+
         {nearestEndDate && (
-          <div className="flex items-center gap-2 text-xs font-bold text-white sm:text-sm">
+          <div className="relative flex items-center gap-2 text-xs font-bold text-white sm:text-sm">
             <span className="text-white/90">{t.flashSaleEndsIn}</span>
             <CountdownTimer endDate={nearestEndDate} variant="light" />
           </div>
         )}
       </div>
+
       <div className="bg-gradient-to-b from-red-50/70 to-white p-4 sm:p-5">
-        <div className="mobile-hide-scrollbar flex gap-3 overflow-x-auto pb-1">
+        <div className="no-scrollbar flex snap-x scroll-px-1 gap-3 overflow-x-auto pb-1">
           {products.slice(0, 12).map((product) => (
-            <div key={product.id} className="w-40 shrink-0 sm:w-48">
-              <ProductCard product={product} lang={lang} actions={actions} badge="SALE" />
-              <FlashSaleProgress sold={product.sold} stock={product.stock} lang={lang} />
+            <div key={product.id} className="snap-start">
+              <FlashSaleCard product={product} lang={lang} actions={actions} />
             </div>
           ))}
         </div>
+
+        <a
+          href="/promotions"
+          className="mt-4 flex items-center justify-center gap-1 text-xs font-black text-red-600 transition hover:text-red-700"
+        >
+          {t.flashSaleViewAll}
+          <ChevronRight size={14} />
+        </a>
       </div>
     </div>
   );
