@@ -22,14 +22,22 @@ function buildApiUrl(baseUrl = "", path = "") {
 
 
 const PUBLIC_API_CACHE_RULES = [
-  { pattern: /^\/api\/products\/?$/i, ttlMs: 5 * 60_000, staleMs: 24 * 60 * 60_000 },
-  { pattern: /^\/api\/products\/home\/?$/i, ttlMs: 5 * 60_000, staleMs: 24 * 60 * 60_000 },
-  { pattern: /^\/api\/products\/categories(?:\/tree)?\/?$/i, ttlMs: 60 * 60_000, staleMs: 7 * 24 * 60 * 60_000 },
+  { pattern: /^\/api\/products\/?(?:\?.*)?$/i, ttlMs: 5 * 60_000, staleMs: 24 * 60 * 60_000 },
+  { pattern: /^\/api\/products\/home\/?(?:\?.*)?$/i, ttlMs: 5 * 60_000, staleMs: 24 * 60 * 60_000 },
+  { pattern: /^\/api\/products\/categories(?:\/tree)?\/?(?:\?.*)?$/i, ttlMs: 60 * 60_000, staleMs: 7 * 24 * 60 * 60_000 },
   { pattern: /^\/api\/products\/(?!admin(?:\/|$)|home(?:\/|$)|categories(?:\/|$))[^/?#]+\/?$/i, ttlMs: 10 * 60_000, staleMs: 24 * 60 * 60_000 },
   { pattern: /^\/api\/banners\/home\/?$/i, ttlMs: 10 * 60_000, staleMs: 24 * 60 * 60_000 },
   { pattern: /^\/api\/reviews\/product\/[^/?#]+\/?$/i, ttlMs: 10 * 60_000, staleMs: 24 * 60 * 60_000 },
   { pattern: /^\/api\/promotions\/public\/active\/?$/i, ttlMs: 5 * 60_000, staleMs: 24 * 60 * 60_000 },
   { pattern: /^\/api\/products\/[^/?#]+\/recommendations\/?$/i, ttlMs: 10 * 60_000, staleMs: 24 * 60 * 60_000 },
+  { pattern: /^\/api\/content\/navigation\/?(?:\?.*)?$/i, ttlMs: 30 * 60_000, staleMs: 7 * 24 * 60 * 60_000 },
+  { pattern: /^\/api\/content\/news\/?(?:\?.*)?$/i, ttlMs: 5 * 60_000, staleMs: 24 * 60 * 60_000 },
+  { pattern: /^\/api\/content\/news\/[^/?#]+\/?(?:\?.*)?$/i, ttlMs: 10 * 60_000, staleMs: 24 * 60 * 60_000 },
+  { pattern: /^\/api\/content\/events\/?(?:\?.*)?$/i, ttlMs: 5 * 60_000, staleMs: 24 * 60 * 60_000 },
+  { pattern: /^\/api\/content\/events\/[^/?#]+\/?(?:\?.*)?$/i, ttlMs: 10 * 60_000, staleMs: 24 * 60 * 60_000 },
+  { pattern: /^\/api\/shop\/stats\/?(?:\?.*)?$/i, ttlMs: 5 * 60_000, staleMs: 24 * 60 * 60_000 },
+  { pattern: /^\/api\/vouchers\/public\/active\/?$/i, ttlMs: 5 * 60_000, staleMs: 24 * 60 * 60_000 },
+  { pattern: /^\/api\/shipping-methods\/?(?:\?.*)?$/i, ttlMs: 60 * 60_000, staleMs: 7 * 24 * 60 * 60_000 },
 ];
 
 const backgroundRefreshes = new Set();
