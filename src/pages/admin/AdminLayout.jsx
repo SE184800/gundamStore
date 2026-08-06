@@ -17,6 +17,7 @@ import {
   Package,
   Percent,
   Route,
+  Zap,
   Search,
   Settings,
   ShieldAlert,
@@ -66,6 +67,7 @@ const copy = {
     stockCount: "Kiểm tồn",
     inventoryTransactions: "Lịch sử giao dịch",
     promotions: "Khuyến mãi",
+    flashSales: "Flash Sale",
     vouchers: "Voucher / Coupon",
     sales: "Bán hàng & đơn hàng",
     orders: "Đơn hàng",
@@ -119,6 +121,7 @@ const copy = {
     stockCount: "Stock Count",
     inventoryTransactions: "Transactions",
     promotions: "Promotions",
+    flashSales: "Flash Sale",
     vouchers: "Vouchers / Coupons",
     sales: "Sales & Orders",
     orders: "Orders",
@@ -233,6 +236,7 @@ function getPageTitle(pathname, t) {
   if (pathname.includes("/admin/inventory")) return t.inventory;
   if (pathname.includes("/admin/vouchers")) return t.vouchers;
   if (pathname.includes("/admin/promotions")) return t.promotions;
+  if (pathname.includes("/admin/flash-sales")) return t.flashSales;
   if (pathname.includes("/admin/fulfillment")) return t.fulfillment;
   if (pathname.includes("/admin/customers")) return t.customers;
   if (pathname.includes("/admin/orders")) return t.orders;
@@ -300,6 +304,7 @@ export default function AdminLayout() {
       <NavGroup title={t.pricingOperations}>
         <NavItem to="/admin/pricing" icon={WalletCards} label={t.pricing} />
         <NavItem to="/admin/promotions" icon={Percent} label={t.promotions} />
+        <NavItem to="/admin/flash-sales" icon={Zap} label={t.flashSales} />
         <NavItem to="/admin/vouchers" icon={WalletCards} label={t.vouchers} />
       </NavGroup>
 

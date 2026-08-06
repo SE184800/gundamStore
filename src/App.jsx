@@ -64,6 +64,7 @@ const AdminInventoryStockCount = lazy(() => import("./pages/admin/AdminInventory
 const AdminInventoryAdjustments = lazy(() => import("./pages/admin/AdminInventoryAdjustments"));
 const AdminInventoryTransactions = lazy(() => import("./pages/admin/AdminInventoryTransactions"));
 const AdminPromotions = lazy(() => import("./pages/admin/AdminPromotions"));
+const AdminFlashSales = lazy(() => import("./pages/admin/AdminFlashSales"));
 const AdminVouchers = lazy(() => import("./pages/admin/AdminVouchers"));
 const AdminCategories = lazy(() => import("./pages/admin/AdminCategories"));
 const AdminProductCategoryMapping = lazy(() => import("./pages/admin/AdminProductCategoryMapping"));
@@ -281,6 +282,7 @@ export default function App() {
             <Route path="inventory/stock-count" element={<AdminInventoryStockCount />} />
             <Route path="inventory/transactions" element={<AdminInventoryTransactions />} />
             <Route path="promotions" element={<AdminPromotions />} />
+            <Route path="flash-sales" element={<AdminFlashSales />} />
             <Route path="vouchers" element={<AdminVouchers />} />
             <Route path="categories" element={<AdminCategories />} />
             <Route path="product-category-mapping" element={<AdminProductCategoryMapping />} />

@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { Check, ChevronRight, Copy, Flame, ShoppingCart, Star, Store, Ticket } from "lucide-react";
+import { Check, ChevronRight, Clock, Copy, Flame, ShoppingCart, Star, Store, Ticket } from "lucide-react";
 import CountdownTimer from "../common/CountdownTimer";
 import useShopStats from "../../hooks/useShopStats";
 import { formatCurrency } from "../../utils/format";
 import { getStorefrontActivePromotionsApi } from "../../services/StorefrontPromotionApiService";
+import { getActiveFlashSalesApi } from "../../services/StorefrontFlashSaleApiService";
 import { getActiveStorefrontVouchersApi } from "../../services/StorefrontVoucherApiService";
 import { mapBackendProductToStorefront } from "../../services/StorefrontProductApiService";
 import { addProductToCart, forceCartBadgeSync, validateCartStock } from "../../services/CartService";
@@ -25,6 +26,12 @@ const copy = {
     flashSaleBuyNow: "Mua ngay",
     flashSaleOptions: "Chọn mua",
     flashSaleJustLaunched: "Vừa mở bán",
+    flashLiveTitle: "Flash Sale đang diễn ra",
+    flashUpcomingTitle: "Flash Sale sắp mở bán",
+    flashClosesIn: "Đóng sau",
+    flashOpensIn: "Mở sau",
+    flashOpensAt: (time) => `Mở bán lúc ${time}`,
+    flashSoldProgress: (sold, limit) => `Đã bán ${sold}/${limit}`,
     voucherTitle: "Voucher khả dụng",
     voucherMinOrder: (amount) => `Đơn tối thiểu ${formatCurrency(amount)}`,
     voucherCopy: "Sao chép mã",
@@ -43,6 +50,12 @@ const copy = {
     flashSaleBuyNow: "Buy now",
     flashSaleOptions: "Options",
     flashSaleJustLaunched: "Just launched",
+    flashLiveTitle: "Flash Sale live now",
+    flashUpcomingTitle: "Flash Sale coming up",
+    flashClosesIn: "Closes in",
+    flashOpensIn: "Opens in",
+    flashOpensAt: (time) => `Opens at ${time}`,
+    flashSoldProgress: (sold, limit) => `${sold}/${limit} sold`,
     voucherTitle: "Available vouchers",
     voucherMinOrder: (amount) => `Min. order ${formatCurrency(amount)}`,
     voucherCopy: "Copy code",
@@ -327,6 +340,254 @@ export function FlashSaleSection({ lang = "vi", actions }) {
           <ChevronRight size={14} />
         </a>
       </div>
+    </div>
+  );
+}
+
+// Live Flash Sale (FlashSaleCampaign/FlashSaleItem) — a separate model from
+// Promotion, driven by GET /api/flash-sales/active. Distinct from
+// FlashSaleSection above (which is actually generic Promotion data styled to
+// look like a flash sale, still used on the homepage). This one has real
+// per-campaign daily time windows and LIVE/UPCOMING states computed by the
+// backend in Asia/Ho_Chi_Minh time.
+function LiveFlashSaleCard({ item, campaign, lang = "vi", actions }) {
+  const i18n = useI18n();
+  const t = copy[lang];
+  const { toast: toastConfig, notify, dismiss } = useToast(2200);
+
+  const product = useMemo(() => mapBackendProductToStorefront(item.product || {}), [item.product]);
+  const name = resolveText(product?.name, lang, i18n.t("product.defaultName"));
+  const detailUrl = `/product/${product?.slug || product?.id || ""}`;
+  const image = product?.cardUrl || product?.imageUrl || product?.images?.[0] || "/images/products/hi-nu.jpg";
+  const price = Number(item.flashPrice) || 0;
+  const oldPrice = Number(product?.price || product?.compareAtPrice || 0);
+  const discountPercent = oldPrice > price && price > 0 ? Math.round((1 - price / oldPrice) * 100) : 0;
+  const isLive = campaign.status === "LIVE";
+  const dailyStockLimit = item.dailyStockLimit == null ? null : Number(item.dailyStockLimit);
+  const soldToday = Number(item.soldToday) || 0;
+  const soldPercent = dailyStockLimit > 0 ? Math.min(100, Math.round((soldToday / dailyStockLimit) * 100)) : 0;
+  const isSoldOut = dailyStockLimit > 0 && soldToday >= dailyStockLimit;
+
+  function buyNow(e) {
+    e?.preventDefault?.();
+    e?.stopPropagation?.();
+
+    if (!isLive || isSoldOut) return;
+
+    const cartProduct = { ...product, price, finalPrice: price, flashSaleItemId: item.id };
+    const validation = validateCartStock(cartProduct, 1);
+    if (!validation.ok) {
+      notify("error", lang === "en" ? "Not enough stock available." : "Số lượng vượt quá tồn kho hiện có.");
+      return;
+    }
+    addProductToCart(cartProduct, 1);
+    forceCartBadgeSync();
+    notify("success", lang === "en" ? "Added to cart!" : "Đã thêm vào giỏ hàng!");
+    actions?.track?.("add_to_cart", { productId: product?.id, qty: 1, source: "flash_sale_live", flashSaleItemId: item.id });
+  }
+
+  return (
+    <>
+      <article className="group flex h-full w-40 shrink-0 flex-col overflow-hidden rounded-2xl border border-red-100 bg-white shadow-sm shadow-red-100/40 transition hover:-translate-y-0.5 hover:shadow-md sm:w-52">
+        <a href={detailUrl} className="block">
+          <div className="relative aspect-square overflow-hidden bg-slate-50">
+            {discountPercent > 0 && (
+              <div className="absolute left-0 top-2 z-10 rounded-r-full bg-gradient-to-r from-red-600 to-orange-500 py-1 pl-2.5 pr-3 text-[11px] font-black text-white shadow-sm">
+                -{discountPercent}%
+              </div>
+            )}
+            {!isLive && (
+              <div className="absolute inset-0 z-10 flex items-center justify-center bg-slate-950/40">
+                <div className="flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-[11px] font-black text-slate-800">
+                  <Clock size={12} />
+                  {t.flashOpensAt(campaign.dailyStartTime)}
+                </div>
+              </div>
+            )}
+            <img
+              src={image}
+              alt={name}
+              className="h-full w-full object-contain transition duration-300 group-hover:scale-105"
+              loading="lazy"
+              decoding="async"
+            />
+          </div>
+        </a>
+
+        <div className="flex flex-1 flex-col p-2.5 sm:p-3">
+          <a href={detailUrl} className="block">
+            <h3
+              title={name}
+              className="line-clamp-2 min-h-[32px] text-left text-xs font-bold leading-snug text-slate-950 transition group-hover:text-red-700 sm:min-h-[36px] sm:text-sm"
+            >
+              {name}
+            </h3>
+          </a>
+
+          <div className="mt-1.5">
+            {oldPrice > price && (
+              <div className="text-[11px] font-semibold text-slate-400 line-through">{formatCurrency(oldPrice)}</div>
+            )}
+            <div className="text-sm font-black text-red-600 sm:text-base">{formatCurrency(price)}</div>
+          </div>
+
+          {dailyStockLimit > 0 ? (
+            <div className="mt-2">
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-red-100">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-orange-500 to-red-600 transition-all"
+                  style={{ width: `${soldPercent}%` }}
+                />
+              </div>
+              <div className="mt-1 inline-flex items-center gap-1 text-[10px] font-bold text-red-500">
+                <Flame size={10} className="fill-red-500 text-red-500" />
+                {t.flashSoldProgress(soldToday, dailyStockLimit)}
+              </div>
+            </div>
+          ) : (
+            <div className="mt-2 flex-1" />
+          )}
+
+          <div className="mt-auto pt-2.5">
+            {isLive ? (
+              <button
+                type="button"
+                onClick={buyNow}
+                disabled={isSoldOut}
+                className={`flex w-full items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-xs font-black text-white transition ${
+                  isSoldOut
+                    ? "cursor-not-allowed bg-slate-300"
+                    : "bg-gradient-to-r from-red-600 to-orange-500 hover:from-red-700 hover:to-orange-600"
+                }`}
+              >
+                <ShoppingCart size={14} />
+                {isSoldOut ? (lang === "en" ? "Sold out" : "Hết lượt hôm nay") : t.flashSaleBuyNow}
+              </button>
+            ) : (
+              <div className="flex w-full cursor-not-allowed items-center justify-center gap-1.5 rounded-lg bg-slate-100 px-2 py-2 text-xs font-black text-slate-500">
+                <Clock size={14} />
+                {t.flashOpensAt(campaign.dailyStartTime)}
+              </div>
+            )}
+          </div>
+        </div>
+      </article>
+
+      <Toast show={toastConfig.show} type={toastConfig.type} message={toastConfig.message} onClose={dismiss} />
+    </>
+  );
+}
+
+export function LiveFlashSaleSection({ lang = "vi", actions }) {
+  const t = copy[lang];
+  const [campaigns, setCampaigns] = useState([]);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    let pollTimer = null;
+    let edgeTimer = null;
+
+    async function load() {
+      try {
+        const rows = await getActiveFlashSalesApi();
+        if (!alive) return;
+        const list = Array.isArray(rows) ? rows : [];
+        setCampaigns(list);
+
+        clearTimeout(edgeTimer);
+        const targets = list
+          .map((row) => new Date(row.countdownTarget).getTime())
+          .filter((value) => Number.isFinite(value));
+
+        if (targets.length) {
+          // Refetch right as the nearest campaign's countdown hits zero so
+          // UPCOMING flips to LIVE (or a LIVE campaign disappears) without
+          // waiting for the next poll tick.
+          const delay = Math.min(...targets) - Date.now() + 1000;
+          if (delay > 0 && delay < 24 * 60 * 60 * 1000) {
+            edgeTimer = setTimeout(() => {
+              void load();
+            }, delay);
+          }
+        }
+      } catch {
+        if (alive) setCampaigns([]);
+      } finally {
+        if (alive) setLoaded(true);
+      }
+    }
+
+    void load();
+    pollTimer = setInterval(() => void load(), 20000);
+
+    return () => {
+      alive = false;
+      clearInterval(pollTimer);
+      clearTimeout(edgeTimer);
+    };
+  }, []);
+
+  if (!loaded || !campaigns.length) return null;
+
+  return (
+    <div className="mt-4 space-y-4">
+      {campaigns.map((campaign) => {
+        const isLive = campaign.status === "LIVE";
+        const items = campaign.items || [];
+        if (!items.length) return null;
+
+        return (
+          <div
+            key={campaign.id}
+            className={`overflow-hidden rounded-2xl border shadow-lg ${
+              isLive ? "border-red-200 shadow-red-100/50" : "border-amber-200 shadow-amber-100/50"
+            }`}
+          >
+            <div
+              className={`relative flex flex-wrap items-center justify-between gap-3 overflow-hidden px-4 py-4 sm:px-6 sm:py-5 ${
+                isLive
+                  ? "bg-gradient-to-r from-red-600 via-red-600 to-orange-500"
+                  : "bg-gradient-to-r from-amber-500 via-amber-500 to-orange-400"
+              }`}
+            >
+              <div className="pointer-events-none absolute -right-6 -top-10 h-32 w-32 rounded-full bg-white/10" />
+              <div className="pointer-events-none absolute -bottom-10 left-1/3 h-24 w-24 rounded-full bg-white/10" />
+
+              <div className="relative inline-flex items-center gap-2.5 text-white">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/20">
+                  {isLive ? <Flame size={20} className="fill-white text-white" /> : <Clock size={20} />}
+                </span>
+                <div>
+                  <div className="text-lg font-black uppercase leading-tight tracking-wide sm:text-xl">
+                    {isLive ? t.flashLiveTitle : t.flashUpcomingTitle}
+                  </div>
+                  <div className="text-[11px] font-bold text-white/80 sm:text-xs">
+                    {campaign.nameVi || campaign.nameEn}
+                  </div>
+                </div>
+              </div>
+
+              {campaign.countdownTarget && (
+                <div className="relative flex items-center gap-2 text-xs font-bold text-white sm:text-sm">
+                  <span className="text-white/90">{isLive ? t.flashClosesIn : t.flashOpensIn}</span>
+                  <CountdownTimer endDate={campaign.countdownTarget} variant="light" />
+                </div>
+              )}
+            </div>
+
+            <div className={`p-4 sm:p-5 ${isLive ? "bg-gradient-to-b from-red-50/70 to-white" : "bg-gradient-to-b from-amber-50/70 to-white"}`}>
+              <div className="no-scrollbar flex snap-x scroll-px-1 gap-3 overflow-x-auto pb-1">
+                {items.slice(0, 12).map((item) => (
+                  <div key={item.id} className="shrink-0 snap-start">
+                    <LiveFlashSaleCard item={item} campaign={campaign} lang={lang} actions={actions} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
