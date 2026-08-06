@@ -663,7 +663,7 @@ export default function CheckoutPage() {
               <div className="mt-2 grid gap-3 text-sm font-semibold text-amber-900 md:grid-cols-3">
                 <div>
                   <span className="block text-amber-700">{t.preorderFullAmount}</span>
-                  <b>{money(draft.preorder?.fullAmount || draft.subtotal)}</b>
+                  <b className="text-red-600">{money(draft.preorder?.fullAmount || draft.subtotal)}</b>
                 </div>
                 <div>
                   <span className="block text-amber-700">{t.preorderDepositNow}</span>
@@ -671,7 +671,7 @@ export default function CheckoutPage() {
                 </div>
                 <div>
                   <span className="block text-amber-700">{t.preorderRemaining}</span>
-                  <b>{money(draft.preorder?.remainingAmount || 0)}</b>
+                  <b className="text-red-600">{money(draft.preorder?.remainingAmount || 0)}</b>
                 </div>
               </div>
               <p className="mt-3 text-xs font-bold leading-5 text-amber-700">
@@ -1019,7 +1019,7 @@ export default function CheckoutPage() {
               <div className="mt-5 space-y-3 text-sm">
                 <div className="flex justify-between">
                   <span>{t.subtotal}</span>
-                  <b>{money(pricing.subtotal)}</b>
+                  <b className="text-red-600">{money(pricing.subtotal)}</b>
                 </div>
 
                 <div className="flex justify-between">

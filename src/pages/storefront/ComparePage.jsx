@@ -267,7 +267,7 @@ export default function ComparePage() {
                   <tr key={key} className="border-b">
                     <td className="bg-slate-50 px-5 py-4 font-black text-slate-600">{label}</td>
                     {selectedProducts.map((product) => (
-                      <td key={`${product.id}-${key}`} className="px-5 py-4 font-bold text-slate-800">
+                      <td key={`${product.id}-${key}`} className={`px-5 py-4 font-bold ${key === "price" ? "text-red-600" : "text-slate-800"}`}>
                         {getter(product)}
                       </td>
                     ))}

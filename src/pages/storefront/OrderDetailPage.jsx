@@ -211,7 +211,7 @@ function PreorderProgressTracker({ order, lang }) {
           <div className="text-xs font-black text-slate-500">
             {lang === "en" ? "Remaining" : "Còn lại"}
           </div>
-          <div className="mt-1 text-xl font-black text-slate-950">
+          <div className="mt-1 text-xl font-black text-red-600">
             {money(order.preorder.remainingAmount || 0)}
           </div>
         </div>
@@ -636,7 +636,7 @@ export default function OrderDetailPage() {
                     </div>
                     <div className="flex justify-between">
                       <span>{lang === "en" ? "Full amount" : "Giá sản phẩm"}</span>
-                      <b>{money(order.preorder.fullAmount || order.subtotal)}</b>
+                      <b className="text-red-600">{money(order.preorder.fullAmount || order.subtotal)}</b>
                     </div>
                     <div className="flex justify-between">
                       <span>{lang === "en" ? "Deposit paid/required" : "Tiền cọc"}</span>
@@ -644,7 +644,7 @@ export default function OrderDetailPage() {
                     </div>
                     <div className="flex justify-between">
                       <span>{lang === "en" ? "Remaining balance" : "Còn lại"}</span>
-                      <b>{money(order.preorder.remainingAmount || 0)}</b>
+                      <b className="text-red-600">{money(order.preorder.remainingAmount || 0)}</b>
                     </div>
                     <div className="flex justify-between">
                       <span>{lang === "en" ? "Deposit status" : "Trạng thái cọc"}</span>
@@ -658,7 +658,7 @@ export default function OrderDetailPage() {
                 <h2 className="text-xl font-black">{t.payment}</h2>
 
                 <div className="mt-4 space-y-3 text-sm">
-                  <div className="flex justify-between"><span>{t.subtotal}</span><b>{money(order.subtotal)}</b></div>
+                  <div className="flex justify-between"><span>{t.subtotal}</span><b className="text-red-600">{money(order.subtotal)}</b></div>
                   <div className="flex justify-between"><span>{t.shippingFee}</span><b className="text-red-500">{money(order.shippingFee)}</b></div>
                   <div className="flex justify-between text-green-600"><span>{t.discount}</span><b>-{money(order.discount)}</b></div>
                   <div className="flex justify-between text-green-600"><span>{t.shippingDiscount}</span><b>-{money(order.shippingDiscount)}</b></div>
@@ -688,7 +688,7 @@ export default function OrderDetailPage() {
                         <div className="mt-2 font-black text-slate-900">{ticket.issue}</div>
                         {ticket.refundStatus && ticket.refundStatus !== "NONE" && (
                           <div className="mt-1 text-xs font-bold text-slate-500">
-                            Refund: {ticket.refundStatus} · {money(ticket.refundAmount || 0)}
+                            Refund: {ticket.refundStatus} · <span className="text-red-600">{money(ticket.refundAmount || 0)}</span>
                           </div>
                         )}
                       </div>

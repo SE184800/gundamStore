@@ -625,7 +625,7 @@ export default function CartPage() {
 
                 <div className="flex justify-between">
                   <span>{t.subtotal}</span>
-                  <b>{money(subtotal)}</b>
+                  <b className="text-red-600">{money(subtotal)}</b>
                 </div>
 
                 <div className="flex justify-between">

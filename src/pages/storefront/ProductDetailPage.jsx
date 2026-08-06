@@ -685,7 +685,7 @@ function ProductInfo({ product, lang, actions, onPreorder, reviewCount = 0 }) {
                   <div className="min-w-0">
                     <div className="font-black text-slate-950">{getVariantLabel(variant)}</div>
                     <div className="text-xs font-bold text-slate-500">{variant.sku}</div>
-                    <div className="mt-1 text-xs font-black text-blue-700">{money(variant.price)}</div>
+                    <div className="mt-1 text-xs font-black text-red-600">{money(variant.price)}</div>
                     <div className={`mt-1 text-[11px] font-black ${Number(variant.stock || 0) > 0 ? "text-emerald-600" : "text-red-500"}`}>
                       {Number(variant.stock || 0) > 0 ? t.inStock : t.outOfStock}
                     </div>
@@ -721,7 +721,7 @@ function ProductInfo({ product, lang, actions, onPreorder, reviewCount = 0 }) {
 
       <div className="mt-3 rounded-2xl border border-blue-100 bg-blue-50 p-3">
         <div className="flex flex-wrap items-end gap-2">
-          <div className="text-2xl font-black text-blue-700">{money(price)}</div>
+          <div className="text-2xl font-black text-red-600">{money(price)}</div>
           {oldPrice > price && <div className="pb-0.5 text-sm font-bold text-slate-400 line-through">{money(oldPrice)}</div>}
           {save > 0 && <div className="rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-black text-red-700">-{money(save)}</div>}
         </div>
@@ -731,7 +731,7 @@ function ProductInfo({ product, lang, actions, onPreorder, reviewCount = 0 }) {
         <div className="mt-3 rounded-2xl border border-blue-200 bg-blue-50 p-3">
           <div className="mb-2 flex items-center gap-2 text-xs font-black text-blue-900"><Clock size={16} /> {t.preorder}</div>
           <div className="grid gap-2 sm:grid-cols-3">
-            <div className="rounded-xl bg-white p-2.5 shadow-sm"><div className="text-[11px] font-bold text-slate-500">{t.deposit}</div><div className="mt-0.5 text-sm font-black text-slate-950">{money(preorderDeposit?.depositAmount)}</div></div>
+            <div className="rounded-xl bg-white p-2.5 shadow-sm"><div className="text-[11px] font-bold text-slate-500">{t.deposit}</div><div className="mt-0.5 text-sm font-black text-red-600">{money(preorderDeposit?.depositAmount)}</div></div>
             <div className="rounded-xl bg-white p-2.5 shadow-sm"><div className="text-[11px] font-bold text-slate-500">{t.eta}</div><div className="mt-0.5 text-sm font-black text-slate-950">{preorderEtaText}</div></div>
             <div className="rounded-xl bg-white p-2.5 shadow-sm"><div className="text-[11px] font-bold text-slate-500">{t.statusLabel}</div><div className="mt-0.5 text-sm font-black text-red-600">{t.statusOpen}</div></div>
           </div>

@@ -212,7 +212,7 @@ function ProductCard({ product, lang: langProp, actions, badge, onAddToCart }) {
                   )}
                 </div>
               ) : null}
-              <div className="text-base font-black text-slate-950 sm:text-lg">{displayPrice}</div>
+              <div className="text-base font-black text-red-600 sm:text-lg">{displayPrice}</div>
               {soldCount > 0 && (
                 <div className="mt-0.5 text-[11px] font-semibold text-slate-400">
                   {lang === "en" ? `${soldCount} sold` : `Đã bán ${soldCount}`}

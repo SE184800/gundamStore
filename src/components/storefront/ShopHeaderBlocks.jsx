@@ -377,7 +377,7 @@ export function VoucherSection({ lang = "vi" }) {
               className="flex w-60 shrink-0 items-center justify-between gap-3 rounded-xl border border-dashed border-blue-300 bg-blue-50 px-4 py-3 text-left hover:bg-blue-100"
             >
               <div className="min-w-0">
-                <div className="text-sm font-black text-blue-700">{getVoucherValueLabel(voucher, lang)}</div>
+                <div className="text-sm font-black text-red-600">{getVoucherValueLabel(voucher, lang)}</div>
                 <div className="truncate text-xs font-bold text-slate-600">{voucher.nameVi}</div>
                 {voucher.minOrder > 0 && (
                   <div className="mt-0.5 text-[11px] font-semibold text-slate-400">{t.voucherMinOrder(voucher.minOrder)}</div>

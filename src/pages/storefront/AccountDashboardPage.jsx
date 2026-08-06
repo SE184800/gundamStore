@@ -53,13 +53,13 @@ function getCopy(lang) {
   };
 }
 
-function StatCard({ icon: Icon, label, value, hint }) {
+function StatCard({ icon: Icon, label, value, hint, valueClassName = "text-slate-950" }) {
   return (
     <div className="rounded-xl border border-slate-100 bg-white p-5 shadow-sm">
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="text-xs font-black tracking-wide text-slate-400">{label}</p>
-          <p className="mt-2 text-2xl font-black text-slate-950">{value}</p>
+          <p className={`mt-2 text-2xl font-black ${valueClassName}`}>{value}</p>
           {hint && <p className="mt-1 text-xs font-bold text-slate-500">{hint}</p>}
         </div>
         <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-700">
@@ -197,7 +197,7 @@ export default function AccountDashboardPage() {
                     <StatCard icon={ShoppingBag} label={t.totalOrders} value={summary.totalOrders || 0} />
                     <StatCard icon={PackageCheck} label={t.activeOrders} value={summary.activeOrders || 0} />
                     <StatCard icon={Ticket} label={t.openTickets} value={summary.openTickets || 0} />
-                    <StatCard icon={WalletCards} label={t.totalSpent} value={money(summary.totalSpent || 0)} />
+                    <StatCard icon={WalletCards} label={t.totalSpent} value={money(summary.totalSpent || 0)} valueClassName="text-red-600" />
                   </div>
 
                   <div className="grid gap-4 xl:grid-cols-2">
