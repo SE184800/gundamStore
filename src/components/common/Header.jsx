@@ -38,6 +38,8 @@ export default function Header() {
   const { toast, notify, dismiss } = useToast(3000);
   const { state, actions } = useCms();
   const menuRef = useRef(null);
+  const navMenuRef = useRef(null);
+  const [navMenuOpen, setNavMenuOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [navItems, setNavItems] = useState(FALLBACK_NAV_ITEMS);
   useEffect(() => {
@@ -62,6 +64,9 @@ export default function Header() {
     function handleClickOutside(event) {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
         setUserMenuOpen(false);
+      }
+      if (navMenuRef.current && !navMenuRef.current.contains(event.target)) {
+        setNavMenuOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -98,6 +103,43 @@ export default function Header() {
             <a href="/" className="flex shrink-0 items-center">
               <Logo className="h-10 md:h-12 w-auto object-contain" />
             </a>
+
+            {/* NÚT 3 GẠCH SỔ MENU — chỉ hiện trên desktop/tablet (md+), dùng chung navItems với thanh nav ngang và menu mobile */}
+            <div className="relative ml-2 hidden md:block" ref={navMenuRef}>
+              <button
+                type="button"
+                onClick={() => setNavMenuOpen((open) => !open)}
+                aria-label={lang === "en" ? "Open menu" : "Mở menu"}
+                aria-expanded={navMenuOpen}
+                className={`flex items-center justify-center rounded-xl border p-2.5 shadow-sm transition active:scale-95 ${
+                  navMenuOpen
+                    ? "border-blue-200 bg-blue-50 text-blue-700"
+                    : "border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+                }`}
+              >
+                <Menu size={20} />
+              </button>
+
+              {navMenuOpen && (
+                <div className="absolute left-0 top-full z-50 mt-2 w-60 rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg animate-in fade-in slide-in-from-top-2 duration-200">
+                  {navItems.map((item) => {
+                    const active = isNavItemActive(location.pathname, item);
+                    return (
+                      <Link
+                        key={item.code || item.link}
+                        to={item.link}
+                        onClick={() => setNavMenuOpen(false)}
+                        className={`block rounded-xl px-3.5 py-2.5 text-sm font-black transition ${
+                          active ? "bg-blue-700 text-white" : "text-slate-700 hover:bg-blue-50 hover:text-blue-700"
+                        }`}
+                      >
+                        {item.label}
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
 
             {/* CỤM NÚT MOBILE (Gom gọn về bên phải, bỏ sạch các ký tự rác ở giữa) */}
             <div className="flex items-center gap-2 md:hidden">
