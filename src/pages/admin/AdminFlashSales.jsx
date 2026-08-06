@@ -537,7 +537,13 @@ export default function AdminFlashSales() {
                         />
 
                         <div className="grid gap-3 sm:grid-cols-2">
+                          {/* key forces a fresh DOM subtree per method — the legacy
+                              auto-translate MutationObserver caches each text node's
+                              first-seen value and keeps re-applying it, so switching
+                              methods would leave the OLD label/suffix text stuck in
+                              place otherwise (see ShopStatsBar / summary cards fix). */}
                           <AdminTextField
+                            key={selectedItem.discountMethod || "FIXED_PRICE"}
                             label={
                               selectedItem.discountMethod === "PERCENT"
                                 ? "Số % giảm"
@@ -561,7 +567,14 @@ export default function AdminFlashSales() {
                               onChange={(value) => updateItem(product.id, "dailyStockLimit", value)}
                             />
                           ) : (
-                            <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2">
+                            // key forces a fresh node per keystroke — same
+                            // stale-text-node caching issue as the label above,
+                            // otherwise the preview amount freezes on its first
+                            // value as the admin types.
+                            <div
+                              key={`${selectedItem.discountMethod}-${selectedItem.priceInput}`}
+                              className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2"
+                            >
                               <div className="text-[11px] font-black uppercase text-emerald-700">Giá cuối (preview)</div>
                               <div className="mt-1 text-sm font-black text-emerald-800">
                                 {formatCurrency(resolveFlashPrice(selectedItem, getProductSellingPrice(product)))}
