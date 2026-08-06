@@ -41,14 +41,6 @@ const copy = {
     chip3: "Giá tốt mỗi ngày",
     buyNow: "Mua ngay",
     collection: "Xem bộ sưu tập",
-    statYears: "10+ NĂM",
-    statYearsDesc: "KINH NGHIỆM",
-    statCustomers: "10.000+",
-    statCustomersDesc: "KHÁCH HÀNG TIN TƯỞNG",
-    statAuthentic: "100%",
-    statAuthenticDesc: "SẢN PHẨM CHÍNH HÃNG",
-    statShipping: "GIAO HÀNG",
-    statShippingDesc: "TOÀN QUỐC",
     featuredCategories: "Danh mục nổi bật",
     bandaiGundam: "Bandai-Gundam",
     gradesLineup: "HG-RG-MG-PG",
@@ -84,14 +76,6 @@ const copy = {
     chip3: "Best daily deals",
     buyNow: "Buy now",
     collection: "View collection",
-    statYears: "10+ YEARS",
-    statYearsDesc: "OF EXPERIENCE",
-    statCustomers: "10,000+",
-    statCustomersDesc: "TRUSTED CUSTOMERS",
-    statAuthentic: "100%",
-    statAuthenticDesc: "AUTHENTIC PRODUCTS",
-    statShipping: "NATIONWIDE",
-    statShippingDesc: "DELIVERY",
     featuredCategories: "Featured categories",
     bandaiGundam: "Bandai-Gundam",
     gradesLineup: "HG-RG-MG-PG",
@@ -502,28 +486,35 @@ function HeroV2Classic({ banners, lang, actions, settings }) {
   );
 }
 
+const trustStripCopy = {
+  vi: [
+    [Award, "10+", "năm kinh nghiệm"],
+    [Users, "10.000+", "khách hàng tin tưởng"],
+    [ShieldCheck, "100%", "sản phẩm chính hãng"],
+    [Truck, "", "giao hàng toàn quốc"],
+  ],
+  en: [
+    [Award, "10+", "years of experience"],
+    [Users, "10,000+", "trusted customers"],
+    [ShieldCheck, "100%", "authentic products"],
+    [Truck, "", "nationwide delivery"],
+  ],
+};
+
 function TrustStrip({ lang }) {
-  const t = copy[lang];
-  const items = [
-    [Award, t.statYears, t.statYearsDesc],
-    [Users, t.statCustomers, t.statCustomersDesc],
-    [ShieldCheck, t.statAuthentic, t.statAuthenticDesc],
-    [Truck, t.statShipping, t.statShippingDesc],
-  ];
+  const items = trustStripCopy[lang] || trustStripCopy.vi;
 
   return (
-    <section className="mx-auto max-w-[1440px] px-4 mt-4 mb-2 sm:mt-6 sm:mb-4 lg:px-8">
-      <div className="mobile-hide-scrollbar flex snap-x snap-mandatory gap-0 overflow-x-auto rounded-2xl border-[0.5px] border-slate-200 bg-white shadow-sm sm:grid sm:grid-cols-4 sm:overflow-visible">
+    <section className="mx-auto max-w-[1440px] px-4 py-2 lg:px-8">
+      <div className="mobile-hide-scrollbar flex h-12 snap-x snap-mandatory items-stretch overflow-x-auto rounded-lg bg-slate-50 sm:h-14 sm:justify-center sm:overflow-visible">
         {items.map(([Icon, stat, desc], index) => (
           <div
-            key={stat}
-            className={`flex w-[168px] shrink-0 snap-start flex-col items-center gap-2 px-4 py-6 text-center sm:w-auto sm:py-7 ${index > 0 ? "sm:border-l-[0.5px] sm:border-slate-200" : ""}`}
+            key={desc}
+            className={`flex w-auto shrink-0 snap-start items-center justify-center gap-1.5 whitespace-nowrap px-4 text-center sm:flex-1 sm:px-2 ${index > 0 ? "border-l-[0.5px] border-slate-300" : ""}`}
           >
-            <Icon size={22} strokeWidth={1.5} className="text-blue-700" />
-            <div className="text-lg font-black tracking-wide text-blue-950 sm:text-xl">
-              {stat}
-            </div>
-            <div className="text-[10px] font-bold uppercase leading-4 tracking-wide text-slate-500 sm:text-xs">
+            <Icon size={18} strokeWidth={1.75} className="shrink-0 text-slate-500" />
+            <div className="text-[12px] font-medium leading-tight text-slate-500 sm:text-[13px]">
+              {stat && <span className="font-bold text-slate-700">{stat} </span>}
               {desc}
             </div>
           </div>
@@ -958,8 +949,6 @@ export default function HomePage() {
           error={bannerApiError}
         />
 
-        <TrustStrip lang={lang} />
-
         <section className="mx-auto max-w-[1440px] px-4 lg:px-8">
           <FlashSaleSection lang={lang} actions={actions} />
         </section>
@@ -986,6 +975,8 @@ export default function HomePage() {
             ))}
           </div>
         </main>
+
+        <TrustStrip lang={lang} />
 
         <ContentHighlights
           news={homepageNews}
