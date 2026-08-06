@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Check, Clock, Copy, Flame, ShoppingCart, Star, Store, Ticket } from "lucide-react";
+import { Calendar, Check, Clock, Copy, Flame, ShoppingCart, Star, Store, Ticket } from "lucide-react";
 import CountdownTimer from "../common/CountdownTimer";
 import useShopStats from "../../hooks/useShopStats";
 import { formatCurrency } from "../../utils/format";
@@ -22,6 +22,8 @@ const copy = {
     flashSaleBuyNow: "Mua ngay",
     flashClosesIn: "Đóng sau",
     flashOpensIn: "Mở sau",
+    flashApplyDate: "Áp dụng",
+    flashApplyTime: "Giờ bán",
     flashOpensAt: (time) => `Mở bán lúc ${time}`,
     flashSoldProgress: (sold, limit) => `Đã bán ${sold}/${limit}`,
     voucherTitle: "Voucher khả dụng",
@@ -39,6 +41,8 @@ const copy = {
     flashSaleBuyNow: "Buy now",
     flashClosesIn: "Closes in",
     flashOpensIn: "Opens in",
+    flashApplyDate: "Valid",
+    flashApplyTime: "Hours",
     flashOpensAt: (time) => `Opens at ${time}`,
     flashSoldProgress: (sold, limit) => `${sold}/${limit} sold`,
     voucherTitle: "Available vouchers",
@@ -227,6 +231,30 @@ function LiveFlashSaleCard({ item, campaign, lang = "vi", actions }) {
   );
 }
 
+// Vietnamese e-commerce disputes over flash sale pricing usually hinge on
+// "was the applicable window actually shown" — so the exact date range and
+// daily time window is spelled out here rather than left implicit in the
+// countdown alone.
+function formatFlashSaleDate(value, lang = "vi") {
+  if (!value) return "";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return String(value);
+  return d.toLocaleDateString(lang === "en" ? "en-GB" : "vi-VN");
+}
+
+function formatFlashSaleWindow(campaign = {}, lang = "vi") {
+  const dateFrom = formatFlashSaleDate(campaign.dateFrom, lang);
+  const dateTo = formatFlashSaleDate(campaign.dateTo, lang);
+  const dateRange = dateFrom && dateTo
+    ? dateFrom === dateTo ? dateFrom : `${dateFrom} - ${dateTo}`
+    : dateFrom || dateTo;
+  const timeRange = campaign.dailyStartTime && campaign.dailyEndTime
+    ? `${campaign.dailyStartTime} - ${campaign.dailyEndTime}`
+    : "";
+
+  return { dateRange, timeRange };
+}
+
 function sortFlashSaleCampaigns(list = []) {
   return [...list].sort((a, b) => String(a.dailyStartTime || "").localeCompare(String(b.dailyStartTime || "")));
 }
@@ -325,6 +353,26 @@ export function LiveFlashSaleSection({ lang = "vi", actions }) {
             <div className="text-[11px] font-bold text-white/80 sm:text-xs">
               {activeCampaign.nameVi || activeCampaign.nameEn}
             </div>
+            {(() => {
+              const { dateRange, timeRange } = formatFlashSaleWindow(activeCampaign, lang);
+              if (!dateRange && !timeRange) return null;
+              return (
+                <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[10px] font-semibold text-white/85 sm:text-[11px]">
+                  {dateRange && (
+                    <span className="inline-flex items-center gap-1">
+                      <Calendar size={11} />
+                      {t.flashApplyDate}: {dateRange}
+                    </span>
+                  )}
+                  {timeRange && (
+                    <span className="inline-flex items-center gap-1">
+                      <Clock size={11} />
+                      {t.flashApplyTime}: {timeRange}
+                    </span>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         </div>
 
@@ -341,13 +389,15 @@ export function LiveFlashSaleSection({ lang = "vi", actions }) {
           {campaigns.map((campaign) => {
             const tabLive = campaign.status === "LIVE";
             const selected = campaign.id === activeCampaign.id;
+            const { dateRange, timeRange } = formatFlashSaleWindow(campaign, lang);
 
             return (
               <button
                 key={campaign.id}
                 type="button"
                 onClick={() => setActiveCampaignId(campaign.id)}
-                className={`flex shrink-0 items-center gap-1.5 rounded-xl px-3.5 py-2 text-sm font-black tabular-nums transition ${
+                title={[dateRange, timeRange].filter(Boolean).join(" · ")}
+                className={`flex shrink-0 flex-col items-center gap-0.5 rounded-xl px-3.5 py-2 text-center transition ${
                   selected
                     ? tabLive
                       ? "bg-red-600 text-white shadow-sm"
@@ -355,12 +405,19 @@ export function LiveFlashSaleSection({ lang = "vi", actions }) {
                     : "bg-slate-50 text-slate-600 hover:bg-slate-100"
                 }`}
               >
-                {tabLive ? (
-                  <Flame size={13} className={selected ? "text-white" : "text-red-500"} />
-                ) : (
-                  <Clock size={13} className={selected ? "text-white" : "text-amber-500"} />
+                <span className="flex items-center gap-1.5 text-sm font-black tabular-nums">
+                  {tabLive ? (
+                    <Flame size={13} className={selected ? "text-white" : "text-red-500"} />
+                  ) : (
+                    <Clock size={13} className={selected ? "text-white" : "text-amber-500"} />
+                  )}
+                  {timeRange || campaign.dailyStartTime}
+                </span>
+                {dateRange && (
+                  <span className={`text-[10px] font-bold tabular-nums ${selected ? "text-white/80" : "text-slate-400"}`}>
+                    {dateRange}
+                  </span>
                 )}
-                {campaign.dailyStartTime}
               </button>
             );
           })}
