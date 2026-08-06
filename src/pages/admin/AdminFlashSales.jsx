@@ -291,7 +291,11 @@ export default function AdminFlashSales() {
         }
       />
 
-      <section className="mb-4 grid gap-4 md:grid-cols-4">
+      {/* key forces a fresh DOM subtree once campaigns load — the legacy
+          auto-translate MutationObserver caches a text node's first-seen
+          value and keeps re-applying it, so an in-place "0" -> "1" update
+          gets silently reverted without a fresh node (see ShopStatsBar). */}
+      <section key={loading ? "loading" : "loaded"} className="mb-4 grid gap-4 md:grid-cols-4">
         <div className="rounded-3xl bg-white p-5 shadow-sm">
           <p className="text-xs font-black uppercase text-slate-400">Campaigns</p>
           <p className="mt-2 text-2xl font-black">{summary.total}</p>
