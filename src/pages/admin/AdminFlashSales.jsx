@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Edit3, Plus, Search, Trash2, Zap } from "lucide-react";
 import AdminDrawer from "../../components/admin/AdminDrawer";
-import { AdminTextField, AdminToggle } from "../../components/admin/AdminField";
+import { AdminSelect, AdminTextField, AdminToggle } from "../../components/admin/AdminField";
 import AdminPageHeader from "../../components/admin/AdminPageHeader";
 import { formatCurrency } from "../../utils/format";
 import { logoutAdmin } from "../../services/AdminAuthService";
@@ -46,7 +46,28 @@ function getProductSellingPrice(product = {}) {
   return Number(product.finalPrice || product.effectivePrice || product.price || 0);
 }
 
-function getPromotionValidationErrors(draft = {}) {
+const DISCOUNT_METHOD_OPTIONS = [
+  { value: "FIXED_PRICE", label: "Đồng giá" },
+  { value: "PERCENT", label: "Giảm theo %" },
+  { value: "AMOUNT", label: "Giảm số tiền cố định" },
+];
+
+// The backend only ever stores a single absolute flashPrice per item — the
+// discount method is a frontend-only input convenience. Whichever method is
+// selected, this resolves down to the one number that actually gets sent.
+function resolveFlashPrice(item = {}, sellingPrice = 0) {
+  const value = Number(item.priceInput) || 0;
+
+  if (item.discountMethod === "PERCENT") {
+    return Math.max(0, Math.round(sellingPrice * (1 - Math.min(Math.max(value, 0), 100) / 100)));
+  }
+  if (item.discountMethod === "AMOUNT") {
+    return Math.max(0, sellingPrice - value);
+  }
+  return value;
+}
+
+function getFlashSaleValidationErrors(draft = {}, products = []) {
   const errors = [];
 
   if (!draft.nameVi?.trim()) errors.push("Tên campaign (VI) là bắt buộc.");
@@ -63,8 +84,23 @@ function getPromotionValidationErrors(draft = {}) {
 
   const items = Array.isArray(draft.items) ? draft.items : [];
   items.forEach((item) => {
-    if (!(Number(item.flashPrice) > 0)) {
-      errors.push(`Sản phẩm ${item.sku || item.productId} cần nhập giá Flash Sale > 0.`);
+    const label = item.sku || item.productId;
+    const product = products.find((row) => row.id === item.productId);
+    const sellingPrice = product ? getProductSellingPrice(product) : 0;
+    const value = Number(item.priceInput) || 0;
+
+    if (item.discountMethod === "PERCENT") {
+      if (!(value > 0 && value <= 100)) {
+        errors.push(`${label}: % giảm phải trong khoảng 1-100.`);
+      }
+    } else if (item.discountMethod === "AMOUNT") {
+      if (!(value > 0)) {
+        errors.push(`${label}: số tiền giảm phải lớn hơn 0.`);
+      } else if (sellingPrice > 0 && value >= sellingPrice) {
+        errors.push(`${label}: số tiền giảm không được vượt quá giá gốc (${formatCurrency(sellingPrice)}).`);
+      }
+    } else if (!(value > 0)) {
+      errors.push(`${label}: giá Flash Sale phải lớn hơn 0.`);
     }
   });
 
@@ -152,7 +188,7 @@ export default function AdminFlashSales() {
     };
   }, [campaigns]);
 
-  const validationErrors = useMemo(() => getPromotionValidationErrors(draft), [draft]);
+  const validationErrors = useMemo(() => getFlashSaleValidationErrors(draft, products), [draft, products]);
 
   function patch(field, value) {
     setDraft((prev) => ({ ...prev, [field]: value }));
@@ -171,7 +207,8 @@ export default function AdminFlashSales() {
               productId: product.id,
               sku: product.sku,
               nameVi: product.nameVi,
-              flashPrice: getProductSellingPrice(product),
+              discountMethod: "FIXED_PRICE",
+              priceInput: String(getProductSellingPrice(product)),
               dailyStockLimit: "",
             },
           ];
@@ -189,6 +226,24 @@ export default function AdminFlashSales() {
     }));
   }
 
+  // Switching method resets the raw input to a sane default for that method
+  // instead of carrying over a stale value (e.g. a "199000" fixed price left
+  // sitting in a percent field).
+  function changeDiscountMethod(productId, method) {
+    setDraft((prev) => {
+      const product = products.find((row) => row.id === productId);
+      const sellingPrice = product ? getProductSellingPrice(product) : 0;
+      const defaultInput = method === "PERCENT" ? "10" : method === "AMOUNT" ? "0" : String(sellingPrice);
+
+      return {
+        ...prev,
+        items: (prev.items || []).map((item) =>
+          item.productId === productId ? { ...item, discountMethod: method, priceInput: defaultInput } : item
+        ),
+      };
+    });
+  }
+
   function openCreate() {
     setDraft(emptyDraft);
     setDrawerOpen(true);
@@ -204,7 +259,11 @@ export default function AdminFlashSales() {
         productId: link.productId,
         sku: link.product?.sku,
         nameVi: link.product?.nameVi,
-        flashPrice: Number(link.flashPrice || 0),
+        // Backend only stores the resolved flashPrice — there's no saved
+        // discount method, so editing an existing item always starts back
+        // in "Đồng giá" mode showing that absolute price.
+        discountMethod: "FIXED_PRICE",
+        priceInput: String(Number(link.flashPrice || 0)),
         dailyStockLimit: link.dailyStockLimit ?? "",
       })),
     });
@@ -212,7 +271,7 @@ export default function AdminFlashSales() {
   }
 
   async function save() {
-    const errors = getPromotionValidationErrors(draft);
+    const errors = getFlashSaleValidationErrors(draft, products);
 
     if (errors.length) {
       notify("error", errors.join("\n"));
@@ -237,13 +296,18 @@ export default function AdminFlashSales() {
         : await createAdminFlashSaleApi(payload);
 
       const campaignId = campaign?.id || draft.id;
-      const items = (draft.items || []).map((item) => ({
-        productId: item.productId,
-        flashPrice: Number(item.flashPrice) || 0,
-        dailyStockLimit: item.dailyStockLimit === "" || item.dailyStockLimit == null
-          ? null
-          : Number(item.dailyStockLimit),
-      }));
+      const items = (draft.items || []).map((item) => {
+        const product = products.find((row) => row.id === item.productId);
+        const sellingPrice = product ? getProductSellingPrice(product) : 0;
+
+        return {
+          productId: item.productId,
+          flashPrice: resolveFlashPrice(item, sellingPrice),
+          dailyStockLimit: item.dailyStockLimit === "" || item.dailyStockLimit == null
+            ? null
+            : Number(item.dailyStockLimit),
+        };
+      });
 
       await setAdminFlashSaleItemsApi(campaignId, items);
 
@@ -464,21 +528,57 @@ export default function AdminFlashSales() {
                     </button>
 
                     {checked && (
-                      <div className="mt-3 grid gap-3 border-t border-blue-100 pt-3 sm:grid-cols-2">
-                        <AdminTextField
-                          label="Giá Flash Sale"
-                          required
-                          type="number"
-                          value={selectedItem.flashPrice}
-                          onChange={(value) => updateItem(product.id, "flashPrice", value)}
+                      <div className="mt-3 space-y-3 border-t border-blue-100 pt-3">
+                        <AdminSelect
+                          label="Phương thức giảm giá"
+                          options={DISCOUNT_METHOD_OPTIONS}
+                          value={selectedItem.discountMethod || "FIXED_PRICE"}
+                          onChange={(value) => changeDiscountMethod(product.id, value)}
                         />
-                        <AdminTextField
-                          label="Giới hạn số lượng/ngày"
-                          tip="Bỏ trống = không giới hạn"
-                          type="number"
-                          value={selectedItem.dailyStockLimit}
-                          onChange={(value) => updateItem(product.id, "dailyStockLimit", value)}
-                        />
+
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <AdminTextField
+                            label={
+                              selectedItem.discountMethod === "PERCENT"
+                                ? "Số % giảm"
+                                : selectedItem.discountMethod === "AMOUNT"
+                                  ? "Số tiền giảm"
+                                  : "Giá Flash Sale"
+                            }
+                            required
+                            type="number"
+                            suffix={selectedItem.discountMethod === "PERCENT" ? "%" : "đ"}
+                            value={selectedItem.priceInput}
+                            onChange={(value) => updateItem(product.id, "priceInput", value)}
+                          />
+
+                          {selectedItem.discountMethod === "FIXED_PRICE" ? (
+                            <AdminTextField
+                              label="Giới hạn số lượng/ngày"
+                              tip="Bỏ trống = không giới hạn"
+                              type="number"
+                              value={selectedItem.dailyStockLimit}
+                              onChange={(value) => updateItem(product.id, "dailyStockLimit", value)}
+                            />
+                          ) : (
+                            <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2">
+                              <div className="text-[11px] font-black uppercase text-emerald-700">Giá cuối (preview)</div>
+                              <div className="mt-1 text-sm font-black text-emerald-800">
+                                {formatCurrency(resolveFlashPrice(selectedItem, getProductSellingPrice(product)))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {selectedItem.discountMethod !== "FIXED_PRICE" && (
+                          <AdminTextField
+                            label="Giới hạn số lượng/ngày"
+                            tip="Bỏ trống = không giới hạn"
+                            type="number"
+                            value={selectedItem.dailyStockLimit}
+                            onChange={(value) => updateItem(product.id, "dailyStockLimit", value)}
+                          />
+                        )}
                       </div>
                     )}
                   </div>
