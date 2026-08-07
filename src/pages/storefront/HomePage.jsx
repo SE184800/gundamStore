@@ -506,15 +506,15 @@ function TrustStrip({ lang }) {
 
   return (
     <section className="mx-auto max-w-[1440px] px-4 py-2 lg:px-8">
-      <div className="mobile-hide-scrollbar flex h-12 snap-x snap-mandatory items-stretch overflow-x-auto rounded-lg border border-blue-100 bg-blue-50/70 sm:h-14 sm:justify-center sm:overflow-visible">
+      <div className="mobile-hide-scrollbar flex h-12 snap-x snap-mandatory items-stretch overflow-x-auto rounded-lg bg-blue-700 sm:h-14 sm:justify-center sm:overflow-visible">
         {items.map(([Icon, stat, desc], index) => (
           <div
             key={desc}
-            className={`flex w-auto shrink-0 snap-start items-center justify-center gap-1.5 whitespace-nowrap px-4 text-center sm:flex-1 sm:px-2 ${index > 0 ? "border-l-[0.5px] border-blue-200" : ""}`}
+            className={`flex w-auto shrink-0 snap-start items-center justify-center gap-1.5 whitespace-nowrap px-4 text-center sm:flex-1 sm:px-2 ${index > 0 ? "border-l-[0.5px] border-white/25" : ""}`}
           >
-            <Icon size={18} strokeWidth={1.9} className="shrink-0 text-blue-700" />
-            <div className="text-[12px] font-medium leading-tight text-slate-600 sm:text-[13px]">
-              {stat && <span className="font-bold text-slate-900">{stat} </span>}
+            <Icon size={18} strokeWidth={1.9} className="shrink-0 text-white" />
+            <div className="text-[12px] font-medium leading-tight text-white/75 sm:text-[13px]">
+              {stat && <span className="font-bold text-white">{stat} </span>}
               {desc}
             </div>
           </div>
