@@ -124,6 +124,7 @@ export default function AdminFlashSales() {
   const [campaigns, setCampaigns] = useState([]);
   const [products, setProducts] = useState([]);
   const [query, setQuery] = useState("");
+  const [productQuery, setProductQuery] = useState("");
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [draft, setDraft] = useState(emptyDraft);
   const [loading, setLoading] = useState(false);
@@ -190,6 +191,24 @@ export default function AdminFlashSales() {
 
   const validationErrors = useMemo(() => getFlashSaleValidationErrors(draft, products), [draft, products]);
 
+  // Products already added to this campaign stay visible even when the
+  // search text doesn't match them, so typing a new search never makes an
+  // already-selected item silently disappear out from under the admin.
+  const filteredProducts = useMemo(() => {
+    const q = productQuery.trim().toLowerCase();
+    if (!q) return products;
+
+    return products.filter((product) => {
+      const selected = draft.items?.some((item) => item.productId === product.id);
+      if (selected) return true;
+
+      return (
+        String(product.nameVi || "").toLowerCase().includes(q) ||
+        String(product.sku || "").toLowerCase().includes(q)
+      );
+    });
+  }, [products, productQuery, draft.items]);
+
   function patch(field, value) {
     setDraft((prev) => ({ ...prev, [field]: value }));
   }
@@ -246,10 +265,12 @@ export default function AdminFlashSales() {
 
   function openCreate() {
     setDraft(emptyDraft);
+    setProductQuery("");
     setDrawerOpen(true);
   }
 
   function openEdit(item) {
+    setProductQuery("");
     setDraft({
       ...emptyDraft,
       ...item,
@@ -499,8 +520,34 @@ export default function AdminFlashSales() {
             <p className="mb-3 text-xs font-semibold text-slate-500">
               Chọn sản phẩm rồi nhập giá Flash Sale riêng. Giới hạn số lượng/ngày để bỏ trống nếu không muốn hiện thanh "Đã bán X".
             </p>
+
+            <div className="mb-3 flex items-center rounded-2xl border border-slate-300 bg-white px-3 py-2">
+              <Search size={15} className="shrink-0 text-slate-400" />
+              <input
+                value={productQuery}
+                onChange={(event) => setProductQuery(event.target.value)}
+                placeholder="Tìm theo tên sản phẩm hoặc SKU..."
+                className="w-full bg-transparent px-2 text-sm font-semibold outline-none placeholder:text-slate-400"
+              />
+              {productQuery && (
+                <button
+                  type="button"
+                  onClick={() => setProductQuery("")}
+                  className="shrink-0 rounded-full px-2 text-xs font-black text-slate-400 hover:text-slate-600"
+                >
+                  Xóa
+                </button>
+              )}
+            </div>
+
             <div className="max-h-[420px] space-y-2 overflow-auto pr-1">
-              {products.map((product) => {
+              {productQuery && filteredProducts.length === 0 && (
+                <div className="rounded-2xl border border-dashed border-slate-200 bg-white px-4 py-6 text-center text-xs font-bold text-slate-400">
+                  Không tìm thấy sản phẩm khớp "{productQuery}".
+                </div>
+              )}
+
+              {filteredProducts.map((product) => {
                 const selectedItem = draft.items?.find((item) => item.productId === product.id);
                 const checked = Boolean(selectedItem);
 
