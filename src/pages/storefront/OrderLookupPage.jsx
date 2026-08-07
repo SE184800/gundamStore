@@ -8,6 +8,7 @@ import {
   getOrderStatusToneClass,
 } from "../../constants/orderConfig";
 import PageShell from "../../components/common/PageShell";
+import BankTransferInfo from "../../components/common/BankTransferInfo";
 import { useLang } from "../../store/CmsStore";
 
 const money = (n) => (Number(n) || 0).toLocaleString("vi-VN") + "đ";
@@ -265,6 +266,15 @@ export default function OrderLookupPage() {
                                 </div>
                               </div>
                             ))}
+                          </div>
+
+                          <div className="mt-4">
+                            <BankTransferInfo
+                              paymentMethod={detail.paymentMethod}
+                              paymentStatus={detail.paymentStatus}
+                              bankInfo={detail.bankInfo}
+                              lang={lang}
+                            />
                           </div>
                         </>
                       )}

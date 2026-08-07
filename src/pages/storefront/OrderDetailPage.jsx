@@ -32,6 +32,7 @@ import { getCart, saveCart } from "../../services/CartService";
 import PageShell from "../../components/common/PageShell";
 import { cancelMyStorefrontOrderApi, getMyStorefrontOrderByIdApi } from "../../services/StorefrontOrderApiService";
 import { createStorefrontComplaintApi } from "../../services/StorefrontComplaintApiService";
+import BankTransferInfo from "../../components/common/BankTransferInfo";
 import { useLang } from "../../store/CmsStore";
 import useToast from "../../hooks/useToast";
 import Toast from "../../utils/Toast";
@@ -671,6 +672,13 @@ export default function OrderDetailPage() {
                   </div>
                 </div>
               </div>
+
+              <BankTransferInfo
+                paymentMethod={order.paymentMethod}
+                paymentStatus={order.paymentStatus}
+                bankInfo={order.bankInfo}
+                lang={lang}
+              />
 
               {(order.supportTickets || []).length > 0 && (
                 <div className="rounded-xl bg-white p-6 shadow-sm">

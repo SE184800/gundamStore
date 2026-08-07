@@ -19,6 +19,7 @@ import {
   maskPhone,
 } from "../../constants/orderConfig";
 import { formatCurrency } from "../../utils/format";
+import BankTransferInfo from "../../components/common/BankTransferInfo";
 import { useLang } from "../../store/CmsStore";
 import { logoutAdmin } from "../../services/AdminAuthService";
 import useToast from "../../hooks/useToast";
@@ -920,6 +921,17 @@ export default function AdminOrders() {
                   >
                     {t.savePayment}
                   </button>
+                </div>
+
+                <div className="mt-4">
+                  <BankTransferInfo
+                    paymentMethod={selectedOrder.paymentMethod}
+                    paymentStatus={selectedOrder.paymentStatus}
+                    bankInfo={selectedOrder.bankInfo}
+                    lang={lang}
+                    compact
+                    showPaidBadge={false}
+                  />
                 </div>
               </div>
 

@@ -114,6 +114,7 @@ export function mapBackendOrder(order = {}) {
     voucherCode: "",
     paymentMethod: payment?.method || "COD",
     paymentStatus: uiPaymentStatus,
+    bankInfo: order.bankInfo || null,
     paymentReference: payment?.reference || "",
     paymentNote: payment?.note || "",
     paymentHistory: Array.isArray(order.payments) ? [...order.payments].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)) : [],

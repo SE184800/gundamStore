@@ -7,6 +7,7 @@ import {
   getStorefrontOrderByIdFromApi,
 } from "../../services/StorefrontOrderLookupApiService";
 import PageShell from "../../components/common/PageShell";
+import BankTransferInfo from "../../components/common/BankTransferInfo";
 import { useLang } from "../../store/CmsStore";
 import { getOrderStatusLabel } from "../../constants/orderConfig";
 
@@ -134,6 +135,15 @@ export default function OrderSuccessPage() {
 
               <div className="mt-5 rounded-2xl border border-blue-100 bg-blue-50 p-4 text-sm font-bold leading-6 text-blue-700">
                 {t.lookupHint}
+              </div>
+
+              <div className="mt-5">
+                <BankTransferInfo
+                  paymentMethod={order.paymentMethod}
+                  paymentStatus={order.paymentStatus}
+                  bankInfo={order.bankInfo}
+                  lang={lang}
+                />
               </div>
             </div>
           )}

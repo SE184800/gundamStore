@@ -198,6 +198,7 @@ export function mapBackendOrderForStorefront(order = {}) {
     paymentMethod: payment?.method || order.paymentMethod || "COD",
     paymentStatus:
       API_TO_UI_PAYMENT_STATUS[order.paymentStatus] || order.paymentStatus || PAYMENT_STATUS.UNPAID,
+    bankInfo: order.bankInfo || null,
     shippingMethod: shipment?.shippingMethod || order.shippingMethod || "FAST",
 
     shippingInfo: {
