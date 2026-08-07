@@ -13,9 +13,9 @@ const emptyCommunication = { id: "", name: "", platform: "Zalo", value: "", stat
 
 // 2. 🛠️ ĐÃ SỬA: Đảm bảo dữ liệu mẫu hệ thống có đầy đủ cả status và active đồng bộ
 const defaultCommunications = [
-  { id: "1", name: "Zalo hỗ trợ CSKH", platform: "Zalo", value: "https://zalo.me/0931817801", status: "Active", active: true },
+  { id: "1", name: "Zalo hỗ trợ CSKH", platform: "Zalo", value: "https://zalo.me/0935950649", status: "Active", active: true },
   { id: "2", name: "Messenger Fanpage", platform: "Messenger", value: "https://m.me/tri.nguyen.nam.minh", status: "Active", active: true },
-  { id: "3", name: "Hotline Tư vấn 24/7", platform: "Hotline", value: "0931817801", status: "Inactive", active: false }
+  { id: "3", name: "Hotline Tư vấn 24/7", platform: "Hotline", value: "0935950649", status: "Inactive", active: false }
 ];
 
 export default function AdminCommunication() {

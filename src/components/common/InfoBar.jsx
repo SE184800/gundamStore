@@ -5,7 +5,7 @@ import { useI18n } from "../../i18n";
 // channel is currently flagged status:"Maintenance", active:false for the
 // Hotline entry specifically (the Zalo channel using the same number is
 // Active). Double-check that flag before shipping this bar live.
-const HOTLINE_NUMBER = "0931817801";
+const HOTLINE_NUMBER = "0935950649";
 
 export default function InfoBar() {
   const { t } = useI18n();
