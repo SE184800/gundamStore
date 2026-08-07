@@ -26,6 +26,8 @@ function getCopy(lang) {
     notFound: lang === "en" ? "Order not found" : "Không tìm thấy đơn",
     publicCode: lang === "en" ? "Public lookup code" : "Mã tra cứu đơn",
     total: lang === "en" ? "Total payment" : "Tổng tiền",
+    dueNow: lang === "en" ? "Due now (deposit)" : "Cần thanh toán ngay (đặt cọc)",
+    dueOnDelivery: lang === "en" ? "Due on delivery" : "Sẽ thanh toán khi nhận hàng",
     status: lang === "en" ? "Status" : "Trạng thái",
     lookupHint:
       lang === "en"
@@ -123,10 +125,25 @@ export default function OrderSuccessPage() {
                 <b className="break-all text-blue-600">{publicCode}</b>
               </div>
 
-              <div className="mt-3 flex flex-col gap-1 sm:flex-row sm:justify-between">
-                <span className="font-bold text-slate-500">{t.total}</span>
-                <b className="text-red-500">{money(order.total)}</b>
-              </div>
+              {order.preorder ? (
+                <>
+                  <div className="mt-3 flex flex-col gap-1 sm:flex-row sm:justify-between">
+                    <span className="font-bold text-slate-500">{t.dueNow}</span>
+                    <b className="text-red-500">{money(order.total)}</b>
+                  </div>
+                  {Number(order.preorder.remainingAmount) > 0 && (
+                    <div className="mt-3 flex flex-col gap-1 sm:flex-row sm:justify-between">
+                      <span className="font-bold text-slate-500">{t.dueOnDelivery}</span>
+                      <b className="text-red-500">{money(order.preorder.remainingAmount)}</b>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="mt-3 flex flex-col gap-1 sm:flex-row sm:justify-between">
+                  <span className="font-bold text-slate-500">{t.total}</span>
+                  <b className="text-red-500">{money(order.total)}</b>
+                </div>
+              )}
 
               <div className="mt-3 flex flex-col gap-1 sm:flex-row sm:justify-between">
                 <span className="font-bold text-slate-500">{t.status}</span>

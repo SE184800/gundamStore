@@ -45,6 +45,8 @@ function getCopy(lang) {
     quantity: lang === "en" ? "Qty" : "SL",
     address: lang === "en" ? "Address" : "Địa chỉ",
     detailError: lang === "en" ? "Unable to load order detail." : "Chưa thể tải chi tiết đơn hàng.",
+    dueNow: lang === "en" ? "Due now (deposit)" : "Cần thanh toán ngay (đặt cọc)",
+    dueOnDelivery: lang === "en" ? "Due on delivery" : "Sẽ thanh toán khi nhận hàng",
     resultsCount: (count) =>
       lang === "en"
         ? `${count} order${count === 1 ? "" : "s"} found`
@@ -267,6 +269,21 @@ export default function OrderLookupPage() {
                               </div>
                             ))}
                           </div>
+
+                          {detail.preorder && (
+                            <div className="mt-4 rounded-2xl border border-amber-100 bg-amber-50 p-4">
+                              <div className="flex items-center justify-between gap-3 text-sm">
+                                <span className="font-bold text-amber-700">{t.dueNow}</span>
+                                <b className="text-red-600">{money(detail.total)}</b>
+                              </div>
+                              {Number(detail.preorder.remainingAmount) > 0 && (
+                                <div className="mt-2 flex items-center justify-between gap-3 text-sm">
+                                  <span className="font-bold text-amber-700">{t.dueOnDelivery}</span>
+                                  <b className="text-red-600">{money(detail.preorder.remainingAmount)}</b>
+                                </div>
+                              )}
+                            </div>
+                          )}
 
                           <div className="mt-4">
                             <BankTransferInfo

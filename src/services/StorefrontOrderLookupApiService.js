@@ -147,6 +147,21 @@ export function mapBackendOrderForStorefront(order = {}) {
   const shipment = shipments[0] || null;
   const payment = Array.isArray(order.payments) ? order.payments[0] : null;
 
+  // POST /api/orders/ nests deposit numbers under order.preorder; the GET
+  // lookup/my/admin endpoints instead add flat depositAmount/remainingAmount
+  // aliases (of preorderDepositAmount/preorderRemainingAmount) directly on
+  // the order — read whichever shape is present (backend/API_REFERENCE.md
+  // §1.3, §1.3 GET /api/orders/my/:id).
+  const nestedPreorder = order.preorder || {};
+  const depositAmount = Number(
+    order.depositAmount ?? nestedPreorder.depositAmount ?? order.preorderDepositAmount ?? 0
+  ) || 0;
+  const remainingAmount = Number(
+    order.remainingAmount ?? nestedPreorder.remainingAmount ?? order.preorderRemainingAmount ?? 0
+  ) || 0;
+  const fullAmount = Number(nestedPreorder.fullAmount ?? order.preorderFullAmount ?? 0) || 0;
+  const eta = nestedPreorder.eta || order.preorderEta || "";
+
   return {
     id: order.id,
     backendOrderId: order.id,
@@ -155,14 +170,10 @@ export function mapBackendOrderForStorefront(order = {}) {
     orderType: order.orderType === "preorder" ? ORDER_TYPE.PREORDER : ORDER_TYPE.NORMAL,
     preorder:
       order.orderType === "preorder"
-        ? {
-            eta: order.preorderEta || "",
-            depositRate: Number(order.preorderDepositRate) || 0,
-            fullAmount: Number(order.preorderFullAmount) || 0,
-            depositAmount: Number(order.preorderDepositAmount) || 0,
-            remainingAmount: Number(order.preorderRemainingAmount) || 0,
-          }
+        ? { eta, fullAmount, depositAmount, remainingAmount }
         : null,
+    depositAmount,
+    remainingAmount,
 
     createdAt: order.createdAt,
     updatedAt: order.updatedAt,

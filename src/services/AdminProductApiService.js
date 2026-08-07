@@ -51,6 +51,9 @@ export function mapBackendProductForAdmin(product = {}) {
     status: product.status || (product.active === false ? "inactive" : Number(product.stock) > 0 ? "inStock" : "outOfStock"),
     active: product.active !== false,
 
+    depositType: product.depositType || "PERCENT",
+    depositValue: product.depositValue != null ? Number(product.depositValue) : 100,
+
     imageUrl,
     images: Array.isArray(product.images) ? product.images.map((item) => item.url || item).filter(Boolean) : imageUrl ? [imageUrl] : [],
     media: product.media || null,
@@ -172,6 +175,9 @@ function toBackendPayload(product = {}) {
     stock: Number(product.stock || 0),
     status: product.status || "inStock",
     active: product.active !== false,
+
+    depositType: product.depositType || "PERCENT",
+    depositValue: Number(product.depositValue ?? 100),
 
     imageUrl,
     images: galleryImages,

@@ -5,6 +5,7 @@ import {
   getCheckoutDraft,
   clearCheckoutDraft,
   clearCartItems,
+  isPreorderProduct,
 } from "../../services/CartService";
 import { validateStorefrontVoucherApi, translateVoucherMessage } from "../../services/StorefrontVoucherApiService";
 import {
@@ -22,6 +23,7 @@ import {
   ORDER_TYPE,
   PAYMENT_METHODS,
   getLocalized,
+  calculateItemDeposit,
 } from "../../constants/orderConfig";
 import { getStorefrontShippingMethodsApi } from "../../services/ShippingApiService";
 import { useLang } from "../../store/CmsStore";
@@ -93,8 +95,8 @@ function getCopy(lang) {
         : "Backend order API lỗi, đã lưu đơn local demo.",
     preorderDeposit: lang === "en" ? "Pre-order deposit" : "Thông tin cọc pre-order",
     preorderFullAmount: lang === "en" ? "Full amount" : "Tổng giá trị đơn",
-    preorderDepositNow: lang === "en" ? "Deposit now" : "Cọc hôm nay",
-    preorderRemaining: lang === "en" ? "Remaining" : "Còn lại",
+    preorderDepositNow: lang === "en" ? "Due now (deposit)" : "Cần thanh toán ngay (đặt cọc)",
+    preorderRemaining: lang === "en" ? "Due on delivery" : "Sẽ thanh toán khi nhận hàng",
     preorderShippingHint:
       lang === "en"
         ? "Shipping fee will be confirmed when the item arrives."
@@ -167,6 +169,70 @@ function getItemName(item, lang) {
   if (!item?.name) return "";
   if (typeof item.name === "string") return item.name;
   return getLocalized(item.name, lang, item.name?.vi || item.name?.en || "");
+}
+
+// isPreorderProduct() reads availability.isPreorder / preorder.canOrder off
+// a full product object — checkout draft items built directly from a single
+// product (ProductDetailPage's "Pre-order now") don't carry those, only a
+// flat status:"preorder" string, so it alone would misclassify them as
+// normal items here. Cart-originated items DO carry the full product
+// snapshot (including availability/preorder), so isPreorderProduct still
+// covers those correctly — this just adds the extra signal on top.
+function isDraftItemPreorder(item = {}) {
+  return isPreorderProduct(item) || String(item.status || "").toLowerCase() === "preorder";
+}
+
+// Fetches each preorder item's real depositType/depositValue (cart items
+// don't carry it) and aggregates an accurate pre-submit deposit/remaining
+// preview using the exact server formula (calculateItemDeposit). This is
+// still just a preview — the server recomputes and is the only source of
+// truth for the amount actually charged once the order is created.
+async function refreshPreorderDraftDeposit(draft) {
+  const items = await Promise.all(
+    (draft.items || []).map(async (item) => {
+      if (!isDraftItemPreorder(item)) return item;
+
+      try {
+        const product = await getStorefrontProductByKeyFromApi(item.slug || item.productId || item.id);
+        if (!product) return item;
+
+        return {
+          ...item,
+          price: Number(product.price) > 0 ? Number(product.price) : item.price,
+          depositType: product.preorder?.depositType || "PERCENT",
+          depositValue: product.preorder?.depositValue ?? 100,
+        };
+      } catch {
+        return item;
+      }
+    })
+  );
+
+  const preorderItems = items.filter((item) => isDraftItemPreorder(item));
+  const fullAmount = preorderItems.reduce(
+    (sum, item) => sum + (Number(item.price) || 0) * (Number(item.quantity) || 1),
+    0
+  );
+  const depositAmount = preorderItems.reduce((sum, item) => {
+    const { depositAmount: itemDeposit } = calculateItemDeposit({
+      price: item.price,
+      quantity: item.quantity,
+      depositType: item.depositType,
+      depositValue: item.depositValue,
+    });
+    return sum + itemDeposit;
+  }, 0);
+
+  return {
+    ...draft,
+    items,
+    preorder: {
+      ...(draft.preorder || {}),
+      fullAmount: draft.preorder?.fullAmount || fullAmount,
+      depositAmount: draft.preorder?.depositAmount ?? depositAmount,
+      remainingAmount: draft.preorder?.remainingAmount ?? Math.max(0, fullAmount - depositAmount),
+    },
+  };
 }
 
 export default function CheckoutPage() {
@@ -255,6 +321,18 @@ export default function CheckoutPage() {
     const checkoutDraft = getCheckoutDraft();
     setDraft(checkoutDraft);
     setDraftChecked(true);
+
+    // CartPage only tags orderType="preorder" (backend/API_REFERENCE.md §1.3:
+    // an order is "preorder" if it has ≥1 preorder item, even mixed with
+    // normal items) — it doesn't know each item's real depositType/Value.
+    // ProductDetailPage's single-item "Pre-order now" flow already computes
+    // an accurate draft.preorder from the product it has in hand, so this is
+    // a no-op there; it only fills the gap for cart-originated drafts.
+    if (checkoutDraft?.orderType === ORDER_TYPE.PREORDER) {
+      refreshPreorderDraftDeposit(checkoutDraft).then((updated) => {
+        if (alive) setDraft(updated);
+      });
+    }
 
     if (checkoutDraft?.voucherCode) {
       setVoucherInput(checkoutDraft.voucherCode);
@@ -371,13 +449,27 @@ export default function CheckoutPage() {
     const subtotal = Number(draft.subtotal) || 0;
 
     if (draft.orderType === ORDER_TYPE.PREORDER) {
+      const items = draft.items || [];
+      const hasNormalItems = items.some((item) => !isDraftItemPreorder(item));
+      const normalSubtotal = items
+        .filter((item) => !isDraftItemPreorder(item))
+        .reduce((sum, item) => sum + (Number(item.price) || 0) * (Number(item.quantity) || 1), 0);
+      // Per backend/API_REFERENCE.md §1.3: shippingFee is only collected
+      // upfront when the order also has ≥1 normal item; a pure pre-order
+      // pays shipping later, when the remaining balance is collected.
+      const shippingFee = hasNormalItems ? Number(selectedShipping?.fee || 0) : 0;
+      const depositAmount = Number(draft.preorder?.depositAmount || 0);
+      const remainingAmount = Number(draft.preorder?.remainingAmount || 0);
+
       return {
         subtotal,
-        shippingFee: 0,
+        shippingFee,
         discount: 0,
         shippingDiscount: 0,
-        total: Number(draft.preorder?.depositAmount || draft.total || 0),
+        total: normalSubtotal + shippingFee + depositAmount,
         voucherCode: "",
+        depositAmount,
+        remainingAmount,
       };
     }
 
@@ -391,6 +483,8 @@ export default function CheckoutPage() {
         shippingDiscount: Number(appliedVoucher.shippingDiscount) || 0,
         total: Math.max(0, subtotal + shippingFee - (Number(appliedVoucher.discount) || 0) - (Number(appliedVoucher.shippingDiscount) || 0)),
         voucherCode: appliedVoucher.code,
+        depositAmount: 0,
+        remainingAmount: 0,
       };
     }
 
@@ -401,6 +495,8 @@ export default function CheckoutPage() {
       shippingDiscount: 0,
       total: Math.max(0, subtotal + shippingFee),
       voucherCode: "",
+      depositAmount: 0,
+      remainingAmount: 0,
     };
   }, [draft, selectedShipping, appliedVoucher]);
 
@@ -660,23 +756,27 @@ export default function CheckoutPage() {
               <div className="text-sm font-black tracking-wide text-amber-700">
                 {t.preorderDeposit}
               </div>
-              <div className="mt-2 grid gap-3 text-sm font-semibold text-amber-900 md:grid-cols-3">
+              <div className="mt-2 grid gap-3 text-sm font-semibold text-amber-900 md:grid-cols-2">
                 <div>
                   <span className="block text-amber-700">{t.preorderFullAmount}</span>
-                  <b className="text-red-600">{money(draft.preorder?.fullAmount || draft.subtotal)}</b>
+                  <b className="text-slate-700">{money(pricing.subtotal)}</b>
                 </div>
                 <div>
                   <span className="block text-amber-700">{t.preorderDepositNow}</span>
-                  <b className="text-red-600">{money(draft.preorder?.depositAmount || pricing.total)}</b>
+                  <b className="text-red-600">{money(pricing.total)}</b>
                 </div>
-                <div>
-                  <span className="block text-amber-700">{t.preorderRemaining}</span>
-                  <b className="text-red-600">{money(draft.preorder?.remainingAmount || 0)}</b>
-                </div>
+                {pricing.remainingAmount > 0 && (
+                  <div>
+                    <span className="block text-amber-700">{t.preorderRemaining}</span>
+                    <b className="text-red-600">{money(pricing.remainingAmount)}</b>
+                  </div>
+                )}
               </div>
-              <p className="mt-3 text-xs font-bold leading-5 text-amber-700">
-                ETA: {draft.preorder?.eta || "-"} · {t.preorderShippingHint}
-              </p>
+              {draft.preorder?.eta && (
+                <p className="mt-3 text-xs font-bold leading-5 text-amber-700">
+                  ETA: {draft.preorder.eta} · {t.preorderShippingHint}
+                </p>
+              )}
             </div>
           )}
 

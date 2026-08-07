@@ -49,6 +49,9 @@ const emptyDraft = {
   status: "inStock",
   active: true,
 
+  depositType: "PERCENT",
+  depositValue: 100,
+
   imageUrl: "",
   images: [],
   galleryText: "",
@@ -269,6 +272,9 @@ function normalizeDraft(product = {}) {
     status: product.status || "inStock",
     active: product.active !== false,
 
+    depositType: product.depositType || "PERCENT",
+    depositValue: product.depositValue != null ? Number(product.depositValue) : 100,
+
     imageUrl: product.imageUrl || product.images?.[0] || "",
     images: product.images?.length ? product.images : product.imageUrl ? [product.imageUrl] : [],
     galleryText: formatGalleryText(product.images, product.imageUrl),
@@ -469,6 +475,38 @@ function VariantEditor({ draft, setDraft }) {
   );
 }
 
+function isPreorderStatusValue(status = "") {
+  const normalized = String(status || "").toLowerCase();
+  return normalized.includes("pre") || normalized.includes("coming");
+}
+
+function getDepositValidationError(draft = {}) {
+  if (!isPreorderStatusValue(draft.status)) return "";
+
+  const type = draft.depositType || "PERCENT";
+  const value = Number(draft.depositValue);
+
+  if (type === "PERCENT") {
+    if (!Number.isFinite(value) || value < 1 || value > 100) {
+      return "Tỉ lệ cọc (%) phải là số trong khoảng 1-100.";
+    }
+    return "";
+  }
+
+  if (type === "FIXED_AMOUNT") {
+    if (!Number.isFinite(value) || value <= 0) {
+      return "Số tiền cọc cố định phải lớn hơn 0.";
+    }
+    const price = Number(draft.price || 0);
+    if (price > 0 && value >= price) {
+      return "Số tiền cọc cố định phải nhỏ hơn giá bán.";
+    }
+    return "";
+  }
+
+  return "Kiểu cọc không hợp lệ.";
+}
+
 function ProductForm({ draft, setDraft, reference }) {
   const categoryOptions = [
     { value: "", label: "Không chọn danh mục" },
@@ -662,6 +700,43 @@ function ProductForm({ draft, setDraft, reference }) {
           Active được quản lý ở phần trạng thái hiển thị phía trên.
         </div>
       </div>
+
+      {isPreorderStatusValue(draft.status) && (
+        <section className="rounded-2xl border border-cyan-100 bg-cyan-50 p-4">
+          <div className="text-sm font-black text-cyan-900">Cấu hình đặt cọc (Pre-order)</div>
+          <p className="mt-1 text-xs font-semibold text-cyan-800/80">
+            Áp dụng khi khách đặt sản phẩm Pre-order/Coming soon này. <b>100% = thu đủ, không cọc riêng.</b>
+          </p>
+
+          <div className="mt-4 grid gap-4 md:grid-cols-2">
+            <AdminSelect
+              label="Kiểu cọc"
+              required
+              options={[
+                { value: "PERCENT", label: "Theo %" },
+                { value: "FIXED_AMOUNT", label: "Theo số tiền cố định" },
+              ]}
+              value={draft.depositType || "PERCENT"}
+              onChange={(value) => patch("depositType", value)}
+            />
+            <AdminTextField
+              label={draft.depositType === "FIXED_AMOUNT" ? "Số tiền cọc / sản phẩm" : "Tỉ lệ cọc"}
+              required
+              tip="100% = thu đủ, không cọc riêng."
+              type="number"
+              suffix={draft.depositType === "FIXED_AMOUNT" ? "đ" : "%"}
+              value={draft.depositValue}
+              onChange={(value) => patch("depositValue", value)}
+            />
+          </div>
+
+          {getDepositValidationError(draft) && (
+            <div className="mt-3 rounded-xl bg-red-50 px-4 py-3 text-xs font-black text-red-600">
+              {getDepositValidationError(draft)}
+            </div>
+          )}
+        </section>
+      )}
 
       <div className="grid gap-4 md:grid-cols-4">
         <AdminTextField
@@ -1575,6 +1650,8 @@ export default function AdminProducts() {
       stock: Number(draft.stock || 0),
       sold: Number(draft.sold || 0),
       rating: Number(draft.rating || 0),
+      depositType: draft.depositType || "PERCENT",
+      depositValue: Number(draft.depositValue ?? 100),
       imageUrl,
       images,
       media: {
@@ -1625,6 +1702,12 @@ export default function AdminProducts() {
   async function save() {
     const payload = buildPayload();
     const isCreate = !payload.id;
+
+    const depositError = getDepositValidationError(payload);
+    if (depositError) {
+      notify("error", depositError);
+      return;
+    }
 
     try {
       const saved = payload.id

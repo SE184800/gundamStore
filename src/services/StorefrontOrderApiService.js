@@ -25,15 +25,13 @@ export function buildCreateOrderPayload({
   pricing,
 }) {
   return {
+    // Server always recomputes deposit/remaining per-item from each
+    // product's real depositType/depositValue and ignores any of that math
+    // sent from the client — only preorder.eta is read (backend/API_REFERENCE.md
+    // §1.3 POST /api/orders/). Sending fake numbers here would be dead weight.
     orderType: draft.orderType === "preorder" ? "preorder" : "normal",
     preorder: draft.orderType === "preorder"
-      ? {
-          eta: draft.preorder?.eta || "",
-          depositRate: Number(draft.preorder?.depositRate || 0.3),
-          fullAmount: Number(draft.preorder?.fullAmount || pricing.subtotal || 0),
-          depositAmount: Number(draft.preorder?.depositAmount || pricing.total || 0),
-          remainingAmount: Number(draft.preorder?.remainingAmount || 0),
-        }
+      ? { eta: draft.preorder?.eta || "" }
       : null,
     customerName: customer.name,
     customerPhone: customer.phone,

@@ -204,24 +204,32 @@ export function canCustomerRequestReturn(status) {
 }
 
 
-// TODO(product): deposit rate is provisional/unconfirmed pending official
-// pre-order payment policy — see PreOrderPage.jsx policy section. Update here
-// once Product confirms the real rate (or whether pre-orders take a deposit
-// at all vs. full payment).
-export const PREORDER_DEPOSIT_RATE = 0.3;
+// Per-product deposit config (Product.depositType/depositValue) replaced the
+// old site-wide fixed 30% rate — see backend/API_REFERENCE.md §2.1
+// POST /api/products/admin. This mirrors the exact server-side formula
+// (services responsible for POST /api/orders/) so pre-submit previews match
+// what the server will actually charge; the server always recomputes and
+// ignores any deposit numbers the client sends, so this is display-only.
+export function calculateItemDeposit({ price = 0, quantity = 1, depositType = "PERCENT", depositValue = 100 } = {}) {
+  const unitPrice = Math.max(0, Number(price) || 0);
+  const qty = Math.max(1, Number(quantity) || 1);
+  const fullAmount = unitPrice * qty;
 
-export function calculatePreorderDeposit(price = 0, rate = PREORDER_DEPOSIT_RATE) {
-  const fullAmount = Math.max(0, Number(price) || 0);
-  const depositRate = Number(rate) || PREORDER_DEPOSIT_RATE;
-  const rawDeposit = fullAmount * depositRate;
-  const depositAmount = Math.ceil(rawDeposit / 1000) * 1000;
-  const remainingAmount = Math.max(0, fullAmount - depositAmount);
+  let depositAmount;
+  if (depositType === "FIXED_AMOUNT") {
+    depositAmount = Math.max(0, Number(depositValue) || 0) * qty;
+  } else {
+    const rate = Math.min(100, Math.max(0, Number(depositValue) || 100)) / 100;
+    depositAmount = Math.ceil((fullAmount * rate) / 1000) * 1000;
+  }
+  depositAmount = Math.min(depositAmount, fullAmount);
 
   return {
     fullAmount,
-    depositRate,
+    depositType: depositType === "FIXED_AMOUNT" ? "FIXED_AMOUNT" : "PERCENT",
+    depositValue: Number(depositValue) || 100,
     depositAmount,
-    remainingAmount,
+    remainingAmount: Math.max(0, fullAmount - depositAmount),
   };
 }
 

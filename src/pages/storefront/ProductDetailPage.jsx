@@ -58,7 +58,7 @@ import {
   ORDER_TYPE,
   PAYMENT_STATUS,
   PREORDER_STATUS,
-  calculatePreorderDeposit,
+  calculateItemDeposit,
   getPreorderEtaText,
 } from "../../constants/orderConfig";
 
@@ -103,6 +103,9 @@ const copy = {
     statusOpen: "Đang mở",
     eta: "Dự kiến về",
     preorderNote: "Đơn pre-order sẽ được ghi nhận cọc, shop nhắc thanh toán phần còn lại khi hàng về.",
+    preorderDepositPercent: (percent, amount) => `Đặt cọc ${percent}% (${amount}), thanh toán phần còn lại khi nhận hàng`,
+    preorderDepositFull: "Thanh toán đủ 100% khi đặt hàng",
+    preorderDepositFixed: (amount) => `Đặt cọc ${amount}, thanh toán phần còn lại khi nhận hàng`,
     voucherTitle: "Ưu đãi cho sản phẩm này",
     deliveryTitle: "Giao hàng",
     deliveryHint: "Phí và thời gian giao sẽ được tính chính xác theo địa chỉ của bạn ở bước thanh toán.",
@@ -189,6 +192,9 @@ const copy = {
     statusOpen: "Open",
     eta: "ETA",
     preorderNote: "Pre-order deposit will be recorded. The shop will remind you to pay the remaining balance when the item arrives.",
+    preorderDepositPercent: (percent, amount) => `${percent}% deposit (${amount}), pay the rest when the item arrives`,
+    preorderDepositFull: "Pay 100% in full when you order",
+    preorderDepositFixed: (amount) => `${amount} deposit, pay the rest when the item arrives`,
     voucherTitle: "Product deals",
     deliveryTitle: "Delivery",
     deliveryHint: "Shipping fee and delivery time will be calculated based on your address at checkout.",
@@ -501,8 +507,27 @@ function ProductInfo({ product, lang, actions, onPreorder, reviewCount = 0 }) {
   const save = oldPrice > price ? oldPrice - price : 0;
   const ratingValue = Number(product.rating) || 0;
   const hasRating = ratingValue > 0 && reviewCount > 0;
-  const preorderDeposit = preorder ? calculatePreorderDeposit(price) : null;
+  const preorderConfig = currentProduct.preorder || product.preorder || {};
+  const preorderDeposit = preorder
+    ? calculateItemDeposit({
+        price,
+        quantity: 1,
+        depositType: preorderConfig.depositType,
+        depositValue: preorderConfig.depositValue,
+      })
+    : null;
   const preorderEtaText = product.preorder?.eta || product.eta || getPreorderEtaText(lang);
+
+  function getPreorderDepositMessage() {
+    if (!preorderDeposit) return "";
+    if (preorderDeposit.depositType === "FIXED_AMOUNT") {
+      return t.preorderDepositFixed(money(preorderDeposit.depositAmount));
+    }
+    if (preorderDeposit.depositValue >= 100) {
+      return t.preorderDepositFull;
+    }
+    return t.preorderDepositPercent(preorderDeposit.depositValue, money(preorderDeposit.depositAmount));
+  }
 
   function showCartError() {
     notify(
@@ -735,7 +760,8 @@ function ProductInfo({ product, lang, actions, onPreorder, reviewCount = 0 }) {
             <div className="rounded-xl bg-white p-2.5 shadow-sm"><div className="text-[11px] font-bold text-slate-500">{t.eta}</div><div className="mt-0.5 text-sm font-black text-slate-950">{preorderEtaText}</div></div>
             <div className="rounded-xl bg-white p-2.5 shadow-sm"><div className="text-[11px] font-bold text-slate-500">{t.statusLabel}</div><div className="mt-0.5 text-sm font-black text-red-600">{t.statusOpen}</div></div>
           </div>
-          <p className="mt-2 text-[11px] leading-5 text-blue-900/70">{t.preorderNote}</p>
+          <p className="mt-2 text-xs font-black leading-5 text-blue-900">{getPreorderDepositMessage()}</p>
+          <p className="mt-1 text-[11px] leading-5 text-blue-900/70">{t.preorderNote}</p>
         </div>
       ) : (
         <div className={`mt-3 flex items-center gap-2 rounded-xl border p-3 text-xs font-black ${isOutOfStock
@@ -1459,7 +1485,12 @@ export default function ProductDetailPage() {
     const quantity = Math.max(1, Number(qty) || 1);
     const unitPrice = Number(product.price) || 0;
     const subtotal = unitPrice * quantity;
-    const deposit = calculatePreorderDeposit(subtotal);
+    const deposit = calculateItemDeposit({
+      price: unitPrice,
+      quantity,
+      depositType: product.preorder?.depositType,
+      depositValue: product.preorder?.depositValue,
+    });
     const etaText = product.preorder?.eta || product.eta || getPreorderEtaText(lang);
     const image =
       product.media?.card ||
@@ -1502,7 +1533,6 @@ export default function ProductDetailPage() {
         status: PREORDER_STATUS.DEPOSIT_PENDING,
         eta: etaText,
         fullAmount: deposit.fullAmount,
-        depositRate: deposit.depositRate,
         depositAmount: deposit.depositAmount,
         remainingAmount: deposit.remainingAmount,
         depositStatus: PAYMENT_STATUS.UNPAID,

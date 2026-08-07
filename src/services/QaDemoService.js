@@ -1,6 +1,6 @@
 import { createOrder, ORDER_TYPE, PAYMENT_STATUS, PREORDER_STATUS } from "./OrderService";
 import { saveCheckoutDraft, saveCart } from "./CartService";
-import { calculatePreorderDeposit } from "../constants/orderConfig";
+import { calculateItemDeposit } from "../constants/orderConfig";
 
 export function clearCommerceDemoData({ keepCms = true } = {}) {
   localStorage.removeItem("gundam-cart-final");
@@ -66,7 +66,7 @@ export function seedDemoOrders(products = []) {
     shippingMethod: "FAST",
   });
 
-  const deposit = calculatePreorderDeposit(baseItem.price);
+  const deposit = calculateItemDeposit({ price: baseItem.price, quantity: 1, depositType: "PERCENT", depositValue: 30 });
 
   const preorder = createOrder({
     orderType: ORDER_TYPE.PREORDER,
@@ -90,7 +90,8 @@ export function seedDemoOrders(products = []) {
       status: PREORDER_STATUS.DEPOSIT_PENDING,
       eta: "Dự kiến 30-60 ngày",
       fullAmount: deposit.fullAmount,
-      depositRate: deposit.depositRate,
+      depositType: deposit.depositType,
+      depositValue: deposit.depositValue,
       depositAmount: deposit.depositAmount,
       remainingAmount: deposit.remainingAmount,
       depositStatus: PAYMENT_STATUS.UNPAID,
@@ -103,7 +104,7 @@ export function seedDemoOrders(products = []) {
 
 export function createPreorderCheckoutDraft(product) {
   const price = Number(product.price) || 0;
-  const deposit = calculatePreorderDeposit(price);
+  const deposit = calculateItemDeposit({ price, quantity: 1, depositType: "PERCENT", depositValue: 30 });
 
   const draft = {
     orderType: ORDER_TYPE.PREORDER,
@@ -129,7 +130,8 @@ export function createPreorderCheckoutDraft(product) {
       status: PREORDER_STATUS.DEPOSIT_PENDING,
       eta: "Dự kiến 30-60 ngày",
       fullAmount: deposit.fullAmount,
-      depositRate: deposit.depositRate,
+      depositType: deposit.depositType,
+      depositValue: deposit.depositValue,
       depositAmount: deposit.depositAmount,
       remainingAmount: deposit.remainingAmount,
       depositStatus: PAYMENT_STATUS.UNPAID,

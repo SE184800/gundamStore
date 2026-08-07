@@ -267,8 +267,13 @@ export default function CartPage() {
       return;
     }
 
+    // Mirrors the backend's own inference (backend/API_REFERENCE.md §1.3
+    // POST /api/orders/): an order is "preorder" if it has at least one
+    // preorder item, even when mixed with normal items in the same cart.
+    const hasPreorderItem = selectedItems.some((item) => isPreorderProduct(item));
+
     saveCheckoutDraft({
-      orderType: "normal",
+      orderType: hasPreorderItem ? "preorder" : "normal",
       items: selectedItems.map((item) => ({
         ...item,
         id: item.id,

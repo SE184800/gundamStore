@@ -26,6 +26,7 @@ import {
   getLocalized,
   getOrderStatusLabel,
   getOrderStatusToneClass,
+  getPaymentStatusLabel,
   maskPhone,
 } from "../../constants/orderConfig";
 import { getCart, saveCart } from "../../services/CartService";
@@ -208,14 +209,16 @@ function PreorderProgressTracker({ order, lang }) {
           </div>
         </div>
 
-        <div className="rounded-2xl bg-slate-50 p-4">
-          <div className="text-xs font-black text-slate-500">
-            {lang === "en" ? "Remaining" : "Còn lại"}
+        {Number(order.preorder.remainingAmount) > 0 && (
+          <div className="rounded-2xl bg-slate-50 p-4">
+            <div className="text-xs font-black text-slate-500">
+              {lang === "en" ? "Remaining" : "Còn lại"}
+            </div>
+            <div className="mt-1 text-xl font-black text-red-600">
+              {money(order.preorder.remainingAmount)}
+            </div>
           </div>
-          <div className="mt-1 text-xl font-black text-red-600">
-            {money(order.preorder.remainingAmount || 0)}
-          </div>
-        </div>
+        )}
 
         <div className="rounded-2xl bg-blue-50 p-4">
           <div className="text-xs font-black text-blue-700">
@@ -643,13 +646,15 @@ export default function OrderDetailPage() {
                       <span>{lang === "en" ? "Deposit paid/required" : "Tiền cọc"}</span>
                       <b className="text-red-600">{money(order.preorder.depositAmount || order.total)}</b>
                     </div>
+                    {Number(order.preorder.remainingAmount) > 0 && (
+                      <div className="flex justify-between">
+                        <span>{lang === "en" ? "Remaining balance" : "Còn lại"}</span>
+                        <b className="text-red-600">{money(order.preorder.remainingAmount)}</b>
+                      </div>
+                    )}
                     <div className="flex justify-between">
-                      <span>{lang === "en" ? "Remaining balance" : "Còn lại"}</span>
-                      <b className="text-red-600">{money(order.preorder.remainingAmount || 0)}</b>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>{lang === "en" ? "Deposit status" : "Trạng thái cọc"}</span>
-                      <b>{order.preorder.depositStatus || "-"}</b>
+                      <span>{lang === "en" ? "Payment status" : "Trạng thái thanh toán"}</span>
+                      <b>{getPaymentStatusLabel(order.paymentStatus, lang)}</b>
                     </div>
                   </div>
                 </div>
