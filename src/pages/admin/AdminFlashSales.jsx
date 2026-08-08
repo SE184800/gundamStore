@@ -705,6 +705,7 @@ export default function AdminFlashSales() {
                   <span className="w-6 shrink-0 text-xs font-black text-slate-400">#{index + 1}</span>
                   <input
                     type="time"
+                    lang="vi"
                     value={w.dailyStartTime}
                     onChange={(event) => updateWindow(index, "dailyStartTime", event.target.value)}
                     className="rounded-md border border-slate-300 px-3 py-2 text-sm font-semibold outline-none focus:border-blue-500"
@@ -712,6 +713,7 @@ export default function AdminFlashSales() {
                   <span className="text-slate-400">–</span>
                   <input
                     type="time"
+                    lang="vi"
                     value={w.dailyEndTime}
                     onChange={(event) => updateWindow(index, "dailyEndTime", event.target.value)}
                     className="rounded-md border border-slate-300 px-3 py-2 text-sm font-semibold outline-none focus:border-blue-500"
