@@ -55,6 +55,41 @@ const DISCOUNT_METHOD_OPTIONS = [
   { value: "AMOUNT", label: "Giảm số tiền cố định" },
 ];
 
+const HOUR_OPTIONS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0"));
+const MINUTE_OPTIONS = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, "0"));
+
+// Native <input type="time"> renders AM/PM based on the browser/OS locale —
+// the `lang` attribute doesn't reliably override that picker widget across
+// browsers. Two plain <select>s sidestep the native picker entirely so the
+// admin always sees 24h (00-23), regardless of their machine's locale.
+function TimeSelect({ value, onChange }) {
+  const [hh, mm] = (value || "00:00").split(":");
+
+  return (
+    <div className="flex items-center gap-1">
+      <select
+        value={hh || "00"}
+        onChange={(event) => onChange(`${event.target.value}:${mm || "00"}`)}
+        className="rounded-md border border-slate-300 px-2 py-2 text-sm font-semibold outline-none focus:border-blue-500"
+      >
+        {HOUR_OPTIONS.map((h) => (
+          <option key={h} value={h}>{h}</option>
+        ))}
+      </select>
+      <span className="text-slate-400">:</span>
+      <select
+        value={mm || "00"}
+        onChange={(event) => onChange(`${hh || "00"}:${event.target.value}`)}
+        className="rounded-md border border-slate-300 px-2 py-2 text-sm font-semibold outline-none focus:border-blue-500"
+      >
+        {MINUTE_OPTIONS.map((m) => (
+          <option key={m} value={m}>{m}</option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
 const SELECTOR_MODE_OPTIONS = [
   { value: "ALL", label: "Tất cả sản phẩm", desc: "Áp dụng cho toàn bộ sản phẩm đang active." },
   { value: "CATEGORY", label: "Theo danh mục", desc: "Chọn 1 hoặc nhiều danh mục — mọi sản phẩm active thuộc các danh mục này sẽ được áp dụng." },
@@ -703,20 +738,14 @@ export default function AdminFlashSales() {
               {(draft.windows || []).map((w, index) => (
                 <div key={index} className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white p-3">
                   <span className="w-6 shrink-0 text-xs font-black text-slate-400">#{index + 1}</span>
-                  <input
-                    type="time"
-                    lang="vi"
+                  <TimeSelect
                     value={w.dailyStartTime}
-                    onChange={(event) => updateWindow(index, "dailyStartTime", event.target.value)}
-                    className="rounded-md border border-slate-300 px-3 py-2 text-sm font-semibold outline-none focus:border-blue-500"
+                    onChange={(value) => updateWindow(index, "dailyStartTime", value)}
                   />
                   <span className="text-slate-400">–</span>
-                  <input
-                    type="time"
-                    lang="vi"
+                  <TimeSelect
                     value={w.dailyEndTime}
-                    onChange={(event) => updateWindow(index, "dailyEndTime", event.target.value)}
-                    className="rounded-md border border-slate-300 px-3 py-2 text-sm font-semibold outline-none focus:border-blue-500"
+                    onChange={(value) => updateWindow(index, "dailyEndTime", value)}
                   />
                   {(draft.windows || []).length > 1 && (
                     <button
