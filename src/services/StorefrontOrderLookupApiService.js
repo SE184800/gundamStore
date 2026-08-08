@@ -194,6 +194,7 @@ export function mapBackendOrderForStorefront(order = {}) {
       sku: item.sku,
       slug: "",
       name: item.name,
+      image: item.image || null,
       price: Number(item.price) || 0,
       quantity: Number(item.quantity) || 1,
       selected: true,
@@ -210,6 +211,7 @@ export function mapBackendOrderForStorefront(order = {}) {
     paymentStatus:
       API_TO_UI_PAYMENT_STATUS[order.paymentStatus] || order.paymentStatus || PAYMENT_STATUS.UNPAID,
     bankInfo: order.bankInfo || null,
+    customerClaimedPaidAt: order.customerClaimedPaidAt || null,
     shippingMethod: shipment?.shippingMethod || order.shippingMethod || "FAST",
 
     shippingInfo: {
@@ -320,6 +322,30 @@ export async function getStorefrontOrderByIdFromApi(id = "", lookup = {}) {
 
   if (!data?.success || !data.order) {
     throw new Error("Backend did not return order.");
+  }
+
+  return mapBackendOrderForStorefront(data.order);
+}
+
+export async function claimPublicStorefrontOrderPaidApi(id = "", lookup = {}) {
+  const cleanId = String(id || "").trim();
+
+  if (!cleanId) {
+    throw new Error("Order id is required.");
+  }
+
+  const params = new URLSearchParams();
+  if (lookup.phone) params.set("phone", cleanContact(lookup.phone));
+  if (lookup.email) params.set("email", cleanContact(lookup.email));
+  const query = params.toString();
+
+  const data = await apiRequest(
+    `/api/orders/public/${encodeURIComponent(cleanId)}/claim-paid${query ? `?${query}` : ""}`,
+    { method: "PATCH", token: "" }
+  );
+
+  if (!data?.success || !data.order) {
+    throw new Error(data?.message || "Cannot mark order as claimed paid.");
   }
 
   return mapBackendOrderForStorefront(data.order);

@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
 
-import { ChevronDown, ChevronUp, LockKeyhole, PackageSearch, Search, ShieldCheck } from "lucide-react";
+import { ChevronDown, ChevronUp, LockKeyhole, Package, PackageSearch, Search, ShieldCheck } from "lucide-react";
 import { lookupPublicOrdersByPhoneFromApi } from "../../services/OrderService";
-import { getStorefrontOrderByIdFromApi } from "../../services/StorefrontOrderLookupApiService";
+import {
+  claimPublicStorefrontOrderPaidApi,
+  getStorefrontOrderByIdFromApi,
+} from "../../services/StorefrontOrderLookupApiService";
 import {
   getOrderStatusLabel,
   getOrderStatusToneClass,
@@ -68,6 +71,8 @@ export default function OrderLookupPage() {
   const [orderDetails, setOrderDetails] = useState({});
   const [detailLoadingNo, setDetailLoadingNo] = useState("");
   const [detailError, setDetailError] = useState("");
+  const [claimingOrderNo, setClaimingOrderNo] = useState("");
+  const [claimErrors, setClaimErrors] = useState({});
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -125,6 +130,23 @@ export default function OrderLookupPage() {
       setDetailError(err?.message || t.detailError);
     } finally {
       setDetailLoadingNo("");
+    }
+  }
+
+  async function claimPaid(orderNo) {
+    setClaimingOrderNo(orderNo);
+    setClaimErrors((prev) => ({ ...prev, [orderNo]: "" }));
+
+    try {
+      const updated = await claimPublicStorefrontOrderPaidApi(orderNo, { phone: phone.trim() });
+      setOrderDetails((prev) => ({ ...prev, [orderNo]: updated }));
+    } catch (err) {
+      setClaimErrors((prev) => ({
+        ...prev,
+        [orderNo]: err?.message || (lang === "en" ? "Failed to report payment. Please try again." : "Gửi thông báo thất bại. Vui lòng thử lại."),
+      }));
+    } finally {
+      setClaimingOrderNo("");
     }
   }
 
@@ -261,8 +283,20 @@ export default function OrderLookupPage() {
                           <div className="mt-4 text-sm font-black text-slate-950">{t.items}</div>
                           <div className="mt-2 divide-y divide-slate-200 rounded-2xl bg-white">
                             {(detail.items || []).map((item) => (
-                              <div key={item.id || item.sku || item.name} className="flex items-center justify-between gap-3 p-3 text-sm">
-                                <div className="font-bold text-slate-700">{item.name || item.sku}</div>
+                              <div key={item.id || item.sku || item.name} className="flex items-center gap-3 p-3 text-sm">
+                                {item.image ? (
+                                  <img
+                                    src={item.image}
+                                    alt={item.name || item.sku}
+                                    loading="lazy"
+                                    className="h-12 w-12 shrink-0 rounded-xl bg-slate-100 object-cover"
+                                  />
+                                ) : (
+                                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-300">
+                                    <Package size={18} />
+                                  </div>
+                                )}
+                                <div className="min-w-0 flex-1 font-bold text-slate-700">{item.name || item.sku}</div>
                                 <div className="shrink-0 font-black text-slate-950">
                                   {t.quantity}: {item.quantity || 1}
                                 </div>
@@ -291,6 +325,10 @@ export default function OrderLookupPage() {
                               paymentStatus={detail.paymentStatus}
                               bankInfo={detail.bankInfo}
                               lang={lang}
+                              customerClaimedPaidAt={detail.customerClaimedPaidAt}
+                              onClaimPaid={() => claimPaid(order.orderNo)}
+                              claiming={claimingOrderNo === order.orderNo}
+                              claimError={claimErrors[order.orderNo]}
                             />
                           </div>
                         </>

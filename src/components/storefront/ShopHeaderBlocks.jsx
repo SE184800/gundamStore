@@ -112,7 +112,10 @@ function LiveFlashSaleCard({ item, campaign, lang = "vi", actions }) {
   const name = resolveText(product?.name, lang, i18n.t("product.defaultName"));
   const detailUrl = `/product/${product?.slug || product?.id || ""}`;
   const image = product?.cardUrl || product?.imageUrl || product?.images?.[0] || "/images/products/hi-nu.jpg";
-  const price = Number(item.flashPrice) || 0;
+  // GET /api/flash-sales/active returns the resolved sale price as
+  // item.finalPrice (computed server-side from discountType/discountValue at
+  // response time) — there is no item.flashPrice field on this endpoint.
+  const price = Number(item.finalPrice) || 0;
   const oldPrice = Number(product?.price || product?.compareAtPrice || 0);
   const discountPercent = oldPrice > price && price > 0 ? Math.round((1 - price / oldPrice) * 100) : 0;
   const isLive = campaign.status === "LIVE";

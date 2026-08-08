@@ -75,7 +75,7 @@ Chú thích cột **Frontend**: ✅ Có gọi · ❌ Không tìm thấy nơi g�
 #### `GET /api/products/:key`
 - **Mục đích:** Chi tiết 1 sản phẩm (id/slug/sku, có alias cho vài SKU đặc biệt).
 - **Path params:** `key` (string, required).
-- **Response:** `{ success, product: { ...full product, availability, preorder: { isPreorder, isOpen, eta, depositRate, canOrder, slotRemaining } } }`. 404 nếu không thấy.
+- **Response:** `{ success, product: { ...full product, availability, preorder: { isPreorder, isOpen, eta, depositType, depositValue, depositRate, canOrder, slotRemaining } } }`. `depositType`/`depositValue` là cấu hình cọc thật của sản phẩm (`PERCENT` 1-100 hoặc `FIXED_AMOUNT` VNĐ/đơn vị) — **không còn là tỷ lệ cố định 30% dùng chung cho mọi sản phẩm**. `depositRate` (0-1) chỉ có giá trị khi `depositType=PERCENT`, giữ lại cho code cũ đọc dạng phân số; là `null` khi `FIXED_AMOUNT`. 404 nếu không thấy.
 - **Auth:** `optionalAuth` (không bắt buộc; nếu có token thì không tính view-count cho admin).
 - **Frontend:** ✅ `StorefrontProductApiService.js`.
 
@@ -98,10 +98,11 @@ Chú thích cột **Frontend**: ✅ Có gọi · ❌ Không tìm thấy nơi g�
 ### 1.3 Đơn hàng
 
 #### `POST /api/orders/`
-- **Mục đích:** Tạo đơn hàng (checkout), hỗ trợ cả đơn thường và pre-order (cọc 30%).
-- **Body chính:** `orderType` (enum `normal|preorder`, optional), `customerName` (string, **required**, 2–120), `customerPhone` (string, **required**, đúng định dạng SĐT VN), `customerAddress` (string, **required**, 5–255), `customerEmail` (optional), `shippingFee`/`discount`/`shippingDiscount` (int ≥0, optional), `voucherCode` (optional), `paymentMethod` (enum `COD|BANK_TRANSFER|CARD|WALLET`, mặc định `COD`), `note` (string ≤500, optional — ghi chú đơn hàng), `preferredDeliveryTime` (string ≤120, optional — thời gian giao hàng mong muốn, ví dụ "Giờ hành chính", "Sau 18h"), `items` (array, **required**, ≥1 phần tử — mỗi item: `productId/sku/slug/variantId/variantSku`, `quantity` (int 1–99, required), `expectedPrice` (optional, chỉ để check giá đổi), `flashSaleItemId` (optional — xem ghi chú Flash Sale bên dưới)).
+- **Mục đích:** Tạo đơn hàng (checkout), hỗ trợ cả đơn thường, đơn pre-order thuần, và đơn **trộn** (vừa có sản phẩm pre-order vừa có sản phẩm thường trong cùng 1 đơn).
+- **Body chính:** `orderType` (enum `normal|preorder`, optional — **chỉ mang tính tham khảo/hiển thị, server KHÔNG dùng field này để quyết định tính cọc**, xem ghi chú Pre-Order bên dưới), `customerName` (string, **required**, 2–120), `customerPhone` (string, **required**, đúng định dạng SĐT VN), `customerAddress` (string, **required**, 5–255), `customerEmail` (optional), `shippingFee`/`discount`/`shippingDiscount` (int ≥0, optional), `voucherCode` (optional), `paymentMethod` (enum `COD|BANK_TRANSFER|CARD|WALLET`, mặc định `COD`), `note` (string ≤500, optional — ghi chú đơn hàng), `preferredDeliveryTime` (string ≤120, optional — thời gian giao hàng mong muốn, ví dụ "Giờ hành chính", "Sau 18h"), `items` (array, **required**, ≥1 phần tử — mỗi item: `productId/sku/slug/variantId/variantSku`, `quantity` (int 1–99, required), `expectedPrice` (optional, chỉ để check giá đổi, bị bỏ qua với item pre-order), `flashSaleItemId` (optional — xem ghi chú Flash Sale bên dưới)). `body.preorder.{depositRate,fullAmount,depositAmount,remainingAmount}` (nếu client gửi) **bị bỏ qua hoàn toàn** — server luôn tự tính lại 100% từ dữ liệu sản phẩm thật trong DB, không tin số liệu client gửi lên; chỉ `preorder.eta` được đọc.
+- **Pre-Order / tính cọc (per-item, không còn tỷ lệ 30% cố định):** mỗi item được server tự phân loại preorder hay không dựa vào **`Product.status` thật tại thời điểm tạo đơn** (`preorder`/`comingsoon`) — không tin `body.orderType` của client. Với item preorder, `depositAmount` của item = tính theo `depositType`/`depositValue` của **đúng sản phẩm đó** (`PERCENT`: giá × số lượng × depositValue/100, làm tròn lên 1.000đ; `FIXED_AMOUNT`: depositValue × số lượng), rồi cộng dồn thành `order.depositAmount`. Item không phải preorder (hàng thường) luôn tính đủ 100% giá trị, kể cả khi nằm chung đơn với item preorder — không bị "ăn theo" cọc. `order.remainingAmount` = tổng giá trị các item preorder trừ đi tổng cọc đã thu (hàng thường không có phần "còn lại" vì đã trả đủ). Đơn thuần pre-order (không có item thường nào) giữ hành vi cũ: `shippingFee` = 0 lúc tạo đơn (thu sau ở bước thu nốt); đơn có ít nhất 1 item thường thì `shippingFee` được thu ngay như đơn thường. Voucher bị tắt cho toàn đơn nếu có ít nhất 1 item preorder (không hỗ trợ áp voucher từng phần cho đơn trộn).
 - **Flash Sale (server tự re-check, không tin giá/trạng thái từ client):** nếu item gửi kèm `flashSaleItemId`, server tra lại `FlashSaleItem` + campaign và tính lại trạng thái `LIVE/UPCOMING/ENDED` **tại đúng thời điểm tạo đơn, theo giờ Asia/Ho_Chi_Minh thật của server** (`utils/vnTime.js`) — không dùng giờ/trạng thái client gửi lên. Nếu campaign không còn `LIVE` (đã kết thúc khung giờ hôm nay, chưa tới giờ, bị tắt `active`, hoặc `flashSaleItemId` không khớp sản phẩm) → từ chối với `PRICE_CHANGED`, giá không âm thầm bị đổi. Nếu `FlashSaleItem` có `dailyStockLimit` → tổng số lượng đã bán hôm nay (tính động từ `OrderItem`, đơn không `CANCELLED`) + số lượng đang mua vượt hạn mức → từ chối với `OUT_OF_STOCK`.
-- **Response:** 201 `{ success, order: { orderNo, status, statusLabel, paymentStatus, note, preferredDeliveryTime, items[], payments[], shipments[], ... } }` — **không** lộ `id` nội bộ, chỉ dùng `orderNo`. Lỗi có `code`: `PRODUCT_NOT_FOUND`, `OUT_OF_STOCK`, `INSUFFICIENT_STOCK`, `PREORDER_CLOSED`, `PRICE_CHANGED`, v.v.
+- **Response:** 201 `{ success, order: { orderNo, status, statusLabel, paymentStatus, note, preferredDeliveryTime, customerClaimedPaidAt, items[], payments[], shipments[], preorder: { eta, depositType, depositValue, depositRate, fullAmount, depositAmount, remainingAmount } | null, ... } }` — **không** lộ `id` nội bộ, chỉ dùng `orderNo`. Mỗi phần tử `items[]` có thêm `image` (URL ảnh đại diện sản phẩm — **không phải snapshot**, lấy động từ ảnh hiện tại của `Product` qua quan hệ tại thời điểm trả response, `null` nếu sản phẩm không còn ảnh nào). `order.orderType` được server tự suy ra ("preorder" nếu có ít nhất 1 item preorder, ngược lại "normal") — không lấy nguyên `body.orderType`. Lỗi có `code`: `PRODUCT_NOT_FOUND`, `OUT_OF_STOCK`, `INSUFFICIENT_STOCK`, `PREORDER_CLOSED`, `PRICE_CHANGED`, v.v.
 - **Auth:** Public + `optionalAuth` (khách vãng lai được, có token thì gắn `customerId`). Có rate-limit + chặn submit trùng.
 - **Frontend:** ✅ `StorefrontOrderApiService.js`.
 
@@ -113,9 +114,17 @@ Chú thích cột **Frontend**: ✅ Có gọi · ❌ Không tìm thấy nơi g�
 #### `GET /api/orders/my/:id`
 - **Mục đích:** Chi tiết 1 đơn hàng của khách đang đăng nhập.
 - **Path params:** `id` (string — `Order.id` hoặc `orderNo`).
-- **Response:** raw `Order` (kèm `note`, `preferredDeliveryTime`, `shippingLabelPrintedAt`, `items[]`, `payments[]`, `shipments[]`, `complaintTickets[]`).
+- **Response:** raw `Order` (kèm `note`, `preferredDeliveryTime`, `shippingLabelPrintedAt`, `customerClaimedPaidAt`, `items[]`, `payments[]`, `shipments[]`, `complaintTickets[]`), cộng thêm 2 field tiện dụng `depositAmount`/`remainingAmount` (alias của `preorderDepositAmount`/`preorderRemainingAmount`, `0` nếu đơn không có item preorder nào). Mỗi phần tử `items[]` có thêm `image` (URL ảnh đại diện sản phẩm — lấy động qua quan hệ `Product` hiện tại, không phải snapshot lúc đặt hàng vì hệ thống chưa lưu snapshot; `null` nếu sản phẩm hết ảnh). Nếu phương thức thanh toán của đơn (`payments[0].method`) là `BANK_TRANSFER`, có thêm `bankInfo: { bankName, accountNo, accountName, amount, transferContent, qrCodeUrl }` — tính động, không lưu DB. `qrCodeUrl` trỏ tới ảnh QR tĩnh (VietQR "tài khoản + số tiền", không phải QR động có webhook xác nhận) — admin vẫn phải xác nhận thanh toán thủ công qua `PATCH /api/orders/admin/:id/payment`.
 - **Auth:** `requireAuth`.
 - **Frontend:** ✅ `StorefrontOrderApiService.js`.
+
+#### `PATCH /api/orders/my/:id/claim-paid`
+- **Mục đích:** Khách đã đăng nhập bấm "Tôi đã chuyển khoản" — **chỉ ghi nhận thời điểm khách báo đã chuyển khoản, KHÔNG đổi `paymentStatus`, KHÔNG đổi `status`**. Việc xác nhận thanh toán thật vẫn chỉ do Admin thực hiện thủ công qua `PATCH /api/orders/admin/:id/payment`, sau khi tự kiểm tra sao kê ngân hàng — nguyên tắc an toàn bắt buộc, tránh khách tự khai đã trả tiền để đơn được đóng gói/giao hàng.
+- **Path params:** `id` (string — `Order.id` hoặc `orderNo`).
+- **Body:** không cần (idempotent — gọi lại nhiều lần chỉ cập nhật `customerClaimedPaidAt` về timestamp mới nhất, không lỗi, không tạo bản ghi trùng).
+- **Response:** `{ success, message, order }` (cùng shape với `GET /api/orders/my/:id`). 404 nếu không tìm thấy đơn của khách; 409 nếu đơn đã `CANCELLED`/`REFUNDED`.
+- **Auth:** `requireAuth`.
+- **Frontend:** ❌ Không tìm thấy nơi gọi (endpoint mới thêm, frontend chưa nối).
 
 #### `PATCH /api/orders/my/:id/cancel`
 - **Mục đích:** Khách tự hủy đơn (chỉ khi đơn còn `PLACED`/`CONFIRMED`; hoàn kho tự động).
@@ -129,14 +138,22 @@ Chú thích cột **Frontend**: ✅ Có gọi · ❌ Không tìm thấy nơi g�
 - **Mục đích:** Tra cứu đơn hàng công khai cho khách vãng lai bằng `orderNo` + phone hoặc email.
 - **Path params:** `id` (string — chính là `orderNo`).
 - **Query:** `phone` (string, cần 1 trong 2), `email` (string).
-- **Response:** `{ success, order: {...public view...} }`. 404 nếu không khớp (kể cả khi đơn tồn tại nhưng SĐT/email sai — cố tình không lộ thông tin).
+- **Response:** `{ success, order: {...public view...} }`, có `customerClaimedPaidAt` và mỗi `items[]` có `image` (xem mô tả ở `GET /api/orders/my/:id`). 404 nếu không khớp (kể cả khi đơn tồn tại nhưng SĐT/email sai — cố tình không lộ thông tin). Nếu `payments[0].method` là `BANK_TRANSFER`, order có thêm `bankInfo` (xem mô tả ở `GET /api/orders/my/:id` — cùng field, cùng cơ chế tính động).
 - **Auth:** Public (có rate-limit).
 - **Frontend:** ✅ `OrderService.js`, `StorefrontOrderLookupApiService.js`.
+
+#### `PATCH /api/orders/public/:id/claim-paid`
+- **Mục đích:** Biến thể khách vãng lai của `PATCH /api/orders/my/:id/claim-paid` — cùng nguyên tắc an toàn: **không bao giờ tự đổi `paymentStatus`/`status`**, chỉ ghi timestamp để Admin ưu tiên kiểm tra.
+- **Path params:** `id` (string — chính là `orderNo`).
+- **Query hoặc Body:** `phone` hoặc `email` (cần 1 trong 2, xác thực chủ đơn giống hệt `GET /api/orders/public/:id` — sai cặp SĐT/email trả 404 giống "không tìm thấy", không lộ thông tin đơn có tồn tại hay không).
+- **Response:** `{ success, message, order }` (public view, cùng shape `GET /api/orders/public/:id`). 400 nếu thiếu `orderNo`/phone-email; 404 nếu không khớp; 409 nếu đơn đã `CANCELLED`/`REFUNDED`.
+- **Auth:** Public (dùng chung rate-limit với `GET /api/orders/public/:id`).
+- **Frontend:** ❌ Không tìm thấy nơi gọi (endpoint mới thêm, frontend chưa nối).
 
 #### `GET /api/orders/public/by-phone`
 - **Mục đích:** Tra cứu **danh sách** đơn hàng công khai chỉ bằng số điện thoại — không cần mã đơn. **Quyết định có chủ đích đánh đổi bảo mật lấy tiện lợi** (đã xác nhận chấp nhận rủi ro dò quét theo số điện thoại; không có OTP/xác minh thêm), giảm thiểu bằng rate-limit riêng nghiêm hơn `GET /api/orders/public/:id`.
 - **Query:** `phone` (string, **required** — được chuẩn hoá: trim, bỏ ký tự đặc biệt, hỗ trợ dạng `+84`/`84`/`0` đầu số trước khi so khớp).
-- **Response:** `{ success, orders: [{ orderNo, createdAt, status, statusLabel, total, itemCount }] }` — bản rút gọn, **không** trả `items[]`/`payments[]`/`shipments[]` chi tiết để tránh response nặng khi khách có nhiều đơn (tối đa 50 đơn mới nhất). 400 nếu thiếu `phone` hoặc SĐT không hợp lệ. **Không** trả 404 — SĐT hợp lệ nhưng không có đơn thì trả `orders: []`.
+- **Response:** `{ success, orders: [{ orderNo, createdAt, status, statusLabel, total, itemCount, items: [{ productId, name, quantity, image }], customerClaimedPaidAt }] }` — bản rút gọn (không có sku/giá/payments/shipments chi tiết) để tránh response nặng khi khách có nhiều đơn (tối đa 50 đơn mới nhất); `items[]` ở đây chỉ để hiển thị ảnh thumbnail preview cho danh sách, không phải full item view. Mỗi đơn có thêm `bankInfo` (xem mô tả ở `GET /api/orders/my/:id`) nếu phương thức thanh toán của đơn đó là `BANK_TRANSFER`. 400 nếu thiếu `phone` hoặc SĐT không hợp lệ. **Không** trả 404 — SĐT hợp lệ nhưng không có đơn thì trả `orders: []`.
 - **Auth:** Public (rate-limit riêng, nghiêm hơn: 20 request / 15 phút / IP).
 - **Frontend:** ❌ Không tìm thấy nơi gọi (endpoint mới thêm, frontend chưa nối).
 
@@ -328,7 +345,8 @@ Chú thích cột **Frontend**: ✅ Có gọi · ❌ Không tìm thấy nơi g�
 
 #### `GET /api/flash-sales/active`
 - **Mục đích:** Toàn bộ campaign đang `UPCOMING` hoặc `LIVE` tại thời điểm hiện tại (giờ VN), kèm items + giá Flash Sale.
-- **Response:** `{ success, campaigns: [{ id, nameVi, nameEn, dateFrom, dateTo, dailyStartTime, dailyEndTime, status:"UPCOMING"|"LIVE", countdownTarget: ISOString, items: [{ id, productId, flashPrice, dailyStockLimit, soldToday, product:{...} }] }] }`.
+- **Response:** `{ success, campaigns: [{ id, nameVi, nameEn, dateFrom, dateTo, dailyStartTime, dailyEndTime, status:"UPCOMING"|"LIVE", countdownTarget: ISOString, items: [{ id, productId, discountType, discountValue, finalPrice, dailyStockLimit, soldToday, product:{...} }] }] }`.
+  - `discountType`/`discountValue`: cấu hình gốc của Flash Sale item (`FIXED_PRICE`/`PERCENT`/`AMOUNT` — xem mục 2.26). `finalPrice`: giá bán thực tế đã tính sẵn từ `discountType`+`discountValue`+giá gốc sản phẩm **tại đúng thời điểm trả response** (`services/flashSalePricing.js`, hàm `computeFlashSalePrice`) — không lưu cứng, nên `PERCENT`/`AMOUNT` tự động đổi theo nếu giá gốc sản phẩm thay đổi, riêng `FIXED_PRICE` luôn giữ nguyên `discountValue` bất kể giá gốc.
   - `countdownTarget`: nếu `UPCOMING` → thời điểm `dailyStartTime` hôm nay (giờ VN, dạng ISO instant) để FE đếm ngược tới giờ mở; nếu `LIVE` → thời điểm `dailyEndTime` hôm nay để FE đếm ngược tới giờ đóng.
   - `soldToday`: chỉ tính (query động từ `OrderItem`, tổng `quantity` các đơn **không** `CANCELLED` tạo trong ngày hôm nay theo giờ VN) khi item có `dailyStockLimit`; ngược lại trả `null`. Không có counter lưu sẵn — tự khớp với đơn hàng thật, không cần job reset lúc nửa đêm.
   - Trả mảng rỗng nếu không có campaign nào đang chạy/sắp chạy.
@@ -356,7 +374,8 @@ Chú thích cột **Frontend**: ✅ Có gọi · ❌ Không tìm thấy nơi g�
 
 #### `POST /api/products/admin`
 - **Mục đích:** Tạo sản phẩm mới (kèm ảnh, biến thể).
-- **Body chính:** `sku` (**required**), `slug` (tự sinh nếu thiếu), `nameVi` (**required**), `price/oldPrice/stock/sold` (number, optional), `status`/`active` (optional), `specs/boxItems` (JSON, optional), `media`/`images` (optional), `categoryId/supplierId` (optional), `preorderOpenAt/CloseAt/SlotLimit` (optional), `variants[]` (mỗi item: `sku`+`nameVi` **required**, còn lại optional).
+- **Body chính:** `sku` (**required**), `slug` (tự sinh nếu thiếu), `nameVi` (**required**), `price/oldPrice/stock/sold` (number, optional), `status`/`active` (optional), `specs/boxItems` (JSON, optional), `media`/`images` (optional), `categoryId/supplierId` (optional), `preorderOpenAt/CloseAt/SlotLimit` (optional), `depositType` (enum `PERCENT|FIXED_AMOUNT`), `depositValue` (number), `variants[]` (mỗi item: `sku`+`nameVi` **required**, còn lại optional).
+- **`depositType`/`depositValue` (cấu hình cọc, chỉ áp dụng khi `status="preorder"`/`"comingsoon"`):** `PERCENT` → `depositValue` 1-100 (100 = thu đủ, không cọc riêng); `FIXED_AMOUNT` → `depositValue` là số tiền cọc cố định mỗi đơn vị sản phẩm (VNĐ, phải > 0 và **nhỏ hơn** giá bán `price`). Nếu sản phẩm là preorder mà bỏ trống cả 2 field → server tự mặc định `PERCENT=100` (thu đủ) thay vì lỗi hoặc để trống — tránh vỡ tính toán cọc ở bước tạo đơn. Nếu chỉ gửi 1 trong 2 field (thiếu field còn lại) hoặc giá trị sai định dạng/khoảng cho phép → 400. Sản phẩm không phải preorder thì không bắt buộc 2 field này. Dùng ở `POST /api/orders/` để tính `depositAmount` per-item — xem ghi chú ở mục đó.
 - **Response:** 201 `{ success, product }`. Có "publish guard": thiếu giá/tồn kho hợp lệ → tự ép `active=false, status="draft"`.
 - **Auth:** `products:update`. **Frontend:** ✅ `AdminProductApiService.js`.
 
@@ -555,8 +574,8 @@ Chú thích cột **Frontend**: ✅ Có gọi · ❌ Không tìm thấy nơi g�
 
 #### `GET /api/orders/admin`
 - **Mục đích:** Danh sách đơn hàng cho admin — tìm kiếm/lọc/phân trang.
-- **Query:** `page`, `limit` (1–200, mặc định 50), `q` (≤120), `status` (`attention`|`all`|status cụ thể; `attention` = PLACED, hoặc UNPAID, hoặc SHIPPING chưa có tracking).
-- **Response (không phân trang):** `{ success, orders[] }` (tối đa 100 mới nhất). Có `meta` khi phân trang.
+- **Query:** `page`, `limit` (1–200, mặc định 50), `q` (≤120), `status` (`attention`|`claimed_paid`|`all`|status cụ thể; `attention` = PLACED, hoặc UNPAID, hoặc SHIPPING chưa có tracking; `claimed_paid` = đơn có `customerClaimedPaidAt` khác null, để ưu tiên kiểm tra các đơn khách báo đã chuyển khoản), `sort` (`claimed_paid` để sắp theo `customerClaimedPaidAt` giảm dần — đơn báo gần nhất lên đầu, đơn chưa từng báo xuống cuối; mặc định sắp theo `createdAt` giảm dần). `status`/`sort` chỉ áp dụng khi có `page` (giữ tương thích ngược, giống pattern `listAdminProducts`).
+- **Response (không phân trang):** `{ success, orders[] }` (tối đa 100 mới nhất). Có `meta` khi phân trang. Mỗi order có thêm `depositAmount`/`remainingAmount` (alias `preorderDepositAmount`/`preorderRemainingAmount`, `0` nếu không phải đơn preorder), `customerClaimedPaidAt` (raw field, `null` nếu khách chưa bấm "Tôi đã chuyển khoản"), và mỗi `items[]` có thêm `image` (xem mô tả ở mục 1.3 `GET /api/orders/my/:id`) — không có endpoint `GET /api/orders/admin/:id` riêng, chi tiết 1 đơn admin lấy từ danh sách này.
 - **Auth:** `orders:read`. **Frontend:** ✅ `AdminOrderApiService.js`.
 
 #### `PATCH /api/orders/admin/:id/status`
@@ -573,9 +592,9 @@ Chú thích cột **Frontend**: ✅ Có gọi · ❌ Không tìm thấy nơi g�
 - **Auth:** `orders:update`. **Frontend:** ✅ `AdminOrderApiService.js`.
 
 #### `PATCH /api/orders/admin/:id/preorder/collect-remaining`
-- **Mục đích:** Thu 70% tiền còn lại của đơn pre-order sau khi đã thu cọc 30%. Idempotent qua `preorderRemainingCollectedAt`.
+- **Mục đích:** Thu phần tiền còn lại của đơn pre-order sau khi đã thu cọc lúc tạo đơn. Số tiền thu **luôn đọc đúng `order.preorderRemainingAmount`/`preorderFullAmount` đã snapshot sẵn từ lúc tạo đơn** (per-item, xem `POST /api/orders/`) — không tự tính lại theo bất kỳ tỷ lệ cố định nào (không còn giả định 70%/30%). Idempotent qua `preorderRemainingCollectedAt`.
 - **Path params:** `id` (Order.id). **Body:** `method`/`reference`/`note` (optional).
-- **Response:** `{ success, order: {..., paymentStatus:"PAID"} }`. 400 nếu không phải đơn preorder hoặc không còn tiền cần thu; 409 nếu đã thu trước đó.
+- **Response:** `{ success, order: {..., depositAmount, remainingAmount, paymentStatus:"PAID"} }` — `order.total` sau khi gọi = giá trị đầy đủ của đơn (kể cả các item hàng thường trong đơn trộn), không chỉ riêng phần preorder. 400 nếu không phải đơn preorder hoặc không còn tiền cần thu; 409 nếu đã thu trước đó.
 - **Auth:** `orders:update`. **Frontend:** ❌ Không tìm thấy nơi gọi.
 
 #### `PATCH /api/orders/admin/:id/shipping`
@@ -1023,7 +1042,7 @@ Chú thích cột **Frontend**: ✅ Có gọi · ❌ Không tìm thấy nơi g�
 
 #### `GET /api/admin/flash-sales`
 - **Mục đích:** Danh sách toàn bộ campaign (mọi trạng thái), kèm `status`/`countdownTarget` tính sẵn và items.
-- **Response:** `{ success, campaigns[] }` (tối đa 300, campaign active trước).
+- **Response:** `{ success, campaigns[] }` (tối đa 300, campaign active trước). Mỗi item trong `campaign.items[]` có `discountType`, `discountValue`, và `finalPrice` (giá bán thực tế, tính động từ giá gốc sản phẩm hiện tại — xem chi tiết ở `PUT .../:id/items` bên dưới).
 - **Auth:** `products:read`.
 
 #### `POST /api/admin/flash-sales`
@@ -1042,8 +1061,12 @@ Chú thích cột **Frontend**: ✅ Có gọi · ❌ Không tìm thấy nơi g�
 - **Auth:** `products:update`.
 
 #### `PUT /api/admin/flash-sales/:id/items`
-- **Mục đích:** Gán lại **toàn bộ** danh sách sản phẩm + giá Flash Sale cho campaign (thay thế hoàn toàn danh sách cũ), giống pattern `PUT category-groups/:id/categories`.
-- **Body:** `items: [{ productId (**required**), flashPrice (**required**, >0), dailyStockLimit (optional, null = không giới hạn) }]`.
+- **Mục đích:** Gán lại **toàn bộ** danh sách sản phẩm + kiểu giảm giá Flash Sale cho campaign (thay thế hoàn toàn danh sách cũ), giống pattern `PUT category-groups/:id/categories`.
+- **Body:** `items: [{ productId (**required**), discountType (**required**, enum `FIXED_PRICE|PERCENT|AMOUNT`), discountValue (**required**, number), dailyStockLimit (optional, null = không giới hạn) }]`.
+  - `discountType=FIXED_PRICE`: `discountValue` là **giá bán cố định** (VND), phải > 0, không đổi theo giá gốc sản phẩm.
+  - `discountType=PERCENT`: `discountValue` là **% giảm** trên giá gốc, phải trong khoảng 1-100.
+  - `discountType=AMOUNT`: `discountValue` là **số tiền giảm cố định** (VND) trên giá gốc, phải > 0 và **nhỏ hơn giá gốc hiện tại** của sản phẩm (chặn giá bán âm).
+  - Giá bán cuối cùng (`finalPrice`) **không lưu cứng** trong DB — tính động mỗi lần đọc từ `discountType`+`discountValue`+giá gốc sản phẩm tại thời điểm đó (`services/flashSalePricing.js`), nên `PERCENT`/`AMOUNT` tự động cập nhật nếu giá gốc đổi; response GET/PUT của campaign vẫn trả kèm `finalPrice` đã tính sẵn để FE không phải tự tính lại.
 - **Validate:** mọi `productId` phải tồn tại và `active=true`; nếu campaign đang `active`, từ chối (409) khi có sản phẩm trùng với campaign `active` khác có khung ngày+giờ trùng nhau — trả kèm `detail: {conflictingCampaignId, conflictingCampaignName, productIds}`.
 - **Auth:** `products:update`.
 

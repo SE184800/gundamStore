@@ -1,7 +1,21 @@
 import { useState } from "react";
-import { Check, CheckCircle2, Copy, QrCode } from "lucide-react";
+import { Check, CheckCircle2, Clock, Copy, QrCode } from "lucide-react";
+import useContactChannels from "../../hooks/useContactChannels";
 
 const money = (n) => (Number(n) || 0).toLocaleString("vi-VN") + "đ";
+
+function formatClaimedAt(value, lang = "vi") {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+
+  return new Intl.DateTimeFormat(lang === "en" ? "en-GB" : "vi-VN", {
+    hour: "2-digit",
+    minute: "2-digit",
+    day: "2-digit",
+    month: "2-digit",
+  }).format(date);
+}
 
 function CopyRow({ label, value, lang }) {
   const [copied, setCopied] = useState(false);
@@ -52,7 +66,14 @@ export default function BankTransferInfo({
   lang = "vi",
   compact = false,
   showPaidBadge = true,
+  customerClaimedPaidAt = null,
+  onClaimPaid = null,
+  claiming = false,
+  claimError = "",
+  successMessage = "",
 }) {
+  const { zaloUrl, facebookUrl } = useContactChannels();
+
   if (paymentMethod !== "BANK_TRANSFER") return null;
 
   if (paymentStatus === "Paid") {
@@ -72,10 +93,17 @@ export default function BankTransferInfo({
 
   return (
     <div className={`rounded-2xl border border-blue-100 bg-blue-50/60 ${compact ? "p-4" : "p-6"}`}>
-      <h3 className={`flex items-center gap-2 font-black text-blue-900 ${compact ? "text-sm" : "text-lg"}`}>
-        <QrCode size={compact ? 16 : 20} />
-        {lang === "en" ? "Bank transfer" : "Chuyển khoản ngân hàng"}
-      </h3>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h3 className={`flex items-center gap-2 font-black text-blue-900 ${compact ? "text-sm" : "text-lg"}`}>
+          <QrCode size={compact ? 16 : 20} />
+          {lang === "en" ? "Bank transfer" : "Chuyển khoản ngân hàng"}
+        </h3>
+
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-xs font-black text-amber-800">
+          <Clock size={13} />
+          {lang === "en" ? "Awaiting payment confirmation" : "Chờ xác nhận thanh toán"}
+        </span>
+      </div>
 
       <div className={`mt-4 flex flex-col gap-4 ${compact ? "" : "sm:flex-row sm:items-start"}`}>
         {bankInfo.qrCodeUrl && (
@@ -104,6 +132,67 @@ export default function BankTransferInfo({
           ? "Please transfer the exact amount and keep the transfer content unchanged so your order can be confirmed as quickly as possible."
           : "Vui lòng chuyển đúng số tiền và giữ nguyên nội dung chuyển khoản để đơn hàng được xác nhận nhanh nhất."}
       </p>
+
+      {(onClaimPaid || customerClaimedPaidAt) && (
+        <div className="mt-4 rounded-xl border border-emerald-100 bg-white p-4">
+          {customerClaimedPaidAt ? (
+            <>
+              <div className="flex items-center gap-2 text-sm font-black text-emerald-700">
+                <CheckCircle2 size={16} />
+                {lang === "en"
+                  ? `You reported this transfer at ${formatClaimedAt(customerClaimedPaidAt, lang)}`
+                  : `Bạn đã báo chuyển khoản lúc ${formatClaimedAt(customerClaimedPaidAt, lang)}`}
+              </div>
+
+              <p className="mt-2 text-sm font-bold leading-5 text-slate-600">
+                {successMessage ||
+                  (lang === "en"
+                    ? "Please send a screenshot of your transfer via the shop's Zalo/Messenger hotline for the fastest confirmation."
+                    : "Vui lòng gửi ảnh chụp màn hình chuyển khoản qua Hotline Zalo/Messenger của shop để được xác nhận nhanh nhất.")}
+              </p>
+
+              <div className="mt-3 flex flex-wrap gap-2">
+                {zaloUrl && (
+                  <a
+                    href={zaloUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-[#0068FF] px-4 py-2.5 text-xs font-black text-white hover:opacity-90"
+                  >
+                    Zalo: 0935950649
+                  </a>
+                )}
+                {facebookUrl && (
+                  <a
+                    href={facebookUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-[#0866FF] px-4 py-2.5 text-xs font-black text-white hover:opacity-90"
+                  >
+                    Messenger
+                  </a>
+                )}
+              </div>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={onClaimPaid}
+                disabled={claiming}
+                className="w-full rounded-xl bg-amber-600 py-3 text-sm font-black text-white hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {claiming
+                  ? (lang === "en" ? "Sending..." : "Đang gửi...")
+                  : (lang === "en" ? "I've made the transfer" : "Tôi đã chuyển khoản")}
+              </button>
+              {claimError && (
+                <div className="mt-2 text-xs font-bold text-red-600">{claimError}</div>
+              )}
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }

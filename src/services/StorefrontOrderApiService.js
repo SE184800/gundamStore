@@ -102,6 +102,25 @@ export async function getMyStorefrontOrderByIdApi(id = "") {
 }
 
 
+export async function claimMyStorefrontOrderPaidApi(id = "") {
+  const cleanId = String(id || "").trim();
+
+  if (!cleanId) {
+    throw new Error("Order id is required.");
+  }
+
+  const data = await apiRequest(`/api/orders/my/${encodeURIComponent(cleanId)}/claim-paid`, {
+    method: "PATCH",
+    token: getStoredAccountToken(),
+  });
+
+  if (!data?.success || !data.order) {
+    throw new Error(data?.message || "Cannot mark order as claimed paid.");
+  }
+
+  return mapBackendOrderForStorefront(data.order);
+}
+
 export async function cancelMyStorefrontOrderApi(id = "", payload = {}) {
   const cleanId = String(id || "").trim();
 

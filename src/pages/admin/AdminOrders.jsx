@@ -44,6 +44,19 @@ const STATUS_FLOW = [
   ORDER_STATUS.REFUNDED,
 ];
 
+function formatClaimedAt(value, lang = "vi") {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+
+  return new Intl.DateTimeFormat(lang === "en" ? "en-GB" : "vi-VN", {
+    hour: "2-digit",
+    minute: "2-digit",
+    day: "2-digit",
+    month: "2-digit",
+  }).format(date);
+}
+
 function getCopy(lang) {
   return {
     eyebrow: lang === "en" ? "Order Operation Center" : "Trung tâm vận hành đơn hàng",
@@ -60,6 +73,13 @@ function getCopy(lang) {
     shipping: lang === "en" ? "Shipping" : "Đang giao",
     preorderOrders: lang === "en" ? "Pre-orders" : "Đơn pre-order",
     attentionOrders: lang === "en" ? "Need action" : "Cần xử lý",
+    claimedPaidOrders: lang === "en" ? "Claimed paid" : "Khách báo đã CK",
+    claimedPaidBadge: (time) =>
+      lang === "en" ? `Customer reported paid at ${time}` : `Khách báo đã chuyển khoản lúc ${time}`,
+    claimedPaidDesc:
+      lang === "en"
+        ? "Orders where the customer reported a bank transfer — verify the bank statement before confirming payment."
+        : "Các đơn khách đã báo chuyển khoản — kiểm tra sao kê ngân hàng trước khi xác nhận thanh toán.",
     searchPlaceholder:
       lang === "en"
         ? "Search order ID, customer, phone, tracking..."
@@ -108,6 +128,7 @@ function buildStatusTabs(lang, t) {
   return [
     { key: "all", label: lang === "en" ? "All" : "Tất cả" },
     { key: "attention", label: t.attentionOrders },
+    { key: "claimed_paid", label: t.claimedPaidOrders },
     ...STATUS_FLOW.map((status) => ({
       key: status,
       label: getOrderStatusLabel(status, lang),
@@ -209,7 +230,7 @@ export default function AdminOrders() {
   const statusTabs = useMemo(() => buildStatusTabs(lang, t), [lang, t]);
 
   const filtered = useMemo(() => {
-    return orders.filter((order) => {
+    const rows = orders.filter((order) => {
       const text = [
         order.id,
         order.orderCode,
@@ -225,11 +246,21 @@ export default function AdminOrders() {
         .toLowerCase();
 
       if (tab === "attention" && !getNeedsAttention(order)) return false;
-      if (tab !== "all" && tab !== "attention" && order.status !== tab) return false;
+      if (tab === "claimed_paid" && !order.customerClaimedPaidAt) return false;
+      if (tab !== "all" && tab !== "attention" && tab !== "claimed_paid" && order.status !== tab) return false;
       if (query && !text.includes(query.toLowerCase())) return false;
 
       return true;
     });
+
+    // Đơn báo chuyển khoản gần nhất lên đầu để admin ưu tiên kiểm tra trước.
+    if (tab === "claimed_paid") {
+      return [...rows].sort(
+        (a, b) => new Date(b.customerClaimedPaidAt || 0) - new Date(a.customerClaimedPaidAt || 0)
+      );
+    }
+
+    return rows;
   }, [orders, query, tab]);
 
   const summary = useMemo(() => {
@@ -240,6 +271,7 @@ export default function AdminOrders() {
       shipping: orders.filter((order) => order.status === ORDER_STATUS.SHIPPING).length,
       preorder: orders.filter((order) => order.orderType === "preorder").length,
       attention: orders.filter(getNeedsAttention).length,
+      claimedPaid: orders.filter((order) => order.customerClaimedPaidAt).length,
     };
   }, [orders]);
 
@@ -632,6 +664,29 @@ export default function AdminOrders() {
         </div>
       </div>
 
+      {summary.claimedPaid > 0 && (
+        <div className="rounded-3xl border border-cyan-100 bg-cyan-50 p-5">
+          <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
+            <div>
+              <div className="text-sm font-black uppercase tracking-[0.18em] text-cyan-700">
+                {t.claimedPaidOrders}
+              </div>
+              <p className="mt-1 text-sm font-semibold text-cyan-800/80">
+                {t.claimedPaidDesc}
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setTab("claimed_paid")}
+              className="rounded-2xl bg-cyan-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-cyan-100"
+            >
+              Xem đơn khách báo CK: {summary.claimedPaid}
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="rounded-3xl bg-white p-4 shadow-sm">
         <div className="flex flex-wrap gap-2">
           {statusTabs.map((item) => (
@@ -752,6 +807,14 @@ export default function AdminOrders() {
                               ? (lang === "en" ? "Label printed" : "Đã in vận đơn")
                               : (lang === "en" ? "Label not printed" : "Chưa in vận đơn")}
                           </span>
+                          {order.customerClaimedPaidAt && (
+                            <span
+                              title={t.claimedPaidBadge(formatClaimedAt(order.customerClaimedPaidAt, lang))}
+                              className="inline-flex rounded-full bg-cyan-50 px-2 py-1 text-[10px] font-black text-cyan-700"
+                            >
+                              {t.claimedPaidBadge(formatClaimedAt(order.customerClaimedPaidAt, lang))}
+                            </span>
+                          )}
                         </div>
                       </td>
 

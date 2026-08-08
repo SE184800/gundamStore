@@ -3,9 +3,12 @@ import { Link, useParams } from "react-router-dom";
 import { CheckCircle2, PackageSearch, Search } from "lucide-react";
 import { getOrderById } from "../../services/OrderService";
 import {
+  claimPublicStorefrontOrderPaidApi,
   getOrderSuccessSnapshot,
   getStorefrontOrderByIdFromApi,
 } from "../../services/StorefrontOrderLookupApiService";
+import { claimMyStorefrontOrderPaidApi } from "../../services/StorefrontOrderApiService";
+import { hasAccountToken } from "../../services/AccountApiService";
 import PageShell from "../../components/common/PageShell";
 import BankTransferInfo from "../../components/common/BankTransferInfo";
 import { useLang } from "../../store/CmsStore";
@@ -36,6 +39,14 @@ function getCopy(lang) {
     detail: lang === "en" ? "View order detail" : "Xem chi tiết đơn",
     lookup: lang === "en" ? "Lookup order" : "Tra cứu đơn",
     continueShopping: lang === "en" ? "Continue shopping" : "Tiếp tục mua hàng",
+    claimedSuccessMessage:
+      lang === "en"
+        ? "Order placed successfully! Please send a screenshot of your transfer via the shop's Zalo/Messenger hotline for the fastest confirmation."
+        : "Đặt hàng thành công! Vui lòng gửi ảnh chụp màn hình chuyển khoản qua Hotline Zalo/Messenger của shop để được xác nhận nhanh nhất.",
+    claimFailed:
+      lang === "en"
+        ? "Failed to report payment. Please try again."
+        : "Gửi thông báo thất bại. Vui lòng thử lại.",
   };
 }
 
@@ -49,6 +60,8 @@ export default function OrderSuccessPage() {
   const [backendOrder, setBackendOrder] = useState(successSnapshot?.order || null);
   const [loading, setLoading] = useState(Boolean(successSnapshot?.lookup?.phone || successSnapshot?.lookup?.email));
   const [apiError, setApiError] = useState("");
+  const [claiming, setClaiming] = useState(false);
+  const [claimError, setClaimError] = useState("");
 
   const localOrder = getOrderById(id);
   const order = backendOrder || successSnapshot?.order || localOrder;
@@ -89,6 +102,32 @@ export default function OrderSuccessPage() {
       alive = false;
     };
   }, [id]);
+
+  const lookupContact = successSnapshot?.lookup || {};
+  const canClaimPaid =
+    order?.paymentMethod === "BANK_TRANSFER" &&
+    order?.paymentStatus !== "Paid" &&
+    (hasAccountToken() || lookupContact.phone || lookupContact.email);
+
+  async function handleClaimPaid() {
+    if (!order) return;
+
+    setClaiming(true);
+    setClaimError("");
+
+    try {
+      const orderKey = order.orderNo || order.orderCode || id;
+      const updated = hasAccountToken()
+        ? await claimMyStorefrontOrderPaidApi(orderKey)
+        : await claimPublicStorefrontOrderPaidApi(orderKey, lookupContact);
+
+      setBackendOrder(updated);
+    } catch (error) {
+      setClaimError(error?.message || t.claimFailed);
+    } finally {
+      setClaiming(false);
+    }
+  }
 
   return (
     <PageShell>
@@ -160,6 +199,11 @@ export default function OrderSuccessPage() {
                   paymentStatus={order.paymentStatus}
                   bankInfo={order.bankInfo}
                   lang={lang}
+                  customerClaimedPaidAt={order.customerClaimedPaidAt}
+                  onClaimPaid={canClaimPaid ? handleClaimPaid : null}
+                  claiming={claiming}
+                  claimError={claimError}
+                  successMessage={t.claimedSuccessMessage}
                 />
               </div>
             </div>

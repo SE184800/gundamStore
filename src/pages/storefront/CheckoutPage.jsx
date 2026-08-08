@@ -685,7 +685,7 @@ export default function CheckoutPage() {
       clearCartItems(draft.items);
       clearCheckoutDraft();
 
-      navigate("/");
+      navigate(`/order-success/${encodeURIComponent(mappedOrder.orderCode)}`);
     } catch (error) {
       console.error("Create order API failed", error);
 
@@ -995,7 +995,10 @@ export default function CheckoutPage() {
                 </h2>
 
                 <div className="mt-5 grid gap-4 md:grid-cols-3">
-                  {PAYMENT_METHODS.map((method) => (
+                  {/* Card and e-wallet gateways aren't wired to a real payment
+                      provider yet — only offer methods the shop can actually
+                      fulfill (COD, bank transfer QR) at checkout. */}
+                  {PAYMENT_METHODS.filter((method) => ["COD", "BANK_TRANSFER"].includes(method.value)).map((method) => (
                     <label
                       key={method.value}
                       className={`cursor-pointer rounded-2xl border p-4 hover:border-blue-500 ${customer.paymentMethod === method.value ? "border-blue-500 ring-2 ring-blue-100" : ""

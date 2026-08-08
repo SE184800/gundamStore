@@ -31,7 +31,11 @@ import {
 } from "../../constants/orderConfig";
 import { getCart, saveCart } from "../../services/CartService";
 import PageShell from "../../components/common/PageShell";
-import { cancelMyStorefrontOrderApi, getMyStorefrontOrderByIdApi } from "../../services/StorefrontOrderApiService";
+import {
+  cancelMyStorefrontOrderApi,
+  claimMyStorefrontOrderPaidApi,
+  getMyStorefrontOrderByIdApi,
+} from "../../services/StorefrontOrderApiService";
 import { createStorefrontComplaintApi } from "../../services/StorefrontComplaintApiService";
 import BankTransferInfo from "../../components/common/BankTransferInfo";
 import { useLang } from "../../store/CmsStore";
@@ -313,6 +317,8 @@ export default function OrderDetailPage() {
   const [backendOrder, setBackendOrder] = useState(null);
   const [backendLoading, setBackendLoading] = useState(true);
   const [backendError, setBackendError] = useState("");
+  const [claiming, setClaiming] = useState(false);
+  const [claimError, setClaimError] = useState("");
 
   useEffect(() => {
     let alive = true;
@@ -379,6 +385,20 @@ export default function OrderDetailPage() {
   // số tiền còn lại thật (remainingAmount) làm điều kiện thay vì 1 sub-status chưa tồn tại.
   const balanceRequestEligible =
     order.orderType === "preorder" && Number(order.preorder?.remainingAmount) > 0;
+
+  async function handleClaimPaid() {
+    setClaiming(true);
+    setClaimError("");
+
+    try {
+      const updated = await claimMyStorefrontOrderPaidApi(order.orderNo || order.id);
+      setBackendOrder(updated);
+    } catch (error) {
+      setClaimError(error?.message || (lang === "en" ? "Failed to report payment. Please try again." : "Gửi thông báo thất bại. Vui lòng thử lại."));
+    } finally {
+      setClaiming(false);
+    }
+  }
 
   function buyAgain() {
     const cart = getCart();
@@ -683,6 +703,10 @@ export default function OrderDetailPage() {
                 paymentStatus={order.paymentStatus}
                 bankInfo={order.bankInfo}
                 lang={lang}
+                customerClaimedPaidAt={order.customerClaimedPaidAt}
+                onClaimPaid={handleClaimPaid}
+                claiming={claiming}
+                claimError={claimError}
               />
 
               {(order.supportTickets || []).length > 0 && (
