@@ -114,7 +114,7 @@ Chú thích cột **Frontend**: ✅ Có gọi · ❌ Không tìm thấy nơi g�
 #### `GET /api/orders/my/:id`
 - **Mục đích:** Chi tiết 1 đơn hàng của khách đang đăng nhập.
 - **Path params:** `id` (string — `Order.id` hoặc `orderNo`).
-- **Response:** raw `Order` (kèm `note`, `preferredDeliveryTime`, `shippingLabelPrintedAt`, `customerClaimedPaidAt`, `items[]`, `payments[]`, `shipments[]`, `complaintTickets[]`), cộng thêm 2 field tiện dụng `depositAmount`/`remainingAmount` (alias của `preorderDepositAmount`/`preorderRemainingAmount`, `0` nếu đơn không có item preorder nào). Mỗi phần tử `items[]` có thêm `image` (URL ảnh đại diện sản phẩm — lấy động qua quan hệ `Product` hiện tại, không phải snapshot lúc đặt hàng vì hệ thống chưa lưu snapshot; `null` nếu sản phẩm hết ảnh). Nếu phương thức thanh toán của đơn (`payments[0].method`) là `BANK_TRANSFER`, có thêm `bankInfo: { bankName, accountNo, accountName, amount, transferContent, qrCodeUrl }` — tính động, không lưu DB. `qrCodeUrl` trỏ tới ảnh QR tĩnh (VietQR "tài khoản + số tiền", không phải QR động có webhook xác nhận) — admin vẫn phải xác nhận thanh toán thủ công qua `PATCH /api/orders/admin/:id/payment`.
+- **Response:** raw `Order` (kèm `note`, `preferredDeliveryTime`, `shippingLabelPrintedAt`, `customerClaimedPaidAt`, `items[]`, `payments[]`, `shipments[]`, `complaintTickets[]`), cộng thêm 2 field tiện dụng `depositAmount`/`remainingAmount` (alias của `preorderDepositAmount`/`preorderRemainingAmount`, `0` nếu đơn không có item preorder nào). Mỗi phần tử `items[]` có thêm `image` (URL ảnh đại diện sản phẩm — lấy động qua quan hệ `Product` hiện tại, không phải snapshot lúc đặt hàng vì hệ thống chưa lưu snapshot; `null` nếu sản phẩm hết ảnh). Nếu phương thức thanh toán của đơn (`payments[0].method`) là `BANK_TRANSFER` **và** `paymentStatus` khác `PAID`, có thêm `bankInfo: { bankName, accountNo, accountName, amount, transferContent, qrCodeUrl }` — tính động, không lưu DB (đơn đã `PAID` thì QR không còn cần thiết nên bị ẩn). `qrCodeUrl` trỏ tới ảnh QR tĩnh (VietQR "tài khoản + số tiền", không phải QR động có webhook xác nhận) — admin vẫn phải xác nhận thanh toán thủ công qua `PATCH /api/orders/admin/:id/payment`.
 - **Auth:** `requireAuth`.
 - **Frontend:** ✅ `StorefrontOrderApiService.js`.
 
@@ -138,7 +138,7 @@ Chú thích cột **Frontend**: ✅ Có gọi · ❌ Không tìm thấy nơi g�
 - **Mục đích:** Tra cứu đơn hàng công khai cho khách vãng lai bằng `orderNo` + phone hoặc email.
 - **Path params:** `id` (string — chính là `orderNo`).
 - **Query:** `phone` (string, cần 1 trong 2), `email` (string).
-- **Response:** `{ success, order: {...public view...} }`, có `customerClaimedPaidAt` và mỗi `items[]` có `image` (xem mô tả ở `GET /api/orders/my/:id`). 404 nếu không khớp (kể cả khi đơn tồn tại nhưng SĐT/email sai — cố tình không lộ thông tin). Nếu `payments[0].method` là `BANK_TRANSFER`, order có thêm `bankInfo` (xem mô tả ở `GET /api/orders/my/:id` — cùng field, cùng cơ chế tính động).
+- **Response:** `{ success, order: {...public view...} }`, có `customerClaimedPaidAt` và mỗi `items[]` có `image` (xem mô tả ở `GET /api/orders/my/:id`). 404 nếu không khớp (kể cả khi đơn tồn tại nhưng SĐT/email sai — cố tình không lộ thông tin). Nếu `payments[0].method` là `BANK_TRANSFER` và `paymentStatus` khác `PAID`, order có thêm `bankInfo` (xem mô tả ở `GET /api/orders/my/:id` — cùng field, cùng cơ chế tính động, cùng điều kiện ẩn khi đã `PAID`).
 - **Auth:** Public (có rate-limit).
 - **Frontend:** ✅ `OrderService.js`, `StorefrontOrderLookupApiService.js`.
 
@@ -153,7 +153,7 @@ Chú thích cột **Frontend**: ✅ Có gọi · ❌ Không tìm thấy nơi g�
 #### `GET /api/orders/public/by-phone`
 - **Mục đích:** Tra cứu **danh sách** đơn hàng công khai chỉ bằng số điện thoại — không cần mã đơn. **Quyết định có chủ đích đánh đổi bảo mật lấy tiện lợi** (đã xác nhận chấp nhận rủi ro dò quét theo số điện thoại; không có OTP/xác minh thêm), giảm thiểu bằng rate-limit riêng nghiêm hơn `GET /api/orders/public/:id`.
 - **Query:** `phone` (string, **required** — được chuẩn hoá: trim, bỏ ký tự đặc biệt, hỗ trợ dạng `+84`/`84`/`0` đầu số trước khi so khớp).
-- **Response:** `{ success, orders: [{ orderNo, createdAt, status, statusLabel, total, itemCount, items: [{ productId, name, quantity, image }], customerClaimedPaidAt }] }` — bản rút gọn (không có sku/giá/payments/shipments chi tiết) để tránh response nặng khi khách có nhiều đơn (tối đa 50 đơn mới nhất); `items[]` ở đây chỉ để hiển thị ảnh thumbnail preview cho danh sách, không phải full item view. Mỗi đơn có thêm `bankInfo` (xem mô tả ở `GET /api/orders/my/:id`) nếu phương thức thanh toán của đơn đó là `BANK_TRANSFER`. 400 nếu thiếu `phone` hoặc SĐT không hợp lệ. **Không** trả 404 — SĐT hợp lệ nhưng không có đơn thì trả `orders: []`.
+- **Response:** `{ success, orders: [{ orderNo, createdAt, status, statusLabel, total, itemCount, items: [{ productId, name, quantity, image }], customerClaimedPaidAt }] }` — bản rút gọn (không có sku/giá/payments/shipments chi tiết) để tránh response nặng khi khách có nhiều đơn (tối đa 50 đơn mới nhất); `items[]` ở đây chỉ để hiển thị ảnh thumbnail preview cho danh sách, không phải full item view. Mỗi đơn có thêm `bankInfo` (xem mô tả ở `GET /api/orders/my/:id`) nếu phương thức thanh toán của đơn đó là `BANK_TRANSFER` và `paymentStatus` khác `PAID`. 400 nếu thiếu `phone` hoặc SĐT không hợp lệ. **Không** trả 404 — SĐT hợp lệ nhưng không có đơn thì trả `orders: []`.
 - **Auth:** Public (rate-limit riêng, nghiêm hơn: 20 request / 15 phút / IP).
 - **Frontend:** ❌ Không tìm thấy nơi gọi (endpoint mới thêm, frontend chưa nối).
 
@@ -345,9 +345,10 @@ Chú thích cột **Frontend**: ✅ Có gọi · ❌ Không tìm thấy nơi g�
 
 #### `GET /api/flash-sales/active`
 - **Mục đích:** Toàn bộ campaign đang `UPCOMING` hoặc `LIVE` tại thời điểm hiện tại (giờ VN), kèm items + giá Flash Sale.
-- **Response:** `{ success, campaigns: [{ id, nameVi, nameEn, dateFrom, dateTo, dailyStartTime, dailyEndTime, status:"UPCOMING"|"LIVE", countdownTarget: ISOString, items: [{ id, productId, discountType, discountValue, finalPrice, dailyStockLimit, soldToday, product:{...} }] }] }`.
+- **Response:** `{ success, campaigns: [{ id, nameVi, nameEn, dateFrom, dateTo, windows: [{dailyStartTime, dailyEndTime}], status:"UPCOMING"|"LIVE", countdownTarget: ISOString, items: [{ id, productId, discountType, discountValue, finalPrice, dailyStockLimit, soldToday, product:{...} }] }] }`.
   - `discountType`/`discountValue`: cấu hình gốc của Flash Sale item (`FIXED_PRICE`/`PERCENT`/`AMOUNT` — xem mục 2.26). `finalPrice`: giá bán thực tế đã tính sẵn từ `discountType`+`discountValue`+giá gốc sản phẩm **tại đúng thời điểm trả response** (`services/flashSalePricing.js`, hàm `computeFlashSalePrice`) — không lưu cứng, nên `PERCENT`/`AMOUNT` tự động đổi theo nếu giá gốc sản phẩm thay đổi, riêng `FIXED_PRICE` luôn giữ nguyên `discountValue` bất kể giá gốc.
-  - `countdownTarget`: nếu `UPCOMING` → thời điểm `dailyStartTime` hôm nay (giờ VN, dạng ISO instant) để FE đếm ngược tới giờ mở; nếu `LIVE` → thời điểm `dailyEndTime` hôm nay để FE đếm ngược tới giờ đóng.
+  - `windows`: 1 campaign có thể có **nhiều khung giờ/ngày** (model `FlashSaleWindow`, quan hệ 1-nhiều với campaign, ví dụ khung trưa 09:00-10:00 VÀ khung tối 20:00-21:00 cùng trong 1 campaign) — mảng sắp theo `dailyStartTime` tăng dần, luôn có ít nhất 1 phần tử, các khung trong cùng campaign không chồng giờ nhau (validate khi ghi).
+  - `countdownTarget`: quét qua tất cả `windows` theo thứ tự giờ bắt đầu — nếu đang trong 1 khung → `LIVE`, đếm ngược tới giờ kết thúc khung đó; nếu chưa tới khung gần nhất → `UPCOMING`, đếm ngược tới giờ bắt đầu khung đó; nếu đã qua hết khung hôm nay → `ENDED_TODAY` (không xuất hiện trong response này, chỉ dùng nội bộ/admin).
   - `soldToday`: chỉ tính (query động từ `OrderItem`, tổng `quantity` các đơn **không** `CANCELLED` tạo trong ngày hôm nay theo giờ VN) khi item có `dailyStockLimit`; ngược lại trả `null`. Không có counter lưu sẵn — tự khớp với đơn hàng thật, không cần job reset lúc nửa đêm.
   - Trả mảng rỗng nếu không có campaign nào đang chạy/sắp chạy.
 - **Auth:** Public.
@@ -367,8 +368,8 @@ Chú thích cột **Frontend**: ✅ Có gọi · ❌ Không tìm thấy nơi g�
 - **Auth:** `products:read`. **Frontend:** ✅ `AdminProductApiService.js`.
 
 #### `GET /api/products/admin`
-- **Mục đích:** Danh sách sản phẩm cho bảng quản trị, có chế độ rút gọn (`summary`/`lean`) và phân trang.
-- **Query:** `page`, `limit` (1–200, mặc định 50/500), `summary`/`lean` (`"1"|"true"`).
+- **Mục đích:** Danh sách sản phẩm cho bảng quản trị, có chế độ rút gọn (`summary`/`lean`) và phân trang. Cũng dùng làm nguồn chọn sản phẩm cho màn Flash Sale (selector `CATEGORY`/`SPECIFIC` ở `POST /api/admin/flash-sales/:id/items/bulk-generate`).
+- **Query:** `page`, `limit` (1–200, mặc định 50/500), `summary`/`lean` (`"1"|"true"`), `q` (≤80 — tìm theo `nameVi`/`nameEn`/`sku`/`slug`/`brand`/`grade`/`scale`, cùng pattern với `GET /api/products/`), `categoryIds` (danh sách id cách nhau dấu phẩy, tối đa 50). `q`/`categoryIds` áp dụng bất kể có `page` hay không (không giống `status`/`sort` của `GET /api/orders/admin`).
 - **Response:** `{ success, products: Product[], meta? }`.
 - **Auth:** `products:read`. **Frontend:** ✅ `AdminProductApiService.js`.
 
@@ -575,7 +576,7 @@ Chú thích cột **Frontend**: ✅ Có gọi · ❌ Không tìm thấy nơi g�
 #### `GET /api/orders/admin`
 - **Mục đích:** Danh sách đơn hàng cho admin — tìm kiếm/lọc/phân trang.
 - **Query:** `page`, `limit` (1–200, mặc định 50), `q` (≤120), `status` (`attention`|`claimed_paid`|`all`|status cụ thể; `attention` = PLACED, hoặc UNPAID, hoặc SHIPPING chưa có tracking; `claimed_paid` = đơn có `customerClaimedPaidAt` khác null, để ưu tiên kiểm tra các đơn khách báo đã chuyển khoản), `sort` (`claimed_paid` để sắp theo `customerClaimedPaidAt` giảm dần — đơn báo gần nhất lên đầu, đơn chưa từng báo xuống cuối; mặc định sắp theo `createdAt` giảm dần). `status`/`sort` chỉ áp dụng khi có `page` (giữ tương thích ngược, giống pattern `listAdminProducts`).
-- **Response (không phân trang):** `{ success, orders[] }` (tối đa 100 mới nhất). Có `meta` khi phân trang. Mỗi order có thêm `depositAmount`/`remainingAmount` (alias `preorderDepositAmount`/`preorderRemainingAmount`, `0` nếu không phải đơn preorder), `customerClaimedPaidAt` (raw field, `null` nếu khách chưa bấm "Tôi đã chuyển khoản"), và mỗi `items[]` có thêm `image` (xem mô tả ở mục 1.3 `GET /api/orders/my/:id`) — không có endpoint `GET /api/orders/admin/:id` riêng, chi tiết 1 đơn admin lấy từ danh sách này.
+- **Response (không phân trang):** `{ success, orders[] }` (tối đa 100 mới nhất). Có `meta` khi phân trang. Mỗi order có thêm `depositAmount`/`remainingAmount` (alias `preorderDepositAmount`/`preorderRemainingAmount`, `0` nếu không phải đơn preorder), `customerClaimedPaidAt` (raw field, `null` nếu khách chưa bấm "Tôi đã chuyển khoản"), và mỗi `items[]` có thêm `image` (xem mô tả ở mục 1.3 `GET /api/orders/my/:id`) — không có endpoint `GET /api/orders/admin/:id` riêng, chi tiết 1 đơn admin lấy từ danh sách này (thường lọc qua `q=<orderNo>&page=1`). Nếu `payments[0].method` là `BANK_TRANSFER` và `paymentStatus` khác `PAID`, order có thêm `bankInfo` (cùng field/cơ chế tính động như `GET /api/orders/my/:id`) — dùng chung hàm `getOrderBankTransferInfo` với 3 endpoint storefront, để Admin Order Detail dựng được khối QR chuyển khoản.
 - **Auth:** `orders:read`. **Frontend:** ✅ `AdminOrderApiService.js`.
 
 #### `PATCH /api/orders/admin/:id/status`
@@ -611,21 +612,24 @@ Chú thích cột **Frontend**: ✅ Có gọi · ❌ Không tìm thấy nơi g�
 
 ### 2.10 Xử lý đơn hàng (Fulfillment)
 
+> **Rào chắn thanh toán chuyển khoản (mới):** mọi action **trừ `CONFIRM`** (tức `PACK`, `READY_TO_SHIP`, `SHIP`, `DELIVER`, `COMPLETE`) đều bị **chặn cứng ở tầng service** (`applyFulfillmentAction` trong `fulfillmentController.js`, dùng chung cho cả action đơn lẻ và bulk-action — không có đường vòng qua API) nếu đơn có `payments[0].method = "BANK_TRANSFER"` **và** `paymentStatus` chưa được xác nhận: cụ thể là khác `PAID`, và khác `PARTIAL` **trừ khi** đơn là `orderType="preorder"` (với preorder, `PARTIAL` = đã xác nhận cọc, được phép đóng gói trước, thu nốt tiền còn lại sau qua `PATCH /admin/:id/preorder/collect-remaining`). Vi phạm → `409 { success:false, message:"Đơn chưa xác nhận thanh toán, không thể đóng gói" }`. Đơn COD không bị ảnh hưởng (COD thu tiền khi giao). Field `paymentClearedForPacking` (boolean) được thêm vào mỗi order ở `GET /api/fulfillment/admin` và trong response `order` của action, để Frontend biết trước mà disable nút thay vì chỉ dựa vào lỗi 409.
+
 #### `GET /api/fulfillment/admin`
 - **Mục đích:** Bảng điều khiển xử lý đơn — liệt kê theo giai đoạn, kèm pick-list và số liệu tổng hợp.
 - **Query:** `stage` (mặc định `ALL`), `q` (≤120).
-- **Response:** `{ success, orders: [{...order, fulfillmentStage, canConfirm, canPack, canShip, canDeliver, canComplete}], pickList[], summary }` (tối đa 300 đơn).
+- **Response:** `{ success, orders: [{...order, fulfillmentStage, paymentClearedForPacking, canConfirm, canPack, canShip, canDeliver, canComplete}], pickList[], summary }` (tối đa 300 đơn). `canPack`/`canShip`/`canDeliver`/`canComplete` giờ đã kết hợp `paymentClearedForPacking` (xem rào chắn thanh toán ở trên) — `false` nếu đơn BANK_TRANSFER chưa được admin xác nhận thanh toán, dù `status` đang ở giai đoạn hợp lệ.
 - **Auth:** `orders:read`. **Frontend:** ✅ `AdminFulfillmentApiService.js`.
 
 #### `PATCH /api/fulfillment/admin/:id/action`
-- **Mục đích:** Thực hiện 1 hành động theo quy trình có hướng dẫn (CONFIRM→PACK→READY_TO_SHIP→SHIP→DELIVER→COMPLETE), tự cập nhật `order.status` + `shipment.status`.
+- **Mục đích:** Thực hiện 1 hành động theo quy trình có hướng dẫn (CONFIRM→PACK→READY_TO_SHIP→SHIP→DELIVER→COMPLETE), tự cập nhật `order.status` + `shipment.status`. Xem rào chắn thanh toán chuyển khoản ở đầu mục 2.10.
 - **Path params:** `id` (Order.id). **Body:** `action` (**required**, enum), `carrier`/`trackingCode` (bắt buộc thực tế khi `action=SHIP`), `shippingMethod` (mặc định `FAST`), `fee`/`note` (optional).
+- **Response:** `{ success, order }`; 409 nếu transition không hợp lệ, đơn đã terminal, hoặc bị rào chắn thanh toán chặn (xem trên).
 - **Auth:** `orders:update`. **Frontend:** ✅ `AdminFulfillmentApiService.js`.
 
 #### `POST /api/fulfillment/admin/bulk-action`
-- **Mục đích:** Thực hiện hàng loạt CONFIRM/PACK/READY_TO_SHIP trên nhiều đơn cùng lúc (không hỗ trợ SHIP/DELIVER/COMPLETE vì cần carrier/tracking riêng từng đơn).
+- **Mục đích:** Thực hiện hàng loạt CONFIRM/PACK/READY_TO_SHIP trên nhiều đơn cùng lúc (không hỗ trợ SHIP/DELIVER/COMPLETE vì cần carrier/tracking riêng từng đơn). Dùng chung `applyFulfillmentAction` với action đơn lẻ nên cũng bị rào chắn thanh toán chuyển khoản như trên.
 - **Body:** `orderIds` (**required**, 1–50 phần tử), `action` (**required**, enum `CONFIRM|PACK|READY_TO_SHIP`), `note` (optional).
-- **Response:** `{ success, results: [{id, success, order?, message?}] }` (mỗi đơn xử lý độc lập).
+- **Response:** `{ success, results: [{id, success, order?, message?}] }` (mỗi đơn xử lý độc lập — đơn bị rào chắn thanh toán chặn trả `success:false, message:"Đơn chưa xác nhận thanh toán, không thể đóng gói"` cho riêng đơn đó, không làm hỏng cả batch).
 - **Auth:** `orders:update`. **Frontend:** ✅ `AdminFulfillmentApiService.js`.
 
 ### 2.11 Khiếu nại
@@ -1041,33 +1045,66 @@ Chú thích cột **Frontend**: ✅ Có gọi · ❌ Không tìm thấy nơi g�
 > Tách biệt hoàn toàn khỏi mục 2.16 Khuyến mãi — bảng riêng (`FlashSaleCampaign`, `FlashSaleItem`), route riêng dưới `/api/admin/flash-sales` (khác với `/api/promotions/admin` của Khuyến mãi). Đăng nhập vào cả gate toàn cục `/api/admin` (`requireAuth`+`requireAdminRole`) lẫn `requirePermission` riêng bên dưới.
 
 #### `GET /api/admin/flash-sales`
-- **Mục đích:** Danh sách toàn bộ campaign (mọi trạng thái), kèm `status`/`countdownTarget` tính sẵn và items.
-- **Response:** `{ success, campaigns[] }` (tối đa 300, campaign active trước). Mỗi item trong `campaign.items[]` có `discountType`, `discountValue`, và `finalPrice` (giá bán thực tế, tính động từ giá gốc sản phẩm hiện tại — xem chi tiết ở `PUT .../:id/items` bên dưới).
+- **Mục đích:** Danh sách toàn bộ campaign (mọi trạng thái), kèm `status`/`countdownTarget` tính sẵn, `windows[]` và items.
+- **Response:** `{ success, campaigns[] }` (tối đa 300, campaign active trước). Mỗi campaign có `windows: [{id, dailyStartTime, dailyEndTime}]` (sắp theo `dailyStartTime` tăng dần — xem mục 1.14 để hiểu cách tính `status`/`countdownTarget` từ nhiều window). Mỗi item trong `campaign.items[]` có `discountType`, `discountValue`, và `finalPrice` (giá bán thực tế, tính động từ giá gốc sản phẩm hiện tại — xem chi tiết ở `PUT .../:id/items` bên dưới).
 - **Auth:** `products:read`.
 
 #### `POST /api/admin/flash-sales`
-- **Mục đích:** Tạo campaign mới (chưa gán sản phẩm — gán qua `PUT .../:id/items` bên dưới).
-- **Body:** `nameVi` (**required**), `dateFrom`/`dateTo` (**required**, `YYYY-MM-DD`, `dateTo >= dateFrom`), `dailyStartTime`/`dailyEndTime` (**required**, `"HH:mm"`, phải `end > start` — chưa hỗ trợ khung giờ qua đêm), `nameEn`/`active` (optional, `active` mặc định `true`).
+- **Mục đích:** Tạo campaign mới (chưa gán sản phẩm — gán qua `PUT .../:id/items` hoặc `POST .../:id/items/bulk-generate` bên dưới).
+- **Body:** `nameVi` (**required**), `dateFrom`/`dateTo` (**required**, `YYYY-MM-DD`, `dateTo >= dateFrom`), `nameEn`/`active` (optional, `active` mặc định `true`), và **1 trong 2 cách khai báo khung giờ**:
+  - `windows: [{ dailyStartTime, dailyEndTime }, ...]` (khuyến nghị — hỗ trợ nhiều khung giờ/ngày, ví dụ khung trưa + khung tối cùng 1 campaign). Bắt buộc ≥1 phần tử; mỗi khung `"HH:mm"`, phải `end > start` (chưa hỗ trợ khung giờ qua đêm); các khung trong cùng campaign **không được chồng giờ nhau** (400 nếu vi phạm).
+  - Hoặc `dailyStartTime`/`dailyEndTime` (dạng cũ, 1 khung duy nhất — server tự bọc thành `windows: [{dailyStartTime, dailyEndTime}]`, vẫn hoạt động để tương thích ngược).
 - **Auth:** `products:update`.
 
 #### `PATCH /api/admin/flash-sales/:id`
-- **Mục đích:** Cập nhật thông tin campaign (không đổi danh sách sản phẩm). Nếu đổi ngày/giờ khiến campaign đang `active` trùng lịch với sản phẩm đã gán ở campaign active khác → từ chối.
-- **Path params:** `id`. **Body:** giống `POST`.
+- **Mục đích:** Cập nhật thông tin campaign. Nếu đổi ngày khiến campaign đang `active` trùng lịch (ngày VÀ ít nhất 1 khung giờ) với sản phẩm đã gán ở campaign active khác → từ chối.
+- **Path params:** `id`. **Body:** giống `POST`. `windows`/`dailyStartTime`+`dailyEndTime` là **optional** ở đây — nếu không gửi, giữ nguyên danh sách khung giờ hiện có; nếu gửi, **thay thế toàn bộ** danh sách khung giờ cũ (giống cơ chế `PUT .../items`, không phải merge).
 - **Auth:** `products:update`.
 
 #### `DELETE /api/admin/flash-sales/:id`
-- **Mục đích:** Xóa hẳn campaign (cascade xóa toàn bộ `FlashSaleItem` của campaign đó — không phải soft-delete như Khuyến mãi).
+- **Mục đích:** Xóa hẳn campaign (cascade xóa toàn bộ `FlashSaleItem` + `FlashSaleWindow` của campaign đó — không phải soft-delete như Khuyến mãi).
 - **Path params:** `id`.
 - **Auth:** `products:update`.
 
+#### `PUT /api/admin/flash-sales/:id/windows`
+- **Mục đích:** Thay thế **toàn bộ** danh sách khung giờ/ngày của campaign mà không đổi các field khác (tên, ngày, items) — tách riêng khỏi `PATCH .../:id` để FE quản lý lịch chiếu độc lập.
+- **Path params:** `id`. **Body:** `windows: [{ dailyStartTime, dailyEndTime }, ...]` (**required**, ≥1 phần tử, cùng luật validate như ở `POST` — không chồng giờ nhau trong cùng campaign).
+- **Validate:** nếu campaign đang `active`, từ chối (409) khi danh sách khung giờ mới trùng lịch (ngày + giờ) với sản phẩm đã gán ở campaign `active` khác — trả kèm `detail: {conflictingCampaignId, conflictingCampaignName, productIds}`.
+- **Auth:** `products:update`.
+
 #### `PUT /api/admin/flash-sales/:id/items`
-- **Mục đích:** Gán lại **toàn bộ** danh sách sản phẩm + kiểu giảm giá Flash Sale cho campaign (thay thế hoàn toàn danh sách cũ), giống pattern `PUT category-groups/:id/categories`.
+- **Mục đích:** Gán lại **toàn bộ** danh sách sản phẩm + kiểu giảm giá Flash Sale cho campaign (thay thế hoàn toàn danh sách cũ), giống pattern `PUT category-groups/:id/categories`. Phù hợp khi cần soát lại/sửa nhiều sản phẩm cùng lúc với giá trị khác nhau; để gán **hàng loạt cùng 1 mức giảm** cho nhiều sản phẩm, dùng `POST .../items/bulk-generate` bên dưới thay vì liệt kê thủ công.
 - **Body:** `items: [{ productId (**required**), discountType (**required**, enum `FIXED_PRICE|PERCENT|AMOUNT`), discountValue (**required**, number), dailyStockLimit (optional, null = không giới hạn) }]`.
   - `discountType=FIXED_PRICE`: `discountValue` là **giá bán cố định** (VND), phải > 0, không đổi theo giá gốc sản phẩm.
   - `discountType=PERCENT`: `discountValue` là **% giảm** trên giá gốc, phải trong khoảng 1-100.
   - `discountType=AMOUNT`: `discountValue` là **số tiền giảm cố định** (VND) trên giá gốc, phải > 0 và **nhỏ hơn giá gốc hiện tại** của sản phẩm (chặn giá bán âm).
   - Giá bán cuối cùng (`finalPrice`) **không lưu cứng** trong DB — tính động mỗi lần đọc từ `discountType`+`discountValue`+giá gốc sản phẩm tại thời điểm đó (`services/flashSalePricing.js`), nên `PERCENT`/`AMOUNT` tự động cập nhật nếu giá gốc đổi; response GET/PUT của campaign vẫn trả kèm `finalPrice` đã tính sẵn để FE không phải tự tính lại.
-- **Validate:** mọi `productId` phải tồn tại và `active=true`; nếu campaign đang `active`, từ chối (409) khi có sản phẩm trùng với campaign `active` khác có khung ngày+giờ trùng nhau — trả kèm `detail: {conflictingCampaignId, conflictingCampaignName, productIds}`.
+- **Validate:** mọi `productId` phải tồn tại và `active=true`; nếu campaign đang `active`, từ chối (409) khi có sản phẩm trùng với campaign `active` khác có khung ngày+giờ trùng nhau (so khớp qua tất cả `windows` của cả 2 campaign) — trả kèm `detail: {conflictingCampaignId, conflictingCampaignName, productIds}`.
+- **Auth:** `products:update`.
+
+#### `POST /api/admin/flash-sales/:id/items/bulk-generate`
+- **Mục đích:** Gán hàng loạt **cùng 1 mức giảm giá** cho nhiều sản phẩm khớp điều kiện chọn (selector), thay vì phải chọn từng sản phẩm thủ công như `PUT .../items`. UPSERT theo từng sản phẩm — chạy lại nhiều lần với `discountValue` khác để điều chỉnh hàng loạt, không tạo trùng lặp.
+- **Body:** `selector` (**required**), `discountType`/`discountValue` (**required**, cùng luật validate như `PUT .../items`), `dailyStockLimit` (optional, null = không giới hạn, áp dụng cho **mọi** sản phẩm khớp).
+  - `selector.mode` (**required**, enum `ALL|CATEGORY|SPECIFIC`):
+    - `ALL`: toàn bộ sản phẩm `active=true`.
+    - `CATEGORY`: sản phẩm `active=true` thuộc `selector.categoryIds` (**required** khi dùng mode này, mảng id).
+    - `SPECIFIC`: đúng `selector.productIds` (**required** khi dùng mode này, mảng id) — vẫn lọc `active=true`, sản phẩm inactive trong danh sách bị bỏ qua âm thầm (không lỗi cả batch).
+  - `selector.search` (optional, ≤80 ký tự): lọc thêm theo `nameVi`/`nameEn`/`sku`/`slug`/`brand`/`grade`/`scale` (cùng pattern `q` ở `GET /api/products/admin`), áp dụng kết hợp với mọi mode ở trên (AND).
+- **Validate:** danh sách sản phẩm khớp selector phải khác rỗng (400 nếu không); nếu `discountType=AMOUNT`, mọi sản phẩm khớp phải có `discountValue < price` (400 kèm tên sản phẩm vi phạm đầu tiên); nếu campaign đang `active`, áp dụng rào chắn trùng lịch giống `PUT .../items` trên toàn bộ danh sách sản phẩm khớp.
+- **Response:** `{ success, createdCount, updatedCount, items: [{...FlashSaleItem, product, finalPrice}] }` — `items` chỉ gồm các sản phẩm vừa được tạo/cập nhật trong lần gọi này (không phải toàn bộ campaign).
+- **Auth:** `products:update`.
+
+#### `PATCH /api/admin/flash-sales/:id/items/:itemId`
+- **Mục đích:** Sửa riêng 1 sản phẩm trong campaign (ví dụ đổi giá 1 món khác với phần còn lại sau khi đã `bulk-generate`) mà không cần gửi lại toàn bộ danh sách như `PUT .../items`.
+- **Path params:** `id` (campaignId), `itemId` (FlashSaleItem.id — phải thuộc đúng campaign `id`, 404 nếu không khớp).
+- **Body:** `discountType`/`discountValue`/`dailyStockLimit` — tất cả **optional**, field nào không gửi giữ nguyên giá trị cũ. Cùng luật validate `discountType`/`discountValue` như `PUT .../items` (kể cả check `AMOUNT < price`).
+- **Response:** `{ success, item: {...FlashSaleItem, product, finalPrice} }`.
+- **Auth:** `products:update`.
+
+#### `DELETE /api/admin/flash-sales/:id/items/:itemId`
+- **Mục đích:** Bỏ 1 sản phẩm khỏi campaign mà không đụng tới các sản phẩm còn lại.
+- **Path params:** `id` (campaignId), `itemId` (FlashSaleItem.id — phải thuộc đúng campaign `id`, 404 nếu không khớp).
+- **Response:** `{ success }`.
 - **Auth:** `products:update`.
 
 ---

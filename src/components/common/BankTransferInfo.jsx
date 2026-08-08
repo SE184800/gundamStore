@@ -147,8 +147,8 @@ export default function BankTransferInfo({
               <p className="mt-2 text-sm font-bold leading-5 text-slate-600">
                 {successMessage ||
                   (lang === "en"
-                    ? "Please send a screenshot of your transfer via the shop's Zalo/Messenger hotline for the fastest confirmation."
-                    : "Vui lòng gửi ảnh chụp màn hình chuyển khoản qua Hotline Zalo/Messenger của shop để được xác nhận nhanh nhất.")}
+                    ? "Thank you! We've recorded your report. Please send a screenshot of your transfer via Zalo/Messenger (0935950649) for the fastest confirmation. Your order will be processed right after payment is confirmed."
+                    : "Cảm ơn bạn! Chúng tôi đã ghi nhận thông tin. Vui lòng gửi ảnh chụp chuyển khoản qua Zalo/Messenger (0935950649) để được xác nhận nhanh nhất. Đơn hàng sẽ được xử lý ngay sau khi xác nhận thanh toán thành công.")}
               </p>
 
               <div className="mt-3 flex flex-wrap gap-2">

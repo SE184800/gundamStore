@@ -56,6 +56,17 @@ function shortDate(value) {
   return new Date(value).toLocaleString("vi-VN");
 }
 
+// Backend blocks every fulfillment action except CONFIRM (PACK/READY_TO_SHIP/
+// SHIP/DELIVER/COMPLETE) with a generic 409 when a BANK_TRANSFER order hasn't
+// been marked paid yet — rephrase that into an admin-actionable message
+// instead of the terse backend text.
+function friendlyFulfillmentErrorMessage(error) {
+  if (error?.status === 409 && /chưa xác nhận thanh toán/i.test(error?.message || "")) {
+    return "Đơn này thanh toán qua chuyển khoản nhưng chưa được xác nhận đã nhận tiền - vui lòng xác nhận thanh toán trước khi đóng gói.";
+  }
+  return error?.message || "Fulfillment update failed.";
+}
+
 function printablePackingList(order) {
   const orderCode = escapePrintHtml(order.orderCode || "");
   const customerName = escapePrintHtml(order.customer?.name || "");
@@ -196,7 +207,7 @@ export default function AdminFulfillment() {
       });
       await reload();
     } catch (error) {
-      notify("error", error?.message || "Fulfillment update failed.");
+      notify("error", friendlyFulfillmentErrorMessage(error));
     }
   }
 
@@ -212,7 +223,7 @@ export default function AdminFulfillment() {
       setDrawerOpen(false);
       await reload();
     } catch (error) {
-      notify("error", error?.message || "Ship order failed.");
+      notify("error", friendlyFulfillmentErrorMessage(error));
     }
   }
 
@@ -225,10 +236,19 @@ export default function AdminFulfillment() {
     if (!window.confirm(`Run ${action} for ${selectedIds.length} order(s)?`)) return;
 
     try {
-      await bulkAdminFulfillmentActionApi(selectedIds, action, `Bulk ${action}`);
+      const results = await bulkAdminFulfillmentActionApi(selectedIds, action, `Bulk ${action}`);
+      const blocked = (results || []).filter((row) => !row.success);
+
+      if (blocked.length) {
+        notify(
+          "error",
+          `${blocked.length}/${results.length} đơn bị chặn: ${friendlyFulfillmentErrorMessage({ status: 409, message: blocked[0].message })}`
+        );
+      }
+
       await reload();
     } catch (error) {
-      notify("error", error?.message || "Bulk action failed.");
+      notify("error", friendlyFulfillmentErrorMessage(error));
     }
   }
 

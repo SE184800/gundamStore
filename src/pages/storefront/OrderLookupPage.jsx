@@ -12,6 +12,7 @@ import {
 } from "../../constants/orderConfig";
 import PageShell from "../../components/common/PageShell";
 import BankTransferInfo from "../../components/common/BankTransferInfo";
+import OrderStatusStepper from "../../components/common/OrderStatusStepper";
 import { useLang } from "../../store/CmsStore";
 
 const money = (n) => (Number(n) || 0).toLocaleString("vi-VN") + "đ";
@@ -271,6 +272,10 @@ export default function OrderLookupPage() {
 
                       {!isDetailLoading && detail && (
                         <>
+                          <div className="mb-4">
+                            <OrderStatusStepper order={detail} lang={lang} />
+                          </div>
+
                           <div className="grid gap-3 text-sm font-semibold text-slate-600 md:grid-cols-2">
                             <div>
                               <b>{t.address}:</b> {detail.customer?.address || "-"}

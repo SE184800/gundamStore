@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   AlertCircle,
-  CheckCircle2,
   Clock,
   CreditCard,
   Loader2,
@@ -15,7 +14,6 @@ import {
   Undo2,
   XCircle,
 } from "lucide-react";
-import { ORDER_STATUS } from "../../services/OrderService";
 import {
   CANCEL_REASONS,
   RETURN_REASONS,
@@ -38,20 +36,12 @@ import {
 } from "../../services/StorefrontOrderApiService";
 import { createStorefrontComplaintApi } from "../../services/StorefrontComplaintApiService";
 import BankTransferInfo from "../../components/common/BankTransferInfo";
+import OrderStatusStepper from "../../components/common/OrderStatusStepper";
 import { useLang } from "../../store/CmsStore";
 import useToast from "../../hooks/useToast";
 import Toast from "../../utils/Toast";
 
 const money = (n) => (Number(n) || 0).toLocaleString("vi-VN") + "đ";
-
-const PUBLIC_STEPS = [
-  ORDER_STATUS.PLACED,
-  ORDER_STATUS.CONFIRMED,
-  ORDER_STATUS.PACKING,
-  ORDER_STATUS.SHIPPING,
-  ORDER_STATUS.DELIVERED,
-  ORDER_STATUS.COMPLETED,
-];
 
 function getCopy(lang) {
   return {
@@ -377,7 +367,6 @@ export default function OrderDetailPage() {
     );
   }
 
-  const currentIndex = PUBLIC_STEPS.indexOf(order.status);
   const directCancel = canCustomerCancelDirect(order.status);
   const cancelRequest = canCustomerRequestCancel(order.status);
   const returnRequest = canCustomerRequestReturn(order.status);
@@ -529,21 +518,8 @@ export default function OrderDetailPage() {
               </div>
             </div>
 
-            <div className="mt-8 grid gap-3 md:grid-cols-6">
-              {PUBLIC_STEPS.map((step, index) => {
-                const active = currentIndex >= index && currentIndex !== -1;
-                return (
-                  <div
-                    key={step}
-                    className={`rounded-2xl p-4 text-center text-sm font-black ${
-                      active ? "bg-blue-700 text-white" : "bg-slate-100 text-slate-400"
-                    }`}
-                  >
-                    <CheckCircle2 className="mx-auto mb-2" size={20} />
-                    {getOrderStatusLabel(step, lang)}
-                  </div>
-                );
-              })}
+            <div className="mt-8">
+              <OrderStatusStepper order={order} lang={lang} />
             </div>
           </div>
 

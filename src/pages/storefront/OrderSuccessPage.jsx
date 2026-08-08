@@ -11,6 +11,7 @@ import { claimMyStorefrontOrderPaidApi } from "../../services/StorefrontOrderApi
 import { hasAccountToken } from "../../services/AccountApiService";
 import PageShell from "../../components/common/PageShell";
 import BankTransferInfo from "../../components/common/BankTransferInfo";
+import OrderStatusStepper from "../../components/common/OrderStatusStepper";
 import { useLang } from "../../store/CmsStore";
 import { getOrderStatusLabel } from "../../constants/orderConfig";
 
@@ -41,8 +42,8 @@ function getCopy(lang) {
     continueShopping: lang === "en" ? "Continue shopping" : "Tiếp tục mua hàng",
     claimedSuccessMessage:
       lang === "en"
-        ? "Order placed successfully! Please send a screenshot of your transfer via the shop's Zalo/Messenger hotline for the fastest confirmation."
-        : "Đặt hàng thành công! Vui lòng gửi ảnh chụp màn hình chuyển khoản qua Hotline Zalo/Messenger của shop để được xác nhận nhanh nhất.",
+        ? "Thank you! We've recorded your report. Please send a screenshot of your transfer via Zalo/Messenger (0935950649) for the fastest confirmation. Your order will be processed right after payment is confirmed."
+        : "Cảm ơn bạn! Chúng tôi đã ghi nhận thông tin. Vui lòng gửi ảnh chụp chuyển khoản qua Zalo/Messenger (0935950649) để được xác nhận nhanh nhất. Đơn hàng sẽ được xử lý ngay sau khi xác nhận thanh toán thành công.",
     claimFailed:
       lang === "en"
         ? "Failed to report payment. Please try again."
@@ -187,6 +188,10 @@ export default function OrderSuccessPage() {
               <div className="mt-3 flex flex-col gap-1 sm:flex-row sm:justify-between">
                 <span className="font-bold text-slate-500">{t.status}</span>
                 <b>{getOrderStatusLabel(order.status, lang)}</b>
+              </div>
+
+              <div className="mt-5">
+                <OrderStatusStepper order={order} lang={lang} />
               </div>
 
               <div className="mt-5 rounded-2xl border border-blue-100 bg-blue-50 p-4 text-sm font-bold leading-6 text-blue-700">

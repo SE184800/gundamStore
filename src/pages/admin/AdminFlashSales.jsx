@@ -1,18 +1,21 @@
 import { useEffect, useMemo, useState } from "react";
-import { Edit3, Plus, Search, Trash2, Zap } from "lucide-react";
+import { Edit3, Eye, Plus, Save, Search, Trash2, X, Zap } from "lucide-react";
 import AdminDrawer from "../../components/admin/AdminDrawer";
 import { AdminSelect, AdminTextField, AdminToggle } from "../../components/admin/AdminField";
 import AdminPageHeader from "../../components/admin/AdminPageHeader";
 import { formatCurrency } from "../../utils/format";
 import { logoutAdmin } from "../../services/AdminAuthService";
 import { getAdminProductsFromApi } from "../../services/AdminProductApiService";
+import { getAdminCategoriesApi } from "../../services/AdminCatalogApiService";
 import useToast from "../../hooks/useToast";
 import Toast from "../../utils/Toast";
 import {
+  bulkGenerateAdminFlashSaleItemsApi,
   createAdminFlashSaleApi,
   deleteAdminFlashSaleApi,
+  deleteAdminFlashSaleItemApi,
   getAdminFlashSalesApi,
-  setAdminFlashSaleItemsApi,
+  patchAdminFlashSaleItemApi,
   updateAdminFlashSaleApi,
 } from "../../services/AdminFlashSaleApiService";
 
@@ -52,22 +55,51 @@ const DISCOUNT_METHOD_OPTIONS = [
   { value: "AMOUNT", label: "Giảm số tiền cố định" },
 ];
 
-// The backend only ever stores a single absolute flashPrice per item — the
-// discount method is a frontend-only input convenience. Whichever method is
-// selected, this resolves down to the one number that actually gets sent.
-function resolveFlashPrice(item = {}, sellingPrice = 0) {
-  const value = Number(item.priceInput) || 0;
+const SELECTOR_MODE_OPTIONS = [
+  { value: "ALL", label: "Tất cả sản phẩm", desc: "Áp dụng cho toàn bộ sản phẩm đang active." },
+  { value: "CATEGORY", label: "Theo danh mục", desc: "Chọn 1 hoặc nhiều danh mục — mọi sản phẩm active thuộc các danh mục này sẽ được áp dụng." },
+  { value: "SPECIFIC", label: "Chọn cụ thể", desc: "Tìm kiếm và tick chọn từng sản phẩm." },
+];
 
-  if (item.discountMethod === "PERCENT") {
+function computeFinalPrice(discountType, discountValue, sellingPrice) {
+  const value = Number(discountValue) || 0;
+
+  if (discountType === "PERCENT") {
     return Math.max(0, Math.round(sellingPrice * (1 - Math.min(Math.max(value, 0), 100) / 100)));
   }
-  if (item.discountMethod === "AMOUNT") {
+  if (discountType === "AMOUNT") {
     return Math.max(0, sellingPrice - value);
   }
   return value;
 }
 
-function getFlashSaleValidationErrors(draft = {}, products = []) {
+function windowsOverlap(a, b) {
+  return a.dailyStartTime < b.dailyEndTime && b.dailyStartTime < a.dailyEndTime;
+}
+
+function getWindowValidationErrors(windows = []) {
+  const errors = [];
+
+  windows.forEach((w, idx) => {
+    if (!w.dailyStartTime || !w.dailyEndTime) {
+      errors.push(`Khung giờ #${idx + 1}: cần đủ giờ mở và giờ đóng bán.`);
+    } else if (w.dailyEndTime <= w.dailyStartTime) {
+      errors.push(`Khung giờ #${idx + 1}: giờ đóng bán phải sau giờ mở bán (chưa hỗ trợ khung qua đêm).`);
+    }
+  });
+
+  for (let i = 0; i < windows.length; i += 1) {
+    for (let j = i + 1; j < windows.length; j += 1) {
+      if (windows[i].dailyStartTime && windows[j].dailyStartTime && windowsOverlap(windows[i], windows[j])) {
+        errors.push(`Khung giờ #${i + 1} và #${j + 1} bị chồng giờ nhau.`);
+      }
+    }
+  }
+
+  return errors;
+}
+
+function getCampaignValidationErrors(draft = {}) {
   const errors = [];
 
   if (!draft.nameVi?.trim()) errors.push("Tên campaign (VI) là bắt buộc.");
@@ -76,35 +108,45 @@ function getFlashSaleValidationErrors(draft = {}, products = []) {
   if (draft.dateFrom && draft.dateTo && draft.dateTo < draft.dateFrom) {
     errors.push("Ngày kết thúc phải sau hoặc bằng ngày bắt đầu.");
   }
-  if (!draft.dailyStartTime) errors.push("Giờ mở bán hàng ngày là bắt buộc.");
-  if (!draft.dailyEndTime) errors.push("Giờ đóng bán hàng ngày là bắt buộc.");
-  if (draft.dailyStartTime && draft.dailyEndTime && draft.dailyEndTime <= draft.dailyStartTime) {
-    errors.push("Giờ đóng bán phải sau giờ mở bán (chưa hỗ trợ khung giờ qua đêm).");
+  if (!draft.windows?.length) {
+    errors.push("Cần ít nhất 1 khung giờ bán hàng ngày.");
+  } else {
+    errors.push(...getWindowValidationErrors(draft.windows));
   }
 
-  const items = Array.isArray(draft.items) ? draft.items : [];
-  items.forEach((item) => {
-    const label = item.sku || item.productId;
-    const product = products.find((row) => row.id === item.productId);
-    const sellingPrice = product ? getProductSellingPrice(product) : 0;
-    const value = Number(item.priceInput) || 0;
-
-    if (item.discountMethod === "PERCENT") {
-      if (!(value > 0 && value <= 100)) {
-        errors.push(`${label}: % giảm phải trong khoảng 1-100.`);
-      }
-    } else if (item.discountMethod === "AMOUNT") {
-      if (!(value > 0)) {
-        errors.push(`${label}: số tiền giảm phải lớn hơn 0.`);
-      } else if (sellingPrice > 0 && value >= sellingPrice) {
-        errors.push(`${label}: số tiền giảm không được vượt quá giá gốc (${formatCurrency(sellingPrice)}).`);
-      }
-    } else if (!(value > 0)) {
-      errors.push(`${label}: giá Flash Sale phải lớn hơn 0.`);
-    }
-  });
-
   return Array.from(new Set(errors));
+}
+
+function productMatchesSearch(product, search) {
+  const q = String(search || "").trim().toLowerCase();
+  if (!q) return true;
+
+  return [product.nameVi, product.nameEn, product.sku, product.slug, product.brand, product.grade, product.scale]
+    .filter(Boolean)
+    .some((field) => String(field).toLowerCase().includes(q));
+}
+
+function getSelectorMatches(products = [], selector = {}) {
+  return products.filter((product) => {
+    if (product.active === false) return false;
+
+    if (selector.mode === "CATEGORY") {
+      if (!selector.categoryIds?.length) return false;
+      if (!selector.categoryIds.includes(product.categoryId)) return false;
+    }
+
+    if (selector.mode === "SPECIFIC") {
+      if (!selector.productIds?.includes(product.id)) return false;
+    }
+
+    if (selector.mode !== "SPECIFIC" && !productMatchesSearch(product, selector.search)) return false;
+
+    return true;
+  });
+}
+
+function emptyWindow() {
+  return { dailyStartTime: "09:00", dailyEndTime: "21:00" };
 }
 
 const emptyDraft = {
@@ -113,46 +155,62 @@ const emptyDraft = {
   nameEn: "",
   dateFrom: todayDateInput(),
   dateTo: todayDateInput(),
-  dailyStartTime: "09:00",
-  dailyEndTime: "21:00",
+  windows: [emptyWindow()],
   active: true,
   items: [],
 };
+
+const emptySelector = { mode: "ALL", categoryIds: [], productIds: [], search: "" };
+const emptyBulkConfig = { discountType: "FIXED_PRICE", discountValue: "", dailyStockLimit: "" };
 
 export default function AdminFlashSales() {
   const { toast, notify, dismiss } = useToast();
   const [campaigns, setCampaigns] = useState([]);
   const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [query, setQuery] = useState("");
-  const [productQuery, setProductQuery] = useState("");
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [draft, setDraft] = useState(emptyDraft);
   const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [savingCore, setSavingCore] = useState(false);
   const [apiError, setApiError] = useState("");
+
+  const [selector, setSelector] = useState(emptySelector);
+  const [bulkConfig, setBulkConfig] = useState(emptyBulkConfig);
+  const [previewItems, setPreviewItems] = useState(null);
+  const [applying, setApplying] = useState(false);
+  const [pickerFilter, setPickerFilter] = useState({ categoryId: "", search: "" });
+
+  const [editingItemId, setEditingItemId] = useState("");
+  const [editItemForm, setEditItemForm] = useState({});
 
   async function reload() {
     setLoading(true);
     setApiError("");
 
     try {
-      const [campaignRows, productRows] = await Promise.all([
+      const [campaignRows, productRows, categoryRows] = await Promise.all([
         getAdminFlashSalesApi(),
         getAdminProductsFromApi(),
+        getAdminCategoriesApi(),
       ]);
 
       setCampaigns(campaignRows || []);
       setProducts(productRows || []);
+      setCategories((categoryRows || []).filter((c) => c.active !== false));
+
+      return campaignRows || [];
     } catch (error) {
       console.error("ADMIN_FLASH_SALES_ERROR", error);
 
       if (error?.status === 401 || error?.message === "Unauthorized") {
         logoutAdmin();
         window.location.href = "/admin/login";
-        return;
+        return [];
       }
 
       setApiError(error?.message || "Cannot load flash sale campaigns.");
+      return [];
     } finally {
       setLoading(false);
     }
@@ -189,117 +247,76 @@ export default function AdminFlashSales() {
     };
   }, [campaigns]);
 
-  const validationErrors = useMemo(() => getFlashSaleValidationErrors(draft, products), [draft, products]);
+  const validationErrors = useMemo(() => getCampaignValidationErrors(draft), [draft]);
 
-  // Products already added to this campaign stay visible even when the
-  // search text doesn't match them, so typing a new search never makes an
-  // already-selected item silently disappear out from under the admin.
-  const filteredProducts = useMemo(() => {
-    const q = productQuery.trim().toLowerCase();
-    if (!q) return products;
-
+  const pickerProducts = useMemo(() => {
     return products.filter((product) => {
-      const selected = draft.items?.some((item) => item.productId === product.id);
-      if (selected) return true;
-
-      return (
-        String(product.nameVi || "").toLowerCase().includes(q) ||
-        String(product.sku || "").toLowerCase().includes(q)
-      );
+      if (product.active === false) return false;
+      if (pickerFilter.categoryId && product.categoryId !== pickerFilter.categoryId) return false;
+      if (!productMatchesSearch(product, pickerFilter.search)) return false;
+      return true;
     });
-  }, [products, productQuery, draft.items]);
+  }, [products, pickerFilter]);
+
+  function resetPickerState() {
+    setSelector(emptySelector);
+    setBulkConfig(emptyBulkConfig);
+    setPreviewItems(null);
+    setPickerFilter({ categoryId: "", search: "" });
+    setEditingItemId("");
+  }
 
   function patch(field, value) {
     setDraft((prev) => ({ ...prev, [field]: value }));
+    setPreviewItems(null);
   }
 
-  function toggleProduct(product) {
-    setDraft((prev) => {
-      const items = Array.isArray(prev.items) ? prev.items : [];
-      const exists = items.some((item) => item.productId === product.id);
-
-      const nextItems = exists
-        ? items.filter((item) => item.productId !== product.id)
-        : [
-            ...items,
-            {
-              productId: product.id,
-              sku: product.sku,
-              nameVi: product.nameVi,
-              discountMethod: "FIXED_PRICE",
-              priceInput: String(getProductSellingPrice(product)),
-              dailyStockLimit: "",
-            },
-          ];
-
-      return { ...prev, items: nextItems };
-    });
+  function addWindow() {
+    setDraft((prev) => ({ ...prev, windows: [...(prev.windows || []), emptyWindow()] }));
   }
 
-  function updateItem(productId, field, value) {
+  function updateWindow(index, field, value) {
     setDraft((prev) => ({
       ...prev,
-      items: (prev.items || []).map((item) =>
-        item.productId === productId ? { ...item, [field]: value } : item
-      ),
+      windows: prev.windows.map((w, i) => (i === index ? { ...w, [field]: value } : w)),
     }));
   }
 
-  // Switching method resets the raw input to a sane default for that method
-  // instead of carrying over a stale value (e.g. a "199000" fixed price left
-  // sitting in a percent field).
-  function changeDiscountMethod(productId, method) {
-    setDraft((prev) => {
-      const product = products.find((row) => row.id === productId);
-      const sellingPrice = product ? getProductSellingPrice(product) : 0;
-      const defaultInput = method === "PERCENT" ? "10" : method === "AMOUNT" ? "0" : String(sellingPrice);
-
-      return {
-        ...prev,
-        items: (prev.items || []).map((item) =>
-          item.productId === productId ? { ...item, discountMethod: method, priceInput: defaultInput } : item
-        ),
-      };
-    });
+  function removeWindow(index) {
+    setDraft((prev) => ({ ...prev, windows: prev.windows.filter((_, i) => i !== index) }));
   }
 
   function openCreate() {
     setDraft(emptyDraft);
-    setProductQuery("");
+    resetPickerState();
     setDrawerOpen(true);
   }
 
   function openEdit(item) {
-    setProductQuery("");
     setDraft({
       ...emptyDraft,
       ...item,
       dateFrom: toDateInput(item.dateFrom),
       dateTo: toDateInput(item.dateTo),
-      items: (item.items || []).map((link) => ({
-        productId: link.productId,
-        sku: link.product?.sku,
-        nameVi: link.product?.nameVi,
-        // Backend only stores the resolved flashPrice — there's no saved
-        // discount method, so editing an existing item always starts back
-        // in "Đồng giá" mode showing that absolute price.
-        discountMethod: "FIXED_PRICE",
-        priceInput: String(Number(link.flashPrice || 0)),
-        dailyStockLimit: link.dailyStockLimit ?? "",
-      })),
+      windows:
+        Array.isArray(item.windows) && item.windows.length
+          ? item.windows.map((w) => ({ dailyStartTime: w.dailyStartTime, dailyEndTime: w.dailyEndTime }))
+          : [emptyWindow()],
+      items: item.items || [],
     });
+    resetPickerState();
     setDrawerOpen(true);
   }
 
-  async function save() {
-    const errors = getFlashSaleValidationErrors(draft, products);
+  async function saveCampaignCore() {
+    const errors = getCampaignValidationErrors(draft);
 
     if (errors.length) {
       notify("error", errors.join("\n"));
       return;
     }
 
-    setSaving(true);
+    setSavingCore(true);
 
     try {
       const payload = {
@@ -307,8 +324,7 @@ export default function AdminFlashSales() {
         nameEn: draft.nameEn,
         dateFrom: draft.dateFrom,
         dateTo: draft.dateTo,
-        dailyStartTime: draft.dailyStartTime,
-        dailyEndTime: draft.dailyEndTime,
+        windows: draft.windows.map((w) => ({ dailyStartTime: w.dailyStartTime, dailyEndTime: w.dailyEndTime })),
         active: draft.active !== false,
       };
 
@@ -316,25 +332,11 @@ export default function AdminFlashSales() {
         ? await updateAdminFlashSaleApi(draft.id, payload)
         : await createAdminFlashSaleApi(payload);
 
-      const campaignId = campaign?.id || draft.id;
-      const items = (draft.items || []).map((item) => {
-        const product = products.find((row) => row.id === item.productId);
-        const sellingPrice = product ? getProductSellingPrice(product) : 0;
+      const rows2 = await reload();
+      const fresh = rows2.find((c) => c.id === campaign.id) || campaign;
 
-        return {
-          productId: item.productId,
-          flashPrice: resolveFlashPrice(item, sellingPrice),
-          dailyStockLimit: item.dailyStockLimit === "" || item.dailyStockLimit == null
-            ? null
-            : Number(item.dailyStockLimit),
-        };
-      });
-
-      await setAdminFlashSaleItemsApi(campaignId, items);
-
-      setDrawerOpen(false);
-      await reload();
-      notify("success", "Đã lưu Flash Sale campaign.");
+      setDraft((prev) => ({ ...prev, id: fresh.id, items: fresh.items || [] }));
+      notify("success", "Đã lưu thông tin campaign.");
     } catch (error) {
       const detail = error?.data?.detail;
       if (detail?.conflictingCampaignName) {
@@ -343,10 +345,10 @@ export default function AdminFlashSales() {
           `Trùng khung giờ với campaign "${detail.conflictingCampaignName}" đang active cho cùng sản phẩm. Đổi ngày/giờ hoặc bỏ bớt sản phẩm trùng.`
         );
       } else {
-        notify("error", error?.message || "Save flash sale campaign failed.");
+        notify("error", error?.message || "Lưu thông tin campaign thất bại.");
       }
     } finally {
-      setSaving(false);
+      setSavingCore(false);
     }
   }
 
@@ -361,13 +363,193 @@ export default function AdminFlashSales() {
     }
   }
 
+  function toggleCategoryId(categoryId) {
+    setSelector((prev) => {
+      const has = prev.categoryIds.includes(categoryId);
+      return {
+        ...prev,
+        categoryIds: has ? prev.categoryIds.filter((id) => id !== categoryId) : [...prev.categoryIds, categoryId],
+      };
+    });
+    setPreviewItems(null);
+  }
+
+  function toggleProductId(productId) {
+    setSelector((prev) => {
+      const has = prev.productIds.includes(productId);
+      return {
+        ...prev,
+        productIds: has ? prev.productIds.filter((id) => id !== productId) : [...prev.productIds, productId],
+      };
+    });
+    setPreviewItems(null);
+  }
+
+  function getBulkConfigErrors() {
+    const errors = [];
+    const value = Number(bulkConfig.discountValue) || 0;
+
+    if (bulkConfig.discountType === "PERCENT") {
+      if (!(value > 0 && value <= 100)) errors.push("% giảm phải trong khoảng 1-100.");
+    } else if (bulkConfig.discountType === "AMOUNT") {
+      if (!(value > 0)) errors.push("Số tiền giảm phải lớn hơn 0.");
+    } else if (!(value > 0)) {
+      errors.push("Giá đồng giá phải lớn hơn 0.");
+    }
+
+    if (selector.mode === "CATEGORY" && !selector.categoryIds.length) {
+      errors.push("Chọn ít nhất 1 danh mục.");
+    }
+    if (selector.mode === "SPECIFIC" && !selector.productIds.length) {
+      errors.push("Chọn ít nhất 1 sản phẩm.");
+    }
+
+    return errors;
+  }
+
+  function buildPreview() {
+    const errors = getBulkConfigErrors();
+    if (errors.length) {
+      notify("error", errors.join("\n"));
+      setPreviewItems(null);
+      return;
+    }
+
+    const value = Number(bulkConfig.discountValue) || 0;
+    const matches = getSelectorMatches(products, selector);
+
+    if (!matches.length) {
+      notify("error", "Không có sản phẩm active nào khớp điều kiện đã chọn.");
+      setPreviewItems([]);
+      return;
+    }
+
+    if (bulkConfig.discountType === "AMOUNT") {
+      const violating = matches.find((p) => value >= getProductSellingPrice(p));
+      if (violating) {
+        notify(
+          "error",
+          `${violating.nameVi}: số tiền giảm không được vượt quá giá gốc (${formatCurrency(getProductSellingPrice(violating))}).`
+        );
+        return;
+      }
+    }
+
+    setPreviewItems(
+      matches.map((p) => ({
+        productId: p.id,
+        sku: p.sku,
+        nameVi: p.nameVi,
+        sellingPrice: getProductSellingPrice(p),
+        finalPrice: computeFinalPrice(bulkConfig.discountType, value, getProductSellingPrice(p)),
+      }))
+    );
+  }
+
+  async function refreshDraftItems() {
+    const rows2 = await reload();
+    const fresh = rows2.find((c) => c.id === draft.id);
+    setDraft((prev) => ({ ...prev, items: fresh?.items || [] }));
+    return fresh;
+  }
+
+  async function applyBulk() {
+    if (!draft.id) {
+      notify("error", "Vui lòng lưu thông tin campaign trước khi áp dụng sản phẩm.");
+      return;
+    }
+
+    if (!previewItems || !previewItems.length) {
+      notify("error", "Vui lòng bấm Xem trước và kiểm tra danh sách trước khi áp dụng.");
+      return;
+    }
+
+    setApplying(true);
+
+    try {
+      const value = Number(bulkConfig.discountValue) || 0;
+      const payload = {
+        selector: {
+          mode: selector.mode,
+          ...(selector.mode === "CATEGORY" ? { categoryIds: selector.categoryIds } : {}),
+          ...(selector.mode === "SPECIFIC" ? { productIds: selector.productIds } : {}),
+          ...(selector.mode !== "SPECIFIC" && selector.search ? { search: selector.search } : {}),
+        },
+        discountType: bulkConfig.discountType,
+        discountValue: value,
+        dailyStockLimit: bulkConfig.dailyStockLimit === "" ? null : Number(bulkConfig.dailyStockLimit),
+      };
+
+      const result = await bulkGenerateAdminFlashSaleItemsApi(draft.id, payload);
+
+      notify(
+        "success",
+        `Đã áp dụng: ${result.createdCount || 0} sản phẩm mới, cập nhật ${result.updatedCount || 0} sản phẩm.`
+      );
+
+      await refreshDraftItems();
+      setPreviewItems(null);
+    } catch (error) {
+      const detail = error?.data?.detail;
+      if (detail?.conflictingCampaignName) {
+        notify(
+          "error",
+          `Trùng khung giờ với campaign "${detail.conflictingCampaignName}" đang active cho ${detail.productIds?.length || 0} sản phẩm trong danh sách vừa chọn.`
+        );
+      } else {
+        notify("error", error?.message || "Áp dụng hàng loạt thất bại.");
+      }
+    } finally {
+      setApplying(false);
+    }
+  }
+
+  function startEditItem(item) {
+    setEditingItemId(item.id);
+    setEditItemForm({
+      discountType: item.discountType || "FIXED_PRICE",
+      discountValue: String(Number(item.discountValue) || 0),
+      dailyStockLimit: item.dailyStockLimit ?? "",
+    });
+  }
+
+  async function saveEditItem(item) {
+    try {
+      const value = Number(editItemForm.discountValue) || 0;
+
+      await patchAdminFlashSaleItemApi(draft.id, item.id, {
+        discountType: editItemForm.discountType,
+        discountValue: value,
+        dailyStockLimit: editItemForm.dailyStockLimit === "" ? null : Number(editItemForm.dailyStockLimit),
+      });
+
+      await refreshDraftItems();
+      setEditingItemId("");
+      notify("success", "Đã cập nhật sản phẩm trong campaign.");
+    } catch (error) {
+      notify("error", error?.message || "Cập nhật sản phẩm thất bại.");
+    }
+  }
+
+  async function removeItem(item) {
+    if (!window.confirm(`Bỏ "${item.product?.nameVi || item.sku || item.productId}" khỏi campaign?`)) return;
+
+    try {
+      await deleteAdminFlashSaleItemApi(draft.id, item.id);
+      await refreshDraftItems();
+      notify("success", "Đã xóa sản phẩm khỏi campaign.");
+    } catch (error) {
+      notify("error", error?.message || "Xóa sản phẩm thất bại.");
+    }
+  }
+
   return (
     <>
       <Toast show={toast.show} type={toast.type} message={toast.message} onClose={dismiss} />
       <AdminPageHeader
         eyebrow="Pricing & Promotion"
         title="Flash Sale"
-        desc="Quản lý các đợt Flash Sale độc lập với Khuyến mãi — mỗi campaign có khung ngày + khung giờ hàng ngày riêng, giá Flash Sale và giới hạn số lượng/ngày theo từng sản phẩm."
+        desc="Quản lý các đợt Flash Sale độc lập với Khuyến mãi — mỗi campaign có khung ngày + nhiều khung giờ hàng ngày, cấu hình giảm giá hàng loạt theo phạm vi sản phẩm."
         action={
           <button onClick={openCreate} className="rounded-md bg-blue-700 px-4 py-2 text-xs font-black text-white hover:bg-blue-800">
             <Plus size={15} className="mr-1 inline" />
@@ -376,10 +558,6 @@ export default function AdminFlashSales() {
         }
       />
 
-      {/* key forces a fresh DOM subtree once campaigns load — the legacy
-          auto-translate MutationObserver caches a text node's first-seen
-          value and keeps re-applying it, so an in-place "0" -> "1" update
-          gets silently reverted without a fresh node (see ShopStatsBar). */}
       <section key={loading ? "loading" : "loaded"} className="mb-4 grid gap-4 md:grid-cols-4">
         <div className="rounded-3xl bg-white p-5 shadow-sm">
           <p className="text-xs font-black uppercase text-slate-400">Campaigns</p>
@@ -466,7 +644,9 @@ export default function AdminFlashSales() {
                     </td>
 
                     <td className="px-4 py-3 text-slate-600">
-                      {item.dailyStartTime} – {item.dailyEndTime}
+                      {(item.windows || []).length
+                        ? item.windows.map((w) => `${w.dailyStartTime}–${w.dailyEndTime}`).join(", ")
+                        : `${item.dailyStartTime || "-"} – ${item.dailyEndTime || "-"}`}
                     </td>
 
                     <td className="px-4 py-3 text-right font-black">{item.items?.length || 0}</td>
@@ -489,8 +669,8 @@ export default function AdminFlashSales() {
         title={draft.id ? "Sửa Flash Sale campaign" : "Tạo Flash Sale campaign"}
         subtitle="Flash Sale campaign"
         onClose={() => setDrawerOpen(false)}
-        onSave={saving ? undefined : save}
-        saveLabel={saving ? "Đang lưu..." : "Lưu campaign"}
+        onSave={savingCore ? undefined : saveCampaignCore}
+        saveLabel={savingCore ? "Đang lưu..." : "Lưu thông tin campaign"}
       >
         <div className="space-y-6">
           <div className="grid gap-4 md:grid-cols-2">
@@ -498,11 +678,57 @@ export default function AdminFlashSales() {
             <AdminTextField label="Tên campaign EN" value={draft.nameEn} onChange={(value) => patch("nameEn", value)} />
             <AdminTextField label="Từ ngày" required type="date" value={draft.dateFrom} onChange={(value) => patch("dateFrom", value)} />
             <AdminTextField label="Đến ngày" required type="date" value={draft.dateTo} onChange={(value) => patch("dateTo", value)} />
-            <AdminTextField label="Giờ mở bán hàng ngày" required type="time" value={draft.dailyStartTime} onChange={(value) => patch("dailyStartTime", value)} />
-            <AdminTextField label="Giờ đóng bán hàng ngày" required type="time" value={draft.dailyEndTime} onChange={(value) => patch("dailyEndTime", value)} />
           </div>
 
           <AdminToggle label="Active" checked={draft.active !== false} onChange={(value) => patch("active", value)} />
+
+          <section className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <div className="text-sm font-black text-slate-800">Khung giờ bán hàng ngày</div>
+              <button
+                type="button"
+                onClick={addWindow}
+                className="rounded-md border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-black text-blue-700 hover:bg-blue-100"
+              >
+                <Plus size={13} className="mr-1 inline" />
+                Thêm khung giờ
+              </button>
+            </div>
+
+            <p className="mb-3 text-xs font-semibold text-slate-500">
+              Hỗ trợ nhiều khung giờ/ngày (VD: khung trưa 09:00–10:00 và khung tối 20:00–21:00). Các khung không được chồng giờ nhau.
+            </p>
+
+            <div className="space-y-2">
+              {(draft.windows || []).map((w, index) => (
+                <div key={index} className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white p-3">
+                  <span className="w-6 shrink-0 text-xs font-black text-slate-400">#{index + 1}</span>
+                  <input
+                    type="time"
+                    value={w.dailyStartTime}
+                    onChange={(event) => updateWindow(index, "dailyStartTime", event.target.value)}
+                    className="rounded-md border border-slate-300 px-3 py-2 text-sm font-semibold outline-none focus:border-blue-500"
+                  />
+                  <span className="text-slate-400">–</span>
+                  <input
+                    type="time"
+                    value={w.dailyEndTime}
+                    onChange={(event) => updateWindow(index, "dailyEndTime", event.target.value)}
+                    className="rounded-md border border-slate-300 px-3 py-2 text-sm font-semibold outline-none focus:border-blue-500"
+                  />
+                  {(draft.windows || []).length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeWindow(index)}
+                      className="ml-auto rounded-md border border-red-200 bg-red-50 px-2 py-1.5 text-xs font-bold text-red-600 hover:bg-red-100"
+                    >
+                      <X size={13} />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </section>
 
           {validationErrors.length > 0 && (
             <div className="rounded-2xl border border-red-100 bg-red-50 p-3 text-xs font-bold leading-5 text-red-700">
@@ -512,140 +738,328 @@ export default function AdminFlashSales() {
             </div>
           )}
 
-          <section className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
-            <div className="mb-1 flex items-center gap-2 text-sm font-black text-slate-800">
-              <Zap size={16} className="text-amber-500" />
-              Sản phẩm áp dụng &amp; giá Flash Sale
+          {!draft.id ? (
+            <div className="rounded-2xl border border-dashed border-blue-200 bg-blue-50 p-4 text-sm font-bold text-blue-800">
+              Lưu thông tin campaign ở trên trước, sau đó chọn phạm vi sản phẩm &amp; cấu hình giảm giá bên dưới.
             </div>
-            <p className="mb-3 text-xs font-semibold text-slate-500">
-              Chọn sản phẩm rồi nhập giá Flash Sale riêng. Giới hạn số lượng/ngày để bỏ trống nếu không muốn hiện thanh "Đã bán X".
-            </p>
-
-            <div className="mb-3 flex items-center rounded-2xl border border-slate-300 bg-white px-3 py-2">
-              <Search size={15} className="shrink-0 text-slate-400" />
-              <input
-                value={productQuery}
-                onChange={(event) => setProductQuery(event.target.value)}
-                placeholder="Tìm theo tên sản phẩm hoặc SKU..."
-                className="w-full bg-transparent px-2 text-sm font-semibold outline-none placeholder:text-slate-400"
-              />
-              {productQuery && (
-                <button
-                  type="button"
-                  onClick={() => setProductQuery("")}
-                  className="shrink-0 rounded-full px-2 text-xs font-black text-slate-400 hover:text-slate-600"
-                >
-                  Xóa
-                </button>
-              )}
-            </div>
-
-            <div className="max-h-[420px] space-y-2 overflow-auto pr-1">
-              {productQuery && filteredProducts.length === 0 && (
-                <div className="rounded-2xl border border-dashed border-slate-200 bg-white px-4 py-6 text-center text-xs font-bold text-slate-400">
-                  Không tìm thấy sản phẩm khớp "{productQuery}".
+          ) : (
+            <>
+              <section className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
+                <div className="mb-1 flex items-center gap-2 text-sm font-black text-slate-800">
+                  <Zap size={16} className="text-amber-500" />
+                  1. Phạm vi sản phẩm áp dụng
                 </div>
-              )}
 
-              {filteredProducts.map((product) => {
-                const selectedItem = draft.items?.find((item) => item.productId === product.id);
-                const checked = Boolean(selectedItem);
-
-                return (
-                  <div
-                    key={product.id}
-                    className={`rounded-2xl border px-4 py-3 transition ${
-                      checked ? "border-blue-200 bg-blue-50" : "border-slate-200 bg-white"
-                    }`}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => toggleProduct(product)}
-                      className="flex w-full items-center justify-between text-left"
+                <div className="mt-3 space-y-2">
+                  {SELECTOR_MODE_OPTIONS.map((option) => (
+                    <label
+                      key={option.value}
+                      className={`flex cursor-pointer items-start gap-3 rounded-2xl border p-3 ${
+                        selector.mode === option.value ? "border-blue-300 bg-blue-50" : "border-slate-200 bg-white"
+                      }`}
                     >
+                      <input
+                        type="radio"
+                        name="selector-mode"
+                        className="mt-1"
+                        checked={selector.mode === option.value}
+                        onChange={() => {
+                          setSelector((prev) => ({ ...emptySelector, mode: option.value, search: prev.search }));
+                          setPreviewItems(null);
+                        }}
+                      />
                       <div>
-                        <div className="font-black text-slate-900">{product.nameVi}</div>
-                        <div className="text-xs font-semibold text-slate-500">
-                          {product.sku} · Giá bán {formatCurrency(getProductSellingPrice(product))}
-                        </div>
+                        <div className="font-black text-slate-900">{option.label}</div>
+                        <div className="text-xs font-semibold text-slate-500">{option.desc}</div>
                       </div>
-                      <div className={`rounded-full px-3 py-1 text-[11px] font-black ${checked ? "bg-blue-700 text-white" : "bg-slate-100 text-slate-500"}`}>
-                        {checked ? "SELECTED" : "ADD"}
-                      </div>
-                    </button>
+                    </label>
+                  ))}
+                </div>
 
-                    {checked && (
-                      <div className="mt-3 space-y-3 border-t border-blue-100 pt-3">
-                        <AdminSelect
-                          label="Phương thức giảm giá"
-                          options={DISCOUNT_METHOD_OPTIONS}
-                          value={selectedItem.discountMethod || "FIXED_PRICE"}
-                          onChange={(value) => changeDiscountMethod(product.id, value)}
-                        />
-
-                        <div className="grid gap-3 sm:grid-cols-2">
-                          {/* key forces a fresh DOM subtree per method — the legacy
-                              auto-translate MutationObserver caches each text node's
-                              first-seen value and keeps re-applying it, so switching
-                              methods would leave the OLD label/suffix text stuck in
-                              place otherwise (see ShopStatsBar / summary cards fix). */}
-                          <AdminTextField
-                            key={selectedItem.discountMethod || "FIXED_PRICE"}
-                            label={
-                              selectedItem.discountMethod === "PERCENT"
-                                ? "Số % giảm"
-                                : selectedItem.discountMethod === "AMOUNT"
-                                  ? "Số tiền giảm"
-                                  : "Giá Flash Sale"
-                            }
-                            required
-                            type="number"
-                            suffix={selectedItem.discountMethod === "PERCENT" ? "%" : "đ"}
-                            value={selectedItem.priceInput}
-                            onChange={(value) => updateItem(product.id, "priceInput", value)}
-                          />
-
-                          {selectedItem.discountMethod === "FIXED_PRICE" ? (
-                            <AdminTextField
-                              label="Giới hạn số lượng/ngày"
-                              tip="Bỏ trống = không giới hạn"
-                              type="number"
-                              value={selectedItem.dailyStockLimit}
-                              onChange={(value) => updateItem(product.id, "dailyStockLimit", value)}
-                            />
-                          ) : (
-                            // key forces a fresh node per keystroke — same
-                            // stale-text-node caching issue as the label above,
-                            // otherwise the preview amount freezes on its first
-                            // value as the admin types.
-                            <div
-                              key={`${selectedItem.discountMethod}-${selectedItem.priceInput}`}
-                              className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2"
-                            >
-                              <div className="text-[11px] font-black uppercase text-emerald-700">Giá cuối (preview)</div>
-                              <div className="mt-1 text-sm font-black text-emerald-800">
-                                {formatCurrency(resolveFlashPrice(selectedItem, getProductSellingPrice(product)))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-
-                        {selectedItem.discountMethod !== "FIXED_PRICE" && (
-                          <AdminTextField
-                            label="Giới hạn số lượng/ngày"
-                            tip="Bỏ trống = không giới hạn"
-                            type="number"
-                            value={selectedItem.dailyStockLimit}
-                            onChange={(value) => updateItem(product.id, "dailyStockLimit", value)}
-                          />
-                        )}
-                      </div>
-                    )}
+                {selector.mode !== "SPECIFIC" && (
+                  <div className="mt-3">
+                    <AdminTextField
+                      label="Lọc thêm theo tên/SKU (tùy chọn)"
+                      placeholder="VD: RX-78, Nightingale..."
+                      value={selector.search}
+                      onChange={(value) => {
+                        setSelector((prev) => ({ ...prev, search: value }));
+                        setPreviewItems(null);
+                      }}
+                    />
                   </div>
-                );
-              })}
-            </div>
-          </section>
+                )}
+
+                {selector.mode === "CATEGORY" && (
+                  <div className="mt-3 max-h-64 space-y-1 overflow-auto rounded-2xl border border-slate-200 bg-white p-3">
+                    {categories.length === 0 && (
+                      <div className="text-xs font-bold text-slate-400">Chưa có danh mục nào.</div>
+                    )}
+                    {categories.map((category) => (
+                      <label key={category.id} className="flex cursor-pointer items-center gap-2 rounded-xl px-2 py-1.5 hover:bg-slate-50">
+                        <input
+                          type="checkbox"
+                          checked={selector.categoryIds.includes(category.id)}
+                          onChange={() => toggleCategoryId(category.id)}
+                        />
+                        <span className="text-sm font-semibold text-slate-700">{category.nameVi}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+
+                {selector.mode === "SPECIFIC" && (
+                  <div className="mt-3">
+                    <div className="grid gap-2 sm:grid-cols-[1fr_220px]">
+                      <div className="flex items-center rounded-2xl border border-slate-300 bg-white px-3 py-2">
+                        <Search size={15} className="shrink-0 text-slate-400" />
+                        <input
+                          value={pickerFilter.search}
+                          onChange={(event) => setPickerFilter((prev) => ({ ...prev, search: event.target.value }))}
+                          placeholder="Tìm theo tên hoặc SKU..."
+                          className="w-full bg-transparent px-2 text-sm font-semibold outline-none placeholder:text-slate-400"
+                        />
+                      </div>
+                      <select
+                        value={pickerFilter.categoryId}
+                        onChange={(event) => setPickerFilter((prev) => ({ ...prev, categoryId: event.target.value }))}
+                        className="rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm font-semibold outline-none"
+                      >
+                        <option value="">Tất cả danh mục</option>
+                        {categories.map((category) => (
+                          <option key={category.id} value={category.id}>{category.nameVi}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="mt-2 text-xs font-bold text-slate-500">
+                      Đã chọn {selector.productIds.length} sản phẩm.
+                    </div>
+
+                    <div className="mt-2 max-h-72 space-y-1 overflow-auto rounded-2xl border border-slate-200 bg-white p-2">
+                      {pickerProducts.length === 0 && (
+                        <div className="p-3 text-xs font-bold text-slate-400">Không có sản phẩm khớp bộ lọc.</div>
+                      )}
+                      {pickerProducts.map((product) => (
+                        <label key={product.id} className="flex cursor-pointer items-center gap-2 rounded-xl px-2 py-1.5 hover:bg-slate-50">
+                          <input
+                            type="checkbox"
+                            checked={selector.productIds.includes(product.id)}
+                            onChange={() => toggleProductId(product.id)}
+                          />
+                          <span className="text-sm font-semibold text-slate-700">
+                            {product.nameVi} <span className="text-slate-400">· {product.sku} · {formatCurrency(getProductSellingPrice(product))}</span>
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </section>
+
+              <section className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
+                <div className="mb-3 text-sm font-black text-slate-800">2. Cấu hình giảm giá chung</div>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <AdminSelect
+                    label="Kiểu giảm giá"
+                    options={DISCOUNT_METHOD_OPTIONS}
+                    value={bulkConfig.discountType}
+                    onChange={(value) => {
+                      setBulkConfig((prev) => ({ ...prev, discountType: value }));
+                      setPreviewItems(null);
+                    }}
+                  />
+                  <AdminTextField
+                    key={bulkConfig.discountType}
+                    label={
+                      bulkConfig.discountType === "PERCENT"
+                        ? "Số % giảm"
+                        : bulkConfig.discountType === "AMOUNT"
+                          ? "Số tiền giảm"
+                          : "Giá đồng giá"
+                    }
+                    required
+                    type="number"
+                    suffix={bulkConfig.discountType === "PERCENT" ? "%" : "đ"}
+                    value={bulkConfig.discountValue}
+                    onChange={(value) => {
+                      setBulkConfig((prev) => ({ ...prev, discountValue: value }));
+                      setPreviewItems(null);
+                    }}
+                  />
+                </div>
+
+                <div className="mt-3">
+                  <AdminTextField
+                    label="Giới hạn số lượng/ngày (áp dụng cho mọi sản phẩm khớp)"
+                    tip="Bỏ trống = không giới hạn"
+                    type="number"
+                    value={bulkConfig.dailyStockLimit}
+                    onChange={(value) => {
+                      setBulkConfig((prev) => ({ ...prev, dailyStockLimit: value }));
+                    }}
+                  />
+                </div>
+
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={buildPreview}
+                    className="inline-flex items-center gap-2 rounded-md border border-blue-200 bg-blue-50 px-4 py-2 text-xs font-black text-blue-700 hover:bg-blue-100"
+                  >
+                    <Eye size={14} />
+                    3. Xem trước
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => void applyBulk()}
+                    disabled={applying || !previewItems?.length}
+                    className="inline-flex items-center gap-2 rounded-md bg-emerald-600 px-4 py-2 text-xs font-black text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <Save size={14} />
+                    4. {applying ? "Đang áp dụng..." : "Áp dụng"}
+                  </button>
+                </div>
+
+                {previewItems && (
+                  <div className="mt-4 overflow-hidden rounded-2xl border border-emerald-200 bg-white">
+                    <div className="border-b border-emerald-100 bg-emerald-50 px-4 py-2 text-xs font-black text-emerald-800">
+                      Xem trước: {previewItems.length} sản phẩm sẽ được áp dụng
+                    </div>
+                    <div className="max-h-64 overflow-auto">
+                      <table className="w-full text-xs">
+                        <thead className="bg-slate-50 text-left font-black uppercase text-slate-500">
+                          <tr>
+                            <th className="px-3 py-2">SKU</th>
+                            <th className="px-3 py-2">Sản phẩm</th>
+                            <th className="px-3 py-2 text-right">Giá gốc</th>
+                            <th className="px-3 py-2 text-right">Giá Flash Sale</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {previewItems.map((row) => (
+                            <tr key={row.productId} className="border-t border-slate-100">
+                              <td className="px-3 py-2 font-bold text-slate-500">{row.sku}</td>
+                              <td className="px-3 py-2 font-semibold text-slate-800">{row.nameVi}</td>
+                              <td className="px-3 py-2 text-right text-slate-400 line-through">{formatCurrency(row.sellingPrice)}</td>
+                              <td className="px-3 py-2 text-right font-black text-emerald-700">{formatCurrency(row.finalPrice)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+              </section>
+
+              <section className="rounded-3xl border border-slate-200 bg-white p-4">
+                <div className="mb-3 text-sm font-black text-slate-800">
+                  Sản phẩm đang trong campaign ({(draft.items || []).length})
+                </div>
+
+                {(draft.items || []).length === 0 ? (
+                  <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-xs font-bold text-slate-400">
+                    Chưa có sản phẩm nào — dùng khối cấu hình phía trên rồi bấm Áp dụng.
+                  </div>
+                ) : (
+                  <div className="overflow-auto rounded-2xl border border-slate-200">
+                    <table className="w-full text-xs">
+                      <thead className="bg-slate-50 text-left font-black uppercase text-slate-500">
+                        <tr>
+                          <th className="px-3 py-2">SKU</th>
+                          <th className="px-3 py-2">Sản phẩm</th>
+                          <th className="px-3 py-2">Kiểu giảm</th>
+                          <th className="px-3 py-2 text-right">Giá trị</th>
+                          <th className="px-3 py-2 text-right">Giá cuối</th>
+                          <th className="px-3 py-2 text-right">Giới hạn/ngày</th>
+                          <th className="px-3 py-2">Thao tác</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {draft.items.map((item) => {
+                          const isEditing = editingItemId === item.id;
+                          const product = products.find((p) => p.id === item.productId);
+                          const previewFinal = isEditing
+                            ? computeFinalPrice(
+                                editItemForm.discountType,
+                                editItemForm.discountValue,
+                                product ? getProductSellingPrice(product) : Number(item.finalPrice) || 0
+                              )
+                            : item.finalPrice;
+
+                          return (
+                            <tr key={item.id} className="border-t border-slate-100 align-top">
+                              <td className="px-3 py-2 font-bold text-slate-500">{item.product?.sku || product?.sku || "-"}</td>
+                              <td className="px-3 py-2 font-semibold text-slate-800">{item.product?.nameVi || product?.nameVi || item.productId}</td>
+                              <td className="px-3 py-2">
+                                {isEditing ? (
+                                  <select
+                                    value={editItemForm.discountType}
+                                    onChange={(event) => setEditItemForm((prev) => ({ ...prev, discountType: event.target.value }))}
+                                    className="rounded-md border border-slate-300 px-2 py-1 text-xs font-semibold outline-none"
+                                  >
+                                    {DISCOUNT_METHOD_OPTIONS.map((opt) => (
+                                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                    ))}
+                                  </select>
+                                ) : (
+                                  DISCOUNT_METHOD_OPTIONS.find((opt) => opt.value === item.discountType)?.label || item.discountType
+                                )}
+                              </td>
+                              <td className="px-3 py-2 text-right">
+                                {isEditing ? (
+                                  <input
+                                    type="number"
+                                    value={editItemForm.discountValue}
+                                    onChange={(event) => setEditItemForm((prev) => ({ ...prev, discountValue: event.target.value }))}
+                                    className="w-24 rounded-md border border-slate-300 px-2 py-1 text-right text-xs font-semibold outline-none"
+                                  />
+                                ) : (
+                                  item.discountType === "PERCENT" ? `${item.discountValue}%` : formatCurrency(item.discountValue)
+                                )}
+                              </td>
+                              <td className="px-3 py-2 text-right font-black text-emerald-700">{formatCurrency(previewFinal)}</td>
+                              <td className="px-3 py-2 text-right">
+                                {isEditing ? (
+                                  <input
+                                    type="number"
+                                    value={editItemForm.dailyStockLimit}
+                                    onChange={(event) => setEditItemForm((prev) => ({ ...prev, dailyStockLimit: event.target.value }))}
+                                    className="w-20 rounded-md border border-slate-300 px-2 py-1 text-right text-xs font-semibold outline-none"
+                                  />
+                                ) : (
+                                  item.dailyStockLimit ?? "Không giới hạn"
+                                )}
+                              </td>
+                              <td className="px-3 py-2">
+                                {isEditing ? (
+                                  <div className="flex gap-1">
+                                    <button onClick={() => void saveEditItem(item)} className="rounded-md bg-emerald-600 px-2 py-1 text-[11px] font-black text-white">Lưu</button>
+                                    <button onClick={() => setEditingItemId("")} className="rounded-md border border-slate-300 px-2 py-1 text-[11px] font-bold text-slate-600">Hủy</button>
+                                  </div>
+                                ) : (
+                                  <div className="flex gap-1">
+                                    <button onClick={() => startEditItem(item)} className="rounded-md border border-slate-300 px-2 py-1 text-[11px] font-bold text-slate-600 hover:bg-slate-50">
+                                      <Edit3 size={12} className="mr-1 inline" />Sửa
+                                    </button>
+                                    <button onClick={() => void removeItem(item)} className="rounded-md border border-red-200 bg-red-50 px-2 py-1 text-[11px] font-bold text-red-600 hover:bg-red-100">
+                                      <Trash2 size={12} />
+                                    </button>
+                                  </div>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </section>
+            </>
+          )}
         </div>
       </AdminDrawer>
     </>

@@ -11,6 +11,7 @@ import {
   maskPhone,
 } from "../../constants/orderConfig";
 import PageShell from "../../components/common/PageShell";
+import OrderStatusStepper from "../../components/common/OrderStatusStepper";
 import { useLang } from "../../store/CmsStore";
 import { hasAccountToken } from "../../services/AccountApiService";
 import { getMyStorefrontOrdersApi } from "../../services/StorefrontOrderApiService";
@@ -225,6 +226,10 @@ export default function MyOrdersPage() {
 
                         <div className="mt-1 text-sm text-slate-500">
                           {order.createdAt ? new Date(order.createdAt).toLocaleString("vi-VN") : "-"}
+                        </div>
+
+                        <div className="mt-3">
+                          <OrderStatusStepper order={order} lang={lang} compact />
                         </div>
 
                         <div className="mt-3 flex flex-wrap gap-4 text-sm font-bold text-slate-600">
