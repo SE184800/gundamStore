@@ -24,7 +24,8 @@ const copy = {
     flashOpensIn: "Mở sau",
     flashApplyDate: "Áp dụng",
     flashApplyTime: "Giờ bán",
-    flashOpensAt: (time) => `Mở bán lúc ${time}`,
+    flashTodaySessions: "Khung giờ hôm nay",
+    flashSessionEnded: "đã qua",
     flashSoldProgress: (sold, limit) => `Đã bán ${sold}/${limit}`,
     voucherTitle: "Voucher khả dụng",
     voucherMinOrder: (amount) => `Đơn tối thiểu ${formatCurrency(amount)}`,
@@ -43,7 +44,8 @@ const copy = {
     flashOpensIn: "Opens in",
     flashApplyDate: "Valid",
     flashApplyTime: "Hours",
-    flashOpensAt: (time) => `Opens at ${time}`,
+    flashTodaySessions: "Today's sessions",
+    flashSessionEnded: "ended",
     flashSoldProgress: (sold, limit) => `${sold}/${limit} sold`,
     voucherTitle: "Available vouchers",
     voucherMinOrder: (amount) => `Min. order ${formatCurrency(amount)}`,
@@ -98,6 +100,55 @@ export function ShopStatsBar({ lang = "vi" }) {
       </div>
     </div>
   );
+}
+
+// All flash-sale scheduling is defined in Asia/Ho_Chi_Minh time regardless of
+// where the visitor's browser thinks it is — so "today"/"tomorrow" and
+// "already ended" comparisons must all go through VN wall-clock time rather
+// than the browser's local Date parts.
+function getVNParts(date = new Date()) {
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Ho_Chi_Minh",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hourCycle: "h23",
+    })
+      .formatToParts(date)
+      .map((p) => [p.type, p.value])
+  );
+
+  return { dateKey: `${parts.year}-${parts.month}-${parts.day}`, hm: `${parts.hour}:${parts.minute}` };
+}
+
+// GET /api/flash-sales/active only exposes campaign.countdownTarget (the
+// backend already resolves it to whichever edge is soonest — end of the live
+// window, or start of the nearest upcoming one, possibly later today) — there
+// is no flat campaign.dailyStartTime anymore now that a campaign can have
+// several windows/day, so the "opens at" label is derived from that target
+// instead of a field that no longer exists on the response.
+function formatOpensAtLabel(countdownTarget, lang = "vi") {
+  if (!countdownTarget) return "";
+  const target = new Date(countdownTarget);
+  if (Number.isNaN(target.getTime())) return "";
+
+  const { dateKey: todayKey } = getVNParts(new Date());
+  const { dateKey: targetKey, hm: targetHM } = getVNParts(target);
+
+  if (targetKey === todayKey) {
+    return lang === "en" ? `Opens at ${targetHM}` : `Mở bán lúc ${targetHM}`;
+  }
+
+  const { dateKey: tomorrowKey } = getVNParts(new Date(Date.now() + 24 * 60 * 60 * 1000));
+  if (targetKey === tomorrowKey) {
+    return lang === "en" ? `Opens ${targetHM} tomorrow` : `Mở bán ${targetHM} ngày mai`;
+  }
+
+  const dateLabel = formatFlashSaleDate(target, lang);
+  return lang === "en" ? `Opens ${targetHM} on ${dateLabel}` : `Mở bán ${targetHM} ngày ${dateLabel}`;
 }
 
 // Live Flash Sale (FlashSaleCampaign/FlashSaleItem) — driven by
@@ -156,7 +207,7 @@ function LiveFlashSaleCard({ item, campaign, lang = "vi", actions }) {
               <div className="absolute inset-0 z-10 flex items-center justify-center bg-slate-950/40">
                 <div className="flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-[11px] font-black text-slate-800">
                   <Clock size={12} />
-                  {t.flashOpensAt(campaign.dailyStartTime)}
+                  {formatOpensAtLabel(campaign.countdownTarget, lang)}
                 </div>
               </div>
             )}
@@ -222,7 +273,7 @@ function LiveFlashSaleCard({ item, campaign, lang = "vi", actions }) {
             ) : (
               <div className="flex w-full cursor-not-allowed items-center justify-center gap-1.5 rounded-lg bg-slate-100 px-2 py-2 text-xs font-black text-slate-500">
                 <Clock size={14} />
-                {t.flashOpensAt(campaign.dailyStartTime)}
+                {formatOpensAtLabel(campaign.countdownTarget, lang)}
               </div>
             )}
           </div>
@@ -245,21 +296,50 @@ function formatFlashSaleDate(value, lang = "vi") {
   return d.toLocaleDateString(lang === "en" ? "en-GB" : "vi-VN");
 }
 
+// A campaign can have several windows/day (FlashSaleWindow, sorted by
+// dailyStartTime ascending per the API) — join all of them rather than the
+// single dailyStartTime/dailyEndTime pair the old single-window schema had.
+function formatWindowsRange(windows = []) {
+  return (windows || [])
+    .filter((w) => w.dailyStartTime && w.dailyEndTime)
+    .map((w) => `${w.dailyStartTime}-${w.dailyEndTime}`)
+    .join(", ");
+}
+
 function formatFlashSaleWindow(campaign = {}, lang = "vi") {
   const dateFrom = formatFlashSaleDate(campaign.dateFrom, lang);
   const dateTo = formatFlashSaleDate(campaign.dateTo, lang);
   const dateRange = dateFrom && dateTo
     ? dateFrom === dateTo ? dateFrom : `${dateFrom} - ${dateTo}`
     : dateFrom || dateTo;
-  const timeRange = campaign.dailyStartTime && campaign.dailyEndTime
-    ? `${campaign.dailyStartTime} - ${campaign.dailyEndTime}`
-    : "";
+  const timeRange = formatWindowsRange(campaign.windows);
 
   return { dateRange, timeRange };
 }
 
+// Lists today's windows with a "(đã qua)" tag on the ones whose end time has
+// already passed (VN time) — only rendered when a campaign has more than one
+// window, so a single-window campaign isn't cluttered with a redundant line.
+function formatTodaySessionsLabel(campaign = {}, lang = "vi") {
+  const windows = campaign.windows || [];
+  if (windows.length < 2) return "";
+
+  const endedLabel = copy[lang].flashSessionEnded;
+  const { hm: nowHM } = getVNParts(new Date());
+
+  return windows
+    .filter((w) => w.dailyStartTime && w.dailyEndTime)
+    .map((w) => {
+      const ended = w.dailyEndTime <= nowHM;
+      return ended ? `${w.dailyStartTime}-${w.dailyEndTime} (${endedLabel})` : `${w.dailyStartTime}-${w.dailyEndTime}`;
+    })
+    .join(", ");
+}
+
 function sortFlashSaleCampaigns(list = []) {
-  return [...list].sort((a, b) => String(a.dailyStartTime || "").localeCompare(String(b.dailyStartTime || "")));
+  return [...list].sort((a, b) =>
+    String(a.windows?.[0]?.dailyStartTime || "").localeCompare(String(b.windows?.[0]?.dailyStartTime || ""))
+  );
 }
 
 // Shopee-style time-slot tabs: one tab per campaign/session (labeled by its
@@ -376,6 +456,15 @@ export function LiveFlashSaleSection({ lang = "vi", actions }) {
                 </div>
               );
             })()}
+            {(() => {
+              const todaySessions = formatTodaySessionsLabel(activeCampaign, lang);
+              if (!todaySessions) return null;
+              return (
+                <div className="mt-1 text-[10px] font-semibold text-white/75 sm:text-[11px]">
+                  {t.flashTodaySessions}: {todaySessions}
+                </div>
+              );
+            })()}
           </div>
         </div>
 
@@ -414,7 +503,7 @@ export function LiveFlashSaleSection({ lang = "vi", actions }) {
                   ) : (
                     <Clock size={13} className={selected ? "text-white" : "text-amber-500"} />
                   )}
-                  {timeRange || campaign.dailyStartTime}
+                  {timeRange}
                 </span>
                 {dateRange && (
                   <span className={`text-[10px] font-bold tabular-nums ${selected ? "text-white/80" : "text-slate-400"}`}>
