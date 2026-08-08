@@ -20,6 +20,7 @@ const copy = {
     updated: "Đã cập nhật địa chỉ.",
     added: "Đã thêm địa chỉ mới.",
     saveError: "Không thể lưu địa chỉ.",
+    limitReached: "Bạn đã đạt giới hạn tối đa 20 địa chỉ. Vui lòng xóa bớt địa chỉ cũ trước khi thêm mới.",
     deleteConfirm: "Xóa địa chỉ này?",
     deleted: "Đã xóa địa chỉ.",
     deleteError: "Không thể xóa địa chỉ.",
@@ -55,6 +56,7 @@ const copy = {
     updated: "Address updated.",
     added: "New address added.",
     saveError: "Unable to save address.",
+    limitReached: "You've reached the 20-address limit. Delete an old address before adding a new one.",
     deleteConfirm: "Delete this address?",
     deleted: "Address deleted.",
     deleteError: "Unable to delete address.",
@@ -223,7 +225,11 @@ export default function AddressBookSection() {
       resetForm();
       await loadAddresses();
     } catch (err) {
-      setError(err?.message || t.saveError);
+      if (!editingId && err?.status === 409) {
+        setError(t.limitReached);
+      } else {
+        setError(err?.message || t.saveError);
+      }
     } finally {
       setSaving(false);
     }

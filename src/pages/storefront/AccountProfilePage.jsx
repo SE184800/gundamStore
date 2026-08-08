@@ -14,7 +14,7 @@ import {
   User,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import PageShell from "../../components/common/PageShell";
 import AddressBookSection from "../../components/storefront/AddressBookSection";
 import { useCms, useLang } from "../../store/CmsStore";
@@ -261,6 +261,23 @@ export default function AccountProfilePage() {
   const [error, setError] = useState("");
 
   const hasToken = useMemo(() => hasAccountToken(), []);
+  const location = useLocation();
+
+  // The sidebar links to in-page sections via a hash (e.g. #address) using
+  // react-router's <Link>, which — unlike a plain <a href="#...">  — only
+  // updates the URL and never scrolls the target into view on its own. Do
+  // that scroll manually, and wait a tick for the (possibly still-loading)
+  // section below to have its real layout so the scroll lands correctly.
+  useEffect(() => {
+    const hash = location.hash?.replace("#", "");
+    if (!hash) return;
+
+    const timer = setTimeout(() => {
+      document.getElementById(hash)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 150);
+
+    return () => clearTimeout(timer);
+  }, [location.hash, loading]);
 
   useEffect(() => {
     let alive = true;

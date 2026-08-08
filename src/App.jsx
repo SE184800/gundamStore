@@ -213,6 +213,7 @@ export default function App() {
           <Route path="/profile" element={<AccountProfilePage />} />
           <Route path="/account" element={<AccountDashboardPage />} />
           <Route path="/account/profile" element={<AccountProfilePage />} />
+          <Route path="/account/addresses" element={<Navigate to="/account/profile#address" replace />} />
           <Route path="/orders" element={<MyOrdersPage />} />
           <Route path="/orders/:id" element={<OrderDetailPage />} />
           <Route path="/wishlist" element={<WishlistPage />} />

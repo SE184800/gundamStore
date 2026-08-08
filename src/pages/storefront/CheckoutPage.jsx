@@ -18,7 +18,7 @@ import {
   saveJustPlacedOrderFlag,
 } from "../../services/StorefrontOrderLookupApiService";
 import PageShell from "../../components/common/PageShell";
-import { getMyAccount, getMyAddresses, hasAccountToken } from "../../services/AccountApiService";
+import { createMyAddress, getMyAccount, getMyAddresses, hasAccountToken } from "../../services/AccountApiService";
 import {
   ORDER_TYPE,
   PAYMENT_METHODS,
@@ -114,6 +114,14 @@ function getCopy(lang) {
       lang === "en"
         ? "Loaded your saved shipping info."
         : "Đã điền thông tin nhận hàng đã lưu trước đó.",
+    saveNewAddressLabel:
+      lang === "en"
+        ? "Save this address to my address book"
+        : "Lưu địa chỉ này vào sổ địa chỉ cho lần sau",
+    saveNewAddressHint:
+      lang === "en"
+        ? "Adds this as a new address you can pick again next time — it won't change your current default."
+        : "Thêm địa chỉ này vào sổ địa chỉ để chọn lại lần sau — không thay đổi địa chỉ mặc định hiện tại.",
     shippingMethodsLoading: lang === "en" ? "Loading shipping methods..." : "Đang tải phương thức vận chuyển...",
     shippingMethodsError:
       lang === "en"
@@ -277,6 +285,7 @@ export default function CheckoutPage() {
   const [shippingMethodsError, setShippingMethodsError] = useState("");
   const [saveInfoForNextTime, setSaveInfoForNextTime] = useState(false);
   const [savedInfoNotice, setSavedInfoNotice] = useState("");
+  const [saveNewAddress, setSaveNewAddress] = useState(false);
 
   function loadShippingMethods() {
     setShippingMethodsLoading(true);
@@ -676,6 +685,19 @@ export default function CheckoutPage() {
       const apiOrder = await createStorefrontOrderApi(apiPayload);
       const mappedOrder = mapBackendOrderForStorefront(apiOrder);
 
+      // Best-effort — a failure here (e.g. hitting the 20-address cap) must
+      // never block an order that has already been placed successfully.
+      if (hasAccountToken() && saveNewAddress) {
+        createMyAddress({
+          receiver: cleanCustomer.name,
+          phone: cleanCustomer.phone,
+          address: cleanCustomer.address,
+          ward: cleanCustomer.ward,
+          district: cleanCustomer.district,
+          city: cleanCustomer.province,
+        }).catch(() => {});
+      }
+
       saveOrderSuccessSnapshot(mappedOrder, cleanCustomer);
       saveJustPlacedOrderFlag({
         orderNo: mappedOrder.orderCode,
@@ -938,6 +960,23 @@ export default function CheckoutPage() {
                     </div>
                     <p className="mt-1.5 text-xs font-semibold leading-5 text-slate-400">
                       {t.saveInfoHint}
+                    </p>
+                  </div>
+                )}
+
+                {hasAccountToken() && (
+                  <div className="mt-4 rounded-2xl bg-slate-50 px-4 py-3">
+                    <label className="flex items-center gap-2 text-sm font-bold text-slate-700">
+                      <input
+                        type="checkbox"
+                        checked={saveNewAddress}
+                        onChange={(e) => setSaveNewAddress(e.target.checked)}
+                        className="h-4 w-4"
+                      />
+                      {t.saveNewAddressLabel}
+                    </label>
+                    <p className="mt-1.5 text-xs font-semibold leading-5 text-slate-400">
+                      {t.saveNewAddressHint}
                     </p>
                   </div>
                 )}
