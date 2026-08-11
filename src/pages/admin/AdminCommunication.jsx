@@ -14,7 +14,7 @@ const emptyCommunication = { id: "", name: "", platform: "Zalo", value: "", stat
 // 2. 🛠️ ĐÃ SỬA: Đảm bảo dữ liệu mẫu hệ thống có đầy đủ cả status và active đồng bộ
 const defaultCommunications = [
   { id: "1", name: "Zalo hỗ trợ CSKH", platform: "Zalo", value: "https://zalo.me/0935950649", status: "Active", active: true },
-  { id: "2", name: "Messenger Fanpage", platform: "Messenger", value: "https://m.me/tri.nguyen.nam.minh", status: "Active", active: true },
+  { id: "2", name: "Facebook Fanpage", platform: "Facebook", value: "https://www.facebook.com/gundamstorevn", status: "Active", active: true },
   { id: "3", name: "Hotline Tư vấn 24/7", platform: "Hotline", value: "0935950649", status: "Inactive", active: false }
 ];
 
@@ -126,7 +126,7 @@ export default function AdminCommunication() {
                     <td className="px-4 py-3">
                       <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-bold ${
                         comm.platform === "Zalo" ? "bg-cyan-50 text-cyan-700" :
-                        comm.platform === "Messenger" ? "bg-indigo-50 text-indigo-700" : "bg-emerald-50 text-emerald-700"
+                        comm.platform === "Facebook" ? "bg-indigo-50 text-indigo-700" : "bg-emerald-50 text-emerald-700"
                       }`}>{comm.platform}</span>
                     </td>
                     <td className="px-4 py-3 font-mono text-xs text-slate-600 max-w-[350px] truncate">{comm.value}</td>
@@ -145,7 +145,7 @@ export default function AdminCommunication() {
       <AdminDrawer open={open} title={draft.id ? "Edit connection" : "Add connection"} onClose={() => setOpen(false)} onSave={saveCommunication} saveLabel="Save">
         <div className="space-y-5">
           <AdminTextField label="Tên kết nối (Label Name)" value={draft.name} onChange={(v) => patch("name", v)} />
-          <AdminSelect label="Nền tảng (Platform)" value={draft.platform} onChange={(v) => patch("platform", v)} options={["Zalo", "Messenger", "Hotline"]} />
+          <AdminSelect label="Nền tảng (Platform)" value={draft.platform} onChange={(v) => patch("platform", v)} options={["Zalo", "Facebook", "Hotline"]} />
           <AdminTextField label="Giá trị kết nối (URL / Số điện thoại)" value={draft.value} onChange={(v) => patch("value", v)} />
           <AdminSelect 
             label="Trạng thái hoạt động (Status)" 

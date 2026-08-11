@@ -1,4 +1,41 @@
 export const POLICY_PAGES = {
+  policies: {
+    titleVi: "Chính sách mua hàng & Đổi trả",
+    titleEn: "Purchase & Return Policy",
+    descriptionVi: "Chính sách mua hàng và chính sách đổi trả, bảo hành áp dụng cho toàn bộ sản phẩm tại Gundam Store VN.",
+    descriptionEn: "Purchase policy and return/warranty policy that applies to every product at Gundam Store VN.",
+    sections: [
+      {
+        titleVi: "Chính sách mua hàng",
+        titleEn: "Purchase policy",
+        bulletsVi: [
+          "Hàng chính hãng, nguồn gốc minh bạch.",
+          "Đổi trả theo chính sách nếu sản phẩm lỗi do nhà sản xuất.",
+          "Hỗ trợ kiểm tra tình trạng hộp trước khi giao.",
+        ],
+        bulletsEn: [
+          "Authentic product with transparent source.",
+          "Return support according to policy if the item has manufacturing issues.",
+          "Box condition support before delivery.",
+        ],
+      },
+      {
+        titleVi: "Đổi trả & bảo hành",
+        titleEn: "Returns & warranty",
+        bulletsVi: [
+          "Đổi trả nếu lỗi do nhà sản xuất theo chính sách shop.",
+          "Khuyến khích quay video mở hộp để xử lý nhanh hơn.",
+          "Không hỗ trợ đổi trả nếu runner đã cắt/lắp ráp.",
+        ],
+        bulletsEn: [
+          "Return support for manufacturing defects according to shop policy.",
+          "Unboxing video helps the shop process issues faster.",
+          "No returns after runners are cut or assembled.",
+        ],
+      },
+    ],
+  },
+
   "shipping-policy": {
     titleVi: "Chính sách giao hàng",
     titleEn: "Shipping Policy",

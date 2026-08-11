@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   ArrowRight,
   BellRing,
@@ -12,6 +12,7 @@ import {
   Flame,
   GitCompareArrows,
   Heart,
+  LogIn,
   MapPin,
   Minus,
   PackageCheck,
@@ -33,6 +34,7 @@ import ProductCard from "../../components/storefront/ProductCard";
 import CountdownTimer from "../../components/common/CountdownTimer";
 import useShopStats from "../../hooks/useShopStats";
 import useContactChannels from "../../hooks/useContactChannels";
+import useFeatureAccess from "../../hooks/useFeatureAccess";
 import { useCms } from "../../store/CmsStore";
 import { translateStaticText } from "../../i18n";
 import { addProductToCart, forceCartBadgeSync, saveBuyNowDraft, saveCheckoutDraft, validateCartStock } from "../../services/CartService";
@@ -126,21 +128,13 @@ const copy = {
     shippingTitle: "Cam kết giao hàng",
     shipping1: "Bọc chống sốc 3 lớp, ưu tiên giữ hộp đẹp cho collector.",
     shipping2: "Kiểm tra ngoại hộp trước khi đóng gói.",
-    shipping3: "Hỗ trợ tra cứu đơn và tư vấn qua Zalo/Facebook.",
+    shipping3: "Hỗ trợ tra cứu đơn và tư vấn qua Zalo.",
     productInfoTitle: "Thông tin sản phẩm",
     material: "Chất liệu",
     difficulty: "Độ khó",
     boxTitle: "Đập hộp có gì?",
     descTitle: "Mô tả sản phẩm",
     defaultDesc: "Mô hình lắp ráp Gundam/Gunpla chính hãng, phù hợp builder và collector. Sản phẩm được đóng gói kỹ, minh bạch thông tin, hỗ trợ tư vấn trước và sau khi mua.",
-    policyTitle: "Chính sách mua hàng",
-    policy1: "Hàng chính hãng, nguồn gốc minh bạch.",
-    policy2: "Đổi trả theo chính sách nếu sản phẩm lỗi do nhà sản xuất.",
-    policy3: "Hỗ trợ kiểm tra tình trạng hộp trước khi giao.",
-    returnTitle: "Đổi trả & bảo hành",
-    return1: "Đổi trả nếu lỗi do nhà sản xuất theo chính sách shop.",
-    return2: "Khuyến khích quay video mở hộp để xử lý nhanh hơn.",
-    return3: "Không hỗ trợ đổi trả nếu runner đã cắt/lắp ráp.",
     tabInfo: "Thông tin sản phẩm",
     tabDesc: "Mô tả sản phẩm",
     tabPolicy: "Chính sách & bảo hành",
@@ -215,21 +209,13 @@ const copy = {
     shippingTitle: "Delivery guarantee",
     shipping1: "Triple-layer shock protection, keeping boxes mint for collectors.",
     shipping2: "Outer box condition checked before packing.",
-    shipping3: "Order tracking and support via Zalo/Facebook.",
+    shipping3: "Order tracking and support via Zalo.",
     productInfoTitle: "Product information",
     material: "Material",
     difficulty: "Difficulty",
     boxTitle: "What’s in the box?",
     descTitle: "Product description",
     defaultDesc: "Authentic Gundam/Gunpla model kit for builders and collectors. Carefully packed, transparent information, with support before and after purchase.",
-    policyTitle: "Purchase policy",
-    policy1: "Authentic product with transparent source.",
-    policy2: "Return support according to policy if the item has manufacturing issues.",
-    policy3: "Box condition support before delivery.",
-    returnTitle: "Returns & warranty",
-    return1: "Return support for manufacturing defects according to shop policy.",
-    return2: "Unboxing video helps the shop process issues faster.",
-    return3: "No returns after runners are cut or assembled.",
     tabInfo: "Product information",
     tabDesc: "Description",
     tabPolicy: "Policies & warranty",
@@ -481,6 +467,7 @@ function ProductInfo({ product, lang, actions, onPreorder, reviewCount = 0 }) {
   const [alertForm, setAlertForm] = useState({ name: "", phone: "", note: "" });
   const [alertMessage, setAlertMessage] = useState("");
   const [alertError, setAlertError] = useState("");
+  const { blocked: restockAlertRequiresLogin } = useFeatureAccess("restock_alert");
   const navigate = useNavigate();
   const { toast, notify, dismiss } = useToast();
 
@@ -845,50 +832,69 @@ function ProductInfo({ product, lang, actions, onPreorder, reviewCount = 0 }) {
 
       {/* RestockAlertFormStart */}
       {(preorder || isOutOfStock || String(currentProduct.status || "").toLowerCase().includes("coming")) && (
-        <form onSubmit={submitRestockAlert} className="mt-3 rounded-2xl border border-cyan-100 bg-cyan-50 p-3">
-          <div className="mb-2 flex items-center gap-2 text-xs font-black text-cyan-800">
-            <BellRing size={16} />
-            {t.notifyTitle}
-          </div>
-
-          {alertMessage && (
-            <div className="mb-2 rounded-xl bg-green-50 p-2.5 text-[11px] font-black text-green-700">
-              {alertMessage}
+        restockAlertRequiresLogin ? (
+          <div className="mt-3 rounded-2xl border border-cyan-100 bg-cyan-50 p-3 text-center">
+            <div className="mb-2 flex items-center justify-center gap-2 text-xs font-black text-cyan-800">
+              <BellRing size={16} />
+              {t.notifyTitle}
             </div>
-          )}
-
-          {alertError && (
-            <div className="mb-2 rounded-xl bg-red-50 p-2.5 text-[11px] font-black text-red-600">
-              {alertError}
-            </div>
-          )}
-
-          <div className="grid gap-2 sm:grid-cols-2">
-            <input
-              value={alertForm.name}
-              onChange={(event) => patchAlert("name", event.target.value)}
-              placeholder={t.notifyName}
-              className="rounded-xl border border-cyan-100 bg-white px-3 py-2.5 text-sm font-bold outline-none"
-            />
-            <input
-              value={alertForm.phone}
-              onChange={(event) => patchAlert("phone", event.target.value)}
-              placeholder={t.notifyPhone}
-              inputMode="tel"
-              className="rounded-xl border border-cyan-100 bg-white px-3 py-2.5 text-sm font-bold outline-none"
-            />
-            <input
-              value={alertForm.note}
-              onChange={(event) => patchAlert("note", event.target.value)}
-              placeholder={t.notifyNote}
-              className="rounded-xl border border-cyan-100 bg-white px-3 py-2.5 text-sm font-bold outline-none sm:col-span-2"
-            />
+            <p className="text-xs font-bold text-cyan-800">
+              {lang === "en" ? "Please sign in to register for a restock alert." : "Vui lòng đăng nhập để đăng ký báo hàng lại."}
+            </p>
+            <Link
+              to="/login"
+              className="mt-2 inline-flex items-center gap-1.5 rounded-xl bg-cyan-700 px-4 py-2.5 text-sm font-black text-white"
+            >
+              <LogIn size={15} />
+              {lang === "en" ? "Sign in" : "Đăng nhập"}
+            </Link>
           </div>
+        ) : (
+          <form onSubmit={submitRestockAlert} className="mt-3 rounded-2xl border border-cyan-100 bg-cyan-50 p-3">
+            <div className="mb-2 flex items-center gap-2 text-xs font-black text-cyan-800">
+              <BellRing size={16} />
+              {t.notifyTitle}
+            </div>
 
-          <button type="submit" className="mt-2 rounded-xl bg-cyan-700 px-4 py-2.5 text-sm font-black text-white">
-            {t.notifySubmit}
-          </button>
-        </form>
+            {alertMessage && (
+              <div className="mb-2 rounded-xl bg-green-50 p-2.5 text-[11px] font-black text-green-700">
+                {alertMessage}
+              </div>
+            )}
+
+            {alertError && (
+              <div className="mb-2 rounded-xl bg-red-50 p-2.5 text-[11px] font-black text-red-600">
+                {alertError}
+              </div>
+            )}
+
+            <div className="grid gap-2 sm:grid-cols-2">
+              <input
+                value={alertForm.name}
+                onChange={(event) => patchAlert("name", event.target.value)}
+                placeholder={t.notifyName}
+                className="rounded-xl border border-cyan-100 bg-white px-3 py-2.5 text-sm font-bold outline-none"
+              />
+              <input
+                value={alertForm.phone}
+                onChange={(event) => patchAlert("phone", event.target.value)}
+                placeholder={t.notifyPhone}
+                inputMode="tel"
+                className="rounded-xl border border-cyan-100 bg-white px-3 py-2.5 text-sm font-bold outline-none"
+              />
+              <input
+                value={alertForm.note}
+                onChange={(event) => patchAlert("note", event.target.value)}
+                placeholder={t.notifyNote}
+                className="rounded-xl border border-cyan-100 bg-white px-3 py-2.5 text-sm font-bold outline-none sm:col-span-2"
+              />
+            </div>
+
+            <button type="submit" className="mt-2 rounded-xl bg-cyan-700 px-4 py-2.5 text-sm font-black text-white">
+              {t.notifySubmit}
+            </button>
+          </form>
+        )
       )}
       {/* RestockAlertFormEnd */}
 
@@ -1176,13 +1182,16 @@ function ProductDetailSections({ product, lang }) {
         <PolicyList items={[t.shipping1, t.shipping2, t.shipping3]} />
       </CollapsibleSection>
 
-      <CollapsibleSection title={t.policyTitle}>
-        <PolicyList items={[t.policy1, t.policy2, t.policy3]} />
-      </CollapsibleSection>
-
-      <CollapsibleSection title={t.returnTitle}>
-        <PolicyList items={[t.return1, t.return2, t.return3]} />
-      </CollapsibleSection>
+      <Link
+        to="/policies"
+        className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-5 py-4 text-sm font-black text-blue-700 shadow-sm hover:bg-slate-50"
+      >
+        <span className="flex items-center gap-2">
+          <FileText size={16} />
+          {lang === "en" ? "View purchase & return policy" : "Xem chính sách mua hàng & đổi trả"}
+        </span>
+        <ArrowRight size={16} />
+      </Link>
     </div>
   );
 }
@@ -1201,6 +1210,7 @@ function Reviews({ product, reviews, lang, onSubmitted }) {
   const [busy, setBusy] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [open, setOpen] = useState(false);
+  const { blocked: reviewRequiresLogin } = useFeatureAccess("product_review_submit");
 
   function patch(field, value) {
     setDraft((prev) => ({ ...prev, [field]: value }));
@@ -1314,20 +1324,34 @@ function Reviews({ product, reviews, lang, onSubmitted }) {
             {showForm && (
               <div className="mt-4 rounded-2xl border border-blue-100 bg-blue-50 p-4">
                 <div className="text-sm font-black text-blue-900">{lang === "vi" ? "Viết đánh giá" : "Write a review"}</div>
-                <div className="mt-3 grid gap-2 md:grid-cols-2">
-                  <input value={draft.customerName} onChange={(e) => patch("customerName", e.target.value)} placeholder={lang === "vi" ? "Tên của bạn" : "Your name"} className="rounded-xl border border-blue-100 px-3 py-2.5 text-sm font-bold outline-none" />
-                  <input value={draft.customerEmail} onChange={(e) => patch("customerEmail", e.target.value)} placeholder="Email" className="rounded-xl border border-blue-100 px-3 py-2.5 text-sm font-bold outline-none" />
-                  <input value={draft.orderNo} onChange={(e) => patch("orderNo", e.target.value)} placeholder={lang === "vi" ? "Mã đơn hàng nếu có" : "Order no if any"} className="rounded-xl border border-blue-100 px-3 py-2.5 text-sm font-bold outline-none" />
-                  <select value={draft.rating} onChange={(e) => patch("rating", Number(e.target.value))} className="rounded-xl border border-blue-100 px-3 py-2.5 text-sm font-bold outline-none">
-                    {[5, 4, 3, 2, 1].map((rating) => <option key={rating} value={rating}>{rating} stars</option>)}
-                  </select>
-                  <input value={draft.title} onChange={(e) => patch("title", e.target.value)} placeholder={lang === "vi" ? "Tiêu đề" : "Title"} className="rounded-xl border border-blue-100 px-3 py-2.5 text-sm font-bold outline-none md:col-span-2" />
-                  <textarea value={draft.content} onChange={(e) => patch("content", e.target.value)} rows={3} placeholder={lang === "vi" ? "Nội dung đánh giá" : "Review content"} className="rounded-xl border border-blue-100 px-3 py-2.5 text-sm font-bold outline-none md:col-span-2" />
-                </div>
-                {message && <div className="mt-2 text-xs font-black text-blue-800">{message}</div>}
-                <button onClick={() => void submitReview()} disabled={busy} className="mt-3 rounded-xl bg-blue-700 px-4 py-2.5 text-xs font-black text-white disabled:opacity-50">
-                  {busy ? "..." : lang === "vi" ? "Gửi đánh giá" : "Submit review"}
-                </button>
+                {reviewRequiresLogin ? (
+                  <div className="mt-3 rounded-xl bg-white p-4 text-center">
+                    <p className="text-xs font-bold text-slate-600">
+                      {lang === "vi" ? "Vui lòng đăng nhập để gửi đánh giá." : "Please sign in to submit a review."}
+                    </p>
+                    <Link to="/login" className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-blue-700 px-4 py-2.5 text-xs font-black text-white">
+                      <LogIn size={14} />
+                      {lang === "vi" ? "Đăng nhập" : "Sign in"}
+                    </Link>
+                  </div>
+                ) : (
+                  <>
+                    <div className="mt-3 grid gap-2 md:grid-cols-2">
+                      <input value={draft.customerName} onChange={(e) => patch("customerName", e.target.value)} placeholder={lang === "vi" ? "Tên của bạn" : "Your name"} className="rounded-xl border border-blue-100 px-3 py-2.5 text-sm font-bold outline-none" />
+                      <input value={draft.customerEmail} onChange={(e) => patch("customerEmail", e.target.value)} placeholder="Email" className="rounded-xl border border-blue-100 px-3 py-2.5 text-sm font-bold outline-none" />
+                      <input value={draft.orderNo} onChange={(e) => patch("orderNo", e.target.value)} placeholder={lang === "vi" ? "Mã đơn hàng nếu có" : "Order no if any"} className="rounded-xl border border-blue-100 px-3 py-2.5 text-sm font-bold outline-none" />
+                      <select value={draft.rating} onChange={(e) => patch("rating", Number(e.target.value))} className="rounded-xl border border-blue-100 px-3 py-2.5 text-sm font-bold outline-none">
+                        {[5, 4, 3, 2, 1].map((rating) => <option key={rating} value={rating}>{rating} stars</option>)}
+                      </select>
+                      <input value={draft.title} onChange={(e) => patch("title", e.target.value)} placeholder={lang === "vi" ? "Tiêu đề" : "Title"} className="rounded-xl border border-blue-100 px-3 py-2.5 text-sm font-bold outline-none md:col-span-2" />
+                      <textarea value={draft.content} onChange={(e) => patch("content", e.target.value)} rows={3} placeholder={lang === "vi" ? "Nội dung đánh giá" : "Review content"} className="rounded-xl border border-blue-100 px-3 py-2.5 text-sm font-bold outline-none md:col-span-2" />
+                    </div>
+                    {message && <div className="mt-2 text-xs font-black text-blue-800">{message}</div>}
+                    <button onClick={() => void submitReview()} disabled={busy} className="mt-3 rounded-xl bg-blue-700 px-4 py-2.5 text-xs font-black text-white disabled:opacity-50">
+                      {busy ? "..." : lang === "vi" ? "Gửi đánh giá" : "Submit review"}
+                    </button>
+                  </>
+                )}
               </div>
             )}
           </div>

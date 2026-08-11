@@ -111,6 +111,7 @@ Chú thích cột **Frontend**: ✅ Có gọi · ❌ Không tìm thấy nơi g�
 - **Pre-Order / tính cọc (per-item, không còn tỷ lệ 30% cố định):** mỗi item được server tự phân loại preorder hay không dựa vào **`Product.status` thật tại thời điểm tạo đơn** (`preorder`/`comingsoon`) — không tin `body.orderType` của client. Với item preorder, `depositAmount` của item = tính theo `depositType`/`depositValue` của **đúng sản phẩm đó** (`PERCENT`: giá × số lượng × depositValue/100, làm tròn lên 1.000đ; `FIXED_AMOUNT`: depositValue × số lượng), rồi cộng dồn thành `order.depositAmount`. Item không phải preorder (hàng thường) luôn tính đủ 100% giá trị, kể cả khi nằm chung đơn với item preorder — không bị "ăn theo" cọc. `order.remainingAmount` = tổng giá trị các item preorder trừ đi tổng cọc đã thu (hàng thường không có phần "còn lại" vì đã trả đủ). Đơn thuần pre-order (không có item thường nào) giữ hành vi cũ: `shippingFee` = 0 lúc tạo đơn (thu sau ở bước thu nốt); đơn có ít nhất 1 item thường thì `shippingFee` được thu ngay như đơn thường. Voucher bị tắt cho toàn đơn nếu có ít nhất 1 item preorder (không hỗ trợ áp voucher từng phần cho đơn trộn).
 - **Flash Sale — tự động áp giá server-side, không cần client gửi `flashSaleItemId`:** mỗi item (không phải variant — `FlashSaleItem` không có `variantId`) được server tự tra xem sản phẩm có đang nằm trong 1 Flash Sale `LIVE` **tại đúng thời điểm tạo đơn, theo giờ Asia/Ho_Chi_Minh thật của server** hay không (`resolveLiveFlashSaleItems`, `services/flashSalePricing.js` — cùng hàm `GET /api/products/`, `GET /api/products/:key`, `GET /api/products/home` dùng, xem mục "Giá bán thực tế" ở `GET /api/products/`), và **tự áp giá Flash Sale nếu có** — kể cả khi khách thêm sản phẩm vào giỏ từ trang `/shop`/trang chi tiết (không qua khu Flash Sale nên không có `flashSaleItemId`). Trước đây bước tạo đơn chỉ áp giá Flash Sale khi client tự gửi `flashSaleItemId` — nếu thêm giỏ từ nơi khác, đơn bị tính nhầm theo giá gốc dù campaign đang `LIVE` (đã sửa). Nếu item **có** gửi kèm `flashSaleItemId` (thêm từ khu Flash Sale, đã thấy giá đó) nhưng giá trị này không còn khớp với Flash Sale đang thực sự `LIVE` server-side (đã kết thúc khung giờ hôm nay, chưa tới giờ, bị tắt `active`) → từ chối với `PRICE_CHANGED` thay vì âm thầm tính theo giá khác — `flashSaleItemId` chỉ là khoá tra cứu, không bao giờ được tin cho giá/trạng thái. Nếu `FlashSaleItem` có `dailyStockLimit` → tổng số lượng đã bán hôm nay (tính động từ `OrderItem`, đơn không `CANCELLED`) + số lượng đang mua vượt hạn mức → từ chối với `OUT_OF_STOCK`.
 - **Response:** 201 `{ success, order: { orderNo, status, statusLabel, paymentStatus, note, preferredDeliveryTime, customerClaimedPaidAt, items[], payments[], shipments[], preorder: { eta, depositType, depositValue, depositRate, fullAmount, depositAmount, remainingAmount } | null, ... } }` — **không** lộ `id` nội bộ, chỉ dùng `orderNo`. Mỗi phần tử `items[]` có thêm `image` (URL ảnh đại diện sản phẩm — **không phải snapshot**, lấy động từ ảnh hiện tại của `Product` qua quan hệ tại thời điểm trả response, `null` nếu sản phẩm không còn ảnh nào). `order.orderType` được server tự suy ra ("preorder" nếu có ít nhất 1 item preorder, ngược lại "normal") — không lấy nguyên `body.orderType`. Lỗi có `code`: `PRODUCT_NOT_FOUND`, `OUT_OF_STOCK`, `INSUFFICIENT_STOCK`, `PREORDER_CLOSED`, `PRICE_CHANGED`, v.v.
+- **`orderNo` — định dạng ngắn `GDM<yymmdd>-<seq>`** (ví dụ đơn đầu tiên ngày 11/8/2026 → `GDM260811-0001`), thay cho định dạng cũ `ORD-<timestamp>-<hex>`. `yymmdd` là ngày theo **giờ Việt Nam thật của server lúc tạo đơn** (`utils/vnTime.js`, `vnDateStringCompact`); `seq` là số thứ tự trong ngày đó, tối thiểu 4 chữ số (`0001`-`9999`), tự nhiên lên 5+ chữ số nếu vượt 9999 đơn/ngày — **không có giới hạn cứng, không bao giờ "hết số"**. Số thứ tự lấy từ bảng đếm riêng `DailyOrderCounter` (`date` = khoá chính, chính là `yymmdd`), tăng **atomic** qua `UPSERT ... ON CONFLICT (date) DO UPDATE SET lastNumber = lastNumber + 1` trong cùng transaction với việc tạo đơn (Postgres khoá row trong lúc UPDATE) — **không dùng `COUNT(*)`**, nên nhiều đơn tạo đồng thời trong cùng khoảnh khắc không bao giờ bị trùng số (đã kiểm chứng bằng 60 transaction tạo song song thật, 60 số thứ tự khác nhau tuyệt đối, liên tục không nhảy cóc). Chỉ áp dụng cho đơn **mới tạo sau khi deploy thay đổi này** — các đơn cũ giữ nguyên `orderNo` dạng `ORD-...` sẵn có, không migrate lại (tránh sai lệch mã đã gửi khách trước đó); mọi endpoint tra cứu theo `orderNo` (`GET /api/orders/public/:id`, v.v.) hoạt động như nhau với cả 2 định dạng vì chỉ so khớp chuỗi, không parse cấu trúc.
 - **Auth:** Public + `optionalAuth` (khách vãng lai được, có token thì gắn `customerId`). Có rate-limit + chặn submit trùng.
 - **Frontend:** ✅ `StorefrontOrderApiService.js`.
 
@@ -219,7 +220,7 @@ Chú thích cột **Frontend**: ✅ Có gọi · ❌ Không tìm thấy nơi g�
 
 #### `GET /api/banners/home`
 - **Mục đích:** Banner hero hiển thị trang chủ (chỉ banner active, status "Live", placement chứa home/hero).
-- **Response:** `{ success, banners: Banner[], heroSettings: {layout, autoplay, interval, maxBanners} }`.
+- **Response:** `{ success, banners: Banner[], heroSettings: {layout, autoplay, interval, maxBanners, ogImageUrl} }`. `ogImageUrl` — ảnh chia sẻ mạng xã hội (Zalo/Facebook link preview), **tĩnh, riêng biệt với banner carousel** ở trên (banner xoay vòng đổi liên tục, không phù hợp làm OG image) — khuyến nghị đúng tỷ lệ 1200x630px, `null` nếu Admin chưa cấu hình. Đặt trong `heroSettings` (không phải field riêng) vì đây là cấu hình tĩnh 1-dòng giống `layout`/`autoplay`, không phải 1 banner có thể bật/tắt như mảng `banners`.
 - **Auth:** Public.
 - **Frontend:** ✅ `BannerApiService.js`.
 
@@ -361,6 +362,20 @@ Chú thích cột **Frontend**: ✅ Có gọi · ❌ Không tìm thấy nơi g�
     - Nếu hôm nay đã là ngày cuối (`dateTo`) → trạng thái nội bộ `ENDED_TODAY`, không xuất hiện trong response này (campaign thật sự đã kết thúc).
   - `soldToday`: chỉ tính (query động từ `OrderItem`, tổng `quantity` các đơn **không** `CANCELLED` tạo trong ngày hôm nay theo giờ VN) khi item có `dailyStockLimit`; ngược lại trả `null`. Không có counter lưu sẵn — tự khớp với đơn hàng thật, không cần job reset lúc nửa đêm.
   - Trả mảng rỗng nếu không có campaign nào đang chạy/sắp chạy.
+- **Auth:** Public.
+- **Frontend:** ❌ Không tìm thấy nơi gọi (tính năng mới thêm, FE chưa nối).
+
+### 1.15 Cấu hình yêu cầu đăng nhập theo tính năng (Feature Access)
+
+> **Nguyên tắc an toàn cứng:** model `FeatureAccessRule` (`middleware/auth.js`, `controllers/featureAccessController.js`) chỉ điều khiển được đúng 3 route "mềm" liệt kê ở `featureCode` bên dưới — KHÔNG BAO GIỜ bao gồm `/api/account/*`, `/api/orders/my/*`, hay bất kỳ route Admin nào (`/api/*/admin/*`); các route đó có `requireAuth` gắn cứng trực tiếp trong route file, không đọc từ bảng này. `PATCH /api/admin/feature-access/:featureCode` chỉ **update** row đã tồn tại, không bao giờ tạo row mới từ `featureCode` tuỳ ý trong request — nên danh sách feature có thể cấu hình chỉ có thể mở rộng bằng cách sửa code (`DEFAULT_FEATURE_RULES`), không thể qua API dù có quyền Admin.
+>
+> 3 row được tự động seed (upsert, lazy — lần đầu tiên `GET` được gọi sau khi deploy) với `requiresAuth` **khớp đúng hành vi public thật của route trước khi tính năng này tồn tại** — seed không tự đổi hành vi gì cho tới khi Admin chủ động `PATCH`: `product_review_submit` (`POST /api/reviews`), `event_registration` (`POST /api/content/events/:id/registrations`), `restock_alert` (`POST /api/restock-alerts`). Mặc định cả 3 đều `requiresAuth: false` (đã public từ trước).
+>
+> `wishlist` **cố ý không nằm trong danh sách này** dù là tính năng "mềm" — route thật của nó (`POST /api/account/wishlist`) nằm dưới `/api/account/*`, thuộc vùng khoá cứng ở trên, nên không thể cấu hình an toàn qua bảng này.
+
+#### `GET /api/feature-access`
+- **Mục đích:** Trả toàn bộ rule hiện tại để Frontend biết ẩn/hiện yêu cầu đăng nhập tương ứng cho từng tính năng mềm.
+- **Response:** `{ success, rules: [{ featureCode, requiresAuth, label }] }`.
 - **Auth:** Public.
 - **Frontend:** ❌ Không tìm thấy nơi gọi (tính năng mới thêm, FE chưa nối).
 
@@ -864,10 +879,12 @@ Chú thích cột **Frontend**: ✅ Có gọi · ❌ Không tìm thấy nơi g�
 
 #### `GET /api/admin/banners/settings/hero`
 - **Mục đích:** Lấy cấu hình hero banner trang chủ.
+- **Response:** `{ success, heroSettings: {layout, autoplay, interval, maxBanners, ogImageUrl} }`.
 - **Auth:** Admin. **Frontend:** ✅ `BannerApiService.js`.
 
 #### `PATCH /api/admin/banners/settings/hero`
-- **Mục đích:** Cập nhật cấu hình hero (layout `v2|v3`, autoplay, interval ≥1500ms, `maxBanners` tối đa 3).
+- **Mục đích:** Cập nhật cấu hình hero (layout `v2|v3`, autoplay, interval ≥1500ms, `maxBanners` tối đa 3, `ogImageUrl`).
+- **Body:** `ogImageUrl` (string, optional — URL ảnh chia sẻ mạng xã hội tĩnh, khuyến nghị 1200x630px; upload trước qua `POST /api/admin/media/uploads/images` rồi gửi URL trả về vào đây, không gửi base64 — bị `rejectInlineImagePayload` chặn giống mọi field ảnh khác dưới prefix này; gửi chuỗi rỗng để xoá).
 - **Auth:** Admin. **Frontend:** ✅ `BannerApiService.js`.
 
 #### `PATCH /api/admin/banners/:id`
@@ -1116,6 +1133,25 @@ Chú thích cột **Frontend**: ✅ Có gọi · ❌ Không tìm thấy nơi g�
 - **Path params:** `id` (campaignId), `itemId` (FlashSaleItem.id — phải thuộc đúng campaign `id`, 404 nếu không khớp).
 - **Response:** `{ success }`.
 - **Auth:** `products:update`.
+
+### 2.27 Cấu hình yêu cầu đăng nhập theo tính năng (Feature Access)
+
+> Xem nguyên tắc an toàn + danh sách 3 feature ở mục 1.15. Route ở đây chỉ **update** (không tạo mới) — `featureCode` không nằm trong `DEFAULT_FEATURE_RULES` (`controllers/featureAccessController.js`) luôn 404, kể cả các route đã hard-lock như `wishlist`.
+
+#### `GET /api/admin/feature-access`
+- **Mục đích:** Danh sách toàn bộ rule hiện tại (tự seed lazy nếu chưa có) cho màn hình cấu hình của Admin.
+- **Response:** `{ success, rules: [{ featureCode, requiresAuth, label }] }`.
+- **Auth:** Admin (gate toàn cục `/api/admin`, không thêm `requirePermission` riêng — cùng mức với Banner mục 2.19).
+- **Frontend:** ❌ Không tìm thấy nơi gọi (tính năng mới thêm, FE chưa nối).
+
+#### `PATCH /api/admin/feature-access/:featureCode`
+- **Mục đích:** Bật/tắt yêu cầu đăng nhập cho đúng 1 feature.
+- **Path params:** `featureCode` (phải khớp 1 trong 3 giá trị đã seed — xem mục 1.15; 404 nếu không khớp, kể cả tên hợp lệ về mặt khái niệm như `wishlist`).
+- **Body:** `requiresAuth` (boolean, **required**).
+- **Hiệu lực:** áp dụng ngay cho request kế tiếp tới route tương ứng — cache đọc rule có TTL 30s ở `middleware/auth.js` (`requireAuthForFeature`) nhưng được chủ động xoá (`invalidateFeatureAccessCache`) ngay trong request `PATCH` này, không cần đợi hết TTL.
+- **Response:** `{ success, rule: { featureCode, requiresAuth, label } }`.
+- **Auth:** Admin.
+- **Frontend:** ❌ Không tìm thấy nơi gọi (tính năng mới thêm, FE chưa nối).
 
 ---
 

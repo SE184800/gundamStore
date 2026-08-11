@@ -82,6 +82,7 @@ const AdminAnalytics = lazy(() => import("./pages/admin/AdminAnalytics"));
 const AdminAuditLogs = lazy(() => import("./pages/admin/AdminAuditLogs"));
 const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
 const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
+const AdminFeatureAccess = lazy(() => import("./pages/admin/AdminFeatureAccess"));
 const AdminQaHelper = lazy(() => import("./pages/admin/AdminQaHelper"));
 const AdminCommunication = lazy(() => import("./pages/admin/AdminCommunication"));
 
@@ -137,7 +138,7 @@ function GlobalMobileBottomTabs() {
       label: t("common.support") || "Hỗ trợ",
       href: "/order-lookup",
       icon: ShieldCheck,
-      extraMatch: ["/support", "/contact", "/faq", "/return-policy", "/return-request", "/shipping-policy", "/payment-guide", "/warranty"],
+      extraMatch: ["/support", "/contact", "/faq", "/return-policy", "/policies", "/return-request", "/shipping-policy", "/payment-guide", "/warranty"],
     },
   ];
 
@@ -220,6 +221,7 @@ export default function App() {
           <Route path="/favorites" element={<WishlistPage />} />
           <Route path="/compare" element={<ComparePage />} />
           <Route path="/return-policy" element={<PolicyPage pageKey="return-policy" />} />
+          <Route path="/policies" element={<PolicyPage pageKey="policies" />} />
           <Route path="/about" element={<AboutPage />} />
 
           {/* Content & Blogs */}
@@ -303,6 +305,7 @@ export default function App() {
             <Route path="audit-logs" element={<AdminAuditLogs />} />
             <Route path="users" element={<AdminUsers />} />
             <Route path="settings" element={<AdminSettings />} />
+            <Route path="feature-access" element={<AdminFeatureAccess />} />
             <Route path="qa-helper" element={<AdminQaHelper />} />
           </Route>
 

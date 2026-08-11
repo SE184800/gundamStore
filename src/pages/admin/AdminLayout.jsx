@@ -21,6 +21,7 @@ import {
   Search,
   Settings,
   ShieldAlert,
+  ShieldCheck,
   ShoppingBag,
   ShoppingCart,
   Star,
@@ -87,6 +88,7 @@ const copy = {
     adminUsers: "Người dùng & phân quyền",
     changePassword: "Đổi mật khẩu",
     settings: "Cài đặt",
+    featureAccess: "Quyền truy cập tính năng",
     viewStore: "Xem cửa hàng",
     search: "Tìm trong admin...",
     qaHelper: "QA / SIT Helper",
@@ -140,6 +142,7 @@ const copy = {
     adminUsers: "Users & Roles",
     changePassword: "Change password",
     settings: "Settings",
+    featureAccess: "Feature Access",
     viewStore: "View Store",
     search: "Search admin...",
     qaHelper: "QA / SIT Helper",
@@ -253,6 +256,7 @@ function getPageTitle(pathname, t) {
   if (pathname.includes("/admin/audit-logs")) return t.auditLogs;
   if (pathname.includes("/admin/analytics")) return t.analytics;
   if (pathname.includes("/admin/settings")) return t.settings;
+  if (pathname.includes("/admin/feature-access")) return t.featureAccess;
   if (pathname.includes("/admin/qa-helper")) return t.qaHelper;
   return t.dashboard;
 }
@@ -330,6 +334,7 @@ export default function AdminLayout() {
         <NavItem to="/admin/users" icon={Users} label={t.adminUsers} />
         <NavItem to="/admin/change-password" icon={KeyRound} label={t.changePassword} />
         <NavItem to="/admin/settings" icon={Settings} label={t.settings} />
+        <NavItem to="/admin/feature-access" icon={ShieldCheck} label={t.featureAccess} />
         <NavItem to="/admin/qa-helper" icon={TestTube2} label={t.qaHelper} />
       </NavGroup>
     </nav>

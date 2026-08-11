@@ -5,12 +5,13 @@ import { next } from "@vercel/functions";
 // client-rendered React SPA: SeoManager.jsx sets <meta> tags via
 // document.head *after* JS runs, which link-preview crawlers (Zalo,
 // Facebook, Messenger, ...) never execute — they only read the static HTML
-// first returned for the request. For those bots on a product page, return a
-// small static HTML document with real og:title/og:image/og:description
-// fetched server-side from the backend instead of the React shell; real
-// browsers (any other User-Agent) fall through to the normal SPA untouched.
+// first returned for the request. For those bots on a product page or the
+// homepage, return a small static HTML document with real
+// og:title/og:image/og:description fetched server-side from the backend
+// instead of the React shell; real browsers (any other User-Agent) fall
+// through to the normal SPA untouched.
 export const config = {
-  matcher: ["/product/:path*"],
+  matcher: ["/product/:path*", "/"],
 };
 
 const BOT_USER_AGENT_REGEX =
@@ -65,7 +66,7 @@ function firstImagePath(product = {}) {
   );
 }
 
-function renderProductHtml({ title, description, image, canonicalUrl }) {
+function renderOgHtml({ ogType, title, description, image, canonicalUrl }) {
   const safeTitle = escapeHtml(title);
   const safeDescription = escapeHtml(description);
   const safeImage = escapeHtml(image);
@@ -79,7 +80,7 @@ function renderProductHtml({ title, description, image, canonicalUrl }) {
 <title>${safeTitle}</title>
 <meta name="description" content="${safeDescription}" />
 <link rel="canonical" href="${safeUrl}" />
-<meta property="og:type" content="product" />
+<meta property="og:type" content="${ogType}" />
 <meta property="og:site_name" content="${safeSiteName}" />
 <meta property="og:title" content="${safeTitle}" />
 <meta property="og:description" content="${safeDescription}" />
@@ -100,6 +101,63 @@ function renderProductHtml({ title, description, image, canonicalUrl }) {
 </html>`;
 }
 
+// Same priority order HomePage.jsx uses to pick a banner's display image
+// (banner.mainImage || banner.imageUrl || ...) — kept in sync so the OG
+// fallback shows the same image a real visitor would see as the first slide.
+function bannerImagePath(banner = {}) {
+  return (
+    banner.mainImage ||
+    banner.imageUrl ||
+    banner.mediaUrl ||
+    banner.image ||
+    banner.desktopImage ||
+    ""
+  );
+}
+
+const HOME_TITLE = `${SITE_NAME} | Gunpla chính hãng`;
+const HOME_DESCRIPTION =
+  "Gundam Store VN chuyên Gunpla/Gundam chính hãng, hàng sẵn, pre-order, phụ kiện builder, tin tức và sự kiện cộng đồng.";
+
+async function renderHomeResponse(url) {
+  let imagePath = "";
+
+  try {
+    const apiRes = await fetch(`${API_BASE}/api/banners/home`, {
+      headers: { accept: "application/json" },
+    });
+
+    if (apiRes.ok) {
+      const data = await apiRes.json();
+      if (data?.success) {
+        imagePath =
+          data?.heroSettings?.ogImageUrl ||
+          bannerImagePath(data?.banners?.[0] || {});
+      }
+    }
+  } catch {
+    // Fail open to the static default image below — never block on a flaky backend call.
+  }
+
+  const image = resolveMediaUrl(imagePath || DEFAULT_IMAGE_PATH, url.origin) || `${url.origin}${DEFAULT_IMAGE_PATH}`;
+
+  const html = renderOgHtml({
+    ogType: "website",
+    title: HOME_TITLE,
+    description: HOME_DESCRIPTION,
+    image,
+    canonicalUrl: `${url.origin}/`,
+  });
+
+  return new Response(html, {
+    status: 200,
+    headers: {
+      "content-type": "text/html; charset=utf-8",
+      "cache-control": "public, max-age=300, s-maxage=300",
+    },
+  });
+}
+
 export default async function middleware(request) {
   const userAgent = request.headers.get("user-agent") || "";
 
@@ -110,6 +168,11 @@ export default async function middleware(request) {
   }
 
   const url = new URL(request.url);
+
+  if (url.pathname === "/") {
+    return renderHomeResponse(url);
+  }
+
   const match = url.pathname.match(/^\/product\/([^/]+)/);
   if (!match) return next();
 
@@ -135,7 +198,8 @@ export default async function middleware(request) {
     const image = resolveMediaUrl(imagePath, url.origin) || `${url.origin}${DEFAULT_IMAGE_PATH}`;
     const canonicalUrl = `${url.origin}/product/${encodeURIComponent(slug)}`;
 
-    const html = renderProductHtml({
+    const html = renderOgHtml({
+      ogType: "product",
       title: `${name} | ${SITE_NAME}`,
       description,
       image,

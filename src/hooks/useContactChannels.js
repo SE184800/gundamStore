@@ -3,7 +3,7 @@ import { useCms } from "../store/CmsStore";
 
 const defaultCommunications = [
   { id: "1", name: "Zalo hỗ trợ CSKH", platform: "Zalo", value: "https://zalo.me/0935950649", status: "Active", active: true },
-  { id: "2", name: "Messenger Fanpage", platform: "Messenger", value: "https://m.me/tri.nguyen.nam.minh", status: "Active", active: true },
+  { id: "2", name: "Facebook Fanpage", platform: "Facebook", value: "https://www.facebook.com/gundamstorevn", status: "Active", active: true },
   { id: "3", name: "Hotline Tư vấn 24/7", platform: "Hotline", value: "0935950649", status: "Maintenance", active: false },
 ];
 
@@ -35,9 +35,9 @@ export default function useContactChannels() {
   }, [allCommunications]);
 
   const facebookUrl = useMemo(() => {
-    const primaryFB = allCommunications.find((c) => String(c.id) === "2" && c.platform === "Messenger" && isAvailable(c));
+    const primaryFB = allCommunications.find((c) => String(c.id) === "2" && c.platform === "Facebook" && isAvailable(c));
     if (primaryFB) return primaryFB.value;
-    const backupFB = allCommunications.find((c) => c.platform === "Messenger" && isAvailable(c));
+    const backupFB = allCommunications.find((c) => c.platform === "Facebook" && isAvailable(c));
     return backupFB ? backupFB.value : "";
   }, [allCommunications]);
 

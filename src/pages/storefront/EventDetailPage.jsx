@@ -1,15 +1,18 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import PageShell from "../../components/common/PageShell";
 import { useLang } from "../../store/CmsStore";
 import {
   getPublicEventByIdApi,
   registerEventApi,
 } from "../../services/ContentApiService";
+import useFeatureAccess from "../../hooks/useFeatureAccess";
 import {
   CalendarDays,
   CheckCircle2,
   Clock3,
   ExternalLink,
+  LogIn,
   MapPin,
   Ticket,
   UserPlus,
@@ -55,6 +58,7 @@ function getSlotNumber(slots = "") {
 export default function EventDetailPage() {
   const [lang] = useLang();
   const t = getCopy(lang);
+  const { blocked: registrationRequiresLogin } = useFeatureAccess("event_registration");
 
   const id = window.location.pathname.split("/").pop();
   const [event, setEvent] = useState(null);
@@ -205,41 +209,60 @@ export default function EventDetailPage() {
                 </div>
               )}
 
-              <div className="mt-5 grid gap-4 md:grid-cols-2">
-                <input
-                  value={form.name}
-                  onChange={(eventInput) => patch("name", eventInput.target.value)}
-                  placeholder={t.name}
-                  className="rounded-2xl border border-blue-100 bg-white px-4 py-3 text-sm font-bold outline-none focus:border-blue-500"
-                />
-                <input
-                  value={form.phone}
-                  onChange={(eventInput) => patch("phone", eventInput.target.value)}
-                  placeholder={t.phone}
-                  inputMode="tel"
-                  className="rounded-2xl border border-blue-100 bg-white px-4 py-3 text-sm font-bold outline-none focus:border-blue-500"
-                />
-                <input
-                  value={form.email}
-                  onChange={(eventInput) => patch("email", eventInput.target.value)}
-                  placeholder={t.email}
-                  className="rounded-2xl border border-blue-100 bg-white px-4 py-3 text-sm font-bold outline-none focus:border-blue-500 md:col-span-2"
-                />
-                <textarea
-                  value={form.note}
-                  onChange={(eventInput) => patch("note", eventInput.target.value)}
-                  placeholder={t.note}
-                  rows={4}
-                  className="rounded-2xl border border-blue-100 bg-white px-4 py-3 text-sm font-bold outline-none focus:border-blue-500 md:col-span-2"
-                />
-              </div>
+              {registrationRequiresLogin ? (
+                <div className="mt-5 rounded-2xl border border-blue-200 bg-white p-5 text-center">
+                  <p className="text-sm font-bold text-slate-600">
+                    {lang === "en"
+                      ? "Please sign in to register for this event."
+                      : "Vui lòng đăng nhập để đăng ký tham gia sự kiện này."}
+                  </p>
+                  <Link
+                    to="/login"
+                    className="mt-4 inline-flex items-center gap-2 rounded-2xl bg-blue-700 px-5 py-3 text-sm font-black text-white shadow-lg"
+                  >
+                    <LogIn size={16} />
+                    {lang === "en" ? "Sign in" : "Đăng nhập"}
+                  </Link>
+                </div>
+              ) : (
+                <>
+                  <div className="mt-5 grid gap-4 md:grid-cols-2">
+                    <input
+                      value={form.name}
+                      onChange={(eventInput) => patch("name", eventInput.target.value)}
+                      placeholder={t.name}
+                      className="rounded-2xl border border-blue-100 bg-white px-4 py-3 text-sm font-bold outline-none focus:border-blue-500"
+                    />
+                    <input
+                      value={form.phone}
+                      onChange={(eventInput) => patch("phone", eventInput.target.value)}
+                      placeholder={t.phone}
+                      inputMode="tel"
+                      className="rounded-2xl border border-blue-100 bg-white px-4 py-3 text-sm font-bold outline-none focus:border-blue-500"
+                    />
+                    <input
+                      value={form.email}
+                      onChange={(eventInput) => patch("email", eventInput.target.value)}
+                      placeholder={t.email}
+                      className="rounded-2xl border border-blue-100 bg-white px-4 py-3 text-sm font-bold outline-none focus:border-blue-500 md:col-span-2"
+                    />
+                    <textarea
+                      value={form.note}
+                      onChange={(eventInput) => patch("note", eventInput.target.value)}
+                      placeholder={t.note}
+                      rows={4}
+                      className="rounded-2xl border border-blue-100 bg-white px-4 py-3 text-sm font-bold outline-none focus:border-blue-500 md:col-span-2"
+                    />
+                  </div>
 
-              <button
-                type="submit"
-                className="mt-5 rounded-2xl bg-blue-700 px-5 py-4 text-sm font-black text-white shadow-lg"
-              >
-                {t.submit}
-              </button>
+                  <button
+                    type="submit"
+                    className="mt-5 rounded-2xl bg-blue-700 px-5 py-4 text-sm font-black text-white shadow-lg"
+                  >
+                    {t.submit}
+                  </button>
+                </>
+              )}
             </form>
           </div>
 

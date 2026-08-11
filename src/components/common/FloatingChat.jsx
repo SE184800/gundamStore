@@ -91,7 +91,7 @@ export default function FloatingChat() {
                 </button>
               </div>
               <p className="mt-2 text-[11px] font-semibold text-slate-400">
-                {t("chat.comingSoonHint") || "Liên hệ ngay qua Zalo hoặc Messenger bên dưới."}
+                {t("chat.comingSoonHint") || "Liên hệ ngay qua Zalo hoặc Facebook bên dưới."}
               </p>
             </div>
           </div>
@@ -206,7 +206,7 @@ export default function FloatingChat() {
                 </button>
               </div>
               <p className="mt-1.5 text-[10px] font-semibold text-slate-400">
-                {t("chat.comingSoonHint") || "Liên hệ ngay qua Zalo hoặc Messenger bên dưới."}
+                {t("chat.comingSoonHint") || "Liên hệ ngay qua Zalo hoặc Facebook bên dưới."}
               </p>
             </div>
           </div>

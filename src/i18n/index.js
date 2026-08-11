@@ -125,7 +125,9 @@ export const STRINGS = {
       staff: "Nhân viên",
       staffDesc: "Chat với CSKH",
       zaloDesc: "Mở Zalo shop",
-      fbDesc: "Mở Messenger",
+      fbDesc: "Mở Facebook",
+      comingSoon: "Nhắn tin trực tiếp sắp ra mắt",
+      comingSoonHint: "Liên hệ ngay qua Zalo hoặc Facebook bên dưới.",
     },
   },
 
@@ -247,7 +249,9 @@ export const STRINGS = {
       staff: "Staff",
       staffDesc: "Chat with customer support",
       zaloDesc: "Open Zalo shop",
-      fbDesc: "Open Messenger",
+      fbDesc: "Open Facebook",
+      comingSoon: "Direct messaging coming soon",
+      comingSoonHint: "Reach us via Zalo or Facebook below.",
     },
   },
 };

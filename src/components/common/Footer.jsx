@@ -33,6 +33,7 @@ export default function Footer() {
         [t("common.faq"), "/faq"],
         [t("header.orderLookup"), "/order-lookup"],
         [t("header.returnPolicy"), "/return-policy"],
+        [t("common.policy"), "/policies"],
         [t("common.contact"), "/contact"],
       ],
     },
@@ -147,7 +148,7 @@ export default function Footer() {
           <div>{t("footer.rights")}</div>
 
           <div className="flex gap-4">
-            <a href="/return-policy" className="hover:text-white">{t("common.policy")}</a>
+            <a href="/policies" className="hover:text-white">{t("common.policy")}</a>
             <a href="/faq" className="hover:text-white">{t("common.faq")}</a>
             <a href="/contact" className="hover:text-white">{t("common.contact")}</a>
           </div>
