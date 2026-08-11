@@ -9,6 +9,7 @@ import {
   Clock,
   CreditCard,
   FileText,
+  Flame,
   GitCompareArrows,
   Heart,
   MapPin,
@@ -29,12 +30,14 @@ import PageShell from "../../components/common/PageShell";
 import useToast from "../../hooks/useToast";
 import Toast from "../../utils/Toast";
 import ProductCard from "../../components/storefront/ProductCard";
+import CountdownTimer from "../../components/common/CountdownTimer";
 import useShopStats from "../../hooks/useShopStats";
 import useContactChannels from "../../hooks/useContactChannels";
 import { useCms } from "../../store/CmsStore";
 import { translateStaticText } from "../../i18n";
 import { addProductToCart, forceCartBadgeSync, saveBuyNowDraft, saveCheckoutDraft, validateCartStock } from "../../services/CartService";
 import { trackProductView } from "../../services/RecentlyViewedService";
+import { getFlashSale } from "../../utils/flashSale";
 import {
   addMyWishlistItem,
   getMyWishlist,
@@ -498,6 +501,7 @@ function ProductInfo({ product, lang, actions, onPreorder, reviewCount = 0 }) {
 
   const selectedVariant = variants.find((variant) => variant.id === selectedVariantId) || null;
   const currentProduct = selectedVariant ? mergeProductVariant(product, selectedVariant) : product;
+  const flashSale = getFlashSale(currentProduct);
   const preorder = isPreorder(currentProduct);
   const stock = Number(currentProduct.stock || 0);
   const isOutOfStock = !getProductAvailability(currentProduct).canAddToCart;
@@ -669,7 +673,14 @@ function ProductInfo({ product, lang, actions, onPreorder, reviewCount = 0 }) {
           {preorder ? t.preorder : isOutOfStock ? t.outOfStock : t.inStock}
         </span>
         <span className="rounded-lg border border-blue-100 bg-blue-50 px-2.5 py-1 text-[11px] font-black text-blue-700">{t.authentic}</span>
-        {isSale(product) && <span className="rounded-lg bg-red-100 px-2.5 py-1 text-[11px] font-black text-red-700">Sale</span>}
+        {flashSale ? (
+          <span className="inline-flex items-center gap-1 rounded-lg bg-gradient-to-r from-red-600 to-orange-500 px-2.5 py-1 text-[11px] font-black text-white shadow-sm">
+            <Flame size={12} className="fill-white text-white" />
+            FLASH SALE
+          </span>
+        ) : (
+          isSale(product) && <span className="rounded-lg bg-red-100 px-2.5 py-1 text-[11px] font-black text-red-700">Sale</span>
+        )}
       </div>
 
       <h1 className="mt-3 text-xl font-black leading-tight text-slate-950 lg:text-2xl">{productName(product, lang)}</h1>
@@ -744,12 +755,19 @@ function ProductInfo({ product, lang, actions, onPreorder, reviewCount = 0 }) {
         <span className="font-bold text-slate-600">{product.sold || 0} {t.sold}</span>
       </div>
 
-      <div className="mt-3 rounded-2xl border border-blue-100 bg-blue-50 p-3">
+      <div className={`mt-3 rounded-2xl border p-3 ${flashSale ? "border-red-200 bg-gradient-to-b from-red-50 to-orange-50" : "border-blue-100 bg-blue-50"}`}>
         <div className="flex flex-wrap items-end gap-2">
           <div className="text-2xl font-black text-red-600">{money(price)}</div>
           {oldPrice > price && <div className="pb-0.5 text-sm font-bold text-slate-400 line-through">{money(oldPrice)}</div>}
           {save > 0 && <div className="rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-black text-red-700">-{money(save)}</div>}
         </div>
+
+        {flashSale?.countdownTarget && (
+          <div className="mt-2 flex items-center gap-2 text-xs font-bold text-red-700">
+            <span>{lang === "en" ? "Closes in" : "Kết thúc sau"}</span>
+            <CountdownTimer endDate={flashSale.countdownTarget} variant="dark" />
+          </div>
+        )}
       </div>
 
       {preorder ? (

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Heart, ShoppingCart, Star } from "lucide-react";
+import { Flame, Heart, ShoppingCart, Star } from "lucide-react";
 import { formatCurrency, isMeaningfulScale } from "../../utils/format";
 import { resolveText, useI18n } from "../../i18n";
 import { addProductToCart, forceCartBadgeSync, validateCartStock } from "../../services/CartService";
@@ -7,6 +7,7 @@ import { addMyWishlistItem, hasAccountToken } from "../../services/AccountApiSer
 import Toast from "../../utils/Toast";
 import useToast from "../../hooks/useToast";
 import { getProductAvailability, getProductPreorderInfo } from "../../utils/productAvailability";
+import { isFlashSaleActive } from "../../utils/flashSale";
 function getImage(product) {
   return (
     product?.cardUrl ||
@@ -56,6 +57,7 @@ function ProductCard({ product, lang: langProp, actions, badge, onAddToCart }) {
   const displayPrice = hasPriceRange
     ? `${formatCurrency(priceMin)} - ${formatCurrency(priceMax)}`
     : formatCurrency(priceMin || price);
+  const flashSaleActive = isFlashSaleActive(product);
   const commercialDiscount = hasCommercialDiscount(product);
   const oldPrice = commercialDiscount
     ? Number(product?.compareAtPrice || product?.oldPrice || product?.originalPrice || 0)
@@ -153,7 +155,13 @@ function ProductCard({ product, lang: langProp, actions, badge, onAddToCart }) {
               </div>
             )}
 
-            {commercialDiscount && (
+            {flashSaleActive ? (
+              <div className={`absolute left-3 z-10 inline-flex items-center gap-1 rounded-lg bg-gradient-to-r from-red-600 to-orange-500 px-2.5 py-1 text-[11px] font-black text-white shadow-sm ${badge ? "top-11" : "top-3"}`}>
+                <Flame size={12} className="fill-white text-white" />
+                FLASH SALE
+                {discountPercent > 0 && <span className="opacity-90">-{discountPercent}%</span>}
+              </div>
+            ) : commercialDiscount && (
               <div className={`absolute left-3 z-10 rounded-lg bg-red-600 px-2.5 py-1 text-[11px] font-black text-white ${badge ? "top-11" : "top-3"}`}>
                 {discountPercent > 0 ? `-${discountPercent}%` : lang === "en" ? "Sale" : "Sale"}
               </div>

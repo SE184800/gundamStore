@@ -190,6 +190,7 @@ export function mapBackendProductToStorefront(product = {}) {
     promotion: product.activePromotion || null,
     activePromotion: product.activePromotion || null,
     discountAmount: Number(product.discountAmount || 0),
+    flashSale: product.flashSale && typeof product.flashSale === "object" ? product.flashSale : null,
     sellable: product.sellable !== false,
     availability: product.availability && typeof product.availability === "object" ? product.availability : null,
     preorder: product.preorder && typeof product.preorder === "object" ? product.preorder : null,
